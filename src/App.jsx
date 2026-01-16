@@ -1692,15 +1692,20 @@ const App = () => {
         const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
         const completed = completedStr ? JSON.parse(completedStr) : [];
 
+        console.log(`[MATICO] markSessionComplete called:`, { subject, sessionId, key, currentCompleted: completed });
+
         if (!completed.includes(key)) {
             const newCompleted = [...completed, key];
             localStorage.setItem('MATICO_COMPLETED_SESSIONS', JSON.stringify(newCompleted));
-            console.log(`SmartCalendar: Marked ${key} as complete! Updating view...`);
+            console.log(`[MATICO] ✅ Marked ${key} as complete!`);
+            console.log(`[MATICO] Updated completed list:`, newCompleted);
 
             // Trigger Re-calc immediately to show next session if applicable
-            // We need to use a timeout to ensure state updates propagate if called in a tight loop, 
-            // but for React state setter it's fine.
-            setTodayIndex(getSmartSessionIndex(subject));
+            const newIndex = getSmartSessionIndex(subject);
+            console.log(`[MATICO] Calculated new session index: ${newIndex} (was: ${todayIndex})`);
+            setTodayIndex(newIndex);
+        } else {
+            console.log(`[MATICO] ℹ️ Session ${key} already marked as complete`);
         }
     };
     // --- SMART CALENDAR LOGIC END ---
