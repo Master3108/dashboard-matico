@@ -2327,7 +2327,15 @@ ${finalData.capsule}`;
 
                         // Note: The UI will update automatically via the state change in markSessionComplete
                     }}
-                    onClose={() => setShowInteractiveQuiz(false)}
+                    onClose={() => {
+                        setShowInteractiveQuiz(false);
+                        // Force refresh of session index to show next session
+                        setTimeout(() => {
+                            const newIndex = getSmartSessionIndex(currentSubject);
+                            console.log(`Quiz closed. Refreshing to session index: ${newIndex}`);
+                            setTodayIndex(newIndex);
+                        }, 500);
+                    }}
                 />
             )}
         </div>
