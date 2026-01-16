@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, X, ChevronRight, Trophy, Star, Zap, Brain, Timer, RotateCcw } from 'lucide-react';
+import { Check, X, ChevronRight, Trophy, Star, Zap, Brain, Timer, RotateCcw, Heart, Award } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import MathRenderer from './MathRenderer';
+import LivesDisplay from './LivesDisplay';
+import MiniLesson from './MiniLesson';
 
 // Sound Helper
 const playSound = (type) => {
@@ -42,18 +44,41 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
     const [score, setScore] = useState({ correct: 0, incorrect: 0 });
     const [showExplanation, setShowExplanation] = useState(false);
 
-    // NEW FEATURES STATE
-    const [timeLeft, setTimeLeft] = useState(30);
+    // LIVES SYSTEM - 5 hearts
+    const [lives, setLives] = useState(5);
+    const MAX_LIVES = 5;
+
+    // MINI LESSON STATE
+    const [showMiniLesson, setShowMiniLesson] = useState(false);
+
+    // TIMER & ANIMATION STATE
     const [isThinking, setIsThinking] = useState(false);
     const [shake, setShake] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
 
+    // DYNAMIC TIMER BASED ON QUESTION NUMBER (PAES LEVELS)
+    const getTimeLimit = (questionIndex) => {
+        if (questionIndex < 10) return 30;  // Preguntas 1-10: PAES Básico (30s)
+        if (questionIndex < 20) return 60;  // Preguntas 11-20: PAES Avanzado (60s)
+        return null;                         // Preguntas 21-30: PAES Experto (sin límite)
+    };
+
+    // PAES DIFFICULTY LEVEL
+    const getDifficultyLevel = (questionIndex) => {
+        if (questionIndex < 10) return { name: 'PAES Básico', color: 'bg-blue-500', icon: '🎓' };
+        if (questionIndex < 20) return { name: 'PAES Avanzado', color: 'bg-purple-500', icon: '🔥' };
+        return { name: 'PAES Experto', color: 'bg-red-500', icon: '💎' };
+    };
+
+    const [timeLeft, setTimeLeft] = useState(getTimeLimit(0));
+    const difficultyLevel = getDifficultyLevel(currentQuestion);
+
     const question = questions[currentQuestion];
     const progress = Math.round(((currentQuestion + 1) / questions.length) * 100);
 
-    // TIMER LOGIC
+    // TIMER LOGIC - Only runs if timeLeft is not null
     useEffect(() => {
-        if (isAnswered || isFinished) return;
+        if (isAnswered || isFinished || timeLeft === null || showMiniLesson) return;
 
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
@@ -67,7 +92,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [currentQuestion, isAnswered, isFinished]);
+    }, [currentQuestion, isAnswered, isFinished, showMiniLesson]);
 
     const handleTimeOut = () => {
         playSound('error');
@@ -83,13 +108,13 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
 
         setSelectedAnswer(option);
         setIsAnswered(true);
-        setShowExplanation(true);
 
         const isCorrect = option === question.correct_answer;
 
         if (isCorrect) {
             playSound('success');
             setScore(prev => ({ ...prev, correct: prev.correct + 1 }));
+            setShowExplanation(true);
             confetti({
                 particleCount: 50,
                 spread: 60,
@@ -101,16 +126,32 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
             setShake(true);
             setTimeout(() => setShake(false), 500);
             setScore(prev => ({ ...prev, incorrect: prev.incorrect + 1 }));
+
+            // LOSE LIFE
+            setLives(prev => Math.max(0, prev - 1));
+
+            // SHOW MINI LESSON instead of just explanation
+            setShowMiniLesson(true);
+
+            // If no lives left, end quiz
+            if (lives <= 1) {
+                setTimeout(() => {
+                    finishQuiz();
+                }, 2000);
+            }
         }
     };
 
     const handleNext = () => {
         if (currentQuestion < questions.length - 1) {
-            setCurrentQuestion(prev => prev + 1);
+            const nextQuestionIndex = currentQuestion + 1;
+            setCurrentQuestion(nextQuestionIndex);
             setSelectedAnswer(null);
             setIsAnswered(false);
             setShowExplanation(false);
-            setTimeLeft(30); // Reset timer
+            setShowMiniLesson(false);
+            // Reset timer based on next question's difficulty
+            setTimeLeft(getTimeLimit(nextQuestionIndex));
         } else {
             finishQuiz();
         }
@@ -207,13 +248,26 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
                             <h2 className="text-lg font-black text-gray-800 leading-tight">Quiz Interactivo</h2>
                             <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Matico AI</p>
                         </div>
+
+                        {/* PAES LEVEL BADGE */}
+                        <div className={`${difficultyLevel.color} text-white px-4 py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-md`}>
+                            <span>{difficultyLevel.icon}</span>
+                            <span>{difficultyLevel.name}</span>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-mono font-bold text-lg ${timeLeft < 10 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-gray-100 text-gray-600'}`}>
-                            <Timer className="w-5 h-5" />
-                            {timeLeft}s
-                        </div>
+                    <div className="flex items-center gap-3">
+                        {/* LIVES DISPLAY */}
+                        <LivesDisplay lives={lives} maxLives={MAX_LIVES} />
+
+                        {/* TIMER - Only show if not null (PAES Experto has no timer) */}
+                        {timeLeft !== null && (
+                            <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-mono font-bold text-lg ${timeLeft < 10 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-gray-100 text-gray-600'}`}>
+                                <Timer className="w-5 h-5" />
+                                {timeLeft}s
+                            </div>
+                        )}
+
                         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-gray-600">
                             <X className="w-6 h-6" />
                         </button>
@@ -280,8 +334,8 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
                         {showExplanation && (
                             <div className="mt-8 animate-slide-up">
                                 <div className={`p-6 rounded-2xl border-l-4 mb-6 shadow-sm ${selectedAnswer === question.correct_answer
-                                        ? 'bg-green-50 border-green-500'
-                                        : 'bg-white border-orange-400'
+                                    ? 'bg-green-50 border-green-500'
+                                    : 'bg-white border-orange-400'
                                     }`}>
                                     <div className="flex gap-4">
                                         <div className={`p-3 rounded-full h-fit ${selectedAnswer === question.correct_answer ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-500'
@@ -347,6 +401,17 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
                     to { transform: translateY(0); opacity: 1; }
                 }
             `}</style>
+
+            {/* MINI LESSON - Shows when answer is incorrect */}
+            {showMiniLesson && (
+                <MiniLesson
+                    question={question}
+                    selectedAnswer={selectedAnswer}
+                    correctAnswer={question.correct_answer}
+                    explanation={question.explanation}
+                    onComplete={handleNext}
+                />
+            )}
         </div>
     );
 };
