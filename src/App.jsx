@@ -1612,7 +1612,7 @@ const App = () => {
 
     // SERVER PROGRESS STATE
     const [serverProgress, setServerProgress] = useState(null);
-    const [loadingProgress, setLoadingProgress] = useState(true);
+    const [loadingProgress, setLoadingProgress] = useState(false);
     const [quizStats, setQuizStats] = useState({ correct: 0, incorrect: 0, total: 0 });
     const [quizLevel, setQuizLevel] = useState(1); // NEW: Adaptive Level State
     const [quizQuestionNumber, setQuizQuestionNumber] = useState(1); // NEW: Persistence State
