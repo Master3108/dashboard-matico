@@ -24,6 +24,18 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
         return () => clearInterval(timer);
     }, [timeLeft, understood]);
 
+    // AUTO-ADVANCE when timer reaches 0
+    useEffect(() => {
+        if (timeLeft === 0 && !understood) {
+            const autoAdvanceTimer = setTimeout(() => {
+                console.log('MiniLesson: Timer expired, auto-advancing...');
+                onComplete();
+            }, 2000); // Wait 2 seconds after timer expires
+
+            return () => clearTimeout(autoAdvanceTimer);
+        }
+    }, [timeLeft, understood, onComplete]);
+
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -148,10 +160,10 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                         onClick={handleUnderstood}
                         disabled={timeLeft === 0 && !understood}
                         className={`w-full py-5 rounded-2xl font-black text-xl transition-all duration-300 flex items-center justify-center gap-3 group shadow-lg ${understood
-                                ? 'bg-green-500 text-white scale-95'
-                                : timeLeft > 0
-                                    ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-95'
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            ? 'bg-green-500 text-white scale-95'
+                            : timeLeft > 0
+                                ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-95'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}
                     >
                         {understood ? (
