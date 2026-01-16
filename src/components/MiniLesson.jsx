@@ -3,9 +3,12 @@ import { X, CheckCircle, Timer, BookOpen, Lightbulb, ChevronRight } from 'lucide
 import MathRenderer from './MathRenderer';
 
 const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onComplete }) => {
+    const MINIMUM_READING_TIME = 15; // 15 seconds minimum reading time
     const [timeLeft, setTimeLeft] = useState(120); // 2 minutes
     const [understood, setUnderstood] = useState(false);
+    const [readingTimeElapsed, setReadingTimeElapsed] = useState(false);
 
+    // Timer countdown
     useEffect(() => {
         if (timeLeft <= 0 || understood) {
             return;
@@ -23,6 +26,16 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
 
         return () => clearInterval(timer);
     }, [timeLeft, understood]);
+
+    // Minimum reading time enforcement
+    useEffect(() => {
+        const readingTimer = setTimeout(() => {
+            setReadingTimeElapsed(true);
+            console.log('MiniLesson: Minimum reading time elapsed, button enabled');
+        }, MINIMUM_READING_TIME * 1000);
+
+        return () => clearTimeout(readingTimer);
+    }, []);
 
     // AUTO-ADVANCE when timer reaches 0
     useEffect(() => {
@@ -48,6 +61,8 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
             onComplete();
         }, 500);
     };
+
+    const canProceed = readingTimeElapsed && timeLeft > 0;
 
     const progress = ((120 - timeLeft) / 120) * 100;
 
@@ -158,12 +173,12 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                     {/* Action Button */}
                     <button
                         onClick={handleUnderstood}
-                        disabled={timeLeft === 0 && !understood}
+                        disabled={!canProceed || understood}
                         className={`w-full py-5 rounded-2xl font-black text-xl transition-all duration-300 flex items-center justify-center gap-3 group shadow-lg ${understood
-                            ? 'bg-green-500 text-white scale-95'
-                            : timeLeft > 0
-                                ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-95'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ? 'bg-green-500 text-white scale-95'
+                                : canProceed
+                                    ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-95'
+                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}
                     >
                         {understood ? (
@@ -171,18 +186,30 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                                 <CheckCircle className="w-6 h-6" />
                                 ¡Entendido!
                             </>
-                        ) : timeLeft > 0 ? (
+                        ) : timeLeft === 0 ? (
+                            <>
+                                <Timer className="w-6 h-6" />
+                                Tiempo Agotado - Continuando...
+                            </>
+                        ) : canProceed ? (
                             <>
                                 He Comprendido
                                 <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                             </>
                         ) : (
                             <>
-                                <Timer className="w-6 h-6" />
-                                Tiempo Agotado - Continuando...
+                                <BookOpen className="w-6 h-6 animate-pulse" />
+                                Lee la explicación completa... ({MINIMUM_READING_TIME - (120 - timeLeft)}s)
                             </>
                         )}
                     </button>
+
+                    {/* Helper Messages */}
+                    {!readingTimeElapsed && timeLeft > 0 && (
+                        <p className="text-center text-orange-600 font-bold text-sm animate-pulse mt-2">
+                            📖 Tómate {MINIMUM_READING_TIME} segundos para leer y comprender
+                        </p>
+                    )}
 
                     {timeLeft === 0 && !understood && (
                         <p className="text-center text-gray-500 font-bold text-sm animate-pulse">
