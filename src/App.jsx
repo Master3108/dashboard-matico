@@ -2321,20 +2321,18 @@ ${finalData.capsule}`;
                         });
 
                         // NEW: MARK SESSION AS COMPLETE IN CALENDAR
-                        // Only mark as complete if score is reasonable (e.g. > 0 to avoid exploits, or just completion)
-                        // For catch-up logic, simple completion is enough.
                         markSessionComplete(currentSubject, TODAYS_SESSION.session);
 
-                        // Note: The UI will update automatically via the state change in markSessionComplete
+                        // Note: UI will update when user closes the quiz via onClose
                     }}
                     onClose={() => {
                         setShowInteractiveQuiz(false);
-                        // Force refresh of session index to show next session
+                        // Also refresh on manual close (user clicks X)
                         setTimeout(() => {
                             const newIndex = getSmartSessionIndex(currentSubject);
-                            console.log(`Quiz closed. Refreshing to session index: ${newIndex}`);
+                            console.log(`Quiz closed manually. Refreshing to session index: ${newIndex}`);
                             setTodayIndex(newIndex);
-                        }, 500);
+                        }, 100);
                     }}
                 />
             )}
