@@ -1609,6 +1609,10 @@ const App = () => {
     const [currentSubject, setCurrentSubject] = useState("MATEMATICA");
     const [dailyRoute, setDailyRoute] = useState(DEFAULT_DAILY_ROUTE);
     const [todayIndex, setTodayIndex] = useState(0);
+
+    // SERVER PROGRESS STATE
+    const [serverProgress, setServerProgress] = useState(null);
+    const [loadingProgress, setLoadingProgress] = useState(true);
     const [quizStats, setQuizStats] = useState({ correct: 0, incorrect: 0, total: 0 });
     const [quizLevel, setQuizLevel] = useState(1); // NEW: Adaptive Level State
     const [quizQuestionNumber, setQuizQuestionNumber] = useState(1); // NEW: Persistence State
@@ -1620,6 +1624,48 @@ const App = () => {
     // INTERACTIVE QUIZ STATE
     const [showInteractiveQuiz, setShowInteractiveQuiz] = useState(false);
     const [quizQuestions, setQuizQuestions] = useState([]);
+
+    // FETCH SERVER PROGRESS ON LOAD
+    useEffect(() => {
+        const fetchProgress = async () => {
+            try {
+                setLoadingProgress(true);
+                console.log('[MATICO] Fetching progress from server...');
+
+                const response = await fetch('https://n8n-n8n.cwf1hb.easypanel.host/webhook/MATICO', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'get_progress',
+                        user_id: USER_ID,
+                        subject: currentSubject
+                    })
+                });
+
+                const data = await response.json();
+                console.log('[MATICO] ✅ Server progress loaded:', data);
+                setServerProgress(data);
+
+                // Update todayIndex based on server's next_session
+                if (data && data.next_session) {
+                    const newIndex = data.next_session - 1; // Convert to 0-indexed
+                    console.log(`[MATICO] Setting session index to ${newIndex} (Session ${data.next_session})`);
+                    setTodayIndex(newIndex);
+                }
+            } catch (error) {
+                console.error('[MATICO] ❌ Error fetching progress:', error);
+                // Fallback to localStorage if server fails
+                const fallbackIndex = getSmartSessionIndex(currentSubject);
+                setTodayIndex(fallbackIndex);
+            } finally {
+                setLoadingProgress(false);
+            }
+        };
+
+        fetchProgress();
+    }, [currentSubject]); // Reload when subject changes
 
     // DYNAMIC SYLLABUS
     const ACTIVE_SYLLABUS = currentSubject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (currentSubject === 'FISICA' ? PHYSICS_SYLLABUS : (currentSubject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (currentSubject === 'BIOLOGIA' ? BIOLOGY_SYLLABUS : (currentSubject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS))));
@@ -2043,6 +2089,16 @@ ${finalData.capsule}`;
 
     return (
         <div className="min-h-screen bg-[#E0E5EC] p-6 relative">
+            {/* LOADING SCREEN WHILE FETCHING PROGRESS */}
+            {loadingProgress && (
+                <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center z-50">
+                    <div className="text-center">
+                        <Loader className="w-16 h-16 animate-spin text-blue-600 mx-auto mb-6" />
+                        <h2 className="text-2xl font-black text-gray-800 mb-2">Cargando tu progreso...</h2>
+                        <p className="text-gray-600">Conectando con el servidor</p>
+                    </div>
+                </div>
+            )}
 
             <VideoModal
                 isOpen={videoModalOpen}
