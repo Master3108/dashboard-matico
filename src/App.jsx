@@ -2332,12 +2332,13 @@ ${finalData.capsule}`;
                     }}
                     onClose={() => {
                         setShowInteractiveQuiz(false);
-                        // Also refresh on manual close (user clicks X)
+
+                        // Force page reload to update session
+                        // This ensures the UI shows the next session after completion
                         setTimeout(() => {
-                            const newIndex = getSmartSessionIndex(currentSubject);
-                            console.log(`Quiz closed manually. Refreshing to session index: ${newIndex}`);
-                            setTodayIndex(newIndex);
-                        }, 100);
+                            console.log('[MATICO] Quiz closed - reloading page to show next session');
+                            window.location.reload();
+                        }, 500);
                     }}
                 />
             )}
