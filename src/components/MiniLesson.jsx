@@ -91,7 +91,7 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                             PREGUNTA ORIGINAL
                         </div>
                         <div className="text-lg font-bold text-gray-800 leading-relaxed">
-                            <MathRenderer text={question} />
+                            <MathRenderer text={typeof question === 'string' ? question : question.question || JSON.stringify(question)} />
                         </div>
                     </div>
 
@@ -166,8 +166,8 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                             onClick={handleUnderstood}
                             disabled={understood}
                             className={`w-full py-5 rounded-2xl font-black text-xl transition-all duration-300 flex items-center justify-center gap-3 group shadow-lg ${understood
-                                    ? 'bg-green-500 text-white scale-95'
-                                    : 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-95'
+                                ? 'bg-green-500 text-white scale-95'
+                                : 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white hover:shadow-2xl hover:scale-[1.02] active:scale-95'
                                 }`}
                         >
                             {understood ? (
