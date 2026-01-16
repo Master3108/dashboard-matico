@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import MathRenderer from './components/MathRenderer';
 import InteractiveQuiz from './components/InteractiveQuiz';
+import LoginPage from './components/LoginPage';
 import {
     BookOpen,
     Brain,
@@ -1530,12 +1531,46 @@ const App = () => {
     const [activeWebhookUrl, setActiveWebhookUrl] = useState(N8N_URLS.production);
 
     // --- DATABASE INTEGRATION START ---
-    const USER_ID = "123e4567-e89b-12d3-a456-426614174000"; // HARCODED ID FOR DEMO
+
+    // --- AUTHENTICATION STATE ---
+    const [currentUser, setCurrentUser] = useState(null);
+    const [authChecking, setAuthChecking] = useState(true);
+
+    // Check for saved session
+    useEffect(() => {
+        const savedUser = localStorage.getItem('MATICO_USER');
+        if (savedUser) {
+            try {
+                setCurrentUser(JSON.parse(savedUser));
+            } catch (e) {
+                console.error("Error parsing saved user", e);
+                localStorage.removeItem('MATICO_USER');
+            }
+        }
+        setAuthChecking(false);
+    }, []);
+
+    const handleLogin = (userData) => {
+        console.log("Logged in:", userData);
+        setCurrentUser(userData);
+        localStorage.setItem('MATICO_USER', JSON.stringify(userData));
+    };
+
+    const handleLogout = () => {
+        setCurrentUser(null);
+        localStorage.removeItem('MATICO_USER');
+        window.location.reload(); // Clean state reset
+    };
+
+    // --- DATABASE INTEGRATION START ---
+    // Use dynamic USER_ID if available, else null
+    const USER_ID = currentUser ? currentUser.user_id : null;
     const [userProfile, setUserProfile] = useState({ xp: 0, streak: 0, level: 1, username: 'Estudiante' });
 
     // 1. Fetch Profile on Load
     useEffect(() => {
         const fetchProfile = async () => {
+            if (!USER_ID) return; // Don't fetch if no user
             try {
                 const response = await fetch(`${activeWebhookUrl}?action=get_profile&user_id=${USER_ID}`);
                 const data = await response.json();
@@ -1547,8 +1582,8 @@ const App = () => {
                 console.error("Error fetching profile:", e);
             }
         };
-        fetchProfile();
-    }, [activeWebhookUrl]);
+        if (USER_ID) fetchProfile();
+    }, [activeWebhookUrl, USER_ID]);
 
     // 2. Save Progress Function
     const saveProgress = async (type, payload) => {
@@ -1628,6 +1663,7 @@ const App = () => {
     // FETCH SERVER PROGRESS ON LOAD
     useEffect(() => {
         const fetchProgress = async () => {
+            if (!USER_ID) return;
             try {
                 setLoadingProgress(true);
                 console.log('[MATICO] Fetching progress from server...');
@@ -1664,8 +1700,8 @@ const App = () => {
             }
         };
 
-        fetchProgress();
-    }, [currentSubject]); // Reload when subject changes
+        if (USER_ID) fetchProgress();
+    }, [currentSubject, USER_ID]); // Reload when subject changes or user logs in
 
     // DYNAMIC SYLLABUS
     const ACTIVE_SYLLABUS = currentSubject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (currentSubject === 'FISICA' ? PHYSICS_SYLLABUS : (currentSubject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (currentSubject === 'BIOLOGIA' ? BIOLOGY_SYLLABUS : (currentSubject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS))));
@@ -2086,6 +2122,18 @@ ${finalData.capsule}`;
             setAiModalOpen(true);
         }
     };
+
+    if (authChecking) {
+        return (
+            <div className="min-h-screen bg-[#E0E5EC] flex items-center justify-center">
+                <Loader className="w-10 h-10 animate-spin text-blue-500" />
+            </div>
+        );
+    }
+
+    if (!currentUser) {
+        return <LoginPage onLogin={handleLogin} />;
+    }
 
     return (
         <div className="min-h-screen bg-[#E0E5EC] p-6 relative">
