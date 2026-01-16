@@ -393,6 +393,26 @@ Los años siguientes no trajeron paz al pueblo. Los gemelos Vicario fueron absue
     { session: 20, unit: 'Teatro', topic: 'Crítica de Obra', videoTitle: 'Puesta en Escena y Virtualidad', videoLink: 'https://www.youtube.com/watch?v=_PB3SSNzwCQ' }
 ];
 
+const MATH_SYLLABUS = [
+    { session: 1, unit: 'Álgebra', topic: 'Ecuaciones', videoTitle: 'Matemática', videoLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+];
+
+const PHYSICS_SYLLABUS = [
+    { session: 1, unit: 'Mecánica', topic: 'Cinemática', videoTitle: 'Física', videoLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+];
+
+const CHEMISTRY_SYLLABUS = [
+    { session: 1, unit: 'Química General', topic: 'Átomo', videoTitle: 'Química', videoLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+];
+
+const BIOLOGY_SYLLABUS = [
+    { session: 1, unit: 'Biología Celular', topic: 'La Célula', videoTitle: 'Biología', videoLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+];
+
+const HISTORY_SYLLABUS = [
+    { session: 1, unit: 'Historia', topic: 'Mundo Moderno', videoTitle: 'Historia', videoLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+];
+
 // --- COMPONENTS ---
 
 const clayCard = 'bg-white rounded-[32px] border-2 border-white/50 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.02)] transition-transform duration-500 hover:-translate-y-2';
