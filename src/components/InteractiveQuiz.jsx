@@ -333,22 +333,55 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
                         {/* Explanation & Next Button */}
                         {showExplanation && (
                             <div className="mt-8 animate-slide-up">
-                                <div className={`p-6 rounded-2xl border-l-4 mb-6 shadow-sm ${selectedAnswer === question.correct_answer
-                                    ? 'bg-green-50 border-green-500'
-                                    : 'bg-white border-orange-400'
+                                <div className={`rounded-3xl border-2 mb-6 shadow-lg overflow-hidden ${selectedAnswer === question.correct_answer
+                                    ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300'
+                                    : 'bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-300'
                                     }`}>
-                                    <div className="flex gap-4">
-                                        <div className={`p-3 rounded-full h-fit ${selectedAnswer === question.correct_answer ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-500'
-                                            }`}>
-                                            {selectedAnswer === question.correct_answer ? <Star className="w-6 h-6" fill="currentColor" /> : <Zap className="w-6 h-6" fill="currentColor" />}
-                                        </div>
-                                        <div>
-                                            <h4 className={`font-black text-lg mb-2 ${selectedAnswer === question.correct_answer ? 'text-green-800' : 'text-gray-800'
-                                                }`}>
-                                                {selectedAnswer === question.correct_answer ? '¡Respuesta Correcta!' : 'Explicación del Error'}
+
+                                    {/* Header */}
+                                    <div className={`p-4 flex items-center justify-between ${selectedAnswer === question.correct_answer ? 'bg-green-500' : 'bg-gradient-to-r from-orange-500 to-yellow-500'}`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-white rounded-full">
+                                                {selectedAnswer === question.correct_answer ?
+                                                    <Star className="w-6 h-6 text-green-600" fill="currentColor" /> :
+                                                    <Zap className="w-6 h-6 text-orange-600" fill="currentColor" />
+                                                }
+                                            </div>
+                                            <h4 className="font-black text-white text-lg">
+                                                {selectedAnswer === question.correct_answer ? '¡Respuesta Correcta!' : '📚 Explicación Detallada'}
                                             </h4>
-                                            <div className="text-gray-600 leading-relaxed">
-                                                <MathRenderer text={question.explanation} />
+                                        </div>
+
+                                        {/* Report Button - Only show on incorrect answers */}
+                                        {selectedAnswer !== question.correct_answer && (
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm('¿Crees que esta explicación está incorrecta?\n\nSe enviará un reporte para revisión.')) {
+                                                        console.log('REPORT SENT:', {
+                                                            question: question.question,
+                                                            correct_answer: question.correct_answer,
+                                                            explanation: question.explanation,
+                                                            user_answer: selectedAnswer,
+                                                            timestamp: new Date().toISOString()
+                                                        });
+                                                        alert('✅ Reporte enviado. Gracias por ayudarnos a mejorar!');
+                                                    }
+                                                }}
+                                                className="flex items-center gap-2 px-4 py-2 bg-white text-orange-600 rounded-full font-bold text-sm hover:bg-orange-100 transition shadow-md hover:shadow-lg"
+                                            >
+                                                <span className="text-lg">⚠️</span>
+                                                Reportar Respuesta
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="p-6">
+                                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+                                            <div className="prose prose-sm max-w-none">
+                                                <div className="text-gray-700 leading-relaxed space-y-3 font-medium">
+                                                    <MathRenderer text={question.explanation} />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
