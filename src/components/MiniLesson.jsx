@@ -40,6 +40,15 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
 
     const progress = ((120 - timeLeft) / 120) * 100;
 
+    // DEBUG: Log received question
+    console.log("MiniLesson received question:", question);
+
+    const getQuestionText = (q) => {
+        if (!q) return "Pregunta no disponible";
+        if (typeof q === 'string') return q;
+        return q.question || q.text || q.title || JSON.stringify(q);
+    };
+
     return (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[250] p-4 backdrop-blur-md animate-fadeIn">
             <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-4 border-orange-200">
@@ -91,7 +100,7 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                             PREGUNTA ORIGINAL
                         </div>
                         <div className="text-lg font-bold text-gray-800 leading-relaxed">
-                            <MathRenderer text={typeof question === 'string' ? question : question.question || JSON.stringify(question)} />
+                            <MathRenderer text={getQuestionText(question)} />
                         </div>
                     </div>
 
