@@ -1924,40 +1924,99 @@ const App = () => {
         }
     };
 
+    // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS
+    const saveQuizPhaseProgress = (phase, score) => {
+        const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
+        const existing = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
+
+        if (!existing[key]) {
+            existing[key] = {
+                completedPhases: [],
+                currentPhase: 1,
+                scores: { phase1: null, phase2: null, phase3: null }
+            };
+        }
+
+        // Marcar fase como completada
+        if (!existing[key].completedPhases.includes(phase)) {
+            existing[key].completedPhases.push(phase);
+        }
+
+        // Guardar score
+        existing[key].scores[`phase${phase}`] = score;
+
+        // Actualizar siguiente fase
+        existing[key].currentPhase = phase < 3 ? phase + 1 : 3;
+        existing[key].lastUpdated = new Date().toISOString();
+
+        localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(existing));
+        console.log(`[PROGRESS] Fase ${phase} guardada para ${key}:`, existing[key]);
+    };
+
+    const getQuizProgress = () => {
+        const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
+        const progress = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
+        return progress[key] || {
+            completedPhases: [],
+            currentPhase: 1,
+            scores: { phase1: null, phase2: null, phase3: null }
+        };
+    };
+
+    const clearQuizProgress = () => {
+        const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
+        const progress = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
+        delete progress[key];
+        localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(progress));
+        console.log(`[PROGRESS] Progreso limpiado para ${key}`);
+    };
+
     // START FULL MULTI-STAGE QUIZ
     const startFullQuiz = async () => {
         setIsCallingN8N(true);
         setAiModalOpen(false);
-        setLoadingMessage("Iniciando Quiz Progresivo...");
 
-        // Reset progressive quiz state
-        setCurrentQuizPhase(1);
+        // CHECK FOR SAVED PROGRESS
+        const savedProgress = getQuizProgress();
+        const startingPhase = savedProgress.currentPhase;
+
+        console.log(`[QUIZ] Progreso detectado:`, savedProgress);
+        console.log(`[QUIZ] Iniciando desde Fase ${startingPhase}`);
+
+        setLoadingMessage(`Iniciando Quiz - Fase ${startingPhase}...`);
+        setCurrentQuizPhase(startingPhase);
         setBackgroundQuestionsQueue([]);
         setQuizStats({ correct: 0, incorrect: 0, total: 0 });
 
         try {
-            // PHASE 1: Generate first 5 questions (BASIC) ONLY
-            console.log("[QUIZ] Generando Fase 1: Básico (5 preguntas)");
-            const phase1Questions = await generateQuizBatch("BASICO", false);
+            // Determinar qué nivel generar según fase
+            const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
+            const currentLevel = levelMap[startingPhase];
 
-            if (phase1Questions.length > 0) {
-                console.log("[QUIZ] ✓ Fase 1 lista, iniciando quiz...");
-                setQuizQuestions(phase1Questions);
+            console.log(`[QUIZ] Generando Fase ${startingPhase}: ${currentLevel} (5 preguntas)`);
+            const currentPhaseQuestions = await generateQuizBatch(currentLevel, false);
+
+            if (currentPhaseQuestions.length > 0) {
+                console.log(`[QUIZ] ✓ Fase ${startingPhase} lista, iniciando quiz...`);
+                setQuizQuestions(currentPhaseQuestions);
                 setShowInteractiveQuiz(true);
                 setIsCallingN8N(false);
                 setLoadingMessage("");
 
-                // START BACKGROUND GENERATION OF PHASE 2 IMMEDIATELY
-                console.log("[QUIZ] Disparando generación Fase 2 en background...");
-                setIsLoadingNextBatch(true);
-                generateQuizBatch("AVANZADO", true).then(phase2Questions => {
-                    console.log("[QUIZ] ✓ Fase 2 (Avanzado) lista");
-                    setBackgroundQuestionsQueue(phase2Questions);
-                    setIsLoadingNextBatch(false);
-                }).catch(err => {
-                    console.error("[QUIZ] Error Fase 2:", err);
-                    setIsLoadingNextBatch(false);
-                });
+                // Generar siguiente fase en background (si no es la última)
+                if (startingPhase < 3) {
+                    const nextLevel = levelMap[startingPhase + 1];
+                    console.log(`[QUIZ] Generando Fase ${startingPhase + 1} (${nextLevel}) en background...`);
+                    setIsLoadingNextBatch(true);
+                    generateQuizBatch(nextLevel, true).then(nextQuestions => {
+                        console.log(`[QUIZ] ✓ Fase ${startingPhase + 1} lista`);
+                        setBackgroundQuestionsQueue(nextQuestions);
+                        setIsLoadingNextBatch(false);
+                    }).catch(err => {
+                        console.error(`[QUIZ] Error Fase ${startingPhase + 1}:`, err);
+                        setIsLoadingNextBatch(false);
+                    });
+                }
             } else {
                 alert("No se pudieron generar preguntas. Intenta de nuevo.");
                 setIsCallingN8N(false);
@@ -1974,7 +2033,10 @@ const App = () => {
 
     // HANDLE QUIZ PHASE COMPLETION - PROGRESSIVE SYSTEM
     const onQuizPhaseComplete = async (phaseScore) => {
-        console.log(`[QUIZ] Fase ${currentQuizPhase} completada`);
+        console.log(`[QUIZ] Fase ${currentQuizPhase} completada con score:`, phaseScore);
+
+        // GUARDAR PROGRESO DE FASE COMPLETADA
+        saveQuizPhaseProgress(currentQuizPhase, phaseScore);
 
         if (currentQuizPhase === 1) {
             // TRANSITION TO PHASE 2
@@ -2031,6 +2093,9 @@ const App = () => {
             // ALL PHASES COMPLETE
             console.log("[QUIZ] ✅ TODAS LAS FASES COMPLETADAS!");
             setShowInteractiveQuiz(false);
+
+            // LIMPIAR PROGRESO LOCAL (ya completó todas las fases)
+            clearQuizProgress();
 
             markSessionComplete(currentSubject, TODAYS_SESSION.session);
 
