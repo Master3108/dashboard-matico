@@ -38,8 +38,60 @@ const playSound = (type) => {
 };
 
 const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
+
+    // MATH SAFETY NET: Validate questions on load
+    const validateMath = (q) => {
+        try {
+            // 1. Extract purely math expression (remove text like "Calcule el valor de la expresión:")
+            // Look for patterns like: "number operator number" repeated
+            // Clean symbols often used in text: ":" "?" "Calcule" "Resuelve"
+            let expr = q.question
+                .replace(/Calcule.*expresión[:\s]*/i, '')
+                .replace(/Resuelve[:\s]*/i, '')
+                .replace(/¿Cuál es el valor de[:\s]*/i, '')
+                .replace(/[¿\?=]/g, '')
+                .trim();
+
+            // Replace 'x' or 'X' with '*' if it looks like multiplication context
+            expr = expr.replace(/\s+[xX]\s+/g, ' * ');
+
+            // Only proceed if expression contains ONLY numbers and math operators
+            if (/^[\d\s\+\-\*\/\(\)\.]+$/.test(expr)) {
+                // Calculate real value
+                const calculated = Function('"use strict";return (' + expr + ')')();
+
+                // Check N8N's choice
+                const n8nOptionValue = parseFloat(q.options[q.correct_answer]);
+
+                if (Math.abs(calculated - n8nOptionValue) > 0.1) {
+                    console.log(`[MATH GUARD] 🛡️ Fixed Error in Q: "${q.question}"`);
+                    console.log(`AI said: ${n8nOptionValue}, Real is: ${calculated}`);
+
+                    // Try to find the real answer in other options
+                    let foundKey = null;
+                    Object.entries(q.options).forEach(([k, v]) => {
+                        if (Math.abs(parseFloat(v) - calculated) < 0.1) foundKey = k;
+                    });
+
+                    if (foundKey) {
+                        return { ...q, correct_answer: foundKey };
+                    } else {
+                        // FORCE OVERWRITE: If real answer doesn't exist, replace the "correct" slot with real value
+                        const newOptions = { ...q.options };
+                        newOptions[q.correct_answer] = calculated.toString();
+                        return { ...q, options: newOptions };
+                    }
+                }
+            }
+        } catch (e) {
+            return q; // If validation fails/crashes, assume question is complex/valid
+        }
+        return q;
+    };
+
     // JAPANESE METHOD STATE: Local copy of questions to allow appending reiterations
-    const [activeQuestions, setActiveQuestions] = useState(questions);
+    // Apply validation map immediately
+    const [activeQuestions, setActiveQuestions] = useState(questions.map(validateMath));
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [isAnswered, setIsAnswered] = useState(false);
