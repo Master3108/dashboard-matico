@@ -2135,6 +2135,7 @@ const App = () => {
         }
 
         let n8nAction = 'Generar Teoría Lúdica';
+        if (action === 'start_route') n8nAction = 'Generar Teoría Lúdica'; // Explicit
         if (action === 'generate_quiz') n8nAction = 'Generar Quiz de Validación';
         if (action === 'deepen_knowledge') n8nAction = 'Profundizar y Desafiar';
         if (action === 'remedial_explanation') n8nAction = 'Explicar y Simplificar';
@@ -2179,7 +2180,9 @@ const App = () => {
                 nivel_estudiante: "1° Medio Chile"
             });
 
-            console.log("Calling N8N via POST:", activeWebhookUrl);
+            console.log("[N8N] Calling via POST:", activeWebhookUrl);
+            console.log("[N8N] Action:", n8nAction);
+            console.log("[N8N] Body:", body);
 
             const response = await fetch(`${activeWebhookUrl}?${params.toString()}`, {
                 method: 'POST',
@@ -2187,7 +2190,10 @@ const App = () => {
                 body: JSON.stringify(body)
             });
 
+            console.log("[N8N] Response status:", response.status, response.statusText);
             const textResponse = await response.text();
+            console.log("[N8N] Response length:", textResponse.length);
+            console.log("[N8N] Response preview:", textResponse.substring(0, 300));
             let content = "";
 
             if (textResponse.trim() === "") {
