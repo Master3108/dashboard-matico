@@ -1863,7 +1863,8 @@ const App = () => {
             setLoadingMessage(`Generando ${config.name}...`);
         }
 
-        const bulkPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION: Genera ${config.count} preguntas nivel ${config.instruction}]`;
+
+        const bulkPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION CRITICA: Genera EXACTAMENTE ${config.count} preguntas de selección múltiple en formato JSON. Nivel: ${config.instruction}. ESTRUCTURA OBLIGATORIA: {"questions": [{"question": "texto", "options": ["A", "B", "C", "D"], "correctIndex": 0-3, "explanation": "breve"}]}. NO GENERES TEORIA. NO USES MARKDOWN. SOLO JSON.]`;
 
         try {
             const body = {
