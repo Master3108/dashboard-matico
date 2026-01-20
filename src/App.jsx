@@ -2307,16 +2307,19 @@ const App = () => {
                             } catch (err) { console.error(err); }
                         }
 
-                        // Normalize Quiz Data if multiple questions array
-                        if (finalData.questions && Array.isArray(finalData.questions) && finalData.questions.length > 0) {
-                            // Pick first question for now or store all
-                            finalData = { ...finalData, ...finalData.questions[0] };
-                        }
+                        // PRESERVE QUIZ BATCH: Don't destructure if it's a multi-question quiz
+                        // (The InteractiveQuiz component expects {questions: [...]})
 
                         setApiJson(finalData);
 
-                        // If it has a question, it's a quiz -> content acts as fallback or title
-                        if (finalData.question) {
+                        // QUIZ DETECTION: Batch (multiple) or Single question
+                        const isBatchQuiz = finalData.questions && Array.isArray(finalData.questions) && finalData.questions.length > 0;
+                        const isSingleQuiz = finalData.question && finalData.options;
+
+                        // If it has a question (or questions array), it's a quiz -> content acts as fallback or title
+                        if (isBatchQuiz) {
+                            content = `📚 **Quiz Generado**\n\n✅ ${finalData.questions.length} preguntas listas.\n\nHaz clic en **INICIAR QUIZ COMPLETO** para comenzar.`;
+                        } else if (isSingleQuiz) {
                             content = finalData.title ? `### ${finalData.title}\n\n*Preparando Quiz...*` : "Iniciando Quiz...";
                         } else if (finalData.title && (finalData.capsule !== undefined)) {
                             // Fix: Allow empty capsule string
