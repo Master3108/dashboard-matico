@@ -3,7 +3,7 @@ import { X, CheckCircle, Timer, BookOpen, Lightbulb, ChevronRight } from 'lucide
 import MathRenderer from './MathRenderer';
 
 const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onComplete }) => {
-    const [timeLeft, setTimeLeft] = useState(120); // 2 minutes
+    const [timeLeft, setTimeLeft] = useState(30); // 30 seconds
     const [understood, setUnderstood] = useState(false);
 
     // Timer countdown
@@ -38,7 +38,7 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
         }, 500);
     };
 
-    const progress = ((120 - timeLeft) / 120) * 100;
+    const progress = ((30 - timeLeft) / 30) * 100;
 
     // DEBUG: Log received question
     console.log("MiniLesson received question:", question);
@@ -71,10 +71,10 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                             </div>
                         </div>
 
-                        <div className={`bg-white px-5 py-3 rounded-2xl shadow-lg ${timeLeft <= 30 ? 'animate-pulse ring-4 ring-red-400' : ''}`}>
+                        <div className={`bg-white px-5 py-3 rounded-2xl shadow-lg ${timeLeft <= 10 ? 'animate-pulse ring-4 ring-red-400' : ''}`}>
                             <div className="flex items-center gap-2">
-                                <Timer className={`w-5 h-5 ${timeLeft <= 30 ? 'text-red-600' : 'text-orange-600'}`} />
-                                <span className={`font-mono font-black text-xl ${timeLeft <= 30 ? 'text-red-600' : 'text-gray-800'}`}>
+                                <Timer className={`w-5 h-5 ${timeLeft <= 10 ? 'text-red-600' : 'text-orange-600'}`} />
+                                <span className={`font-mono font-black text-xl ${timeLeft <= 10 ? 'text-red-600' : 'text-gray-800'}`}>
                                     {formatTime(timeLeft)}
                                 </span>
                             </div>
@@ -84,7 +84,7 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                     {/* Timer Progress Bar */}
                     <div className="mt-4 h-2 bg-white/30 rounded-full overflow-hidden">
                         <div
-                            className={`h-full transition-all duration-1000 ${timeLeft <= 30 ? 'bg-red-500' : 'bg-white'}`}
+                            className={`h-full transition-all duration-1000 ${timeLeft <= 10 ? 'bg-red-500' : 'bg-white'}`}
                             style={{ width: `${progress}%` }}
                         />
                     </div>

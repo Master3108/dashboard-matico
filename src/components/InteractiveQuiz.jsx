@@ -38,6 +38,8 @@ const playSound = (type) => {
 };
 
 const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
+    // JAPANESE METHOD STATE: Local copy of questions to allow appending reiterations
+    const [activeQuestions, setActiveQuestions] = useState(questions);
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [isAnswered, setIsAnswered] = useState(false);
@@ -73,8 +75,8 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
     const [timeLeft, setTimeLeft] = useState(getTimeLimit(0));
     const difficultyLevel = getDifficultyLevel(currentQuestion);
 
-    const question = questions[currentQuestion];
-    const progress = Math.round(((currentQuestion + 1) / questions.length) * 100);
+    const question = activeQuestions[currentQuestion];
+    const progress = Math.round(((currentQuestion + 1) / activeQuestions.length) * 100);
 
     // TIMER LOGIC - Only runs if timeLeft is not null
     useEffect(() => {
@@ -130,6 +132,18 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
             // LOSE LIFE
             setLives(prev => Math.max(0, prev - 1));
 
+            // JAPANESE METHOD: REITERATION & FREQUENCY
+            // Validar si la pregunta ya fue marcada como "repaso" para no duplicarla infinitamente si fallan de nuevo la misma copia
+            // (Opcional: Kumon es estricto, así que la volvemos a poner siempre)
+            setActiveQuestions(prev => {
+                const retryQuestion = {
+                    ...question,
+                    isRetry: true,
+                    question: `[REPASO] ${question.question}` // Marca visual para el usuario
+                };
+                return [...prev, retryQuestion];
+            });
+
             // SHOW MINI LESSON instead of just explanation
             setShowMiniLesson(true);
 
@@ -143,7 +157,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
     };
 
     const handleNext = () => {
-        if (currentQuestion < questions.length - 1) {
+        if (currentQuestion < activeQuestions.length - 1) {
             const nextQuestionIndex = currentQuestion + 1;
             setCurrentQuestion(nextQuestionIndex);
             setSelectedAnswer(null);
@@ -217,8 +231,8 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
 
                     <div className="bg-blue-50 p-6 rounded-2xl mb-8">
                         <p className="text-blue-800 font-bold text-lg mb-2">
-                            {score.correct === questions.length ? "¡INCREÍBLE! 🌟 Eres un maestro." :
-                                score.correct > questions.length / 2 ? "¡Buen trabajo! 👍 Sigue practicando." :
+                            {score.correct === activeQuestions.length ? "¡INCREÍBLE! 🌟 Eres un maestro." :
+                                score.correct > activeQuestions.length / 2 ? "¡Buen trabajo! 👍 Sigue practicando." :
                                     "¡Sigue intentando! 💪 La práctica hace al maestro."}
                         </p>
                     </div>
@@ -289,7 +303,9 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
                         {/* Question Card */}
                         <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border-2 border-gray-100 mb-8 relative">
                             <div className="absolute -left-3 top-8 w-6 h-12 bg-[#4D96FF] rounded-r-lg"></div>
-                            <div className="mb-2 text-[#4D96FF] font-black text-sm uppercase tracking-wider">Pregunta {currentQuestion + 1} de {questions.length}</div>
+                            <div className="mb-2 text-[#4D96FF] font-black text-sm uppercase tracking-wider">
+                                {question.isRetry ? '🔁 REPASO DE REITERACIÓN' : `Pregunta ${currentQuestion + 1} de ${activeQuestions.length}`}
+                            </div>
                             <div className="text-xl md:text-2xl font-bold text-gray-800 leading-relaxed">
                                 <MathRenderer text={question.question} />
                             </div>
@@ -391,7 +407,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
                                     onClick={handleNext}
                                     className="w-full bg-[#2B2E4A] hover:bg-[#1a1c2e] text-white font-black text-xl py-5 rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 flex items-center justify-center gap-3 group"
                                 >
-                                    {currentQuestion < questions.length - 1 ? 'Siguiente Pregunta' : 'Ver Resultados'}
+                                    {currentQuestion < activeQuestions.length - 1 ? 'Siguiente Pregunta' : 'Ver Resultados'}
                                     <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </div>

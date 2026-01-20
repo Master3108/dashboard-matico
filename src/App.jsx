@@ -1660,6 +1660,11 @@ const App = () => {
     const [showInteractiveQuiz, setShowInteractiveQuiz] = useState(false);
     const [quizQuestions, setQuizQuestions] = useState([]);
 
+    // PROGRESSIVE QUIZ STATE (3 PHASES)
+    const [currentQuizPhase, setCurrentQuizPhase] = useState(1); // 1, 2, or 3
+    const [backgroundQuestionsQueue, setBackgroundQuestionsQueue] = useState([]);
+    const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false);
+
     // FETCH SERVER PROGRESS ON LOAD
     useEffect(() => {
         const fetchProgress = async () => {
@@ -1833,94 +1838,211 @@ const App = () => {
         }
     };
 
+    // GENERATE QUIZ BATCH (5 questions per level) - PROGRESSIVE LOADING
+    const generateQuizBatch = async (level, backgroundMode = false) => {
+        const levelConfig = {
+            "BASICO": {
+                name: "Nivel Básico",
+                instruction: "RECORDAR/COMPRENDER - Preguntas directas sobre definiciones y conceptos elementales",
+                count: 5
+            },
+            "AVANZADO": {
+                name: "Nivel Avanzado",
+                instruction: "APLICAR - Problemas prácticos de nivel avanzado",
+                count: 5
+            },
+            "CRITICO": {
+                name: "Nivel Crítico Universitario",
+                instruction: "ANALIZAR/EVALUAR - Nivel PAES Universidad MUY DIFÍCIL",
+                count: 5
+            }
+        };
+
+        const config = levelConfig[level];
+        if (!backgroundMode) {
+            setLoadingMessage(`Generando ${config.name}...`);
+        }
+
+        const bulkPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION: Genera ${config.count} preguntas nivel ${config.instruction}]`;
+
+        try {
+            const body = {
+                sujeto: currentSubject,
+                accion: 'Generar Quiz de Validación',
+                tema: bulkPrompt,
+                nivel_estudiante: "1° Medio Chile"
+            };
+
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const text = await response.text();
+            const json = parseN8NResponse(text);
+
+            let questions = [];
+            if (json.questions && Array.isArray(json.questions)) {
+                questions = json.questions;
+            } else if (json.question) {
+                questions = [json];
+            } else if (json[0] && json[0].question) {
+                questions = json;
+            }
+
+            const formattedQuestions = questions.map(q => {
+                let optsObj = {};
+                let correctKey = 'A';
+
+                if (Array.isArray(q.options)) {
+                    const letters = ['A', 'B', 'C', 'D'];
+                    q.options.forEach((opt, idx) => {
+                        if (idx < 4) optsObj[letters[idx]] = opt;
+                    });
+                    if (q.correctIndex !== undefined) {
+                        correctKey = letters[q.correctIndex] || 'A';
+                    }
+                } else {
+                    optsObj = q.options;
+                    correctKey = q.correct_answer || 'A';
+                }
+
+                return {
+                    question: q.question,
+                    options: optsObj,
+                    correct_answer: correctKey,
+                    explanation: q.explanation
+                };
+            });
+
+            return formattedQuestions;
+        } catch (e) {
+            console.error(`Error generando batch ${level}:`, e);
+            return [];
+        }
+    };
+
     // START FULL MULTI-STAGE QUIZ
     const startFullQuiz = async () => {
         setIsCallingN8N(true);
-        setAiModalOpen(false); // Close theory modal
-        setLoadingMessage("Iniciando Generación de Quiz...");
+        setAiModalOpen(false);
+        setLoadingMessage("Iniciando Quiz Progresivo...");
 
-        const totalQuestions = [];
-        const stages = [
-            { name: "Conceptos Básicos", level: "RECORDAR/COMPRENDER", count: 10, difficulty: 1 },
-            { name: "Aplicación Práctica", level: "APLICAR", count: 10, difficulty: 2 },
-            { name: "Desafío Crítico", level: "ANALIZAR", count: 10, difficulty: 3 }
-        ];
+        // Reset progressive quiz state
+        setCurrentQuizPhase(1);
+        setBackgroundQuestionsQueue([]);
+        setQuizStats({ correct: 0, incorrect: 0, total: 0 });
 
         try {
-            for (let i = 0; i < stages.length; i++) {
-                const stage = stages[i];
-                setLoadingMessage(`Generando Etapa ${i + 1}/${stages.length}: ${stage.name}...`);
+            // PHASE 1: Generate first 5 questions (BASIC) ONLY
+            console.log("[QUIZ] Generando Fase 1: Básico (5 preguntas)");
+            const phase1Questions = await generateQuizBatch("BASICO", false);
 
-                const bulkPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION: Genera un JSON con un campo 'questions' que sea un array con ${stage.count} preguntas de selección múltiple nivel ${stage.level}. Estructura: {"question": "texto", "options": ["A", "B", "C", "D"], "correctIndex": 0-3, "explanation": "breve"} NO MARKDOWN.]`;
-
-                // Creating request body manually to bypass callAgent state updates
-                const body = {
-                    sujeto: currentSubject,
-                    accion: 'Generar Quiz de Validación',
-                    tema: bulkPrompt,
-                    nivel_estudiante: "1° Medio Chile"
-                };
-
-                const response = await fetch(activeWebhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-
-                const text = await response.text();
-                const json = parseN8NResponse(text);
-
-                if (json.questions && Array.isArray(json.questions)) {
-                    totalQuestions.push(...json.questions);
-                } else if (json.question) {
-                    totalQuestions.push(json);
-                } else if (json[0] && json[0].question) { // In case it returns raw array
-                    totalQuestions.push(...json);
-                }
-            }
-
-            if (totalQuestions.length > 0) {
-                const formattedQuestions = totalQuestions.map(q => {
-                    // Normalize options to object if array
-                    let optsObj = {};
-                    let correctKey = 'A';
-
-                    if (Array.isArray(q.options)) {
-                        const letters = ['A', 'B', 'C', 'D'];
-                        q.options.forEach((opt, idx) => {
-                            if (idx < 4) optsObj[letters[idx]] = opt;
-                        });
-                        // correctIndex handling
-                        if (q.correctIndex !== undefined) {
-                            correctKey = letters[q.correctIndex] || 'A';
-                        }
-                    } else {
-                        optsObj = q.options;
-                        correctKey = q.correct_answer || 'A'; // fallback
-                    }
-
-                    return {
-                        question: q.question,
-                        options: optsObj,
-                        correct_answer: correctKey,
-                        explanation: q.explanation
-                    };
-                });
-                console.log("Quiz Generated:", formattedQuestions);
-                setQuizQuestions(formattedQuestions);
+            if (phase1Questions.length > 0) {
+                console.log("[QUIZ] ✓ Fase 1 lista, iniciando quiz...");
+                setQuizQuestions(phase1Questions);
                 setShowInteractiveQuiz(true);
+                setIsCallingN8N(false);
+                setLoadingMessage("");
+
+                // START BACKGROUND GENERATION OF PHASE 2 IMMEDIATELY
+                console.log("[QUIZ] Disparando generación Fase 2 en background...");
+                setIsLoadingNextBatch(true);
+                generateQuizBatch("AVANZADO", true).then(phase2Questions => {
+                    console.log("[QUIZ] ✓ Fase 2 (Avanzado) lista");
+                    setBackgroundQuestionsQueue(phase2Questions);
+                    setIsLoadingNextBatch(false);
+                }).catch(err => {
+                    console.error("[QUIZ] Error Fase 2:", err);
+                    setIsLoadingNextBatch(false);
+                });
             } else {
                 alert("No se pudieron generar preguntas. Intenta de nuevo.");
-                setAiModalOpen(true); // Reopen on failure
+                setIsCallingN8N(false);
+                setAiModalOpen(true);
             }
 
         } catch (e) {
             console.error("Quiz Error", e);
             alert("Error de conexión durante la generación del quiz.");
-            setAiModalOpen(true);
-        } finally {
             setIsCallingN8N(false);
-            setLoadingMessage("");
+            setAiModalOpen(true);
+        }
+    };
+
+    // HANDLE QUIZ PHASE COMPLETION - PROGRESSIVE SYSTEM
+    const onQuizPhaseComplete = async (phaseScore) => {
+        console.log(`[QUIZ] Fase ${currentQuizPhase} completada`);
+
+        if (currentQuizPhase === 1) {
+            // TRANSITION TO PHASE 2
+            if (backgroundQuestionsQueue.length > 0) {
+                console.log("[QUIZ] Iniciando Fase 2 con preguntas en background");
+                setCurrentQuizPhase(2);
+                setQuizQuestions(backgroundQuestionsQueue);
+                setBackgroundQuestionsQueue([]);
+                setIsLoadingNextBatch(true);
+                generateQuizBatch("CRITICO", true).then(phase3Questions => {
+                    console.log("[QUIZ] ✓ Fase 3 (Crítico) lista");
+                    setBackgroundQuestionsQueue(phase3Questions);
+                    setIsLoadingNextBatch(false);
+                }).catch(err => console.error("[QUIZ] Error Fase 3:", err));
+            } else {
+                setShowInteractiveQuiz(false);
+                setIsCallingN8N(true);
+                setLoadingMessage("Preparando Fase 2: Nivel Avanzado...");
+
+                const phase2Questions = await generateQuizBatch("AVANZADO", false);
+                setQuizQuestions(phase2Questions);
+                setCurrentQuizPhase(2);
+                setShowInteractiveQuiz(true);
+                setIsCallingN8N(false);
+                setLoadingMessage("");
+
+                setIsLoadingNextBatch(true);
+                generateQuizBatch("CRITICO", true).then(p3 => {
+                    setBackgroundQuestionsQueue(p3);
+                    setIsLoadingNextBatch(false);
+                });
+            }
+
+        } else if (currentQuizPhase === 2) {
+            // TRANSITION TO PHASE 3
+            if (backgroundQuestionsQueue.length > 0) {
+                setCurrentQuizPhase(3);
+                setQuizQuestions(backgroundQuestionsQueue);
+                setBackgroundQuestionsQueue([]);
+            } else {
+                setShowInteractiveQuiz(false);
+                setIsCallingN8N(true);
+                setLoadingMessage("Preparando Fase 3: Nivel Crítico...");
+
+                const phase3Questions = await generateQuizBatch("CRITICO", false);
+                setQuizQuestions(phase3Questions);
+                setCurrentQuizPhase(3);
+                setShowInteractiveQuiz(true);
+                setIsCallingN8N(false);
+                setLoadingMessage("");
+            }
+
+        } else if (currentQuizPhase === 3) {
+            // ALL PHASES COMPLETE
+            console.log("[QUIZ] ✅ TODAS LAS FASES COMPLETADAS!");
+            setShowInteractiveQuiz(false);
+
+            markSessionComplete(currentSubject, TODAYS_SESSION.session);
+
+            saveProgress('session_completed', {
+                subject: currentSubject,
+                session: TODAYS_SESSION.session,
+                topic: TODAYS_SESSION.topic,
+                total_questions: quizStats.total,
+                correct_answers: quizStats.correct,
+                xp_reward: 100
+            });
+
+            alert(`🎉 ¡Sesión Completa! Has dominado: ${TODAYS_SESSION.topic}\n\nPuntaje: ${quizStats.correct}/${quizStats.total}\n+100 XP`);
         }
     };
 
@@ -2418,31 +2540,14 @@ ${finalData.capsule}`;
                 <InteractiveQuiz
                     questions={quizQuestions}
                     onComplete={(score) => {
-                        console.log("Quiz completado:", score);
-                        // Save quiz results
-                        saveProgress('quiz_completed', {
-                            subject: currentSubject,
-                            topic: TODAYS_SESSION?.topic || 'Unknown',
-                            score: Math.round((score.correct / quizQuestions.length) * 100),
-                            correct: score.correct,
-                            incorrect: score.incorrect,
-                            total: quizQuestions.length
-                        });
-
-                        // NEW: MARK SESSION AS COMPLETE IN CALENDAR
-                        markSessionComplete(currentSubject, TODAYS_SESSION.session);
-
-                        // Note: UI will update when user closes the quiz via onClose
+                        console.log(`Quiz Fase ${currentQuizPhase} completado:`, score);
+                        // Call progressive quiz handler instead of manual close
+                        onQuizPhaseComplete(score);
                     }}
                     onClose={() => {
+                        // Allow manual emergency close
                         setShowInteractiveQuiz(false);
-
-                        // Force page reload to update session
-                        // This ensures the UI shows the next session after completion
-                        setTimeout(() => {
-                            console.log('[MATICO] Quiz closed - reloading page to show next session');
-                            window.location.reload();
-                        }, 500);
+                        window.location.reload();
                     }}
                 />
             )}
