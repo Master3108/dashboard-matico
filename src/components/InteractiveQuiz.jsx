@@ -365,37 +365,57 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
 
                         {/* Options Grid */}
                         <div className="space-y-4">
-                            {Object.entries(question.options).map(([key, value]) => (
-                                <button
-                                    key={key}
-                                    onClick={() => handleAnswerClick(key)}
-                                    className={getButtonClass(key)}
-                                    disabled={isAnswered}
-                                >
-                                    <div className="flex items-center justify-between gap-4">
-                                        <div className="flex items-center gap-4 flex-1">
-                                            <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg transition-colors duration-300 shadow-sm
-                                                ${!isAnswered ? 'bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600' :
-                                                    key === question.correct_answer ? 'bg-green-500 text-white shadow-green-200' :
-                                                        key === selectedAnswer ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400'}
-                                            `}>
-                                                {key}
-                                            </div>
-                                            <div className="text-gray-700 font-medium">
-                                                <MathRenderer text={value} />
-                                            </div>
-                                        </div>
+                            {/* Options Normalizer Logic */}
+                            {(() => {
+                                const rawOptions = question.options;
+                                let standardizedOptions = [];
 
-                                        {/* Status Icon */}
-                                        {isAnswered && (
-                                            <div className="animate-scale-in">
-                                                {key === question.correct_answer && <Check className="w-6 h-6 text-green-600" strokeWidth={3} />}
-                                                {key === selectedAnswer && key !== question.correct_answer && <X className="w-6 h-6 text-red-500" strokeWidth={3} />}
+                                if (Array.isArray(rawOptions)) {
+                                    // Handle Array: ["Blue", "Red"] -> [{key: "A", value: "Blue"}, {key: "B", value: "Red"}]
+                                    standardizedOptions = rawOptions.map((val, idx) => ({
+                                        key: ["A", "B", "C", "D", "E"][idx] || "?",
+                                        value: val
+                                    }));
+                                } else if (typeof rawOptions === 'object' && rawOptions !== null) {
+                                    // Handle Object: {"A": "Blue", "B": "Red"} -> [{key: "A", value: "Blue"}, ...]
+                                    standardizedOptions = Object.entries(rawOptions).map(([k, v]) => ({
+                                        key: k,
+                                        value: v
+                                    }));
+                                }
+
+                                return standardizedOptions.map(({ key, value }) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => handleAnswerClick(key)}
+                                        className={getButtonClass(key)}
+                                        disabled={isAnswered}
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-4 flex-1">
+                                                <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg transition-colors duration-300 shadow-sm
+                                                    ${!isAnswered ? 'bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600' :
+                                                        key === question.correct_answer ? 'bg-green-500 text-white shadow-green-200' :
+                                                            key === selectedAnswer ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400'}
+                                                `}>
+                                                    {key}
+                                                </div>
+                                                <div className="text-gray-700 font-medium">
+                                                    <MathRenderer text={value} />
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                </button>
-                            ))}
+
+                                            {/* Status Icon */}
+                                            {isAnswered && (
+                                                <div className="animate-scale-in">
+                                                    {key === question.correct_answer && <Check className="w-6 h-6 text-green-600" strokeWidth={3} />}
+                                                    {key === selectedAnswer && key !== question.correct_answer && <X className="w-6 h-6 text-red-500" strokeWidth={3} />}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </button>
+                                ));
+                            })()}
                         </div>
 
                         {/* Explanation & Next Button */}
