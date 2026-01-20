@@ -1864,7 +1864,12 @@ const App = () => {
         }
 
 
-        const bulkPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION CRITICA: Genera EXACTAMENTE ${config.count} preguntas de selección múltiple en formato JSON. Nivel: ${config.instruction}. ESTRUCTURA OBLIGATORIA: {"questions": [{"question": "texto", "options": ["A", "B", "C", "D"], "correctIndex": 0-3, "explanation": "breve"}]}. NO GENERES TEORIA. NO USES MARKDOWN. SOLO JSON.]`;
+        const bulkPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION MATEMÁTICA CRÍTICA:
+1. Genera EXACTAMENTE ${config.count} preguntas de selección múltiple (JSON). Nivel: ${config.instruction}.
+2. VERIFICACIÓN OBLIGATORIA: Resuelve el problema paso a paso internamente. La opción correcta DEBE coincidir exactamente con el cálculo matemático. Revisa signos y paréntesis.
+3. Evita errores de alucinación (ej: no digas que 72=14).
+4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "texto", "options": ["A", "B", "C", "D"], "correctIndex": 0-3, "explanation": "Explicación paso a paso real"}]}.
+5. NO GENERES TEORIA. NO USES MARKDOWN. SOLO JSON PURO.]`;
 
         try {
             const body = {
