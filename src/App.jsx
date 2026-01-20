@@ -2149,7 +2149,15 @@ const App = () => {
             if (quizLevel >= 3) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 3 (ANALIZAR/EVALUAR). Requiere pensamiento crítico, contrastar ideas o inferir conclusiones complejas. ¡Desafía al estudiante!]";
         }
 
-        const finalTopic = topic + difficultyPrompt + (questionNumberOverride ? ` [PREGUNTA NRO ${questionNumberOverride}]` : ` [PREGUNTA NRO ${quizQuestionNumber}]`);
+        // Fix: Don't append question number for THEORY generation
+        let questionSuffix = "";
+        if (action !== 'start_route' && n8nAction !== 'Generar Teoría Lúdica') {
+            questionSuffix = questionNumberOverride ? ` [PREGUNTA NRO ${questionNumberOverride}]` : ` [PREGUNTA NRO ${quizQuestionNumber}]`;
+        } else {
+            difficultyPrompt = " [INSTRUCCIÓN: GENERAR SOLO TEORÍA EXPLICATIVA LÚDICA. NO GENERAR PREGUNTAS.]";
+        }
+
+        const finalTopic = topic + difficultyPrompt + questionSuffix;
 
         try {
             // ALWAYS USE POST
