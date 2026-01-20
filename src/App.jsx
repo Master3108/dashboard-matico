@@ -2402,6 +2402,7 @@ ${finalData.capsule}`;
                 userQuery={lastUserQuery}
                 onAskDoubt={() => { setLastUserQuery(""); setAskModalOpen(true); }}
                 onStartQuiz={startFullQuiz}
+                quizProgress={getQuizProgress()} // NEW: Pass quiz progress for UI
             />
 
             <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
@@ -2517,6 +2518,26 @@ ${finalData.capsule}`;
                                         Ruta de {TODAYS_SUBJECT.name}: <span className="text-base font-bold text-[#9094A6] block">{TODAYS_SUBJECT.oa_title}</span>
                                     </h2>
                                     <p className="text-[#9094A6] font-bold text-sm">Basado en el video: {TODAYS_SESSION.videoTitle}</p>
+
+                                    {/* QUIZ PROGRESS INDICATOR */}
+                                    {(() => {
+                                        const progress = getQuizProgress();
+                                        const phaseNames = { 1: "Básico", 2: "Avanzado", 3: "Crítico" };
+                                        const phaseColors = {
+                                            1: "bg-blue-100 text-blue-700 border-blue-300",
+                                            2: "bg-purple-100 text-purple-700 border-purple-300",
+                                            3: "bg-red-100 text-red-700 border-red-300"
+                                        };
+
+                                        if (progress.completedPhases.length > 0 && progress.currentPhase <= 3) {
+                                            return (
+                                                <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
+                                                    🎯 Continuar Quiz - Fase {progress.currentPhase}: {phaseNames[progress.currentPhase]}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
                                 <div className="w-14 h-14 rounded-full bg-[#E0E5EC] flex items-center justify-center">
                                     <TODAYS_SUBJECT.icon className="w-8 h-8 animate-float" style={{ color: TODAYS_SUBJECT.color }} />
