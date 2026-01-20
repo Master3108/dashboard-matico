@@ -2231,43 +2231,67 @@ const App = () => {
                         setApiJson(null);
                     } else {
 
-                        // FIX: N8N Double-Stringified JSON Handling (Recursive) - PATCHED v5
-                        if (jsonData.output && typeof jsonData.output === 'string') {
-                            let raw = jsonData.output;
-                            let parsed = null;
+                        // FIX: N8N Deeply Nested/Escaped JSON Unboxer (v7 Recursive)
+                        let rawData = jsonData;
+                        let depth = 0;
+                        const MAX_DEPTH = 6;
 
-                            // 1. Remove Markdown Fences
-                            raw = raw.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+                        // 0. Initial unwrap if keys like 'output' or 'text' hold the real payload
+                        if (rawData && typeof rawData === 'object') {
+                            if (rawData.output) rawData = rawData.output;
+                            else if (rawData.text) rawData = rawData.text;
+                        }
 
-                            // 2. Pre-Clean: Handling Escaped Tokens (BEFORE Parse)
-                            // This catches the case where JSON.parse succeeds but returns "messy" data (e.g. \$ -> $)
-                            const sanitized = raw
-                                .replace(/\\"/g, '"') // Unescape quotes if double-escaped
-                                .replace(/[\u000A\u000D]/g, "\\n")
-                                .replace(/\\(.)/g, (match, char) => {
-                                    if (char === '$') return '$'; // Unescape $ for LaTeX delimiter
-                                    if ('"\\/nrtu'.includes(char)) {
-                                        return match;
-                                    }
-                                    return '\\\\' + char;
-                                });
+                        // 1. Recursive Parsing Loop
+                        while (typeof rawData === 'string' && depth < MAX_DEPTH) {
+                            depth++;
+                            let candidate = rawData.trim();
 
-                            // 3. Attempt Clean Parse
+                            // Remove Markdown fences if present
+                            candidate = candidate.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+
                             try {
-                                parsed = JSON.parse(sanitized);
+                                // Try direct clean parse
+                                rawData = JSON.parse(candidate);
                             } catch (e) {
-                                // If sanitized parse failed (unlikely if logic is safe, but maybe raw structure was weird)
-                                // Fallback: Try RAW parse (maybe our sanitizer broke it?)
+                                // Parse failed, try to recover from "Bad Escaping" (e.g. \" -> " )
                                 try {
-                                    parsed = JSON.parse(raw);
+                                    // Heuristic: If it starts with "{" but failed parse, maybe it's double escaped
+                                    if (candidate.startsWith('"') || candidate.startsWith("'")) {
+                                        // It's a string literal representation of a string, let JSON.parse unwrap one layer of quotes
+                                        // This handles "{\"foo\":...}" -> {"foo":...}
+                                        rawData = JSON.parse(candidate);
+                                    } else {
+                                        // It's a dirty string like {\"a\":1}. Try manual regex extract
+                                        const jsonMatch = candidate.match(/({[\s\S]*})/);
+                                        if (jsonMatch) {
+                                            // Try to clean common bad escapes in the matched block
+                                            let clean = jsonMatch[0]
+                                                .replace(/\\"/g, '"')
+                                                .replace(/\\n/g, '\n')
+                                                .replace(/\\r/g, '');
+                                            rawData = JSON.parse(clean);
+                                        } else {
+                                            // No JSON-like structure found, stop recursion (it's real text)
+                                            break;
+                                        }
+                                    }
                                 } catch (e2) {
-                                    console.warn("All parsing attempts failed.");
+                                    console.log(`[Unboxer] Depth ${depth} failed. Value snippet: ${candidate.substring(0, 50)}...`);
+                                    break; // Stop if we can't make sense of it
                                 }
                             }
+                        }
 
-                            if (parsed && typeof parsed === 'object') {
-                                jsonData = { ...jsonData, ...parsed };
-                                delete jsonData.output;
+                        // 2. Commit the unboxed data back to jsonData
+                        if (rawData && typeof rawData === 'object') {
+                            // If we found a valid object after unboxing, USE IT.
+                            // Merge carefully: simple properties overwrite, but arrays/objects replace
+                            if (rawData.questions || rawData.quiz) {
+                                jsonData = rawData; // Trust the inner payload completely for quizzes
+                            } else {
+                                jsonData = { ...jsonData, ...rawData }; // Merge for other types
+                                delete jsonData.output; // partial cleanup
                             }
                         }
 
