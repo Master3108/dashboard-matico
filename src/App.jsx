@@ -2312,42 +2312,43 @@ const App = () => {
 
                         setApiJson(finalData);
 
-                        // QUIZ DETECTION: Batch (multiple) or Single question
+                        // QUIZ DETECTION & AUTO-LAUNCH
                         const isBatchQuiz = finalData.questions && Array.isArray(finalData.questions) && finalData.questions.length > 0;
                         const isSingleQuiz = finalData.question && finalData.options;
 
-                        // If it has a question (or questions array), it's a quiz -> content acts as fallback or title
-                        if (isBatchQuiz) {
-                            content = `📚 **Quiz Generado**\n\n✅ ${finalData.questions.length} preguntas listas.\n\nHaz clic en **INICIAR QUIZ COMPLETO** para comenzar.`;
-                        } else if (isSingleQuiz) {
-                            content = finalData.title ? `### ${finalData.title}\n\n*Preparando Quiz...*` : "Iniciando Quiz...";
-                        } else if (finalData.title && (finalData.capsule !== undefined)) {
-                            // Fix: Allow empty capsule string
+                        if (isBatchQuiz || isSingleQuiz) {
+                            // AUTO-LAUNCH QUIZ
+                            console.log("🚀 Auto-launching Quiz!");
+                            const questionsToLoad = isBatchQuiz ? finalData.questions : [finalData];
+
+                            setQuizQuestions(questionsToLoad);
+                            setShowInteractiveQuiz(true);
+                            setAiContent(null); // Ensure text modal is closed
+                            return; // Stop execution here, quiz handles the UI
+                        }
+
+                        // STANDARD CONTENT DISPLAY (If NOT a quiz)
+                        if (finalData.title && (finalData.capsule !== undefined)) {
+                            // Theory Content
                             content = `### ${finalData.title}
 **Unidad:** ${finalData.unit || ''} | *${finalData.oa_label || ''}*
 
 ${finalData.capsule}`;
                         } else {
-                            // Fallback: Check if it looks like a quiz but missing fields
+                            // Fallback / Other
                             if (action === 'generate_quiz') {
-                                content = "âš ï¸ **Error de Formato:** La IA no envió preguntas válidas.\n\n**Respuesta recibida:**\n" + JSON.stringify(finalData, null, 2);
+                                content = "⚠️ **Error de Formato:** La IA no envió preguntas válidas.\n\n" + JSON.stringify(finalData, null, 2);
                             } else {
-                                // Check if output is a string (markdown content)
-                                if (finalData.output && typeof finalData.output === 'string') {
-                                    content = finalData.output;
-                                } else if (finalData.theory) {
-                                    content = finalData.theory;
-                                } else {
-                                    content = JSON.stringify(finalData, null, 2);
-                                }
+                                content = finalData.output || finalData.text || finalData.theory || JSON.stringify(finalData, null, 2);
                             }
                         }
-                    }
-                } catch {
+                    } // End if valid object
+                } catch (err) {
+                    console.error("JSON Process Error:", err);
                     content = textResponse;
                 }
             }
-            setAiContent(content);
+            if (content) setAiContent(content);
         } catch (e) {
             console.error(e);
             setAiContent("âš ï¸ Error de Conexión");
