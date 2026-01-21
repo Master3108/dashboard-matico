@@ -2673,6 +2673,7 @@ ${finalData.capsule}`;
             {showInteractiveQuiz && quizQuestions && quizQuestions.length > 0 && (
                 <InteractiveQuiz
                     questions={quizQuestions}
+                    phase={currentQuizPhase}
                     onComplete={(score) => {
                         console.log(`Quiz Fase ${currentQuizPhase} completado:`, score);
                         // Call progressive quiz handler instead of manual close

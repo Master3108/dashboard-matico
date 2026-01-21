@@ -37,7 +37,7 @@ const playSound = (type) => {
     }
 };
 
-const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
+const InteractiveQuiz = ({ questions, onComplete, onClose, phase }) => {
 
     // MATH SAFETY NET: Validate questions on load
     const validateMath = (q) => {
@@ -112,13 +112,24 @@ const InteractiveQuiz = ({ questions, onComplete, onClose }) => {
 
     // DYNAMIC TIMER BASED ON QUESTION NUMBER (PAES LEVELS)
     const getTimeLimit = (questionIndex) => {
-        if (questionIndex < 10) return 30;  // Preguntas 1-10: PAES Básico (30s)
-        if (questionIndex < 20) return 60;  // Preguntas 11-20: PAES Avanzado (60s)
-        return null;                         // Preguntas 21-30: PAES Experto (sin límite)
+        // Phase-based override (New Priority)
+        // If phase is explicitly passed (1, 2, 3), use strict rules
+        if (phase === 2) return 60;  // Avanzado: 60s
+        if (phase === 3) return null; // Crítico: Infinito
+        if (phase === 1) return 30;  // Básico: 30s
+
+        // Fallback: Legacy index-based (for monolithic 30-q batches)
+        if (questionIndex < 10) return 30;
+        if (questionIndex < 20) return 60;
+        return null;
     };
 
     // PAES DIFFICULTY LEVEL
     const getDifficultyLevel = (questionIndex) => {
+        if (phase === 1) return { name: 'PAES Básico', color: 'bg-blue-500', icon: '🎓' };
+        if (phase === 2) return { name: 'PAES Avanzado', color: 'bg-purple-500', icon: '🔥🔥' };
+        if (phase === 3) return { name: 'PAES Experto', color: 'bg-red-500', icon: '💎💎💎' };
+
         if (questionIndex < 10) return { name: 'PAES Básico', color: 'bg-blue-500', icon: '🎓' };
         if (questionIndex < 20) return { name: 'PAES Avanzado', color: 'bg-purple-500', icon: '🔥' };
         return { name: 'PAES Experto', color: 'bg-red-500', icon: '💎' };
