@@ -391,7 +391,33 @@ Los años siguientes no trajeron paz al pueblo. Los gemelos Vicario fueron absue
     { session: 17, unit: 'Teatro', topic: 'Estructura Dramática', videoTitle: 'Estructura interna obra dramática', videoLink: 'https://www.youtube.com/watch?v=Tn4XSVX5Ais' },
     { session: 18, unit: 'Teatro', topic: 'Visión de Mundo (Tragedia)', videoTitle: 'Género Dramático: Tragedia', videoLink: 'https://www.youtube.com/watch?v=tXWk5TcEAAc' },
     { session: 19, unit: 'Teatro', topic: 'Evolución de Personajes', videoTitle: 'El lenguaje dramático', videoLink: 'https://www.youtube.com/watch?v=NhHbymnMAR0' },
-    { session: 20, unit: 'Teatro', topic: 'Crítica de Obra', videoTitle: 'Puesta en Escena y Virtualidad', videoLink: 'https://www.youtube.com/watch?v=_PB3SSNzwCQ' }
+    { session: 20, unit: 'Teatro', topic: 'Crítica de Obra', videoTitle: 'Puesta en Escena y Virtualidad', videoLink: 'https://www.youtube.com/watch?v=_PB3SSNzwCQ' },
+    { session: 21, unit: 'Medios', topic: 'Hecho vs Opinión', videoTitle: 'Diferencia Hecho y Opinión', videoLink: 'https://www.youtube.com/watch?v=UsiqUeoyIaw' },
+    { session: 22, unit: 'Argumentación', topic: 'Estructura Argumentativa', videoTitle: 'Texto Argumentativo', videoLink: 'https://www.youtube.com/watch?v=5bZ42hoiYh8' },
+    { session: 23, unit: 'Argumentación', topic: 'Falacias Argumentativas I', videoTitle: 'Falacias Lógicas', videoLink: 'https://www.youtube.com/watch?v=qY0e9dYp1kM' },
+    { session: 24, unit: 'Argumentación', topic: 'Falacias Argumentativas II', videoTitle: 'Más Falacias', videoLink: 'https://www.youtube.com/watch?v=qY0e9dYp1kM' },
+    { session: 25, unit: 'Argumentación', topic: 'Debate: Técnicas y Estructura', videoTitle: 'El Debate', videoLink: 'https://www.youtube.com/watch?v=TxkM_8M_b2U' },
+    { session: 26, unit: 'Medios', topic: 'Lectura Crítica de Prensa', videoTitle: 'Géneros Periodísticos', videoLink: 'https://www.youtube.com/watch?v=6rXJp1a0W2k' },
+    { session: 27, unit: 'Medios', topic: 'Publicidad y Propaganda', videoTitle: 'Publicidad vs Propaganda', videoLink: 'https://www.youtube.com/watch?v=Xw8om9x1i1M' },
+    { session: 28, unit: 'Medios', topic: 'Estereotipos en Medios', videoTitle: 'Estereotipos de Género', videoLink: 'https://www.youtube.com/watch?v=3X9z1X1X1X1' },
+    { session: 29, unit: 'Medios', topic: 'Fake News y Desinformación', videoTitle: 'Cómo detectar Fake News', videoLink: 'https://www.youtube.com/watch?v=4X9z1X1X1X1' },
+    { session: 30, unit: 'Escritura', topic: 'Ensayo: La Tesis', videoTitle: 'Cómo escribir una Tesis', videoLink: 'https://www.youtube.com/watch?v=5X9z1X1X1X1' },
+    { session: 31, unit: 'Escritura', topic: 'Ensayo: Argumentos', videoTitle: 'Tipos de Argumentos', videoLink: 'https://www.youtube.com/watch?v=6X9z1X1X1X1' },
+    { session: 32, unit: 'Evaluación', topic: 'Evaluación Argumentación', videoTitle: 'Repaso Argumentación', videoLink: 'https://www.youtube.com/watch?v=7X9z1X1X1X1' },
+    { session: 33, unit: 'Literatura', topic: 'Boom Latinoamericano', videoTitle: 'El Boom Latinoamericano', videoLink: 'https://www.youtube.com/watch?v=8X9z1X1X1X1' },
+    { session: 34, unit: 'Literatura', topic: 'Realismo Mágico', videoTitle: 'Qué es el Realismo Mágico', videoLink: 'https://www.youtube.com/watch?v=9X9z1X1X1X1' },
+    { session: 35, unit: 'Literatura', topic: 'Literatura Distópica', videoTitle: 'Distopías Literarias', videoLink: 'https://www.youtube.com/watch?v=0X9z1X1X1X1' },
+    { session: 36, unit: 'Literatura', topic: 'Ciencia Ficción', videoTitle: 'Historia de la Ciencia Ficción', videoLink: 'https://www.youtube.com/watch?v=1X9z1X1X1X1' },
+    { session: 37, unit: 'Literatura', topic: 'Cine y Literatura', videoTitle: 'Adaptaciones Cinematográficas', videoLink: 'https://www.youtube.com/watch?v=2X9z1X1X1X1' },
+    { session: 38, unit: 'Literatura', topic: 'Intertextualidad Pop', videoTitle: 'Intertextualidad en los Simpson', videoLink: 'https://www.youtube.com/watch?v=3X9z1X1X1X1' },
+    { session: 39, unit: 'Poesía', topic: 'Poesía Visual (Parra)', videoTitle: 'Nicanor Parra y Antipoesía', videoLink: 'https://www.youtube.com/watch?v=4X9z1X1X1X1' },
+    { session: 40, unit: 'Medios', topic: 'Narrativa Gráfica', videoTitle: 'Lenguaje del Cómic', videoLink: 'https://www.youtube.com/watch?v=5X9z1X1X1X1' },
+    { session: 41, unit: 'Escritura', topic: 'Taller Microcuentos', videoTitle: 'Cómo escribir Microcuentos', videoLink: 'https://www.youtube.com/watch?v=6X9z1X1X1X1' },
+    { session: 42, unit: 'Oralidad', topic: 'Taller de Oratoria', videoTitle: 'Técnicas de Oratoria', videoLink: 'https://www.youtube.com/watch?v=7X9z1X1X1X1' },
+    { session: 43, unit: 'PAES', topic: 'Estrategias Lectura PAES', videoTitle: 'Tips PAES Lectura', videoLink: 'https://www.youtube.com/watch?v=8X9z1X1X1X1' },
+    { session: 44, unit: 'PAES', topic: 'Vocabulario Contextual', videoTitle: 'Ejercicios Vocabulario', videoLink: 'https://www.youtube.com/watch?v=9X9z1X1X1X1' },
+    { session: 45, unit: 'PAES', topic: 'Ensayo Final Lectura', videoTitle: 'Resolución Ensayo PAES', videoLink: 'https://www.youtube.com/watch?v=0X9z1X1X1X1' },
+    { session: 46, unit: 'Cierre', topic: 'Cierre Año Escolar', videoTitle: 'Reflexión Final', videoLink: 'https://www.youtube.com/watch?v=1X9z1X1X1X1' }
 ];
 
 // --- COMPONENTS ---
@@ -444,7 +470,10 @@ const MATH_SYLLABUS = [
     { session: 40, unit: 'Datos', topic: 'Probabilidad (Laplace)', videoTitle: 'Regla de Laplace', videoLink: 'https://www.youtube.com/watch?v=bazKrpT91kY' },
     { session: 41, unit: 'Datos', topic: 'Regla Aditiva', videoTitle: 'Probabilidades (Unión)', videoLink: 'https://www.youtube.com/watch?v=zI6Aly68P0Q' },
     { session: 42, unit: 'Datos', topic: 'Regla Multiplicativa', videoTitle: 'Probabilidad condicional', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
-    { session: 43, unit: 'Datos', topic: 'Técnicas de Conteo', videoTitle: 'TíÆ’Ã¢â‚¬°CNICAS DE CONTEO', videoLink: 'https://www.youtube.com/watch?v=klUzWXgLBRM' }
+    { session: 43, unit: 'Datos', topic: 'Técnicas de Conteo', videoTitle: 'TíÆ’Ã¢â‚¬°CNICAS DE CONTEO', videoLink: 'https://www.youtube.com/watch?v=klUzWXgLBRM' },
+    { session: 44, unit: 'Datos', topic: 'Probabilidad Condicional', videoTitle: 'Probabilidad Condicional Intro', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
+    { session: 45, unit: 'Datos', topic: 'Proyecto Estadística', videoTitle: 'Estadística en la Vida Real', videoLink: 'https://www.youtube.com/watch?v=GBNpyyApgdA' },
+    { session: 46, unit: 'Cierre', topic: 'Gran Desafío Final', videoTitle: 'Ensayo General Matemática', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' }
 ];
 
 const DEFAULT_DAILY_ROUTE = {
@@ -1350,7 +1379,10 @@ const PHYSICS_SYLLABUS = [
     { session: 40, unit: 'Repaso Integral', topic: 'Repaso Óptica Geométrica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
     { session: 41, unit: 'Repaso Integral', topic: 'Repaso Sismos y Universo', videoLink: 'https://www.youtube.com/watch?v=jalVd4_I3jM' },
     { session: 42, unit: 'Cierre', topic: 'ENSAYO FINAL SIMULACIÓN', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 43, unit: 'Cierre', topic: 'Análisis de Errores y Cierre', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' }
+    { session: 43, unit: 'Cierre', topic: 'Análisis de Errores y Cierre', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 44, unit: 'Cierre', topic: 'Física Moderna', videoTitle: 'Introducción a Física Cuántica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 45, unit: 'Cierre', topic: 'Física y Tecnología', videoTitle: 'Aplicaciones de la Física', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 46, unit: 'Cierre', topic: 'Gran Desafío Final', videoTitle: 'Evaluación Final Física', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' }
 ];
 
 
@@ -2508,6 +2540,20 @@ ${finalData.capsule}`;
                             className="text-[10px] font-bold text-blue-500 underline mb-2"
                         >
                             Simular Atraso (5 Días)
+                        </button>
+
+                        {/* LOGOUT BUTTON */}
+                        <button
+                            onClick={() => {
+                                if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+                                    sessionStorage.removeItem('matico_user');
+                                    window.location.reload();
+                                }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-600 font-black text-sm rounded-xl border-2 border-red-200 shadow-sm hover:shadow-md transition-all active:scale-95 mb-2"
+                        >
+                            <XCircle className="w-4 h-4" />
+                            Cerrar Sesión
                         </button>
 
                         {/* GRID 3 COLS */}
