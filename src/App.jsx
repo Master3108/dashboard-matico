@@ -2498,7 +2498,26 @@ ${finalData.capsule}`;
                                 <Star className="w-4 h-4 fill-current" />
                                 {userProfile?.xp || 0} XP
                             </div>
-                            <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">¡Hola, Matico! 👋</h1>
+                            <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
+                                ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
+                            </h1>
+
+                            {/* USER INFO CARD */}
+                            {currentUser && (
+                                <div className="bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2 mb-2 border border-gray-200/50 shadow-sm inline-block">
+                                    <div className="flex flex-col gap-1 text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-500 font-bold">📧</span>
+                                            <span className="text-gray-700 font-medium">{currentUser.email}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-500 font-bold">🆔</span>
+                                            <span className="text-gray-600 font-mono text-[10px]">{currentUser.user_id?.substring(0, 20)}...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <p className="text-[#9094A6] font-bold text-sm max-w-md">
                                 Sistema activo. Hoy dedicaremos la hora completa a:{' '}
                                 <span className="text-[#2B2E4A] bg-white px-2 py-1 rounded-lg shadow-sm border border-white/50 font-black" style={{ color: TODAYS_SUBJECT.color }}>
@@ -2546,8 +2565,7 @@ ${finalData.capsule}`;
                         <button
                             onClick={() => {
                                 if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-                                    sessionStorage.removeItem('matico_user');
-                                    window.location.reload();
+                                    handleLogout();
                                 }
                             }}
                             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-600 font-black text-sm rounded-xl border-2 border-red-200 shadow-sm hover:shadow-md transition-all active:scale-95 mb-2"
