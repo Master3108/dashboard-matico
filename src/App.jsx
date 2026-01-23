@@ -1701,6 +1701,7 @@ const App = () => {
     const [backgroundQuestionsQueue, setBackgroundQuestionsQueue] = useState([]);
     const [backgroundTheoryQueue, setBackgroundTheoryQueue] = useState("");
     const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false);
+    const backgroundTaskRef = useRef(null);
 
     // THEORY STATE - TEORÍA LÚDICA ANTES DE CADA SUB-NIVEL
     const [showTheoryModal, setShowTheoryModal] = useState(false);
@@ -2150,18 +2151,24 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
                     setIsLoadingNextBatch(true);
 
                     // Pre-generar QUIZ y TEORÍA en paralelo
-                    Promise.all([
+                    const backgroundPromise = Promise.all([
                         generateQuizBatch(nextLevel, true),
                         generateTheory(startingPhase, startingSubLevel + 1, true)
                     ]).then(([nextQuestions, nextTheory]) => {
-                        console.log(`[BACK] ? Sub-nivel ${startingSubLevel + 1} (Quiz + Teoría) pre-generado`);
+                        console.log(`[BACK] ✅ Sub-nivel ${startingSubLevel + 1} (Quiz + Teoría) pre-generado`);
                         setBackgroundQuestionsQueue(nextQuestions);
                         setBackgroundTheoryQueue(nextTheory);
                         setIsLoadingNextBatch(false);
+                        backgroundTaskRef.current = null;
+                        return { questions: nextQuestions, theory: nextTheory };
                     }).catch(err => {
                         console.error(`[BACK] Error pre-generando:`, err);
                         setIsLoadingNextBatch(false);
+                        backgroundTaskRef.current = null;
+                        throw err;
                     });
+
+                    backgroundTaskRef.current = backgroundPromise;
                 }
             } else {
                 alert("No se pudo generar el contenido. Intenta de nuevo.");
@@ -2208,18 +2215,24 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
             console.log(`[BACK] Pre-generando siguiente nivel (${nextLevel}) mientras el usuario hace el actual...`);
             setIsLoadingNextBatch(true);
 
-            Promise.all([
+            const backgroundPromise = Promise.all([
                 generateQuizBatch(nextLevel, true),
                 generateTheory(currentQuizPhase, currentQuizSubLevel + 1, true)
             ]).then(([q, t]) => {
-                console.log(`[BACK] ? Siguiente nivel pre-generado`);
+                console.log(`[BACK] ✅ Siguiente nivel pre-generado`);
                 setBackgroundQuestionsQueue(q);
                 setBackgroundTheoryQueue(t);
                 setIsLoadingNextBatch(false);
+                backgroundTaskRef.current = null;
+                return { questions: q, theory: t };
             }).catch(err => {
                 console.error("[BACK] Error pre-generando:", err);
                 setIsLoadingNextBatch(false);
+                backgroundTaskRef.current = null;
+                throw err;
             });
+
+            backgroundTaskRef.current = backgroundPromise;
         }
     };
 
@@ -2302,25 +2315,37 @@ DATOS DEL ESTUDIANTE:
             setIsCallingN8N(true);
 
             try {
-                // OBTENER O GENERAR TEORÍA
                 let theory = "";
-                if (backgroundTheoryQueue) {
-                    console.log(`[THEORY] Usando teoría pre-generada para sub-nivel ${nextSubLevel}`);
-                    theory = backgroundTheoryQueue;
-                    setBackgroundTheoryQueue("");
-                } else {
-                    console.log(`[THEORY] Generando teoría para siguiente sub-nivel ${nextSubLevel}...`);
-                    theory = await generateTheory(currentQuizPhase, nextSubLevel);
-                }
-
-                // OBTENER O GENERAR PREGUNTAS
                 let nextQuestions = [];
-                if (backgroundQuestionsQueue.length > 0) {
-                    console.log(`[QUIZ] Usando preguntas pre-generadas para sub-nivel ${nextSubLevel}`);
+
+                // 1. INTENTAR USAR QUEUE O ESPERAR PROMESA PENDIENTE
+                if (backgroundTheoryQueue && backgroundQuestionsQueue.length > 0) {
+                    console.log(`[THEORY/QUIZ] Usando contenido pre-generado para ${nextLevelName}`);
+                    theory = backgroundTheoryQueue;
                     nextQuestions = backgroundQuestionsQueue;
+                    setBackgroundTheoryQueue("");
                     setBackgroundQuestionsQueue([]);
+                } else if (isLoadingNextBatch && backgroundTaskRef.current) {
+                    console.log(`[BACK] Esperando a que termine la pre-generación en curso...`);
+                    // Notificar al usuario que estamos terminando de preparar el nivel
+                    setLoadingMessage(`Terminando de preparar Nivel ${nextLevelName}...`);
+
+                    try {
+                        const result = await backgroundTaskRef.current;
+                        theory = result.theory;
+                        nextQuestions = result.questions;
+                        setBackgroundTheoryQueue("");
+                        setBackgroundQuestionsQueue([]);
+                        console.log(`[BACK] ✅ Sincronización exitosa`);
+                    } catch (e) {
+                        console.error("[BACK] La pre-generación falló, re-intentando manual...");
+                        theory = await generateTheory(currentQuizPhase, nextSubLevel);
+                        nextQuestions = await generateQuizBatch(nextLevel, false);
+                    }
                 } else {
-                    console.log(`[QUIZ] Generando preguntas ${nextLevel}...`);
+                    // GENERACIÓN MANUAL SI NO HAY NADA EN COLA NI EN PROCESO
+                    console.log(`[THEORY/QUIZ] No hay contenido pre-generado. Generando manualmente...`);
+                    theory = await generateTheory(currentQuizPhase, nextSubLevel);
                     nextQuestions = await generateQuizBatch(nextLevel, false);
                 }
 
@@ -2343,18 +2368,24 @@ DATOS DEL ESTUDIANTE:
                         console.log(`[BACK] Pre-generando sub-nivel ${nextSubLevel + 1}...`);
                         setIsLoadingNextBatch(true);
 
-                        Promise.all([
+                        const backgroundPromise = Promise.all([
                             generateQuizBatch(followingLevel, true),
                             generateTheory(currentQuizPhase, nextSubLevel + 1, true)
                         ]).then(([flwQ, flwT]) => {
-                            console.log(`[BACK] ? Sub-nivel ${nextSubLevel + 1} pre-generado`);
+                            console.log(`[BACK] ✅ Sub-nivel ${nextSubLevel + 1} pre-generado`);
                             setBackgroundQuestionsQueue(flwQ);
                             setBackgroundTheoryQueue(flwT);
                             setIsLoadingNextBatch(false);
+                            backgroundTaskRef.current = null;
+                            return { questions: flwQ, theory: flwT };
                         }).catch(err => {
                             console.error("[BACK] Error pre-generando:", err);
                             setIsLoadingNextBatch(false);
+                            backgroundTaskRef.current = null;
+                            throw err;
                         });
+
+                        backgroundTaskRef.current = backgroundPromise;
                     }
                 } else {
                     alert("Error al generar contenido para el siguiente nivel.");
