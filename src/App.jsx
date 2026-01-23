@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MathRenderer from './components/MathRenderer';
 import InteractiveQuiz from './components/InteractiveQuiz';
 import LoginPage from './components/LoginPage';
@@ -135,7 +135,7 @@ El centro del universo de Roberto era una casa de remolienda, un burdel que func
 
 Durante su primera infancia, el mundo de Roberto se limitaba a los límites del callejón y al vasto "pajonal", un terreno baldío donde la naturaleza salvaje se mezclaba con los desperdicios de la ciudad. Allí, junto a otros niños de rodillas costrosas y mirada despierta, Roberto descubría los secretos de la vida a través del juego. En el pajonal, los niños eran reyes de reinos invisibles, pero también eran receptores de los miedos colectivos que los adultos sembraban para controlarlos. Historias sobre el "Viejo del Saco" o el "Culebrón" poblaban sus pesadillas nocturnas, dándole una forma fantástica a los peligros reales que acechaban en la oscuridad. Sin embargo, a medida que Roberto dejaba de ser un niño pequeño, empezó a notar que los hombres que llegaban a la casa de su tía eran más aterradores que cualquier monstruo de cuento; eran hombres consumidos por el alcohol, por el trabajo agotador en las minas o en el campo, que buscaban un momento de olvido en los brazos de mujeres que, al igual que ellos, solo intentaban sobrevivir un día más.
 
-El gran quiebre en la vida de Roberto, el momento en que su horizonte dejó de ser una pared de madera podrida, fue su entrada en la escuela pública. Al principio, la escuela representaba un lugar extraño, con sus reglas rígidas y su atmósfera de orden que contrastaba violentamente con el caos del callejón. Pero fue allí donde Roberto se encontró con el poder transformador de las letras. Su profesor, un hombre que supo detectar la inteligencia vivaz que se escondía tras la apariencia humilde del niño, se convirtió en su mentor silencioso. Roberto descubrió que las palabras eran herramientas, llaves capaces de abrir celdas invisibles. Cada libro que caía en sus manos —desde cuentos de aventuras hasta poemas de grandes autores— era una invitación a un mundo donde la justicia no era un concepto abstracto y donde la belleza no estaba prohibida para los pobres. La lectura despertó en él una sensibilidad que lo alejaba de sus pares; mientras otros niños aceptaban su destino como obreros o delincuentes en potencia, Roberto empezaba a soñar con ser escritor, con tener una voz que pudiera narrar el dolor de su gente.
+El gran quiebre en la vida de Roberto, el momento en que su horizonte dejó de ser una pared de madera podrida, fue su entrada en la escuela pública. Al principio, la escuela representaba un lugar extraño, con sus reglas rígidas y su atmósfera de orden que contrastaba violentamente con el caos del callejón. Pero fue allí donde Roberto se encontró con el poder transformador de las letras. Su profesor, un hombre que supo detectar la inteligencia vivaz que se escondía tras la apariencia humilde del niño, se convirtió en su mentor silencioso. Roberto descubrió que las palabras eran herramientas, llaves capaces de abrir celdas invisibles. Cada libro que caía en sus manos desde cuentos de aventuras hasta poemas de grandes autores era una invitación a un mundo donde la justicia no era un concepto abstracto y donde la belleza no estaba prohibida para los pobres. La lectura despertó en él una sensibilidad que lo alejaba de sus pares; mientras otros niños aceptaban su destino como obreros o delincuentes en potencia, Roberto empezaba a soñar con ser escritor, con tener una voz que pudiera narrar el dolor de su gente.
 
 Sin embargo, este despertar intelectual trajo consigo el veneno de la conciencia de clase. Al salir de su barrio para ir a la escuela o al centro de Rancagua, Roberto comenzó a percibir las miradas de los "otros". Notaba cómo las personas de las casas sólidas y jardines cuidados se apartaban al paso de alguien que venía del callejón, cómo la policía trataba con sospecha a cualquiera que tuviera el rastro del barro en su vestimenta. Surgió entonces una contradicción dolorosa en su pecho: el amor profundo y la gratitud que sentía por su madre y su tía se mezclaban con una vergüenza punzante por el origen de su sustento. Se sentía un traidor al avergonzarse de la casa donde recibía alimento, pero no podía evitar el asco moral que le producía el negocio de la prostitución y la degradación humana que veía a diario. Esta lucha interna marcó su paso de la niñez a la adolescencia, convirtiéndolo en un observador melancólico de su propia realidad.
 
@@ -301,7 +301,7 @@ El clímax ocurre fuera de escena, pero su impacto es devastador. Leonardo y el 
         readingTitle: 'El curioso incidente del perro a medianoche (Resumen y Análisis)',
         readingContent: `La historia comienza en una calle tranquila de Swindon, Inglaterra, durante una medianoche que cambiaría para siempre la percepción del mundo de Christopher John Francis Boone. Christopher es un joven de quince años con una mente prodigiosa para las matemáticas y la lógica, pero que experimenta el mundo de una manera radicalmente distinta a la mayoría de las personas debido a un trastorno del espectro autista, probablemente síndrome de Asperger, aunque nunca se menciona explícitamente en el texto. Para Christopher, el mundo es un caos de estímulos sensoriales que debe ser ordenado meticulosamente a través de reglas, números primos y hechos comprobables. Esa noche, Christopher descubre el cadáver de Wellington, el caniche de su vecina la señora Shears, atravesado por una horca de jardín en medio del césped. Este evento, que para otros podría ser un incidente lamentable pero menor, se convierte para Christopher en el punto de partida de un enigma que debe resolver, decidiendo escribir un libro sobre su investigación, al estilo de sus admiradas historias de Sherlock Holmes.
 
-La vida de Christopher está regida por una estructura rígida diseñada para protegerlo del abrumador ruido del mundo exterior. No soporta que lo toquen, no comprende las metáforas —porque las considera mentiras— y juzga la calidad de su día basándose en el color de los coches que ve desde el autobús escolar: cuatro coches rojos seguidos significan un "Buen Día", mientras que cuatro coches amarillos presagian un "Día Negro" en el que no hablará con nadie. Su principal apoyo es Siobhan, su tutora en la escuela, quien le enseña a descifrar las complejas emociones humanas a través de dibujos de caras y le anima a seguir escribiendo su crónica detectivesca. Sin embargo, su padre, Ed Boone, reacciona con una furia desproporcionada y angustiante cuando descubre que su hijo está haciendo preguntas sobre la muerte del perro, prohibiéndole terminantemente continuar con su investigación y exigiéndole que deje de meter las narices en los asuntos de los vecinos.
+La vida de Christopher está regida por una estructura rígida diseñada para protegerlo del abrumador ruido del mundo exterior. No soporta que lo toquen, no comprende las metáforas porque las considera mentiras y juzga la calidad de su día basándose en el color de los coches que ve desde el autobús escolar: cuatro coches rojos seguidos significan un "Buen Día", mientras que cuatro coches amarillos presagian un "Día Negro" en el que no hablará con nadie. Su principal apoyo es Siobhan, su tutora en la escuela, quien le enseña a descifrar las complejas emociones humanas a través de dibujos de caras y le anima a seguir escribiendo su crónica detectivesca. Sin embargo, su padre, Ed Boone, reacciona con una furia desproporcionada y angustiante cuando descubre que su hijo está haciendo preguntas sobre la muerte del perro, prohibiéndole terminantemente continuar con su investigación y exigiéndole que deje de meter las narices en los asuntos de los vecinos.
 
 A pesar de la prohibición de su padre, la curiosidad lógica de Christopher lo lleva a desobedecer. Durante sus pesquisas, descubre verdades que los adultos a su alrededor han intentado ocultar bajo capas de silencio y engaño. La más devastadora de estas verdades se revela cuando Christopher, buscando su libro de notas que su padre le había confiscado, encuentra una caja con cartas escondidas en el armario de Ed. Al leerlas, su mundo lógico se colapsa: las cartas están escritas por su madre, Judy, y tienen fechas posteriores al momento en que su padre le dijo que ella había muerto de un ataque al corazón en el hospital. Christopher descubre que su madre no está muerta, sino que vive en Londres con el señor Shears, el exmarido de su vecina. La revelación de que su padre le ha mentido durante años sobre el hecho más fundamental de su vida rompe el único vínculo de confianza que Christopher poseía, llevándolo a un estado de pánico y parálisis emocional.
 
@@ -438,7 +438,7 @@ const MATH_SYLLABUS = [
     { session: 8, unit: 'Números', topic: 'Raíces Enésimas', videoTitle: 'Prueba de Transición-Raíces', videoLink: 'https://www.youtube.com/watch?v=xMYFzXcFYns' },
     { session: 9, unit: 'Números', topic: 'Operatoria con Raíces', videoTitle: 'Capsule-Roots', videoLink: 'https://www.youtube.com/watch?v=HwxfKSq0lh8' },
     { session: 10, unit: 'Números', topic: 'Porcentajes', videoTitle: 'PAES M1-Porcentaje', videoLink: 'https://www.youtube.com/watch?v=YJ9l1Ew_rns' },
-    { session: 11, unit: 'ílgebra', topic: 'Lenguaje Algebraico', videoTitle: 'EXPRESIONES ALGEBRAICAS Clase Níâ€šÃ‚º3', videoLink: 'https://www.youtube.com/watch?v=lojCGXH4Odk' },
+    { session: 11, unit: 'ílgebra', topic: 'Lenguaje Algebraico', videoTitle: 'EXPRESIONES ALGEBRAICAS Clase NíâÃº3', videoLink: 'https://www.youtube.com/watch?v=lojCGXH4Odk' },
     { session: 12, unit: 'ílgebra', topic: 'Cuadrado de Binomio', videoTitle: 'Cuadrado de binomio', videoLink: 'https://www.youtube.com/watch?v=IjL5zOyxs20' },
     { session: 13, unit: 'ílgebra', topic: 'Suma por Diferencia', videoTitle: 'Suma por diferencia', videoLink: 'https://www.youtube.com/watch?v=-w_lg-r7pDg' },
     { session: 14, unit: 'ílgebra', topic: 'Binomio con Término Común', videoTitle: 'Clase 6: ílgebra y funciones', videoLink: 'https://www.youtube.com/watch?v=CvgRtkMJ7ao' },
@@ -453,7 +453,7 @@ const MATH_SYLLABUS = [
     { session: 23, unit: 'ílgebra', topic: 'Función Lineal', videoTitle: 'FUNCIÓN LINEAL Y AFíN', videoLink: 'https://www.youtube.com/watch?v=XC6VLf8pOVg' },
     { session: 24, unit: 'ílgebra', topic: 'Función Afín', videoTitle: 'Función lineal y afín (Parte 2)', videoLink: 'https://www.youtube.com/watch?v=TU0NMpLS88U' },
     { session: 25, unit: 'Geometría', topic: 'Vectores', videoTitle: 'Vectores en el plano cartesiano', videoLink: 'https://www.youtube.com/watch?v=fjKr9TnAKYs' },
-    { session: 26, unit: 'Geometría', topic: 'Transformaciones Isométricas', videoTitle: 'TRANSFORMACIONES ISOMíÆ’Ã¢â‚¬°TRICAS', videoLink: 'https://www.youtube.com/watch?v=_tIaG3tmVgI' },
+    { session: 26, unit: 'Geometría', topic: 'Transformaciones Isométricas', videoTitle: 'TRANSFORMACIONES ISOMíÆÃ¢â¬°TRICAS', videoLink: 'https://www.youtube.com/watch?v=_tIaG3tmVgI' },
     { session: 27, unit: 'Geometría', topic: 'Homotecia: Concepto', videoTitle: 'Homotecia', videoLink: 'https://www.youtube.com/watch?v=_rJoKG8MLg8' },
     { session: 28, unit: 'Geometría', topic: 'Homotecia: Propiedades', videoTitle: 'Homotecia de figuras planas', videoLink: 'https://www.youtube.com/watch?v=OTGPT5AG2ww' },
     { session: 29, unit: 'Geometría', topic: 'Congruencia de Triángulos', videoTitle: 'Congruencia de triángulos', videoLink: 'https://www.youtube.com/watch?v=PX9FjNz7yR8' },
@@ -470,7 +470,7 @@ const MATH_SYLLABUS = [
     { session: 40, unit: 'Datos', topic: 'Probabilidad (Laplace)', videoTitle: 'Regla de Laplace', videoLink: 'https://www.youtube.com/watch?v=bazKrpT91kY' },
     { session: 41, unit: 'Datos', topic: 'Regla Aditiva', videoTitle: 'Probabilidades (Unión)', videoLink: 'https://www.youtube.com/watch?v=zI6Aly68P0Q' },
     { session: 42, unit: 'Datos', topic: 'Regla Multiplicativa', videoTitle: 'Probabilidad condicional', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
-    { session: 43, unit: 'Datos', topic: 'Técnicas de Conteo', videoTitle: 'TíÆ’Ã¢â‚¬°CNICAS DE CONTEO', videoLink: 'https://www.youtube.com/watch?v=klUzWXgLBRM' },
+    { session: 43, unit: 'Datos', topic: 'Técnicas de Conteo', videoTitle: 'TíÆÃ¢â¬°CNICAS DE CONTEO', videoLink: 'https://www.youtube.com/watch?v=klUzWXgLBRM' },
     { session: 44, unit: 'Datos', topic: 'Probabilidad Condicional', videoTitle: 'Probabilidad Condicional Intro', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
     { session: 45, unit: 'Datos', topic: 'Proyecto Estadística', videoTitle: 'Estadística en la Vida Real', videoLink: 'https://www.youtube.com/watch?v=GBNpyyApgdA' },
     { session: 46, unit: 'Cierre', topic: 'Gran Desafío Final', videoTitle: 'Ensayo General Matemática', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' }
@@ -487,7 +487,7 @@ const DEFAULT_DAILY_ROUTE = {
     daily_route_steps: [
         { step: '1. Video de la Clase', action: 'video', icon: 'Play', isComplete: false },
         { step: '2. Teoría Lúdica IA', action: 'start_route', icon: 'Brain', isComplete: false },
-        { step: '3. Quiz de 30 Preguntas', action: 'quiz', icon: 'Lock', isComplete: false }
+        { step: '3. Quiz de 45 Preguntas Kaizen', action: 'quiz', icon: 'Lock', isComplete: false }
     ],
     recommended_action_text: "INICIAR ESTUDIO DE HOY (TEORíA)"
 };
@@ -548,7 +548,7 @@ const CHEMISTRY_SYLLABUS = [
     { session: 33, unit: 'Estequiometría', topic: 'Cálculo Masa-Masa', videoTitle: 'Estequiometría Masa-Masa', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
     { session: 34, unit: 'Estequiometría', topic: 'Taller Estequiometría', videoTitle: 'Ejercicios Mixtos', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
 
-    // UNIDAD 4: SOLUCIONES Y CINÃ‰TICA (Sesiones 35-46)
+    // UNIDAD 4: SOLUCIONES Y CINÃTICA (Sesiones 35-46)
     { session: 35, unit: 'Estequiometría Real', topic: 'Reactivo Limitante Concepto', videoTitle: 'Intro Reactivo Limitante', videoLink: 'https://www.youtube.com/watch?v=_rts32wOiv0' },
     { session: 36, unit: 'Estequiometría Real', topic: 'Cálculo Reactivo Limitante', videoTitle: 'Cálculo RL', videoLink: 'https://www.youtube.com/watch?v=bOrVhbELagw' },
     { session: 37, unit: 'Estequiometría Real', topic: 'Rendimiento de Reacción', videoTitle: 'Porcentaje de Rendimiento', videoLink: 'https://www.youtube.com/watch?v=iAATyWldpqs' },
@@ -708,7 +708,7 @@ const VideoModal = ({ isOpen, onClose, videoUrl, title, onDoubt, onFinish }) => 
                         disabled={isLoading}
                         className={`${isLoading ? 'bg-gray-400 border-gray-500' : 'bg-[#6BCB77]'} text-[#2B2E4A] font-black rounded-xl shadow-[0_4px_0_#4dad5b] active:shadow-none active:translate-y-[4px] transition-all py-3 px-6 flex items-center justify-center gap-2 uppercase tracking-widest text-xs hover:bg-[#7ce089]`}
                     >
-                        {isLoading ? '⏳ Guardando...' : '✅ Terminar Video'}
+                        {isLoading ? '? Guardando...' : '? Terminar Video'}
                     </button>
 
                     <button
@@ -906,7 +906,7 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
                         className={`${clayBtnAction} w-full`}
                         disabled={isCallingN8N || (!question.trim() && !pastedImage)}
                     >
-                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '✅ Confirmar y Analizar Imagen' : 'Preguntar a Matico 🚀')}
+                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '? Confirmar y Analizar Imagen' : 'Preguntar a Matico ??')}
                     </button>
                 </form>
             </div >
@@ -922,7 +922,7 @@ const LoadingOverlay = ({ isOpen, message }) => {
             <div className={`${clayCard} !bg-[#FFC300] flex flex-col items-center p-8 animate-bounce max-w-sm`}>
                 <Brain className="w-16 h-16 text-[#2B2E4A] animate-spin mb-4" />
                 <h2 className="text-2xl font-black text-[#2B2E4A] text-center uppercase tracking-widest whitespace-pre-line">
-                    {message || "✋ ESPÉRATE...\nESTOY PENSANDO 🤔"}
+                    {message || "? ESPÉRATE...\nESTOY PENSANDO ??"}
                 </h2>
             </div>
         </div >
@@ -1114,7 +1114,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
         actionColor = 'bg-[#4D96FF] text-white shadow-[6px_6px_12px_#2a6bc7,-6px_-6px_12px_#70b9ff] hover:bg-[#3f80d6]';
         actionHandler = onStartQuiz ? onStartQuiz : () => callAgent(subject, 'generate_quiz', routeTitle);
     } else if (isActiveQuiz) {
-        actionText = 'SIGUIENTE PREGUNTA ➡ ';
+        actionText = 'SIGUIENTE PREGUNTA ? ';
         actionColor = clayBtnAction;
         actionHandler = () => {
             callAgent(subject, 'deepen_knowledge', `${routeTitle}-Continuación`);
@@ -1215,7 +1215,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                     {apiJson && apiJson.question && (
                         <div className="mt-8 pt-6 border-t border-gray-300/50">
                             <h5 className="font-black text-[#2B2E4A] mb-4 flex items-center gap-2">
-                                <span className="text-xl">🧠 </span>⚡ Desafío Rápido:
+                                <span className="text-xl">?? </span>? Desafío Rápido:
                             </h5>
                             <div className="font-bold text-[#2B2E4A] mb-4">
                                 <MathRenderer text={apiJson.question} />
@@ -1265,7 +1265,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             onClick={onAskDoubt}
                                             className="px-4 py-2 bg-white/50 text-[#FF9F43] font-bold rounded-xl text-xs flex items-center gap-1 hover:bg-white transition-colors"
                                         >
-                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? 🤔
+                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? ??
                                         </button>
 
                                         <button
@@ -1273,7 +1273,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             className={`${clayBtnAction} w-auto px-6 py-2 text-xs`}
                                             disabled={isCallingN8N}
                                         >
-                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! 🚀' : 'Refuerzo ➡ï¸')}
+                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! ??' : 'Refuerzo ?ï¸')}
                                         </button>
                                     </div>
                                 </div>
@@ -1396,20 +1396,20 @@ const BIOLOGY_SYLLABUS = [
     { session: 4, unit: 'Evolución', topic: 'Registro Fósil', videoLink: 'https://www.youtube.com/watch?v=aBrypvwLLpg' },
     { session: 5, unit: 'Evolución', topic: 'Anatomía Comparada', videoLink: 'https://www.youtube.com/watch?v=DXlVOxWzdwQ' },
     { session: 6, unit: 'Evolución', topic: 'Embriología y Biogeografía', videoLink: 'https://www.youtube.com/watch?v=lZUX9Kv6y7s' },
-    { session: 7, unit: 'Evolución', topic: 'EvoluciÃƒ³n Humana y HominizaciÃƒ³n', videoLink: 'https://www.youtube.com/watch?v=9oY_Q5Gf_v4' },
+    { session: 7, unit: 'Evolución', topic: 'EvoluciÃ³n Humana y HominizaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=9oY_Q5Gf_v4' },
     { session: 8, unit: 'Evolución', topic: 'Taller de Integración', videoLink: 'https://www.youtube.com/watch?v=bPr6duAHk4I' },
     { session: 9, unit: 'Evolución', topic: 'Especiación', videoLink: 'https://www.youtube.com/watch?v=CBAwcRaVzA4' },
     { session: 10, unit: 'Evolución', topic: 'Taxonomía y Sistemática', videoLink: 'https://www.youtube.com/watch?v=Ji5aYL0KQoY' },
-    { session: 11, unit: 'Evolución', topic: 'SÃƒ­ntesis de la Unidad: El Origen de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=UqQ_u5qS5r4' },
+    { session: 11, unit: 'Evolución', topic: 'SÃ­ntesis de la Unidad: El Origen de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=UqQ_u5qS5r4' },
     { session: 12, unit: 'Evolución', topic: 'Protista y Fungi', videoLink: 'https://www.youtube.com/watch?v=6tttZ_7Q9a8' },
-    { session: 13, unit: 'Evolución', topic: 'Atributos de una PoblaciÃƒ³n (Densidad y DistribuciÃƒ³n)', videoLink: 'https://www.youtube.com/watch?v=S0T0E9y_H0c' },
+    { session: 13, unit: 'Evolución', topic: 'Atributos de una PoblaciÃ³n (Densidad y DistribuciÃ³n)', videoLink: 'https://www.youtube.com/watch?v=S0T0E9y_H0c' },
 
     // UNIDAD 2: ORGANISMOS EN ECOSISTEMAS
     { session: 14, unit: 'Ecología', topic: 'Organización Ecológica', videoLink: 'https://www.youtube.com/watch?v=18gqzWCPDMU' },
     { session: 15, unit: 'Ecología', topic: 'Distribución Espacial', videoLink: 'https://www.youtube.com/watch?v=MIiIIrZKggI' },
     { session: 16, unit: 'Ecología', topic: 'Crecimiento Poblacional: Modelos J y S', videoLink: 'https://www.youtube.com/watch?v=KzX6yK8jC8U' },
     { session: 17, unit: 'Ecología', topic: 'Crecimiento Logístico', videoLink: 'https://www.youtube.com/watch?v=2IFEZUEL7DQ' },
-    { session: 18, unit: 'Ecología', topic: 'Interacciones BiolÃƒ³gicas (Competencia, DepredaciÃƒ³n)', videoLink: 'https://www.youtube.com/watch?v=XF3P8K7XpLc' },
+    { session: 18, unit: 'Ecología', topic: 'Interacciones BiolÃ³gicas (Competencia, DepredaciÃ³n)', videoLink: 'https://www.youtube.com/watch?v=XF3P8K7XpLc' },
     { session: 19, unit: 'Ecología', topic: 'Regulación Poblacional', videoLink: 'https://www.youtube.com/watch?v=F1_W1qRBV5M' },
     { session: 20, unit: 'Ecología', topic: 'Competencia y Depredación', videoLink: 'https://www.youtube.com/watch?v=1Pqr7RVMx4A' },
     { session: 21, unit: 'Ecología', topic: 'Simbiosis', videoLink: 'https://www.youtube.com/watch?v=GJnXQjFnyxo' },
@@ -1420,16 +1420,16 @@ const BIOLOGY_SYLLABUS = [
     { session: 24, unit: 'Energía', topic: 'Fotosíntesis: Intro', videoLink: 'https://www.youtube.com/watch?v=XTVmIME0XOs' },
     { session: 25, unit: 'Energía', topic: 'Fase Dependiente de Luz', videoLink: 'https://www.youtube.com/watch?v=y-HglExruMI' },
     { session: 26, unit: 'Energía', topic: 'Ciclo de Calvin', videoLink: 'https://www.youtube.com/watch?v=d2DB-kWxg-w' },
-    { session: 27, unit: 'Energía', topic: 'Cadenas y Tramas TrÃƒ³ficas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
+    { session: 27, unit: 'Energía', topic: 'Cadenas y Tramas TrÃ³ficas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
     { session: 28, unit: 'Energía', topic: 'Respiración Celular', videoLink: 'https://www.youtube.com/watch?v=YefwfJ8IpEI' },
     { session: 29, unit: 'Energía', topic: 'Integración Metabólica', videoLink: 'https://www.youtube.com/watch?v=JYSm79-IIHw' },
     { session: 30, unit: 'Energía', topic: 'Tramas Tróficas', videoLink: 'https://www.youtube.com/watch?v=UMrU2peVKcU' },
     { session: 31, unit: 'Energía', topic: 'Flujo de Energía (10%)', videoLink: 'https://www.youtube.com/watch?v=6sUR80wigsU' },
     { session: 32, unit: 'Energía', topic: 'Pirámides Ecológicas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
-    { session: 33, unit: 'Energía', topic: 'Ciclos BiogeoquÃƒ­micos (Carbono, NitrÃƒ³geno, Agua)', videoLink: 'https://www.youtube.com/watch?v=hUQoF16DmNk' },
+    { session: 33, unit: 'Energía', topic: 'Ciclos BiogeoquÃ­micos (Carbono, NitrÃ³geno, Agua)', videoLink: 'https://www.youtube.com/watch?v=hUQoF16DmNk' },
     { session: 34, unit: 'Energía', topic: 'Ciclo del Carbono', videoLink: 'https://www.youtube.com/watch?v=6YE42IePPjM' },
     { session: 35, unit: 'Energía', topic: 'Ciclo del Nitrógeno', videoLink: 'https://www.youtube.com/watch?v=iH3AI-XtNS8' },
-    { session: 36, unit: 'Energía', topic: 'Impacto AntropogÃƒ©nico en los Ecosistemas', videoLink: 'https://www.youtube.com/watch?v=BKS_rQbalGQ' },
+    { session: 36, unit: 'Energía', topic: 'Impacto AntropogÃ©nico en los Ecosistemas', videoLink: 'https://www.youtube.com/watch?v=BKS_rQbalGQ' },
 
     // UNIDAD 4: SUSTENTABILIDAD
     { session: 37, unit: 'Sustentabilidad', topic: 'Efecto Invernadero', videoLink: 'https://www.youtube.com/watch?v=K7MzGe6OSs0' },
@@ -1437,7 +1437,7 @@ const BIOLOGY_SYLLABUS = [
     { session: 39, unit: 'Sustentabilidad', topic: 'Huella Ecológica', videoLink: 'https://www.youtube.com/watch?v=chh0sAmfCwo' },
     { session: 40, unit: 'Sustentabilidad', topic: 'Contaminación', videoLink: 'https://www.youtube.com/watch?v=PH3H1x5CN5I' },
     { session: 41, unit: 'Sustentabilidad', topic: 'Matriz Energética', videoLink: 'https://www.youtube.com/watch?v=YWds9hX3g7c' },
-    { session: 42, unit: 'Sustentabilidad', topic: 'Huella EcolÃƒ³gica y ConservaciÃƒ³n de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=Z6z_V9XN8S4' },
+    { session: 42, unit: 'Sustentabilidad', topic: 'Huella EcolÃ³gica y ConservaciÃ³n de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=Z6z_V9XN8S4' },
     { session: 43, unit: 'Sustentabilidad', topic: 'Biodiversidad Norte/Centro', videoLink: 'https://www.youtube.com/watch?v=US074D5Y_MY' },
     { session: 44, unit: 'Sustentabilidad', topic: 'Biodiversidad Sur', videoLink: 'https://www.youtube.com/watch?v=SJeRsE9TyBk' },
     { session: 45, unit: 'Sustentabilidad', topic: 'Conservación', videoLink: 'https://www.youtube.com/watch?v=KcIHCEFKloo' },
@@ -1728,7 +1728,7 @@ const App = () => {
                 });
 
                 const data = await response.json();
-                console.log('[MATICO] ✅ Server progress loaded:', data);
+                console.log('[MATICO] ? Server progress loaded:', data);
                 setServerProgress(data);
 
                 // Update todayIndex based on server's next_session
@@ -1738,7 +1738,7 @@ const App = () => {
                     setTodayIndex(newIndex);
                 }
             } catch (error) {
-                console.error('[MATICO] ❌ Error fetching progress:', error);
+                console.error('[MATICO] ? Error fetching progress:', error);
                 // Fallback to localStorage if server fails
                 const fallbackIndex = getSmartSessionIndex(currentSubject);
                 setTodayIndex(fallbackIndex);
@@ -1832,7 +1832,7 @@ const App = () => {
         if (!completed.includes(key)) {
             const newCompleted = [...completed, key];
             localStorage.setItem('MATICO_COMPLETED_SESSIONS', JSON.stringify(newCompleted));
-            console.log(`[MATICO] ✅ Marked ${key} as complete!`);
+            console.log(`[MATICO] ? Marked ${key} as complete!`);
             console.log(`[MATICO] Updated completed list:`, newCompleted);
 
             // Trigger Re-calc immediately to show next session if applicable
@@ -1840,7 +1840,7 @@ const App = () => {
             console.log(`[MATICO] Calculated new session index: ${newIndex} (was: ${todayIndex})`);
             setTodayIndex(newIndex);
         } else {
-            console.log(`[MATICO] ℹ️ Session ${key} already marked as complete`);
+            console.log(`[MATICO] ?? Session ${key} already marked as complete`);
         }
     };
     // --- SMART CALENDAR LOGIC END ---
@@ -2132,7 +2132,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
                 setPendingQuizQuestions(currentSubLevelQuestions);
 
                 // Mostrar teoría primero
-                setTheoryTitle(`📚 Teoría - Fase ${startingPhase}: Nivel ${levelName}`);
+                setTheoryTitle(`?? Teoría - Fase ${startingPhase}: Nivel ${levelName}`);
                 setTheoryContent(theory);
                 setShowTheoryModal(true);
                 setIsCallingN8N(false);
@@ -2146,7 +2146,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
                     console.log(`[QUIZ] Pre-generando Sub-nivel ${startingSubLevel + 1} (${nextLevel})...`);
                     setIsLoadingNextBatch(true);
                     generateQuizBatch(nextLevel, true).then(nextQuestions => {
-                        console.log(`[QUIZ] ✓ Sub-nivel ${startingSubLevel + 1} pre-generado`);
+                        console.log(`[QUIZ] ? Sub-nivel ${startingSubLevel + 1} pre-generado`);
                         setBackgroundQuestionsQueue(nextQuestions);
                         setIsLoadingNextBatch(false);
                     }).catch(err => {
@@ -2191,6 +2191,46 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
         setQuizQuestions(pendingQuizQuestions);
         setShowInteractiveQuiz(true);
         setPendingQuizQuestions([]); // Limpiar preguntas pendientes
+    };
+
+    // --- NOTIFICACIÓN DE RESULTADOS ESTILO SALÓN ---
+    const sendFinalSessionReport = async (stats) => {
+        console.log("[REPORT] Generando reporte final estilo 'Glow & Grace Salon'...");
+
+        // Calcular porcentaje de éxito
+        const successRate = Math.round((stats.correct / 45) * 100);
+        const mood = successRate >= 80 ? "excelente" : (successRate >= 60 ? "bueno" : "para mejorar");
+
+        const reportPrompt = `[INSTRUCCIÓN AGENTE DE REPORTES MATICO]:
+Eres el Agente de Éxito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 45 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
+
+DATOS DEL ESTUDIANTE:
+- Nombre: ${currentUser?.username || userProfile?.username || 'Estudiante'}
+- Email: ${currentUser?.email || 'N/A'}
+- Asignatura: ${currentSubject}
+- Sesión: ${TODAYS_SESSION.session} - ${TODAYS_SESSION.topic}
+- Resultado: ${stats.correct} de 45 correctas (${successRate}%)
+
+? Tu SALIDA DEBE ser un objeto JSON con esta estructura exacta:
+{
+  "email": {
+    "to": "${currentUser?.email || 'hola@matico.ai'}",
+    "subject": "?? ¡Sesión Completada! Tus logros en ${currentSubject} - Sesión ${TODAYS_SESSION.session} ??",
+    "html_body": "<html>... (un cuerpo HTML profesional y motivador con tabla de resultados y feedback personalizado basado en el desempeño de ${mood}) ...</html>", 
+    "description": "Reporte de Sesión Matico: ${TODAYS_SESSION.topic}"
+  }
+}`;
+
+        try {
+            await saveProgress('send_session_report', {
+                subject: currentSubject,
+                session: TODAYS_SESSION.session,
+                report_prompt: reportPrompt // n8n recibirá esto y enviará el mail
+            });
+            console.log("[REPORT] ? Reporte enviado a la cola de n8n");
+        } catch (err) {
+            console.error("[REPORT] Error enviando reporte:", err);
+        }
     };
 
     // HANDLE QUIZ SUB-LEVEL COMPLETION - SISTEMA JAPONÉS (3 FASES × 3 SUB-NIVELES)
@@ -2253,7 +2293,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
                     setPendingQuizQuestions(nextQuestions);
 
                     // Mostrar teoría
-                    setTheoryTitle(`📚 Teoría - Fase ${currentQuizPhase}: Nivel ${nextLevelName}`);
+                    setTheoryTitle(`?? Teoría - Fase ${currentQuizPhase}: Nivel ${nextLevelName}`);
                     setTheoryContent(theory);
                     setShowTheoryModal(true);
                     setIsCallingN8N(false);
@@ -2285,7 +2325,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
             if (currentQuizPhase < 3) {
                 // Pasar a la siguiente fase
                 const nextPhase = currentQuizPhase + 1;
-                console.log(`[QUIZ] ✅ Fase ${currentQuizPhase} completada (15 preguntas). Iniciando Fase ${nextPhase}...`);
+                console.log(`[QUIZ] ? Fase ${currentQuizPhase} completada (15 preguntas). Iniciando Fase ${nextPhase}...`);
 
                 setShowInteractiveQuiz(false);
                 setIsCallingN8N(true);
@@ -2306,7 +2346,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
                         setPendingQuizQuestions(phaseBasicQuestions);
 
                         // Mostrar teoría
-                        setTheoryTitle(`📚 Teoría - Fase ${nextPhase}: Nivel Básico`);
+                        setTheoryTitle(`?? Teoría - Fase ${nextPhase}: Nivel Básico`);
                         setTheoryContent(theory);
                         setShowTheoryModal(true);
                         setIsCallingN8N(false);
@@ -2317,7 +2357,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
                         console.log(`[QUIZ] Pre-generando AVANZADO para Fase ${nextPhase}...`);
                         setIsLoadingNextBatch(true);
                         generateQuizBatch("AVANZADO", true).then(advQuestions => {
-                            console.log(`[QUIZ] ✓ AVANZADO pre-generado`);
+                            console.log(`[QUIZ] ? AVANZADO pre-generado`);
                             setBackgroundQuestionsQueue(advQuestions);
                             setIsLoadingNextBatch(false);
                         }).catch(err => console.error("[QUIZ] Error pre-generando AVANZADO:", err));
@@ -2333,8 +2373,12 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
 
             } else {
                 // TODAS LAS 3 FASES COMPLETADAS (45 PREGUNTAS TOTALES)
-                console.log("[ QUIZ] ✅✅✅ TODAS LAS 3 FASES COMPLETADAS! (45 preguntas)");
+                console.log("[ QUIZ] ??? TODAS LAS 3 FASES COMPLETADAS! (45 preguntas)");
                 setShowInteractiveQuiz(false);
+
+                // ENVIAR REPORTE FINAL ESTILO SALÓN (Notificación)
+                const finalStats = { ...quizStats, correct: quizStats.correct + subLevelScore }; // Sumar el último batch
+                sendFinalSessionReport(finalStats);
 
                 // LIMPIAR PROGRESO LOCAL (sesión completada)
                 clearQuizProgress();
@@ -2351,7 +2395,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
                     xp_reward: 300 // Más XP por completar 45 preguntas
                 });
 
-                alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHas dominado: ${TODAYS_SESSION.topic}\n\nCompletaste 3 FASES (45 preguntas)\nPuntaje: ${quizStats.correct}/45\n\n+300 XP 🏆`);
+                alert(`?????? ¡SESIÓN COMPLETA!\n\nHas dominado: ${TODAYS_SESSION.topic}\n\nCompletaste 3 FASES (45 preguntas)\nPuntaje: ${quizStats.correct}/45\n\n+300 XP ??`);
             }
         }
     };
@@ -2449,7 +2493,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
             let content = "";
 
             if (textResponse.trim() === "") {
-                content = "âš ï¸ MODO OFFLINE";
+                content = "â ï¸ MODO OFFLINE";
             } else {
                 try {
                     let jsonData;
@@ -2466,7 +2510,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
 
                     // LOGIC FIX: Handle Refusal & Data Processing
                     if (jsonData.refusal) {
-                        content = `âš ï¸ **No pudimos iniciar:**\n\n${jsonData.refusal}`;
+                        content = `â ï¸ **No pudimos iniciar:**\n\n${jsonData.refusal}`;
                         setApiJson(null);
                     } else {
 
@@ -2557,7 +2601,7 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
 
                         if (isBatchQuiz || isSingleQuiz) {
                             // AUTO-LAUNCH QUIZ
-                            console.log("🚀 Auto-launching Quiz!");
+                            console.log("?? Auto-launching Quiz!");
                             const questionsToLoad = isBatchQuiz ? finalData.questions : [finalData];
 
                             setQuizQuestions(questionsToLoad);
@@ -2576,7 +2620,7 @@ ${finalData.capsule}`;
                         } else {
                             // Fallback / Other
                             if (action === 'generate_quiz') {
-                                content = "⚠️ **Error de Formato:** La IA no envió preguntas válidas.\n\n" + JSON.stringify(finalData, null, 2);
+                                content = "?? **Error de Formato:** La IA no envió preguntas válidas.\n\n" + JSON.stringify(finalData, null, 2);
                             } else {
                                 content = finalData.output || finalData.text || finalData.theory || JSON.stringify(finalData, null, 2);
                             }
@@ -2590,7 +2634,7 @@ ${finalData.capsule}`;
             if (content) setAiContent(content);
         } catch (e) {
             console.error(e);
-            setAiContent("âš ï¸ Error de Conexión");
+            setAiContent("â ï¸ Error de Conexión");
         } finally {
             setIsCallingN8N(false);
             setAiModalOpen(true);
@@ -2655,7 +2699,7 @@ ${finalData.capsule}`;
                 title={theoryTitle}
                 content={theoryContent}
                 onFinish={handleContinueToQuiz}
-                buttonText="Continuar al Quiz 📝"
+                buttonText="Continuar al Quiz ??"
             />
 
             <QuestionModal
@@ -2716,7 +2760,7 @@ ${finalData.capsule}`;
                                 {userProfile?.xp || 0} XP
                             </div>
                             <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
-                                ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
+                                ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! ??
                             </h1>
 
                             {/* USER INFO CARD */}
@@ -2724,11 +2768,11 @@ ${finalData.capsule}`;
                                 <div className="bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2 mb-2 border border-gray-200/50 shadow-sm inline-block">
                                     <div className="flex flex-col gap-1 text-xs">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-gray-500 font-bold">📧</span>
+                                            <span className="text-gray-500 font-bold">??</span>
                                             <span className="text-gray-700 font-medium">{currentUser.email}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-gray-500 font-bold">🆔</span>
+                                            <span className="text-gray-500 font-bold">??</span>
                                             <span className="text-gray-600 font-mono text-[10px]">{currentUser.user_id?.substring(0, 20)}...</span>
                                         </div>
                                     </div>
@@ -2745,7 +2789,7 @@ ${finalData.capsule}`;
                                 onClick={() => setAskModalOpen(true)}
                                 className="mt-2 text-xs font-black text-[#FF9F43] uppercase tracking-widest hover:text-[#FFD93D] flex items-center gap-1 transition-colors"
                             >
-                                <MessageCircle className="w-4 h-4" /> 💁‍♀️ Tengo una Duda
+                                <MessageCircle className="w-4 h-4" /> ????? Tengo una Duda
                             </button>
                         </div>
                     </div>
@@ -2760,7 +2804,7 @@ ${finalData.capsule}`;
                                 : 'bg-red-100 text-red-600 border-red-200 animate-pulse shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_0_10px_rgba(255,0,0,0.2)]'
                                 }`}
                         >
-                            {activeWebhookUrl === N8N_URLS.test ? '🧪 TEST' : '🚨 PROD'}
+                            {activeWebhookUrl === N8N_URLS.test ? '?? TEST' : '?? PROD'}
                         </button>
 
                         {/* DEV: SIMULATE 5 DAY DELAY */}
@@ -2797,37 +2841,37 @@ ${finalData.capsule}`;
                                 onClick={() => setCurrentSubject('MATEMATICA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : ''}`}
                             >
-                                🔢 Mate
+                                ?? Mate
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('LENGUAJE')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF9F43] !text-white !border-[#E68A35] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,159,67,0.6)]' : ''}`}
                             >
-                                📖 Lenguaje
+                                ?? Lenguaje
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('FISICA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : ''}`}
                             >
-                                ⚛️ Física
+                                ?? Física
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('QUIMICA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : ''}`}
                             >
-                                🧪 Química
+                                ?? Química
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('BIOLOGIA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : ''}`}
                             >
-                                🧬 Biología
+                                ?? Biología
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('HISTORIA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : ''}`}
                             >
-                                📜 Historia
+                                ?? Historia
                             </button>
                         </div>
                     </div>
@@ -2845,22 +2889,23 @@ ${finalData.capsule}`;
                                     <h2 className="text-2xl font-black text-[#2B2E4A] mb-1" style={{ color: TODAYS_SUBJECT.color }}>
                                         Ruta de {TODAYS_SUBJECT.name}: <span className="text-base font-bold text-[#9094A6] block">{TODAYS_SUBJECT.oa_title}</span>
                                     </h2>
-                                    <p className="text-[#9094A6] font-bold text-sm">Basado en el video: {TODAYS_SESSION.videoTitle}</p>
+                                    <p className="text-[#9094A6] font-bold text-sm">Sesión {TODAYS_SESSION.session}: {TODAYS_SESSION.topic}</p>
 
-                                    {/* QUIZ PROGRESS INDICATOR */}
+                                    {/* QUIZ PROGRESS INDICATOR - Sistema Japonés/Kaizen */}
                                     {(() => {
                                         const progress = getQuizProgress();
-                                        const phaseNames = { 1: "Básico", 2: "Avanzado", 3: "Crítico" };
+                                        const subLevelNames = { 1: "Básico", 2: "Avanzado", 3: "Crítico" };
                                         const phaseColors = {
-                                            1: "bg-blue-100 text-blue-700 border-blue-300",
-                                            2: "bg-purple-100 text-purple-700 border-purple-300",
+                                            1: "bg-green-100 text-green-700 border-green-300",
+                                            2: "bg-yellow-100 text-yellow-700 border-yellow-300",
                                             3: "bg-red-100 text-red-700 border-red-300"
                                         };
 
                                         if (progress.completedSubLevels && progress.completedSubLevels.length > 0 && progress.currentPhase <= 3) {
+                                            const questionsCompleted = (progress.currentPhase - 1) * 15 + progress.completedSubLevels.length * 5;
                                             return (
                                                 <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
-                                                    🎯 Continuar Quiz - Fase {progress.currentPhase}: {phaseNames[progress.currentPhase]}
+                                                    ?? Continuar - Fase {progress.currentPhase} | Nivel {subLevelNames[progress.currentSubLevel]} | {questionsCompleted}/45 preguntas
                                                 </div>
                                             );
                                         }
@@ -2920,8 +2965,8 @@ ${finalData.capsule}`;
                                                 <h3 className="font-black text-[#3C3C3C] text-sm uppercase">{step.step}</h3>
                                                 <p className="text-[#AFAFAF] text-xs font-bold">{
                                                     idx === 0 ? "CLASE DE HOY" :
-                                                        (idx === 1 ? "TEORÃA IA" :
-                                                            (idx === 3 ? "CONSULTA" : "PRÃCTICA"))
+                                                        (idx === 1 ? "TEORÍA IA" :
+                                                            (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"))
                                                 }</p>
 
                                                 {/* TRIANGLE POINTER */}
@@ -2972,6 +3017,7 @@ ${finalData.capsule}`;
 };
 
 export default App;
+
 
 
 
