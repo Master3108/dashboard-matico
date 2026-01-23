@@ -2857,7 +2857,7 @@ ${finalData.capsule}`;
                                             3: "bg-red-100 text-red-700 border-red-300"
                                         };
 
-                                        if (progress.completedPhases.length > 0 && progress.currentPhase <= 3) {
+                                        if (progress.completedSubLevels && progress.completedSubLevels.length > 0 && progress.currentPhase <= 3) {
                                             return (
                                                 <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
                                                     🎯 Continuar Quiz - Fase {progress.currentPhase}: {phaseNames[progress.currentPhase]}
