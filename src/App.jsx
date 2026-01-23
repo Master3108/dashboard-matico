@@ -727,7 +727,7 @@ const VideoModal = ({ isOpen, onClose, videoUrl, title, onDoubt, onFinish }) => 
 };
 
 // COMPONENT: Reading Modal
-const ReadingModal = ({ isOpen, onClose, title, content, onFinish }) => {
+const ReadingModal = ({ isOpen, onClose, title, content, onFinish, buttonText = "Terminar y Analizar" }) => {
     if (!isOpen) return null;
 
     return (
@@ -752,7 +752,7 @@ const ReadingModal = ({ isOpen, onClose, title, content, onFinish }) => {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-8 font-serif text-lg leading-relaxed text-[#2B2E4A]/90 whitespace-pre-wrap">
-                    {content}
+                    <MathRenderer content={content} />
                 </div>
 
                 {/* Footer */}
@@ -761,7 +761,7 @@ const ReadingModal = ({ isOpen, onClose, title, content, onFinish }) => {
                         onClick={onFinish}
                         className="bg-[#2B2E4A] text-white font-bold rounded-xl py-3 px-8 shadow-lg hover:bg-[#34385a] transition-all flex items-center gap-2"
                     >
-                        <span>Terminar y Analizar</span>
+                        <span>{buttonText}</span>
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
@@ -1692,10 +1692,18 @@ const App = () => {
     const [showInteractiveQuiz, setShowInteractiveQuiz] = useState(false);
     const [quizQuestions, setQuizQuestions] = useState([]);
 
-    // PROGRESSIVE QUIZ STATE (3 PHASES)
-    const [currentQuizPhase, setCurrentQuizPhase] = useState(1); // 1, 2, or 3
+    // PROGRESSIVE QUIZ STATE - SISTEMA JAPONÉS/KAIZEN (3 FASES × 15 PREGUNTAS)
+    // Cada fase tiene 3 sub-niveles: BÁSICO (5q) + AVANZADO (5q) + CRÍTICO (5q) = 15 preguntas
+    const [currentQuizPhase, setCurrentQuizPhase] = useState(1); // 1, 2, or 3 (Fase actual)
+    const [currentQuizSubLevel, setCurrentQuizSubLevel] = useState(1); // 1=BÁSICO, 2=AVANZADO, 3=CRÍTICO
     const [backgroundQuestionsQueue, setBackgroundQuestionsQueue] = useState([]);
     const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false);
+
+    // THEORY STATE - TEORÍA LÚDICA ANTES DE CADA SUB-NIVEL
+    const [showTheoryModal, setShowTheoryModal] = useState(false);
+    const [theoryContent, setTheoryContent] = useState("");
+    const [theoryTitle, setTheoryTitle] = useState("");
+    const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
 
     // FETCH SERVER PROGRESS ON LOAD
     useEffect(() => {
@@ -1870,23 +1878,25 @@ const App = () => {
         }
     };
 
-    // GENERATE QUIZ BATCH (5 questions per level) - PROGRESSIVE LOADING
-    const generateQuizBatch = async (level, backgroundMode = false) => {
+    // GENERATE QUIZ BATCH - SISTEMA JAPONÉS/KAIZEN (2 FASES)
+    // Genera un batch de preguntas para un nivel específico
+    // countOverride permite especificar cuántas preguntas generar (5 para cada bloque de 15)
+    const generateQuizBatch = async (level, backgroundMode = false, countOverride = null) => {
         const levelConfig = {
             "BASICO": {
-                name: "Nivel Básico",
+                name: "Nivel Básico PAES",
                 instruction: "RECORDAR/COMPRENDER - Preguntas directas sobre definiciones y conceptos elementales",
-                count: 5
+                count: countOverride || 5
             },
             "AVANZADO": {
-                name: "Nivel Avanzado",
+                name: "Nivel Avanzado PAES",
                 instruction: "APLICAR - Problemas prácticos de nivel avanzado",
-                count: 5
+                count: countOverride || 5
             },
             "CRITICO": {
-                name: "Nivel Crítico Universitario",
+                name: "Nivel Crítico PAES",
                 instruction: "ANALIZAR/EVALUAR - Nivel PAES Universidad MUY DIFÍCIL",
-                count: 5
+                count: countOverride || 5
             }
         };
 
@@ -1961,42 +1971,111 @@ const App = () => {
         }
     };
 
-    // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS
-    const saveQuizPhaseProgress = (phase, score) => {
+    // GENERATE THEORY - TEORÍA LÚDICA ANTES DE CADA SUB-NIVEL
+    const generateTheory = async (phase, subLevel) => {
+        const levelMap = { 1: "BÁSICO", 2: "AVANZADO", 3: "CRÍTICO" };
+        const levelName = levelMap[subLevel];
+
+        setLoadingMessage(`Generando Teoría Lúdica (Nivel ${levelName})...`);
+
+        try {
+            const theoryPrompt = `[INSTRUCCIÓN TEORÍA LÚDICA]:
+Genera contenido teórico EXTENSO (5+ minutos de lectura) para nivel ${levelName} de la Fase ${phase}.
+
+Tema: ${TODAYS_SESSION.topic}
+Nivel de Dificultad: ${levelName}
+
+El contenido debe incluir:
+1. Explicación clara y detallada de los conceptos
+2. Múltiples ejemplos prácticos resueltos paso a paso
+3. Analogías y casos de la vida real
+4. Tips y estrategias para resolver problemas de este nivel
+5. Formato en Markdown con títulos, listas y énfasis
+
+IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
+
+            const body = {
+                sujeto: currentSubject,
+                accion: 'Generar Teoría Lúdica',
+                tema: theoryPrompt,
+                nivel_estudiante: "1° Medio Chile"
+            };
+
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const text = await response.text();
+            const cleaned = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+
+            let theoryText = "";
+            try {
+                const json = JSON.parse(cleaned);
+                theoryText = json.content || json.theory || json.text || cleaned;
+            } catch {
+                theoryText = cleaned; // Si no es JSON, usar el texto directo
+            }
+
+            console.log(`[THEORY] Teoría generada para Fase ${phase}, Sub-nivel ${subLevel}`);
+            return theoryText;
+
+        } catch (e) {
+            console.error(`Error generando teoría:`, e);
+            return `# Error al generar teoría\n\nNo se pudo generar el contenido teórico. Por favor, intenta nuevamente.`;
+        }
+    };
+
+
+    // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS (SISTEMA JAPONÉS - 3 FASES × 3 SUB-NIVELES)
+    const saveQuizPhaseProgress = (phase, subLevel, score) => {
         const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
         const existing = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
 
         if (!existing[key]) {
             existing[key] = {
-                completedPhases: [],
+                completedSubLevels: [], // Ej: ["1-1", "1-2", "1-3", "2-1"...]
                 currentPhase: 1,
-                scores: { phase1: null, phase2: null, phase3: null }
+                currentSubLevel: 1,
+                scores: {}
             };
         }
 
-        // Marcar fase como completada
-        if (!existing[key].completedPhases.includes(phase)) {
-            existing[key].completedPhases.push(phase);
+        // Marcar sub-nivel como completado
+        const subLevelKey = `${phase}-${subLevel}`;
+        if (!existing[key].completedSubLevels.includes(subLevelKey)) {
+            existing[key].completedSubLevels.push(subLevelKey);
         }
 
         // Guardar score
-        existing[key].scores[`phase${phase}`] = score;
+        existing[key].scores[subLevelKey] = score;
 
-        // Actualizar siguiente fase
-        existing[key].currentPhase = phase < 3 ? phase + 1 : 3;
+        // Calcular siguiente sub-nivel y fase
+        if (subLevel < 3) {
+            // Avanzar al siguiente sub-nivel dentro de la misma fase
+            existing[key].currentSubLevel = subLevel + 1;
+        } else {
+            // Completó los 3 sub-niveles (15 preguntas), avanzar a la siguiente fase
+            existing[key].currentPhase = phase + 1;
+            existing[key].currentSubLevel = 1; // Reset sub-nivel para la nueva fase
+        }
+
         existing[key].lastUpdated = new Date().toISOString();
 
         localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(existing));
-        console.log(`[PROGRESS] Fase ${phase} guardada para ${key}:`, existing[key]);
+        console.log(`[PROGRESS] Fase ${phase}, Sub-nivel ${subLevel} guardado con score ${score}`);
+        console.log('[PROGRESS] Estado actual:', existing[key]);
     };
 
     const getQuizProgress = () => {
         const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
         const progress = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
         return progress[key] || {
-            completedPhases: [],
+            completedSubLevels: [],
             currentPhase: 1,
-            scores: { phase1: null, phase2: null, phase3: null }
+            currentSubLevel: 1,
+            scores: {}
         };
     };
 
@@ -2008,7 +2087,7 @@ const App = () => {
         console.log(`[PROGRESS] Progreso limpiado para ${key}`);
     };
 
-    // START FULL MULTI-STAGE QUIZ
+    // START FULL MULTI-STAGE QUIZ - SISTEMA JAPONÉS CON TEORÍA (3 FASES × 15 PREGUNTAS)
     const startFullQuiz = async () => {
         setIsCallingN8N(true);
         setAiModalOpen(false);
@@ -2016,136 +2095,256 @@ const App = () => {
         // CHECK FOR SAVED PROGRESS
         const savedProgress = getQuizProgress();
         const startingPhase = savedProgress.currentPhase;
+        const startingSubLevel = savedProgress.currentSubLevel;
 
         console.log(`[QUIZ] Progreso detectado:`, savedProgress);
-        console.log(`[QUIZ] Iniciando desde Fase ${startingPhase}`);
+        console.log(`[QUIZ] Iniciando desde Fase ${startingPhase}, Sub-nivel ${startingSubLevel}`);
 
-        setLoadingMessage(`Iniciando Quiz - Fase ${startingPhase}...`);
         setCurrentQuizPhase(startingPhase);
+        setCurrentQuizSubLevel(startingSubLevel);
         setBackgroundQuestionsQueue([]);
         setQuizStats({ correct: 0, incorrect: 0, total: 0 });
 
         try {
-            // Determinar qué nivel generar según fase
             const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
-            const currentLevel = levelMap[startingPhase];
+            const levelNameMap = { 1: "Básico", 2: "Avanzado", 3: "Crítico" };
+            const currentLevel = levelMap[startingSubLevel];
+            const levelName = levelNameMap[startingSubLevel];
 
-            console.log(`[QUIZ] Generando Fase ${startingPhase}: ${currentLevel} (5 preguntas)`);
-            const currentPhaseQuestions = await generateQuizBatch(currentLevel, false);
+            // PASO 1: GENERAR TEORÍA LÚDICA
+            console.log(`[THEORY] Generando teoría para Fase ${startingPhase}, Nivel ${levelName}...`);
+            const theory = await generateTheory(startingPhase, startingSubLevel);
 
-            if (currentPhaseQuestions.length > 0) {
-                console.log(`[QUIZ] ✓ Fase ${startingPhase} lista, iniciando quiz...`);
-                setQuizQuestions(currentPhaseQuestions);
-                setShowInteractiveQuiz(true);
+            // PASO 2: GENERAR PREGUNTAS (en paralelo a la lectura de teoría)
+            console.log(`[QUIZ] Generando preguntas ${currentLevel} en background...`);
+            const currentSubLevelQuestions = await generateQuizBatch(currentLevel, false);
+
+            if (currentSubLevelQuestions.length > 0 && theory) {
+                // Guardar preguntas para después de la teoría
+                setPendingQuizQuestions(currentSubLevelQuestions);
+
+                // Mostrar teoría primero
+                setTheoryTitle(`📚 Teoría - Fase ${startingPhase}: Nivel ${levelName}`);
+                setTheoryContent(theory);
+                setShowTheoryModal(true);
                 setIsCallingN8N(false);
                 setLoadingMessage("");
 
-                // Generar siguiente fase en background (si no es la última)
-                if (startingPhase < 3) {
-                    const nextLevel = levelMap[startingPhase + 1];
-                    console.log(`[QUIZ] Generando Fase ${startingPhase + 1} (${nextLevel}) en background...`);
+                console.log(`[THEORY] Teoría mostrada. Usuario debe leer y hacer clic en 'Continuar al Quiz'`);
+
+                // Generar siguiente sub-nivel en background (mientras lee la teoría)
+                if (startingSubLevel < 3) {
+                    const nextLevel = levelMap[startingSubLevel + 1];
+                    console.log(`[QUIZ] Pre-generando Sub-nivel ${startingSubLevel + 1} (${nextLevel})...`);
                     setIsLoadingNextBatch(true);
                     generateQuizBatch(nextLevel, true).then(nextQuestions => {
-                        console.log(`[QUIZ] ✓ Fase ${startingPhase + 1} lista`);
+                        console.log(`[QUIZ] ✓ Sub-nivel ${startingSubLevel + 1} pre-generado`);
                         setBackgroundQuestionsQueue(nextQuestions);
                         setIsLoadingNextBatch(false);
                     }).catch(err => {
-                        console.error(`[QUIZ] Error Fase ${startingPhase + 1}:`, err);
+                        console.error(`[QUIZ] Error pre-generando:`, err);
                         setIsLoadingNextBatch(false);
                     });
                 }
             } else {
-                alert("No se pudieron generar preguntas. Intenta de nuevo.");
+                alert("No se pudo generar el contenido. Intenta de nuevo.");
                 setIsCallingN8N(false);
                 setAiModalOpen(true);
             }
 
         } catch (e) {
-            console.error("Quiz Error", e);
-            alert("Error de conexión durante la generación del quiz.");
+            console.error("Error iniciando quiz:", e);
+            alert("Error de conexión. Por favor intenta nuevamente.");
             setIsCallingN8N(false);
             setAiModalOpen(true);
         }
     };
 
-    // HANDLE QUIZ PHASE COMPLETION - PROGRESSIVE SYSTEM
-    const onQuizPhaseComplete = async (phaseScore) => {
-        console.log(`[QUIZ] Fase ${currentQuizPhase} completada con score:`, phaseScore);
+    // HANDLE "CONTINUAR AL QUIZ" BUTTON - Cerrar teoría y mostrar quiz
+    const handleContinueToQuiz = async () => {
+        console.log(`[THEORY] Usuario finalizó lectura. Iniciando quiz...`);
 
-        // GUARDAR PROGRESO DE FASE COMPLETADA
-        saveQuizPhaseProgress(currentQuizPhase, phaseScore);
+        // GUARDAR EN GOOGLE SHEETS que leyó la teoría
+        const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
+        const levelName = levelMap[currentQuizSubLevel];
 
-        if (currentQuizPhase === 1) {
-            // TRANSITION TO PHASE 2
-            if (backgroundQuestionsQueue.length > 0) {
-                console.log("[QUIZ] Iniciando Fase 2 con preguntas en background");
-                setCurrentQuizPhase(2);
-                setQuizQuestions(backgroundQuestionsQueue);
-                setBackgroundQuestionsQueue([]);
-                setIsLoadingNextBatch(true);
-                generateQuizBatch("CRITICO", true).then(phase3Questions => {
-                    console.log("[QUIZ] ✓ Fase 3 (Crítico) lista");
-                    setBackgroundQuestionsQueue(phase3Questions);
-                    setIsLoadingNextBatch(false);
-                }).catch(err => console.error("[QUIZ] Error Fase 3:", err));
-            } else {
-                setShowInteractiveQuiz(false);
-                setIsCallingN8N(true);
-                setLoadingMessage("Preparando Fase 2: Nivel Avanzado...");
+        await saveProgress('theory_completed', {
+            subject: currentSubject,
+            session: TODAYS_SESSION.session,
+            phase: currentQuizPhase,
+            subLevel: currentQuizSubLevel,
+            levelName: levelName,
+            xp_reward: 5 // Por leer teoría
+        });
 
-                const phase2Questions = await generateQuizBatch("AVANZADO", false);
-                setQuizQuestions(phase2Questions);
-                setCurrentQuizPhase(2);
-                setShowInteractiveQuiz(true);
-                setIsCallingN8N(false);
-                setLoadingMessage("");
+        console.log(`[SAVE] Teoría completada guardada en Sheet: Fase ${currentQuizPhase}, Sub-nivel ${currentQuizSubLevel}`);
 
-                setIsLoadingNextBatch(true);
-                generateQuizBatch("CRITICO", true).then(p3 => {
-                    setBackgroundQuestionsQueue(p3);
-                    setIsLoadingNextBatch(false);
-                });
-            }
+        setShowTheoryModal(false);
+        setQuizQuestions(pendingQuizQuestions);
+        setShowInteractiveQuiz(true);
+        setPendingQuizQuestions([]); // Limpiar preguntas pendientes
+    };
 
-        } else if (currentQuizPhase === 2) {
-            // TRANSITION TO PHASE 3
-            if (backgroundQuestionsQueue.length > 0) {
-                setCurrentQuizPhase(3);
-                setQuizQuestions(backgroundQuestionsQueue);
-                setBackgroundQuestionsQueue([]);
-            } else {
-                setShowInteractiveQuiz(false);
-                setIsCallingN8N(true);
-                setLoadingMessage("Preparando Fase 3: Nivel Crítico...");
+    // HANDLE QUIZ SUB-LEVEL COMPLETION - SISTEMA JAPONÉS (3 FASES × 3 SUB-NIVELES)
+    const onQuizPhaseComplete = async (subLevelScore) => {
+        console.log(`[QUIZ] Fase ${currentQuizPhase}, Sub-nivel ${currentQuizSubLevel} completado con score:`, subLevelScore);
 
-                const phase3Questions = await generateQuizBatch("CRITICO", false);
-                setQuizQuestions(phase3Questions);
-                setCurrentQuizPhase(3);
-                setShowInteractiveQuiz(true);
-                setIsCallingN8N(false);
-                setLoadingMessage("");
-            }
+        // GUARDAR PROGRESO DEL SUB-NIVEL COMPLETADO (LocalStorage)
+        saveQuizPhaseProgress(currentQuizPhase, currentQuizSubLevel, subLevelScore);
 
-        } else if (currentQuizPhase === 3) {
-            // ALL PHASES COMPLETE
-            console.log("[QUIZ] ✅ TODAS LAS FASES COMPLETADAS!");
+        // GUARDAR EN GOOGLE SHEETS (para recuperar si se interrumpe la sesión)
+        const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
+        const levelName = levelMap[currentQuizSubLevel];
+
+        await saveProgress('sublevel_completed', {
+            subject: currentSubject,
+            session: TODAYS_SESSION.session,
+            phase: currentQuizPhase,
+            subLevel: currentQuizSubLevel,
+            levelName: levelName,
+            score: subLevelScore,
+            questionsCompleted: (currentQuizPhase - 1) * 15 + (currentQuizSubLevel * 5),
+            totalQuestions: 45,
+            xp_reward: 10 // Por cada sub-nivel
+        });
+
+        console.log(`[SAVE] Progreso guardado en Sheet: Fase ${currentQuizPhase}, Sub-nivel ${currentQuizSubLevel}`);
+
+        // Determinar el siguiente paso
+
+        if (currentQuizSubLevel < 3) {
+            // TRANSICIÓN AL SIGUIENTE SUB-NIVEL DENTRO DE LA MISMA FASE
+            const nextSubLevel = currentQuizSubLevel + 1;
+            const nextLevel = levelMap[nextSubLevel];
+            const levelNameMap = { 1: "Básico", 2: "Avanzado", 3: "Crítico" };
+            const nextLevelName = levelNameMap[nextSubLevel];
+
+            // Cerrar Quiz actual
             setShowInteractiveQuiz(false);
+            setIsCallingN8N(true);
 
-            // LIMPIAR PROGRESO LOCAL (ya completó todas las fases)
-            clearQuizProgress();
+            try {
+                // GENERAR TEORÍA para el siguiente sub-nivel
+                console.log(`[THEORY] Generando teoría para siguiente sub-nivel ${nextSubLevel}...`);
+                const theory = await generateTheory(currentQuizPhase, nextSubLevel);
 
-            markSessionComplete(currentSubject, TODAYS_SESSION.session);
+                // OBTENER O GENERAR PREGUNTAS
+                let nextQuestions = [];
+                if (backgroundQuestionsQueue.length > 0) {
+                    console.log(`[QUIZ] Usando preguntas pre-generadas para sub-nivel ${nextSubLevel}`);
+                    nextQuestions = backgroundQuestionsQueue;
+                    setBackgroundQuestionsQueue([]);
+                } else {
+                    console.log(`[QUIZ] Generando preguntas ${nextLevel}...`);
+                    nextQuestions = await generateQuizBatch(nextLevel, false);
+                }
 
-            saveProgress('session_completed', {
-                subject: currentSubject,
-                session: TODAYS_SESSION.session,
-                topic: TODAYS_SESSION.topic,
-                total_questions: quizStats.total,
-                correct_answers: quizStats.correct,
-                xp_reward: 100
-            });
+                if (nextQuestions.length > 0 && theory) {
+                    // Actualizar estado
+                    setCurrentQuizSubLevel(nextSubLevel);
+                    setPendingQuizQuestions(nextQuestions);
 
-            alert(`🎉 ¡Sesión Completa! Has dominado: ${TODAYS_SESSION.topic}\n\nPuntaje: ${quizStats.correct}/${quizStats.total}\n+100 XP`);
+                    // Mostrar teoría
+                    setTheoryTitle(`📚 Teoría - Fase ${currentQuizPhase}: Nivel ${nextLevelName}`);
+                    setTheoryContent(theory);
+                    setShowTheoryModal(true);
+                    setIsCallingN8N(false);
+
+                    console.log(`[THEORY] Teoría mostrada para sub-nivel ${nextSubLevel}`);
+
+                    // Pre-generar siguiente sub-nivel (si existe)
+                    if (nextSubLevel < 3) {
+                        const followingLevel = levelMap[nextSubLevel + 1];
+                        console.log(`[QUIZ] Pre-generando sub-nivel ${nextSubLevel + 1}...`);
+                        setIsLoadingNextBatch(true);
+                        generateQuizBatch(followingLevel, true).then(flw => {
+                            setBackgroundQuestionsQueue(flw);
+                            setIsLoadingNextBatch(false);
+                        }).catch(err => console.error("[QUIZ] Error pre-generando:", err));
+                    }
+                } else {
+                    alert("Error al generar contenido para el siguiente nivel.");
+                    setIsCallingN8N(false);
+                }
+            } catch (err) {
+                console.error("[TRANSITION] Error en transición:", err);
+                alert("Error al preparar el siguiente nivel.");
+                setIsCallingN8N(false);
+            }
+
+        } else {
+            // COMPLETÓ LOS 3 SUB-NIVELES (15 PREGUNTAS) - TRANSICIÓN A LA SIGUIENTE FASE
+            if (currentQuizPhase < 3) {
+                // Pasar a la siguiente fase
+                const nextPhase = currentQuizPhase + 1;
+                console.log(`[QUIZ] ✅ Fase ${currentQuizPhase} completada (15 preguntas). Iniciando Fase ${nextPhase}...`);
+
+                setShowInteractiveQuiz(false);
+                setIsCallingN8N(true);
+
+                try {
+                    // GENERAR TEORÍA para el nivel BÁSICO de la nueva fase
+                    console.log(`[THEORY] Generando teoría para Fase ${nextPhase}, Nivel Básico...`);
+                    const theory = await generateTheory(nextPhase, 1); // Sub-nivel 1 = BÁSICO
+
+                    // Generar preguntas BÁSICO para la nueva fase
+                    console.log(`[QUIZ] Generando preguntas BÁSICO para Fase ${nextPhase}...`);
+                    const phaseBasicQuestions = await generateQuizBatch("BASICO", false);
+
+                    if (phaseBasicQuestions.length > 0 && theory) {
+                        // Actualizar estado de fase y sub-nivel
+                        setCurrentQuizPhase(nextPhase);
+                        setCurrentQuizSubLevel(1); // Reset a BÁSICO
+                        setPendingQuizQuestions(phaseBasicQuestions);
+
+                        // Mostrar teoría
+                        setTheoryTitle(`📚 Teoría - Fase ${nextPhase}: Nivel Básico`);
+                        setTheoryContent(theory);
+                        setShowTheoryModal(true);
+                        setIsCallingN8N(false);
+
+                        console.log(`[THEORY] Teoría mostrada para Fase ${nextPhase}`);
+
+                        // Pre-generar AVANZADO en background
+                        console.log(`[QUIZ] Pre-generando AVANZADO para Fase ${nextPhase}...`);
+                        setIsLoadingNextBatch(true);
+                        generateQuizBatch("AVANZADO", true).then(advQuestions => {
+                            console.log(`[QUIZ] ✓ AVANZADO pre-generado`);
+                            setBackgroundQuestionsQueue(advQuestions);
+                            setIsLoadingNextBatch(false);
+                        }).catch(err => console.error("[QUIZ] Error pre-generando AVANZADO:", err));
+                    } else {
+                        alert("Error al generar contenido para la siguiente fase.");
+                        setIsCallingN8N(false);
+                    }
+                } catch (err) {
+                    console.error("[PHASE_TRANSITION] Error:", err);
+                    alert("Error al preparar la siguiente fase.");
+                    setIsCallingN8N(false);
+                }
+
+            } else {
+                // TODAS LAS 3 FASES COMPLETADAS (45 PREGUNTAS TOTALES)
+                console.log("[ QUIZ] ✅✅✅ TODAS LAS 3 FASES COMPLETADAS! (45 preguntas)");
+                setShowInteractiveQuiz(false);
+
+                // LIMPIAR PROGRESO LOCAL (sesión completada)
+                clearQuizProgress();
+
+                // MARCAR SESIÓN COMO COMPLETADA EN EL SERVIDOR
+                markSessionComplete(currentSubject, TODAYS_SESSION.session);
+
+                saveProgress('session_completed', {
+                    subject: currentSubject,
+                    session: TODAYS_SESSION.session,
+                    topic: TODAYS_SESSION.topic,
+                    total_questions: 45, // 3 fases × 15 preguntas
+                    correct_answers: quizStats.correct,
+                    xp_reward: 300 // Más XP por completar 45 preguntas
+                });
+
+                alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHas dominado: ${TODAYS_SESSION.topic}\n\nCompletaste 3 FASES (45 preguntas)\nPuntaje: ${quizStats.correct}/45\n\n+300 XP 🏆`);
+            }
         }
     };
 
@@ -2439,6 +2638,16 @@ ${finalData.capsule}`;
                 title={TODAYS_SESSION.readingTitle || "Lectura"}
                 content={TODAYS_SESSION.readingContent || ""}
                 onFinish={handleReadingFinish}
+            />
+
+            {/* THEORY MODAL - Teoría Lúdica antes de cada sub-nivel */}
+            <ReadingModal
+                isOpen={showTheoryModal}
+                onClose={() => setShowTheoryModal(false)}
+                title={theoryTitle}
+                content={theoryContent}
+                onFinish={handleContinueToQuiz}
+                buttonText="Continuar al Quiz 📝"
             />
 
             <QuestionModal
