@@ -476,6 +476,8 @@ const MATH_SYLLABUS = [
     { session: 46, unit: 'Cierre', topic: 'Gran Desafío Final', videoTitle: 'Ensayo General Matemática', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' }
 ];
 
+// ---------------------------------------------------
+
 const DEFAULT_DAILY_ROUTE = {
     sujeto: 'Matemática',
     oa_title: 'S1: Racionales: Concepto y Conversión',
@@ -1775,44 +1777,49 @@ const App = () => {
 
     // --- SMART CALENDAR LOGIC START ---
     const getSmartSessionIndex = (subject) => {
-        // Use exact same syllabus reference logic as ACTIVE_SYLLABUS
-        const syllabus = subject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (subject === 'FISICA' ? (typeof PHYSICS_SYLLABUS !== 'undefined' ? PHYSICS_SYLLABUS : []) : (subject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (subject === 'BIOLOGIA' ? (typeof BIOLOGY_SYLLABUS !== 'undefined' ? BIOLOGY_SYLLABUS : []) : (subject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS))));
+        try {
+            // Use exact same syllabus reference logic as ACTIVE_SYLLABUS with fallback
+            const syllabus = (subject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (subject === 'FISICA' ? (typeof PHYSICS_SYLLABUS !== 'undefined' ? PHYSICS_SYLLABUS : []) : (subject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (subject === 'BIOLOGIA' ? (typeof BIOLOGY_SYLLABUS !== 'undefined' ? BIOLOGY_SYLLABUS : []) : (subject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS))))) || MATH_SYLLABUS;
 
-        if (!syllabus || syllabus.length === 0) return 0;
+            if (!syllabus || syllabus.length === 0) return 0;
 
-        // 1. Get or Init Start Date (Simulation of "User Started Course On...")
-        let startDateStr = localStorage.getItem('MATICO_START_DATE');
-        if (!startDateStr) {
-            startDateStr = new Date().toISOString();
-            localStorage.setItem('MATICO_START_DATE', startDateStr);
-        }
-        const startDate = new Date(startDateStr);
-        const today = new Date();
-
-        // Calculate days passed (floored)
-        const diffTime = Math.max(0, today - startDate);
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        // 2. Get Completed Sessions
-        const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
-        const completed = completedStr ? JSON.parse(completedStr) : [];
-
-        // 3. Catch-up Logic: Find first incomplete session up to today's target
-        // We check from Session 0 up to Session [diffDays]
-        for (let i = 0; i <= diffDays; i++) {
-            if (i >= syllabus.length) break;
-            const session = syllabus[i];
-            const sessionKey = `${subject}_${session.session}`;
-
-            // If this past/current session is NOT complete, we must do it now (Catch-up)
-            if (!completed.includes(sessionKey)) {
-                console.log(`SmartCalendar: Catch-up Mode! Found incomplete session ${i + 1} for day ${diffDays}`);
-                return i;
+            // 1. Get or Init Start Date (Simulation of "User Started Course On...")
+            let startDateStr = localStorage.getItem('MATICO_START_DATE');
+            if (!startDateStr) {
+                startDateStr = new Date().toISOString();
+                localStorage.setItem('MATICO_START_DATE', startDateStr);
             }
-        }
+            const startDate = new Date(startDateStr);
+            const today = new Date();
 
-        // 4. If all up to today are done, return today's index (capped)
-        return Math.min(diffDays, syllabus.length - 1);
+            // Calculate days passed (floored)
+            const diffTime = Math.max(0, today - startDate);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            // 2. Get Completed Sessions
+            const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
+            const completed = completedStr ? JSON.parse(completedStr) : [];
+
+            // 3. Catch-up Logic: Find first incomplete session up to today's target
+            // We check from Session 0 up to Session [diffDays]
+            for (let i = 0; i <= diffDays; i++) {
+                if (i >= syllabus.length) break;
+                const session = syllabus[i];
+                const sessionKey = `${subject}_${session.session}`;
+
+                // If this past/current session is NOT complete, we must do it now (Catch-up)
+                if (!completed.includes(sessionKey)) {
+                    console.log(`SmartCalendar: Catch-up Mode! Found incomplete session ${i + 1} for day ${diffDays}`);
+                    return i;
+                }
+            }
+
+            // 4. If all up to today are done, return today's index (capped)
+            return Math.min(diffDays, syllabus.length - 1);
+        } catch (e) {
+            console.warn("Error in getSmartSessionIndex, defaulting to 0", e);
+            return 0;
+        }
     };
 
     const markSessionComplete = (subject, sessionId) => {
