@@ -1699,6 +1699,7 @@ const App = () => {
     const [currentQuizPhase, setCurrentQuizPhase] = useState(1); // 1, 2, or 3 (Fase actual)
     const [currentQuizSubLevel, setCurrentQuizSubLevel] = useState(1); // 1=BÁSICO, 2=AVANZADO, 3=CRÍTICO
     const [backgroundQuestionsQueue, setBackgroundQuestionsQueue] = useState([]);
+    const [backgroundTheoryQueue, setBackgroundTheoryQueue] = useState("");
     const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false);
 
     // THEORY STATE - TEORÍA LÚDICA ANTES DE CADA SUB-NIVEL
@@ -1980,11 +1981,13 @@ const App = () => {
     };
 
     // GENERATE THEORY - TEORÍA LÚDICA ANTES DE CADA SUB-NIVEL
-    const generateTheory = async (phase, subLevel) => {
+    const generateTheory = async (phase, subLevel, backgroundMode = false) => {
         const levelMap = { 1: "BÁSICO", 2: "AVANZADO", 3: "CRÍTICO" };
         const levelName = levelMap[subLevel];
 
-        setLoadingMessage(`Generando Teoría Lúdica (Nivel ${levelName})...`);
+        if (!backgroundMode) {
+            setLoadingMessage(`Generando Teoría Lúdica (Nivel ${levelName})...`);
+        }
 
         try {
             const theoryPrompt = `[INSTRUCCIÓN TEORÍA LÚDICA]:
@@ -2143,14 +2146,20 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
                 // Generar siguiente sub-nivel en background (mientras lee la teoría)
                 if (startingSubLevel < 3) {
                     const nextLevel = levelMap[startingSubLevel + 1];
-                    console.log(`[QUIZ] Pre-generando Sub-nivel ${startingSubLevel + 1} (${nextLevel})...`);
+                    console.log(`[BACK] Pre-generando Sub-nivel ${startingSubLevel + 1} (${nextLevel})...`);
                     setIsLoadingNextBatch(true);
-                    generateQuizBatch(nextLevel, true).then(nextQuestions => {
-                        console.log(`[QUIZ] ? Sub-nivel ${startingSubLevel + 1} pre-generado`);
+
+                    // Pre-generar QUIZ y TEORÍA en paralelo
+                    Promise.all([
+                        generateQuizBatch(nextLevel, true),
+                        generateTheory(startingPhase, startingSubLevel + 1, true)
+                    ]).then(([nextQuestions, nextTheory]) => {
+                        console.log(`[BACK] ? Sub-nivel ${startingSubLevel + 1} (Quiz + Teoría) pre-generado`);
                         setBackgroundQuestionsQueue(nextQuestions);
+                        setBackgroundTheoryQueue(nextTheory);
                         setIsLoadingNextBatch(false);
                     }).catch(err => {
-                        console.error(`[QUIZ] Error pre-generando:`, err);
+                        console.error(`[BACK] Error pre-generando:`, err);
                         setIsLoadingNextBatch(false);
                     });
                 }
@@ -2191,6 +2200,27 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
         setQuizQuestions(pendingQuizQuestions);
         setShowInteractiveQuiz(true);
         setPendingQuizQuestions([]); // Limpiar preguntas pendientes
+
+        // PRE-GENERAR SIGUIENTE SUB-NIVEL EN BACKGROUND MIENTRAS REALIZA EL QUIZ
+        if (currentQuizSubLevel < 3 && backgroundQuestionsQueue.length === 0 && !isLoadingNextBatch) {
+            const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
+            const nextLevel = levelMap[currentQuizSubLevel + 1];
+            console.log(`[BACK] Pre-generando siguiente nivel (${nextLevel}) mientras el usuario hace el actual...`);
+            setIsLoadingNextBatch(true);
+
+            Promise.all([
+                generateQuizBatch(nextLevel, true),
+                generateTheory(currentQuizPhase, currentQuizSubLevel + 1, true)
+            ]).then(([q, t]) => {
+                console.log(`[BACK] ? Siguiente nivel pre-generado`);
+                setBackgroundQuestionsQueue(q);
+                setBackgroundTheoryQueue(t);
+                setIsLoadingNextBatch(false);
+            }).catch(err => {
+                console.error("[BACK] Error pre-generando:", err);
+                setIsLoadingNextBatch(false);
+            });
+        }
     };
 
     // --- NOTIFICACIÓN DE RESULTADOS ESTILO SALÓN ---
@@ -2272,9 +2302,16 @@ DATOS DEL ESTUDIANTE:
             setIsCallingN8N(true);
 
             try {
-                // GENERAR TEORÍA para el siguiente sub-nivel
-                console.log(`[THEORY] Generando teoría para siguiente sub-nivel ${nextSubLevel}...`);
-                const theory = await generateTheory(currentQuizPhase, nextSubLevel);
+                // OBTENER O GENERAR TEORÍA
+                let theory = "";
+                if (backgroundTheoryQueue) {
+                    console.log(`[THEORY] Usando teoría pre-generada para sub-nivel ${nextSubLevel}`);
+                    theory = backgroundTheoryQueue;
+                    setBackgroundTheoryQueue("");
+                } else {
+                    console.log(`[THEORY] Generando teoría para siguiente sub-nivel ${nextSubLevel}...`);
+                    theory = await generateTheory(currentQuizPhase, nextSubLevel);
+                }
 
                 // OBTENER O GENERAR PREGUNTAS
                 let nextQuestions = [];
@@ -2303,12 +2340,21 @@ DATOS DEL ESTUDIANTE:
                     // Pre-generar siguiente sub-nivel (si existe)
                     if (nextSubLevel < 3) {
                         const followingLevel = levelMap[nextSubLevel + 1];
-                        console.log(`[QUIZ] Pre-generando sub-nivel ${nextSubLevel + 1}...`);
+                        console.log(`[BACK] Pre-generando sub-nivel ${nextSubLevel + 1}...`);
                         setIsLoadingNextBatch(true);
-                        generateQuizBatch(followingLevel, true).then(flw => {
-                            setBackgroundQuestionsQueue(flw);
+
+                        Promise.all([
+                            generateQuizBatch(followingLevel, true),
+                            generateTheory(currentQuizPhase, nextSubLevel + 1, true)
+                        ]).then(([flwQ, flwT]) => {
+                            console.log(`[BACK] ? Sub-nivel ${nextSubLevel + 1} pre-generado`);
+                            setBackgroundQuestionsQueue(flwQ);
+                            setBackgroundTheoryQueue(flwT);
                             setIsLoadingNextBatch(false);
-                        }).catch(err => console.error("[QUIZ] Error pre-generando:", err));
+                        }).catch(err => {
+                            console.error("[BACK] Error pre-generando:", err);
+                            setIsLoadingNextBatch(false);
+                        });
                     }
                 } else {
                     alert("Error al generar contenido para el siguiente nivel.");
@@ -2331,13 +2377,27 @@ DATOS DEL ESTUDIANTE:
                 setIsCallingN8N(true);
 
                 try {
-                    // GENERAR TEORÍA para el nivel BÁSICO de la nueva fase
-                    console.log(`[THEORY] Generando teoría para Fase ${nextPhase}, Nivel Básico...`);
-                    const theory = await generateTheory(nextPhase, 1); // Sub-nivel 1 = BÁSICO
+                    // OBTENER O GENERAR TEORÍA
+                    let theory = "";
+                    if (backgroundTheoryQueue) {
+                        console.log(`[THEORY] Usando teoría pre-generada para Fase ${nextPhase}`);
+                        theory = backgroundTheoryQueue;
+                        setBackgroundTheoryQueue("");
+                    } else {
+                        console.log(`[THEORY] Generando teoría para Fase ${nextPhase}, Nivel Básico...`);
+                        theory = await generateTheory(nextPhase, 1);
+                    }
 
-                    // Generar preguntas BÁSICO para la nueva fase
-                    console.log(`[QUIZ] Generando preguntas BÁSICO para Fase ${nextPhase}...`);
-                    const phaseBasicQuestions = await generateQuizBatch("BASICO", false);
+                    // OBTENER O GENERAR PREGUNTAS
+                    let phaseBasicQuestions = [];
+                    if (backgroundQuestionsQueue.length > 0) {
+                        console.log(`[QUIZ] Usando preguntas pre-generadas para Fase ${nextPhase}`);
+                        phaseBasicQuestions = backgroundQuestionsQueue;
+                        setBackgroundQuestionsQueue([]);
+                    } else {
+                        console.log(`[QUIZ] Generando preguntas BÁSICO para Fase ${nextPhase}...`);
+                        phaseBasicQuestions = await generateQuizBatch("BASICO", false);
+                    }
 
                     if (phaseBasicQuestions.length > 0 && theory) {
                         // Actualizar estado de fase y sub-nivel
@@ -2354,13 +2414,20 @@ DATOS DEL ESTUDIANTE:
                         console.log(`[THEORY] Teoría mostrada para Fase ${nextPhase}`);
 
                         // Pre-generar AVANZADO en background
-                        console.log(`[QUIZ] Pre-generando AVANZADO para Fase ${nextPhase}...`);
+                        console.log(`[BACK] Pre-generando AVANZADO para Fase ${nextPhase}...`);
                         setIsLoadingNextBatch(true);
-                        generateQuizBatch("AVANZADO", true).then(advQuestions => {
-                            console.log(`[QUIZ] ? AVANZADO pre-generado`);
-                            setBackgroundQuestionsQueue(advQuestions);
+                        Promise.all([
+                            generateQuizBatch("AVANZADO", true),
+                            generateTheory(nextPhase, 2, true)
+                        ]).then(([advQ, advT]) => {
+                            console.log(`[BACK] ? AVANZADO pre-generado`);
+                            setBackgroundQuestionsQueue(advQ);
+                            setBackgroundTheoryQueue(advT);
                             setIsLoadingNextBatch(false);
-                        }).catch(err => console.error("[QUIZ] Error pre-generando AVANZADO:", err));
+                        }).catch(err => {
+                            console.error("[BACK] Error pre-generando AVANZADO:", err);
+                            setIsLoadingNextBatch(false);
+                        });
                     } else {
                         alert("Error al generar contenido para la siguiente fase.");
                         setIsCallingN8N(false);
