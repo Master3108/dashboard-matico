@@ -1748,12 +1748,13 @@ const App = () => {
         if (USER_ID) fetchProgress();
     }, [currentSubject, USER_ID]); // Reload when subject changes or user logs in
 
+
     // DYNAMIC SYLLABUS
-    const ACTIVE_SYLLABUS = currentSubject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (currentSubject === 'FISICA' ? PHYSICS_SYLLABUS : (currentSubject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (currentSubject === 'BIOLOGIA' ? BIOLOGY_SYLLABUS : (currentSubject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS))));
+    const ACTIVE_SYLLABUS = currentSubject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (currentSubject === 'FISICA' ? PHYSICS_SYLLABUS : (currentSubject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (currentSubject === 'BIOLOGIA' ? BIOLOGY_SYLLABUS : (currentSubject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS)))) || MATH_SYLLABUS;
 
     console.log("APP RENDER:", { currentSubject, todayIndex, syllabusLen: ACTIVE_SYLLABUS?.length });
 
-    const RAW_SESSION = ACTIVE_SYLLABUS[todayIndex] || ACTIVE_SYLLABUS[0];
+    const RAW_SESSION = (ACTIVE_SYLLABUS && ACTIVE_SYLLABUS[todayIndex]) || (ACTIVE_SYLLABUS && ACTIVE_SYLLABUS[0]);
     const TODAYS_SESSION = RAW_SESSION || {
         session: 0,
         unit: 'Cargando...',
