@@ -1922,7 +1922,7 @@ const App = () => {
 
         const config = levelConfig[level];
         if (!backgroundMode) {
-            setLoadingMessage(`Generando ${config.name}...`);
+            setLoadingMessage(`Generando Quiz de 15 Preguntas (${config.name})...`);
         }
 
 
@@ -1995,7 +1995,7 @@ const App = () => {
     // GENERATE THEORY - TEORÍA LÚDICA PARA LA SESIÓN COMPLETA
     const generateTheory = async (backgroundMode = false) => {
         if (!backgroundMode) {
-            setLoadingMessage(`Generando Teoría Lúdica: ${TODAYS_SESSION.topic}...`);
+            setLoadingMessage(`Generando Teoría Lúdica Matico: ${TODAYS_SESSION.topic}...`);
         }
 
         try {
