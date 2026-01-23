@@ -1025,51 +1025,64 @@ const cleanLatex = (text) => {
 
 // HELPER FOR ROBUST N8N JSON PARSING
 const parseN8NResponse = (textResponse) => {
-    let jsonData = {};
+    if (!textResponse || typeof textResponse !== 'string') return {};
+
+    const cleanJsonString = (str) => {
+        if (!str || typeof str !== 'string') return str;
+        return str
+            .replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\') // Escapar backslashes que no son comandos válidos de JSON
+            .replace(/\\'/g, "'") // Corregir comillas simples escapadas innecesariamente
+            .trim();
+    };
+
+    const unbox = (data) => {
+        if (!data) return data;
+        if (typeof data === 'string') {
+            const possible = data.trim().replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+            if (possible.startsWith('{') || possible.startsWith('[')) {
+                try {
+                    return unbox(JSON.parse(cleanJsonString(possible)));
+                } catch (e) { return data; }
+            }
+            return data;
+        }
+        if (typeof data === 'object') {
+            // Buscar contenido útil en llaves comunes
+            if (data.output) return unbox(data.output);
+            if (data.text) return unbox(data.text);
+            if (data.raw_output) return unbox(data.raw_output);
+            if (data.content) return unbox(data.content);
+            if (data.theory) return unbox(data.theory);
+            return data;
+        }
+        return data;
+    };
+
     try {
-        // First try standard parse cleaning logic
+        // Intentar parsear directo primero
+        let jsonData = {};
         try {
-            jsonData = JSON.parse(textResponse.replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\'));
+            jsonData = JSON.parse(cleanJsonString(textResponse));
         } catch (e) {
+            // Si falla, buscar un bloque JSON entre llaves
             const jsonMatch = textResponse.match(/{[\s\S]*}/);
             if (jsonMatch) {
-                jsonData = JSON.parse(jsonMatch[0].replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\'));
+                jsonData = JSON.parse(cleanJsonString(jsonMatch[0]));
             } else {
                 throw e;
             }
         }
 
-        // Handle recursive encoded JSON inside .output
-        if (jsonData.output && typeof jsonData.output === 'string') {
-            let raw = jsonData.output;
-            raw = raw.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-
-            const sanitized = raw
-                .replace(/\\"/g, '"')
-                .replace(/[\u000A\u000D]/g, "\\n")
-                .replace(/\\(.)/g, (match, char) => {
-                    if (char === '$') return '$';
-                    if ('"\\/nrtu'.includes(char)) return match;
-                    return '\\\\' + char;
-                });
-
-            try {
-                const parsed = JSON.parse(sanitized);
-                if (parsed && typeof parsed === 'object') {
-                    jsonData = { ...jsonData, ...parsed };
-                }
-            } catch (e) {
-                try {
-                    const parsedRaw = JSON.parse(raw);
-                    if (parsedRaw && typeof parsedRaw === 'object') {
-                        jsonData = { ...jsonData, ...parsedRaw };
-                    }
-                } catch (e2) { }
-            }
+        const result = unbox(jsonData);
+        // Si el resultado es un string (porque no pudo unboxear más), pero el original era objeto,
+        // retornamos al menos un objeto que tenga la propiedad 'text' o similar
+        if (typeof result === 'string') {
+            return { output: result };
         }
-        return jsonData;
+        return result || {};
+
     } catch (error) {
-        console.error("Parse Error:", error);
+        console.warn("[PARSER] Error crítico decodificando n8n:", error, textResponse.substring(0, 100));
         return { error: true, raw: textResponse };
     }
 };
@@ -2018,17 +2031,11 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
             });
 
             const text = await response.text();
-            const cleaned = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+            const json = parseN8NResponse(text);
 
-            let theoryText = "";
-            try {
-                const json = JSON.parse(cleaned);
-                theoryText = json.content || json.theory || json.text || cleaned;
-            } catch {
-                theoryText = cleaned; // Si no es JSON, usar el texto directo
-            }
+            const theoryText = json.output || json.text || json.theory || json.content || (typeof json === 'string' ? json : text);
 
-            console.log(`[THEORY] Teoría generada para Fase ${phase}, Sub-nivel ${subLevel}`);
+            console.log(`[THEORY] Teoría generada para Fase ${phase}`);
             return theoryText;
 
         } catch (e) {
