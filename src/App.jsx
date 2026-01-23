@@ -1992,30 +1992,28 @@ const App = () => {
         }
     };
 
-    // GENERATE THEORY - TEORÍA LÚDICA ANTES DE CADA SUB-NIVEL
-    const generateTheory = async (phase, backgroundMode = false) => {
-        const levelMap = { 1: "BÁSICO", 2: "AVANZADO", 3: "CRÍTICO" };
-        const levelName = levelMap[phase];
-
+    // GENERATE THEORY - TEORÍA LÚDICA PARA LA SESIÓN COMPLETA
+    const generateTheory = async (backgroundMode = false) => {
         if (!backgroundMode) {
-            setLoadingMessage(`Generando Teoría Lúdica (Nivel ${levelName})...`);
+            setLoadingMessage(`Generando Teoría Lúdica: ${TODAYS_SESSION.topic}...`);
         }
 
         try {
             const theoryPrompt = `[INSTRUCCIÓN TEORÍA LÚDICA]:
-Genera contenido teórico EXTENSO (5+ minutos de lectura) para nivel ${levelName} de la Fase ${phase}.
+Genera contenido teórico COMPLETO y EXTENSO (10+ minutos de lectura) para la sesión de hoy.
 
 Tema: ${TODAYS_SESSION.topic}
-Nivel de Dificultad: ${levelName}
+Contexto: Preparación PAES Matemática / 1° Medio Chile.
 
 El contenido debe incluir:
-1. Explicación clara y detallada de los conceptos
-2. Múltiples ejemplos prácticos resueltos paso a paso
-3. Analogías y casos de la vida real
-4. Tips y estrategias para resolver problemas de este nivel
-5. Formato en Markdown con títulos, listas y énfasis
+1. Explicación profunda y detallada de todos los conceptos del tema.
+2. Múltiples ejemplos prácticos, desde nivel elemental hasta el más complejo (PAES/Universidad), resueltos paso a paso.
+3. Analogías creativas y aplicaciones en la vida real.
+4. Estrategias críticas y tips para enfrentar problemas difíciles.
+5. Formato enriquecido en Markdown con títulos claros, listas, tablas si aplica, y énfasis constante.
+6. IMPORTANTE: Usa lenguaje motivador y gamificado, tipo 'Manual del Maestro'.
 
-IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
+IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
 
             const body = {
                 sujeto: currentSubject,
@@ -2118,8 +2116,8 @@ IMPORTANTE: NO generes preguntas. Solo teoría explicativa con ejemplos.`;
             const levelName = levelNameMap[startingPhase];
 
             // PASO 1: GENERAR TEORÍA LÚDICA
-            console.log(`[THEORY] Generando teoría para Fase ${startingPhase}, Nivel ${levelName}...`);
-            const theory = await generateTheory(startingPhase);
+            console.log(`[THEORY] Generando teoría única para la sesión...`);
+            const theory = await generateTheory();
 
             // PASO 2: GENERAR PREGUNTAS (en paralelo a la lectura de teoría)
             console.log(`[QUIZ] Generando preguntas ${currentLevel} en background...`);
