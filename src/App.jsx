@@ -2888,7 +2888,7 @@ ${finalData.capsule}`;
                         </div>
                     </div>
 
-                    {/* RESPONSIVE SUBJECT TOGGLES */}
+                    {/* SYSTEM CONTROLS (Top Right) */}
                     <div className="w-full md:w-auto flex flex-col items-center md:items-end gap-3 mt-4 md:mt-0">
                         {/* TEST/PROD TOGGLE SEPARATE */}
                         <button
@@ -2928,53 +2928,56 @@ ${finalData.capsule}`;
                             <XCircle className="w-4 h-4" />
                             Cerrar Sesión
                         </button>
-
-                        {/* GRID 3 COLS */}
-                        <div className="grid grid-cols-3 gap-2">
-                            <button
-                                onClick={() => setCurrentSubject('MATEMATICA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : ''}`}
-                            >
-                                📐 Mate
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('LENGUAJE')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF9F43] !text-white !border-[#E68A35] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,159,67,0.6)]' : ''}`}
-                            >
-                                📚 Lenguaje
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('FISICA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : ''}`}
-                            >
-                                🌌 Física
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('QUIMICA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : ''}`}
-                            >
-                                🧪 Química
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('BIOLOGIA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : ''}`}
-                            >
-                                🌿 Biología
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('HISTORIA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : ''}`}
-                            >
-                                📜 Historia
-                            </button>
-                        </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                    <div className="lg:col-span-3">
+                <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                    {/* NEW: HORIZONTAL SUBJECT LINE (Web Format) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+                        <button
+                            onClick={() => setCurrentSubject('MATEMATICA')}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : ''}`}
+                        >
+                            <span className="text-lg mr-1 rotate-[-10deg] inline-block">📐</span> Mate
+                        </button>
+                        <button
+                            onClick={() => setCurrentSubject('LENGUAJE')}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF9F43] !text-white !border-[#E68A35] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,159,67,0.6)]' : ''}`}
+                        >
+                            <span className="text-lg mr-1 rotate-[10deg] inline-block">📚</span> Lenguaje
+                        </button>
+                        <button
+                            onClick={() => setCurrentSubject('FISICA')}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : ''}`}
+                        >
+                            <span className="text-lg mr-1 rotate-[-5deg] inline-block">🌌</span> Física
+                        </button>
+                        <button
+                            onClick={() => setCurrentSubject('QUIMICA')}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : ''}`}
+                        >
+                            <span className="text-lg mr-1 rotate-[5deg] inline-block">🧪</span> Química
+                        </button>
+                        <button
+                            onClick={() => setCurrentSubject('BIOLOGIA')}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : ''}`}
+                        >
+                            <span className="text-lg mr-1 rotate-[-10deg] inline-block">🌿</span> Biología
+                        </button>
+                        <button
+                            onClick={() => setCurrentSubject('HISTORIA')}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : ''}`}
+                        >
+                            <span className="text-lg mr-1 rotate-[10deg] inline-block">📜</span> Historia
+                        </button>
+                    </div>
+
+                    <div className="w-full">
                         <AnnualRaceBar currentDay={TODAYS_SESSION.session} totalDays={43} />
                     </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
 
                     <div className="lg:col-span-2 space-y-8">
                         <div className={`${clayCard} relative overflow-visible`}>
