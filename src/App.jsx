@@ -2219,21 +2219,26 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
 
                 console.log(`[QUIZ] Preguntas cargadas. Iniciando sesión interactiva.`);
 
-                // DISPARAR PRE-GENERACIÓN DE LA SIGUIENTE FASE (Si existe)
+                // DISPARAR PRE-GENERACIÓN DE LA SIGUIENTE FASE (Si existe) - CON DELAY DE 30s
                 if (startingPhase < 3) {
                     const nextLevel = levelMap[startingPhase + 1];
-                    console.log(`[BACK] Pre-generando siguiente nivel (${nextLevel}) en background...`);
-                    setIsLoadingNextBatch(true);
-                    backgroundTaskRef.current = generateQuizBatch(nextLevel, true).then(q => {
-                        setBackgroundQuestionsQueue(q);
-                        setIsLoadingNextBatch(false);
-                        backgroundTaskRef.current = null;
-                        return { questions: q };
-                    }).catch(() => {
-                        setIsLoadingNextBatch(false);
-                        backgroundTaskRef.current = null;
-                        return { questions: [] };
-                    });
+                    console.log(`[BACK] Programando pre-generación de nivel (${nextLevel}) para dentro de 30 segundos...`);
+
+                    // Delay de 30 segundos antes de lanzar la carga en background
+                    setTimeout(() => {
+                        console.log(`[BACK] ⏳ Ejecutando carga diferida de ${nextLevel}...`);
+                        setIsLoadingNextBatch(true);
+                        backgroundTaskRef.current = generateQuizBatch(nextLevel, true).then(q => {
+                            setBackgroundQuestionsQueue(q);
+                            setIsLoadingNextBatch(false);
+                            backgroundTaskRef.current = null;
+                            return { questions: q };
+                        }).catch(() => {
+                            setIsLoadingNextBatch(false);
+                            backgroundTaskRef.current = null;
+                            return { questions: [] };
+                        });
+                    }, 30000); // 30000 ms = 30 segundos
                 }
             } else {
                 throw new Error("No se pudo obtener el batch de preguntas del servidor.");
@@ -2432,20 +2437,24 @@ DATOS DEL ESTUDIANTE:
 
                     console.log(`[QUIZ] Fase ${nextPhase} iniciada con ${nextQuestions.length} preguntas`);
 
-                    // Disparar pre-generación para la siguiente fase si existe
+                    // Disparar pre-generación para la siguiente fase si existe - CON DELAY DE 30s
                     if (nextPhase < 3) {
                         const followingLevel = levelMap[nextPhase + 1];
-                        console.log(`[BACK] Pre-generando Fase ${nextPhase + 1} (${followingLevel})...`);
-                        setIsLoadingNextBatch(true);
-                        backgroundTaskRef.current = generateQuizBatch(followingLevel, true).then(q => {
-                            setBackgroundQuestionsQueue(q);
-                            setIsLoadingNextBatch(false);
-                            backgroundTaskRef.current = null;
-                            return { questions: q };
-                        }).catch(() => {
-                            setIsLoadingNextBatch(false);
-                            backgroundTaskRef.current = null;
-                        });
+                        console.log(`[BACK] Programando pre-generación de Fase ${nextPhase + 1} (${followingLevel}) para dentro de 30 segundos...`);
+
+                        setTimeout(() => {
+                            console.log(`[BACK] ⏳ Ejecutando carga diferida de ${followingLevel}...`);
+                            setIsLoadingNextBatch(true);
+                            backgroundTaskRef.current = generateQuizBatch(followingLevel, true).then(q => {
+                                setBackgroundQuestionsQueue(q);
+                                setIsLoadingNextBatch(false);
+                                backgroundTaskRef.current = null;
+                                return { questions: q };
+                            }).catch(() => {
+                                setIsLoadingNextBatch(false);
+                                backgroundTaskRef.current = null;
+                            });
+                        }, 30000);
                     }
                 } else {
                     alert("Error al cargar la siguiente fase. Por favor intenta de nuevo.");
