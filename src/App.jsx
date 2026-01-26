@@ -2015,12 +2015,21 @@ const App = () => {
                 }
 
                 // Validate we actually got questions
-                if (qData.length === 0 && json.output) {
-                    // Try parsing output string again?
-                    console.log(`[QUIZ_DEBUG] Batch ${batchIndex} checking 'output' field fallback...`);
-                    const sub = parseN8NResponse(json.output);
-                    if (Array.isArray(sub)) qData = sub;
-                    else if (sub.questions) qData = sub.questions;
+                if (qData.length === 0) {
+                    // CASE 1: Top level output field
+                    if (json.output) {
+                        console.log(`[QUIZ_DEBUG] Batch ${batchIndex} checking 'output' field fallback...`);
+                        const sub = parseN8NResponse(json.output);
+                        if (Array.isArray(sub)) qData = sub;
+                        else if (sub.questions) qData = sub.questions;
+                    }
+                    // CASE 2: Array wrapping output field (Standard N8N behavior)
+                    else if (Array.isArray(json) && json.length > 0 && json[0].output) {
+                        console.log(`[QUIZ_DEBUG] Batch ${batchIndex} checking 'json[0].output' field fallback...`);
+                        const sub = parseN8NResponse(json[0].output);
+                        if (Array.isArray(sub)) qData = sub;
+                        else if (sub.questions) qData = sub.questions;
+                    }
                 }
 
                 console.log(`[QUIZ_DEBUG] Batch ${batchIndex} final extracted count: ${qData.length}`);
