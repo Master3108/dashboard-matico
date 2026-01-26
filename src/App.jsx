@@ -1987,25 +1987,36 @@ const App = () => {
                 // console.log(`[QUIZ] Raw response batch ${batchIndex}:`, text.substring(0, 100) + "..."); 
                 const json = parseN8NResponse(text);
 
+                // DEBUG: Ver qué estructura exacta llega
+                console.log(`[QUIZ_DEBUG] Batch ${batchIndex} parsed JSON keys:`, Object.keys(json));
+                if (Array.isArray(json)) console.log(`[QUIZ_DEBUG] Batch ${batchIndex} is ARRAY length ${json.length}`);
+
                 // Extraer array de preguntas usando la misma lógica robusta
                 let qData = [];
                 // Deep extraction helper logic repeated or simplified here
-                if (json.questions && Array.isArray(json.questions)) qData = json.questions;
-                else if (json.question) qData = [json];
-                else if (Array.isArray(json)) {
+                if (json.questions && Array.isArray(json.questions)) {
+                    qData = json.questions;
+                } else if (json.question) {
+                    qData = [json];
+                } else if (Array.isArray(json)) {
                     // Filter items that look like questions
                     qData = json.filter(q => q && (q.question || q.questions));
                     // Handle nested arrays?
+                    if (qData.length === 0 && json.length > 0 && json[0].questions) {
+                        qData = json[0].questions;
+                    }
                 }
 
                 // Validate we actually got questions
                 if (qData.length === 0 && json.output) {
                     // Try parsing output string again?
+                    console.log(`[QUIZ_DEBUG] Batch ${batchIndex} checking 'output' field fallback...`);
                     const sub = parseN8NResponse(json.output);
                     if (Array.isArray(sub)) qData = sub;
                     else if (sub.questions) qData = sub.questions;
                 }
 
+                console.log(`[QUIZ_DEBUG] Batch ${batchIndex} final extracted count: ${qData.length}`);
                 return qData || [];
             } catch (e) {
                 console.error(`Error en lote ${batchIndex}:`, e);
