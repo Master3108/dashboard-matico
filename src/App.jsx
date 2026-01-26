@@ -1924,7 +1924,13 @@ const App = () => {
     // Genera un batch de 15 preguntas para un nivel específico
     // GENERATE QUIZ BATCH - OPTIMIZADO: PARALELO 3x5 (Total 15)
     // Genera 3 lotes de 5 preguntas simultáneamente para evitar timeouts de 50s+
-    const generateQuizBatch = async (level, backgroundMode = false) => {
+    const generateQuizBatch = async (level, backgroundMode = false, retryCount = 0) => {
+        // SAFETY LIMIT: Stop after 1 retry to prevent infinite loops
+        if (retryCount > 1) {
+            console.error("[QUIZ] Max retries reached. Aborting generation to accept partial results or failure.");
+            return []; // Or return null to handle upstream
+        }
+
         const levelConfig = {
             "BASICO": {
                 name: "Nivel Básico PAES",
@@ -1944,11 +1950,11 @@ const App = () => {
         };
 
         const config = levelConfig[level];
-        if (!backgroundMode) {
+        if (!backgroundMode && retryCount === 0) {
             setLoadingMessage(`Generando Quiz ${level} (Carga Rápida ⚡)...`);
         }
 
-        console.log(`[QUIZ] Iniciando generación paralela 3x5 para ${level}...`);
+        console.log(`[QUIZ] Iniciando generación paralela 3x5 para ${level} (Intento ${retryCount + 1})...`);
 
         // Función helper para pedir UN lote de 5 preguntas
         const fetchSubset = async (batchIndex) => {
@@ -1968,6 +1974,7 @@ const App = () => {
                 };
 
                 // Añadimos un pequeño delay aleatorio para no saturar si n8n tiene rate limits
+                // Delay incremental: 0ms, 500ms, 1000ms
                 await new Promise(r => setTimeout(r, batchIndex * 500));
 
                 const response = await fetch(activeWebhookUrl, {
@@ -1977,15 +1984,29 @@ const App = () => {
                 });
 
                 const text = await response.text();
+                // console.log(`[QUIZ] Raw response batch ${batchIndex}:`, text.substring(0, 100) + "..."); 
                 const json = parseN8NResponse(text);
 
                 // Extraer array de preguntas usando la misma lógica robusta
                 let qData = [];
+                // Deep extraction helper logic repeated or simplified here
                 if (json.questions && Array.isArray(json.questions)) qData = json.questions;
                 else if (json.question) qData = [json];
-                else if (Array.isArray(json)) qData = json.filter(q => q.question);
+                else if (Array.isArray(json)) {
+                    // Filter items that look like questions
+                    qData = json.filter(q => q && (q.question || q.questions));
+                    // Handle nested arrays?
+                }
 
-                return qData;
+                // Validate we actually got questions
+                if (qData.length === 0 && json.output) {
+                    // Try parsing output string again?
+                    const sub = parseN8NResponse(json.output);
+                    if (Array.isArray(sub)) qData = sub;
+                    else if (sub.questions) qData = sub.questions;
+                }
+
+                return qData || [];
             } catch (e) {
                 console.error(`Error en lote ${batchIndex}:`, e);
                 return [];
@@ -2000,12 +2021,16 @@ const App = () => {
             // COMBINAR RESULTADOS EN ORDEN (0 -> 1 -> 2)
             let combinedQuestions = [...results[0], ...results[1], ...results[2]];
 
+            // Clean undefined/nulls just in case
+            combinedQuestions = combinedQuestions.filter(q => q && q.question);
+
             console.log(`[QUIZ] Total preguntas recibidas: ${combinedQuestions.length}`);
 
-            // Fallback si algo falló: Si tenemos menos de 5, intentamos una carga de emergencia o repetimos
+            // Fallback: Si tenemos MUY pocas (menos de 5), reintentamos UNA VEZ
             if (combinedQuestions.length < 5) {
-                console.warn("[QUIZ] Pocas preguntas recibidas, intentando carga única de respaldo...");
-                return await generateQuizBatch(level, backgroundMode); // Reintento recursivo simple (cuidado con loops, pero útil una vez)
+                console.warn(`[QUIZ] Pocas preguntas (${combinedQuestions.length}) recibidas. Reintentando...`);
+                // Increase retry count to avoid infinite loop
+                return await generateQuizBatch(level, backgroundMode, retryCount + 1);
             }
 
             // Formatear final
