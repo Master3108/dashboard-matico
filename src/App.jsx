@@ -1030,43 +1030,63 @@ const parseN8NResponse = (textResponse) => {
     const cleanJsonString = (str) => {
         if (!str || typeof str !== 'string') return str;
         return str
-            .replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\') // Escapar backslashes que no son comandos válidos de JSON
-            .replace(/\\'/g, "'") // Corregir comillas simples escapadas innecesariamente
+            .replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\') // Fix invalid escape sequences (like \d in \div)
+            .replace(/[\u0000-\u001F]+/g, (match) => match === '\n' || match === '\r' || match === '\t' ? match : '') // Remove control chars that break JSON.parse
             .trim();
     };
 
-    const unbox = (data) => {
-        if (!data) return data;
+    const attemptParse = (str) => {
+        if (!str) return null;
+        try {
+            return JSON.parse(str);
+        } catch (e1) {
+            try {
+                return JSON.parse(cleanJsonString(str));
+            } catch (e2) {
+                // If it looks like a JSON block trapped in text
+                const match = str.match(/({[\s\S]*})|(\[[\s\S]*\])/);
+                if (match) {
+                    try {
+                        return JSON.parse(cleanJsonString(match[0]));
+                    } catch (e3) { return null; }
+                }
+                return null;
+            }
+        }
+    };
 
-        // CASE 1: ARRAY (Common in n8n responses)
+    const unbox = (data, depth = 0) => {
+        if (!data || depth > 6) return data;
+
+        // CASE 1: ARRAY
         if (Array.isArray(data)) {
             if (data.length === 0) return {};
-            if (data.length === 1) return unbox(data[0]);
-            // If it's a list and the first item has questions, it's likely the payload
-            if (data[0] && (data[0].questions || data[0].question)) return unbox(data[0]);
-            return data;
+            // Prefer items that look like they contain questions
+            const bestItem = data.find(i => i && (i.questions || i.question || i.output)) || data[0];
+            return unbox(bestItem, depth + 1);
         }
 
-        // CASE 2: STRING (Potential JSON inside a string)
+        // CASE 2: STRING (Potential nested JSON string)
         if (typeof data === 'string') {
-            const possible = data.trim().replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-            if ((possible.startsWith('{') || possible.startsWith('[')) && possible.length > 2) {
-                try {
-                    return unbox(JSON.parse(cleanJsonString(possible)));
-                } catch (e) { return data; }
+            const trimmed = data.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                const parsed = attemptParse(trimmed);
+                if (parsed) return unbox(parsed, depth + 1);
             }
             return data;
         }
 
         // CASE 3: OBJECT
         if (typeof data === 'object') {
-            // Priority list of keys where n8n/AI agents hide the "real" content
-            const keysToTry = ['output', 'text', 'raw_output', 'content', 'theory', 'questions', 'message'];
-            for (const key of keysToTry) {
+            // First check if this object IS already what we want
+            if (Array.isArray(data.questions)) return data;
+
+            // Otherwise look inside priority keys
+            const priorityKeys = ['questions', 'output', 'text', 'raw_output', 'content', 'theory', 'data'];
+            for (const key of priorityKeys) {
                 if (data[key] !== undefined && data[key] !== null) {
-                    // Special case: if it's already the 'questions' array we want, just return it
-                    if (key === 'questions' && Array.isArray(data[key])) return data;
-                    return unbox(data[key]);
+                    const unboxed = unbox(data[key], depth + 1);
+                    if (unboxed && (unboxed.questions || unboxed.question || Array.isArray(unboxed))) return unboxed;
                 }
             }
             return data;
@@ -1075,30 +1095,15 @@ const parseN8NResponse = (textResponse) => {
     };
 
     try {
-        // Intentar parsear directo primero
-        let jsonData = {};
-        try {
-            jsonData = JSON.parse(cleanJsonString(textResponse));
-        } catch (e) {
-            // Si falla, buscar un bloque JSON entre llaves
-            const jsonMatch = textResponse.match(/{[\s\S]*}/);
-            if (jsonMatch) {
-                jsonData = JSON.parse(cleanJsonString(jsonMatch[0]));
-            } else {
-                throw e;
-            }
-        }
+        const initialData = attemptParse(textResponse);
+        if (!initialData) return { error: true, raw: textResponse };
 
-        const result = unbox(jsonData);
-        // Si el resultado es un string (porque no pudo unboxear más), pero el original era objeto,
-        // retornamos al menos un objeto que tenga la propiedad 'text' o similar
-        if (typeof result === 'string') {
-            return { output: result };
-        }
+        const result = unbox(initialData);
+        // If unbox found an object/array, return it. If it's still a string, wrap it.
+        if (typeof result === 'string') return { output: result };
         return result || {};
-
-    } catch (error) {
-        console.warn("[PARSER] Error crítico decodificando n8n:", error, textResponse.substring(0, 100));
+    } catch (e) {
+        console.warn("[PARSER] Error final:", e);
         return { error: true, raw: textResponse };
     }
 };
@@ -1967,16 +1972,22 @@ const App = () => {
             const text = await response.text();
             const json = parseN8NResponse(text);
 
-            let questions = [];
+            let questionsData = [];
+
+            // Try different paths for questions array
             if (json.questions && Array.isArray(json.questions)) {
-                questions = json.questions;
+                questionsData = json.questions;
+            } else if (json.output && typeof json.output === 'string') {
+                // Sometimes parseN8NResponse returns a string in 'output' if it was a final fallback
+                const fallback = parseN8NResponse(json.output);
+                if (fallback.questions) questionsData = fallback.questions;
+            } else if (Array.isArray(json)) {
+                questionsData = json.filter(q => q.question);
             } else if (json.question) {
-                questions = [json];
-            } else if (json[0] && json[0].question) {
-                questions = json;
+                questionsData = [json];
             }
 
-            const formattedQuestions = questions.map(q => {
+            const formattedQuestions = (questionsData || []).map(q => {
                 let optsObj = {};
                 let correctKey = 'A';
 
@@ -1989,15 +2000,15 @@ const App = () => {
                         correctKey = letters[q.correctIndex] || 'A';
                     }
                 } else {
-                    optsObj = q.options;
-                    correctKey = q.correct_answer || 'A';
+                    optsObj = q.options || {};
+                    correctKey = q.correct_answer || (q.correctIndex !== undefined ? ['A', 'B', 'C', 'D'][q.correctIndex] : 'A');
                 }
 
                 return {
                     question: q.question,
                     options: optsObj,
                     correct_answer: correctKey,
-                    explanation: q.explanation
+                    explanation: q.explanation || "No hay explicación disponible."
                 };
             });
 
