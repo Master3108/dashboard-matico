@@ -242,7 +242,8 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase }) => {
             spread: 100,
             origin: { y: 0.6 }
         });
-        onComplete && onComplete(score);
+        // Pass only the correct count, as the parent expects a number to add to the total
+        onComplete && onComplete(score.correct);
     };
 
     const getButtonClass = (option) => {
