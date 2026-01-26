@@ -2093,7 +2093,7 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
         console.log(`[PROGRESS] Progreso limpiado para ${key}`);
     };
 
-    // START FULL MULTI-STAGE QUIZ - SISTEMA JAPONÉS CON TEORÍA (3 FASES × 15 PREGUNTAS)
+    // START FULL MULTI-STAGE QUIZ - SISTEMA KAIZEN (3 FASES × 15 PREGUNTAS)
     const startFullQuiz = async () => {
         setIsCallingN8N(true);
         setAiModalOpen(false);
@@ -2103,7 +2103,7 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
         const startingPhase = savedProgress.currentPhase;
 
         console.log(`[QUIZ] Progreso detectado:`, savedProgress);
-        console.log(`[QUIZ] Iniciando desde Fase ${startingPhase}`);
+        console.log(`[QUIZ] Iniciando desde Fase ${startingPhase} (Directo sin teoría)`);
 
         setCurrentQuizPhase(startingPhase);
         setBackgroundQuestionsQueue([]);
@@ -2113,28 +2113,37 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
             const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
             const currentLevel = levelMap[startingPhase];
 
-            // PASO 1: GENERAR TEORÍA (LO MÁS RÁPIDO POSIBLE)
-            console.log(`[QUIZ] Generando teoría...`);
-            setLoadingMessage(`Preparando Teoría Lúdica Matico...`);
+            setLoadingMessage(`Preparando Quiz Kaizen: ${currentLevel}...`);
 
-            // Iniciamos la generación de preguntas en paralelo pero NO la esperamos todavía
-            console.log(`[BACK] Iniciando generación de preguntas ${currentLevel} en background...`);
-            backgroundTaskRef.current = generateQuizBatch(currentLevel, true).then(q => ({ questions: q }));
-            setIsLoadingNextBatch(true);
+            // PASO 1: GENERAR PREGUNTAS DIRECTAMENTE (Ya no hay teoría previa)
+            const questions = await generateQuizBatch(currentLevel, false);
 
-            const theory = await generateTheory();
-
-            if (theory) {
-                // Mostrar teoría inmediatamente
-                setTheoryTitle(`📚 Teoría Lúdica: ${TODAYS_SESSION.topic}`);
-                setTheoryContent(theory);
-                setShowTheoryModal(true);
+            if (questions && questions.length > 0) {
+                setQuizQuestions(questions);
+                setShowInteractiveQuiz(true);
                 setIsCallingN8N(false);
                 setLoadingMessage("");
 
-                console.log(`[THEORY] Teoría mostrada. Las preguntas se siguen generando en background.`);
+                console.log(`[QUIZ] Preguntas cargadas. Iniciando sesión interactiva.`);
+
+                // DISPARAR PRE-GENERACIÓN DE LA SIGUIENTE FASE (Si existe)
+                if (startingPhase < 3) {
+                    const nextLevel = levelMap[startingPhase + 1];
+                    console.log(`[BACK] Pre-generando siguiente nivel (${nextLevel}) en background...`);
+                    setIsLoadingNextBatch(true);
+                    backgroundTaskRef.current = generateQuizBatch(nextLevel, true).then(q => {
+                        setBackgroundQuestionsQueue(q);
+                        setIsLoadingNextBatch(false);
+                        backgroundTaskRef.current = null;
+                        return { questions: q };
+                    }).catch(() => {
+                        setIsLoadingNextBatch(false);
+                        backgroundTaskRef.current = null;
+                        return { questions: [] };
+                    });
+                }
             } else {
-                throw new Error("No se pudo obtener la teoría del servidor.");
+                throw new Error("No se pudo obtener el batch de preguntas del servidor.");
             }
 
         } catch (e) {
