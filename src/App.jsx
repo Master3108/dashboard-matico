@@ -42,7 +42,7 @@ import {
     HelpCircle,
     Loader,
     Image as ImageIcon, Maximize, Minimize
-    , FlaskConical, Globe
+    , FlaskConical, Globe, Variable, Compass, PenTool, Book
 } from 'lucide-react';
 import {
     BarChart,
@@ -906,7 +906,7 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
                         className={`${clayBtnAction} w-full`}
                         disabled={isCallingN8N || (!question.trim() && !pastedImage)}
                     >
-                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '? Confirmar y Analizar Imagen' : 'Preguntar a Matico ??')}
+                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '✅ Confirmar y Analizar Imagen' : 'Preguntar a Matico 🚀')}
                     </button>
                 </form>
             </div >
@@ -922,7 +922,7 @@ const LoadingOverlay = ({ isOpen, message }) => {
             <div className={`${clayCard} !bg-[#FFC300] flex flex-col items-center p-8 animate-bounce max-w-sm`}>
                 <Brain className="w-16 h-16 text-[#2B2E4A] animate-spin mb-4" />
                 <h2 className="text-2xl font-black text-[#2B2E4A] text-center uppercase tracking-widest whitespace-pre-line">
-                    {message || "? ESPÉRATE...\nESTOY PENSANDO ??"}
+                    {message || "✋ ESPÉRATE...\nESTOY PENSANDO 🤔"}
                 </h2>
             </div>
         </div >
@@ -1260,7 +1260,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                     {apiJson && apiJson.question && (
                         <div className="mt-8 pt-6 border-t border-gray-300/50">
                             <h5 className="font-black text-[#2B2E4A] mb-4 flex items-center gap-2">
-                                <span className="text-xl">?? </span>? Desafío Rápido:
+                                <span className="text-xl">🧠 </span>🎯 Desafío Rápido:
                             </h5>
                             <div className="font-bold text-[#2B2E4A] mb-4">
                                 <MathRenderer text={apiJson.question} />
@@ -1310,7 +1310,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             onClick={onAskDoubt}
                                             className="px-4 py-2 bg-white/50 text-[#FF9F43] font-bold rounded-xl text-xs flex items-center gap-1 hover:bg-white transition-colors"
                                         >
-                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? ??
+                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? 🤔
                                         </button>
 
                                         <button
@@ -1318,7 +1318,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             className={`${clayBtnAction} w-auto px-6 py-2 text-xs`}
                                             disabled={isCallingN8N}
                                         >
-                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! ??' : 'Refuerzo ?ï¸')}
+                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! 🚀' : 'Refuerzo ➡️')}
                                         </button>
                                     </div>
                                 </div>
@@ -1600,6 +1600,15 @@ const DEFAULT_HISTORY_ROUTE = {
     ],
     recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
 };
+
+const SUBJECT_CARDS = [
+    { id: 'MATEMATICA', name: 'MATE', color: '#1B6BF3', icon: Variable },
+    { id: 'LENGUAJE', name: 'LENGUAJE', color: '#10B981', icon: Book },
+    { id: 'FISICA', name: 'FÍSICA', color: '#9061F9', icon: Compass },
+    { id: 'QUIMICA', name: 'QUÍMICA', color: '#06B6D4', icon: FlaskConical },
+    { id: 'BIOLOGIA', name: 'BIOLOGÍA', color: '#F43F5E', icon: Brain },
+    { id: 'HISTORIA', name: 'HISTORIA', color: '#F97316', icon: PenTool },
+];
 
 const App = () => {
     const [isCallingN8N, setIsCallingN8N] = useState(false);
@@ -2883,95 +2892,82 @@ ${finalData.capsule}`;
                                 onClick={() => setAskModalOpen(true)}
                                 className="mt-2 text-xs font-black text-[#FF9F43] uppercase tracking-widest hover:text-[#FFD93D] flex items-center gap-1 transition-colors"
                             >
-                                <MessageCircle className="w-4 h-4" /> ????? Tengo una Duda
+                                <MessageCircle className="w-4 h-4" /> 🤔 Tengo una Duda
+                            </button>
+                        </div>
+
+                        {/* SYSTEM CONTROLS (Top Right) */}
+                        <div className="flex flex-col items-center md:items-end gap-2 text-right">
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
+                                    className={`text-[10px] font-black px-2 py-1 rounded-full border transition-all ${activeWebhookUrl === N8N_URLS.test ? 'bg-gray-100 text-gray-500 border-gray-200' : 'bg-red-50 text-red-600 border-red-200 animate-pulse'}`}
+                                >
+                                    {activeWebhookUrl === N8N_URLS.test ? '🛠️ TEST' : '🚀 PROD'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+                                            handleLogout();
+                                        }
+                                    }}
+                                    className="text-[10px] font-black px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-200 hover:bg-red-100 transition-all active:scale-95"
+                                >
+                                    <XCircle className="w-3 h-3 inline mr-1" />
+                                    CERRAR SESIÓN
+                                </button>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const fiveDaysAgo = new Date();
+                                    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+                                    localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
+                                    localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
+                                    alert("Simulación: Inicio hace 5 días. Debes ponerte al día.");
+                                    window.location.reload();
+                                }}
+                                className="text-[10px] font-bold text-blue-400 underline hover:text-blue-600"
+                            >
+                                Simular Atraso (5 Días)
                             </button>
                         </div>
                     </div>
 
-                    {/* RESPONSIVE SUBJECT TOGGLES */}
-                    <div className="w-full md:w-auto flex flex-col items-center md:items-end gap-3 mt-4 md:mt-0">
-                        {/* TEST/PROD TOGGLE SEPARATE */}
-                        <button
-                            onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
-                            className={`text-xs font-black px-3 py-1 rounded-full transition-all border-2 mb-1 ${activeWebhookUrl === N8N_URLS.test
-                                ? 'bg-gray-200 text-gray-500 border-gray-300'
-                                : 'bg-red-100 text-red-600 border-red-200 animate-pulse shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_0_10px_rgba(255,0,0,0.2)]'
-                                }`}
-                        >
-                            {activeWebhookUrl === N8N_URLS.test ? '🛠️ TEST' : '🚀 PROD'}
-                        </button>
+                    {/* NEW: PREMIUM SUBJECT CARDS (Styled like image) */}
+                    <div className="w-full mt-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                        <h3 className="text-[#9094A6] font-black text-[10px] uppercase tracking-[0.2em] mb-5 ml-1 opacity-70">Selecciona tu Materia</h3>
+                        <div className="flex flex-row gap-4 overflow-x-auto pb-8 pt-2 custom-scrollbar scroll-smooth">
+                            {SUBJECT_CARDS.map((subj) => (
+                                <button
+                                    key={subj.id}
+                                    onClick={() => setCurrentSubject(subj.id)}
+                                    className={`
+                                        flex-shrink-0 flex flex-col items-center justify-center w-[120px] md:w-[155px] h-[160px] md:h-[210px] rounded-[35px] transition-all duration-500 transform relative
+                                        ${currentSubject === subj.id
+                                            ? 'scale-105 shadow-[0_20px_40px_rgba(0,0,0,0.15)] z-10 border-4 border-white'
+                                            : 'opacity-90 hover:opacity-100 hover:scale-[1.03] shadow-lg border-4 border-transparent'}
+                                    `}
+                                    style={{ backgroundColor: subj.color }}
+                                >
+                                    <div className={`mb-4 p-4 md:p-5 rounded-[28px] transition-all duration-300 ${currentSubject === subj.id ? 'bg-white/30 scale-110' : 'bg-white/20'}`}>
+                                        {React.createElement(subj.icon, {
+                                            className: `w-10 h-10 md:w-14 md:h-14 text-white transition-all ${currentSubject === subj.id ? 'drop-shadow-lg' : ''}`,
+                                            strokeWidth: 3
+                                        })}
+                                    </div>
+                                    <span className="text-white font-black text-[10px] md:text-xs tracking-[0.15em] uppercase px-2 text-center">{subj.name}</span>
 
-                        {/* DEV: SIMULATE 5 DAY DELAY */}
-                        <button
-                            onClick={() => {
-                                const fiveDaysAgo = new Date();
-                                fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-                                localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
-                                localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
-                                alert("Simulación: Inicio hace 5 días. Debes ponerte al día.");
-                                window.location.reload();
-                            }}
-                            className="text-[10px] font-bold text-blue-500 underline mb-2"
-                        >
-                            Simular Atraso (5 Días)
-                        </button>
-
-                        {/* LOGOUT BUTTON */}
-                        <button
-                            onClick={() => {
-                                if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-                                    handleLogout();
-                                }
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-600 font-black text-sm rounded-xl border-2 border-red-200 shadow-sm hover:shadow-md transition-all active:scale-95 mb-2"
-                        >
-                            <XCircle className="w-4 h-4" />
-                            Cerrar Sesión
-                        </button>
-
-                        {/* GRID 3 COLS */}
-                        <div className="grid grid-cols-3 gap-2">
-                            <button
-                                onClick={() => setCurrentSubject('MATEMATICA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : ''}`}
-                            >
-                                📐 Mate
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('LENGUAJE')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF9F43] !text-white !border-[#E68A35] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,159,67,0.6)]' : ''}`}
-                            >
-                                📚 Lenguaje
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('FISICA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : ''}`}
-                            >
-                                🌌 Física
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('QUIMICA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : ''}`}
-                            >
-                                🧪 Química
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('BIOLOGIA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : ''}`}
-                            >
-                                🌿 Biología
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('HISTORIA')}
-                                className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : ''}`}
-                            >
-                                📜 Historia
-                            </button>
+                                    {/* Active Pulse indicator */}
+                                    {currentSubject === subj.id && (
+                                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-10 h-1.5 bg-white rounded-full shadow-sm animate-pulse" />
+                                    )}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                     <div className="lg:col-span-3">
                         <AnnualRaceBar currentDay={TODAYS_SESSION.session} totalDays={43} />
                     </div>
