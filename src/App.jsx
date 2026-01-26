@@ -489,7 +489,7 @@ const DEFAULT_DAILY_ROUTE = {
         { step: '2. Teoría Lúdica IA', action: 'start_route', icon: 'Brain', isComplete: false },
         { step: '3. Quiz de 45 Preguntas Kaizen', action: 'quiz', icon: 'Lock', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ESTUDIO DE HOY (TEORíA)"
+    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
 };
 
 const DEFAULT_LANG_ROUTE = {
@@ -503,7 +503,7 @@ const DEFAULT_LANG_ROUTE = {
         { step: '2. Crítica Literaria IA', action: 'start_route', icon: 'BookOpen', isComplete: false },
         { step: '3. Redacción/Quiz', action: 'quiz', icon: 'Star', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANíLISIS CRíTICO"
+    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
 };
 
 
@@ -574,7 +574,7 @@ const DEFAULT_CHEM_ROUTE = {
         { step: '2. Laboratorio Virtual', action: 'start_route', icon: 'FlaskConical', isComplete: false },
         { step: '3. Quiz de Reacciones', action: 'quiz', icon: 'Atom', isComplete: false }
     ],
-    recommended_action_text: "INICIAR EXPERIMENTO"
+    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
 };
 
 
@@ -1599,7 +1599,7 @@ const DEFAULT_HISTORY_ROUTE = {
         { step: '3. Quiz Ciudadano', action: 'quiz', icon: 'Brain', isComplete: false },
         { step: '4. Debate', action: 'doubt', icon: 'MessageCircle', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÃLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
 };
 
 const App = () => {
@@ -2600,7 +2600,7 @@ DATOS DEL ESTUDIANTE:
             let content = "";
 
             if (textResponse.trim() === "") {
-                content = "â ï¸ MODO OFFLINE";
+                content = "⚠️ MODO OFFLINE";
             } else {
                 try {
                     let jsonData;
