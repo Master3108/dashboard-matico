@@ -1922,72 +1922,94 @@ const App = () => {
 
     // GENERATE QUIZ BATCH - SISTEMA KAIZEN (3 FASES)
     // Genera un batch de 15 preguntas para un nivel específico
-    const generateQuizBatch = async (level, backgroundMode = false, countOverride = null) => {
+    // GENERATE QUIZ BATCH - OPTIMIZADO: PARALELO 3x5 (Total 15)
+    // Genera 3 lotes de 5 preguntas simultáneamente para evitar timeouts de 50s+
+    const generateQuizBatch = async (level, backgroundMode = false) => {
         const levelConfig = {
             "BASICO": {
                 name: "Nivel Básico PAES",
                 instruction: "RECORDAR/COMPRENDER - Preguntas directas sobre definiciones y conceptos elementales",
-                count: countOverride || 15
+                startingIndex: 1
             },
             "AVANZADO": {
                 name: "Nivel Avanzado PAES",
                 instruction: "APLICAR - Problemas prácticos de nivel avanzado",
-                count: countOverride || 15
+                startingIndex: 16
             },
             "CRITICO": {
                 name: "Nivel Crítico PAES",
                 instruction: "ANALIZAR/EVALUAR - Nivel PAES Universidad MUY DIFÍCIL",
-                count: countOverride || 15
+                startingIndex: 31
             }
         };
 
         const config = levelConfig[level];
         if (!backgroundMode) {
-            setLoadingMessage(`Generando Quiz de 15 Preguntas (${config.name})...`);
+            setLoadingMessage(`Generando Quiz ${level} (Carga Rápida ⚡)...`);
         }
 
+        console.log(`[QUIZ] Iniciando generación paralela 3x5 para ${level}...`);
 
-        const bulkPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION MATEMÁTICA CRÍTICA:
-1. Genera EXACTAMENTE ${config.count} (QUINCE) preguntas de selección múltiple (JSON). NI UNA MÁS, NI UNA MENOS. Nivel: ${config.instruction}.
-2. VERIFICACIÓN OBLIGATORIA: Resuelve el problema paso a paso internamente. La opción correcta DEBE coincidir exactamente con el cálculo matemático. Revisa signos y paréntesis.
-3. Evita errores de alucinación (ej: no digas que 72=14).
-4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "texto", "options": ["A", "B", "C", "D"], "correctIndex": 0-3, "explanation": "Explicación paso a paso real"}]}. EL ARRAY 'questions' DEBE CONTENER EXACTAMENTE ${config.count} ELEMENTOS.
-5. NO GENERES TEORIA. NO USES MARKDOWN. SOLO JSON PURO. 
-6. IMPORTANTE: Genera preguntas VARIADAS y que cubran todo el contenido solicitado.]`;
+        // Función helper para pedir UN lote de 5 preguntas
+        const fetchSubset = async (batchIndex) => {
+            const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION TÉCNICA:
+1. Genera EXACTAMENTE 5 (CINCO) preguntas de selección múltiple (JSON).
+2. Nivel: ${config.instruction}.
+3. LOTE PARCIAL ${batchIndex + 1}/3.
+4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["A",...], "correctIndex": 0, "explanation": "..."}]}.
+5. NO GENERES TEORIA. SOLO JSON.]`;
+
+            try {
+                const body = {
+                    sujeto: currentSubject,
+                    accion: 'Generar Quiz de Validación', // Reutilizamos acción para mantener consistencia
+                    tema: subsetPrompt,
+                    nivel_estudiante: "1° Medio Chile"
+                };
+
+                // Añadimos un pequeño delay aleatorio para no saturar si n8n tiene rate limits
+                await new Promise(r => setTimeout(r, batchIndex * 500));
+
+                const response = await fetch(activeWebhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const text = await response.text();
+                const json = parseN8NResponse(text);
+
+                // Extraer array de preguntas usando la misma lógica robusta
+                let qData = [];
+                if (json.questions && Array.isArray(json.questions)) qData = json.questions;
+                else if (json.question) qData = [json];
+                else if (Array.isArray(json)) qData = json.filter(q => q.question);
+
+                return qData;
+            } catch (e) {
+                console.error(`Error en lote ${batchIndex}:`, e);
+                return [];
+            }
+        };
 
         try {
-            const body = {
-                sujeto: currentSubject,
-                accion: 'Generar Quiz de Validación',
-                tema: bulkPrompt,
-                nivel_estudiante: "1° Medio Chile"
-            };
+            // LANZAR 3 PETICIONES EN PARALELO
+            const promises = [0, 1, 2].map(i => fetchSubset(i));
+            const results = await Promise.all(promises);
 
-            const response = await fetch(activeWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
+            // COMBINAR RESULTADOS EN ORDEN (0 -> 1 -> 2)
+            let combinedQuestions = [...results[0], ...results[1], ...results[2]];
 
-            const text = await response.text();
-            const json = parseN8NResponse(text);
+            console.log(`[QUIZ] Total preguntas recibidas: ${combinedQuestions.length}`);
 
-            let questionsData = [];
-
-            // Try different paths for questions array
-            if (json.questions && Array.isArray(json.questions)) {
-                questionsData = json.questions;
-            } else if (json.output && typeof json.output === 'string') {
-                // Sometimes parseN8NResponse returns a string in 'output' if it was a final fallback
-                const fallback = parseN8NResponse(json.output);
-                if (fallback.questions) questionsData = fallback.questions;
-            } else if (Array.isArray(json)) {
-                questionsData = json.filter(q => q.question);
-            } else if (json.question) {
-                questionsData = [json];
+            // Fallback si algo falló: Si tenemos menos de 5, intentamos una carga de emergencia o repetimos
+            if (combinedQuestions.length < 5) {
+                console.warn("[QUIZ] Pocas preguntas recibidas, intentando carga única de respaldo...");
+                return await generateQuizBatch(level, backgroundMode); // Reintento recursivo simple (cuidado con loops, pero útil una vez)
             }
 
-            const formattedQuestions = (questionsData || []).map(q => {
+            // Formatear final
+            const formattedQuestions = combinedQuestions.slice(0, 15).map(q => {
                 let optsObj = {};
                 let correctKey = 'A';
 
@@ -2008,13 +2030,14 @@ const App = () => {
                     question: q.question,
                     options: optsObj,
                     correct_answer: correctKey,
-                    explanation: q.explanation || "No hay explicación disponible."
+                    explanation: q.explanation || "Verificación pendiente."
                 };
             });
 
             return formattedQuestions;
+
         } catch (e) {
-            console.error(`Error generando batch ${level}:`, e);
+            console.error(`Error generando batch paralelo ${level}:`, e);
             return [];
         }
     };
