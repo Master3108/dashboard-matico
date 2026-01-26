@@ -1647,20 +1647,38 @@ const App = () => {
     const [userProfile, setUserProfile] = useState({ xp: 0, streak: 0, level: 1, username: 'Estudiante' });
 
     // 1. Fetch Profile on Load
-    useEffect(() => {
-        const fetchProfile = async () => {
-            if (!USER_ID) return; // Don't fetch if no user
-            try {
-                const response = await fetch(`${activeWebhookUrl}?action=get_profile&user_id=${USER_ID}`);
-                const data = await response.json();
-                if (data && data.xp !== undefined) {
-                    setUserProfile(data);
-                    // Sync internal quiz stats roughly with XP if needed, or just rely on profile
-                }
-            } catch (e) {
-                console.error("Error fetching profile:", e);
+    const fetchProfile = async () => {
+        if (!USER_ID) return;
+        try {
+            console.log("[PROFILE] Fetching latest profile for:", USER_ID);
+            const response = await fetch(`${activeWebhookUrl}?action=get_profile&user_id=${USER_ID}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'get_profile', user_id: USER_ID })
+            });
+
+            const text = await response.text();
+            const data = parseN8NResponse(text);
+
+            console.log("[PROFILE] Raw data received:", data);
+
+            if (data && (data.xp !== undefined || data.puntos !== undefined)) {
+                // Handle different field names if necessary (e.g. pontos, xp, puntos)
+                const normalized = {
+                    xp: data.xp || data.puntos || 0,
+                    streak: data.streak || data.racha || 0,
+                    level: data.level || data.nivel || 1,
+                    username: data.username || data.nombre || currentUser?.username || 'Estudiante'
+                };
+                setUserProfile(normalized);
+                console.log("[PROFILE] Updated state:", normalized);
             }
-        };
+        } catch (e) {
+            console.error("Error fetching profile:", e);
+        }
+    };
+
+    useEffect(() => {
         if (USER_ID) fetchProfile();
     }, [activeWebhookUrl, USER_ID]);
 
@@ -1688,6 +1706,9 @@ const App = () => {
                     }
                 })
             });
+
+            // After successful save, refresh full profile from Sheet to ensure sync
+            setTimeout(() => fetchProfile(), 1500); // Small delay to allow Sheet update
         } catch (e) {
             console.error("Error saving progress:", e);
         }
@@ -2849,9 +2870,18 @@ ${finalData.capsule}`;
                             onClick={() => setAskModalOpen(true)}
                         />
                         <div className="text-left">
-                            <div className="inline-flex items-center gap-2 bg-[#FFD93D] text-[#2B2E4A] px-3 py-1 rounded-full font-black text-xs mb-2 shadow-sm animate-bounce-subtle">
-                                <Star className="w-4 h-4 fill-current" />
-                                {userProfile?.xp || 0} XP
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="inline-flex items-center gap-2 bg-[#FFD93D] text-[#2B2E4A] px-3 py-1 rounded-full font-black text-xs shadow-sm animate-bounce-subtle">
+                                    <Star className="w-4 h-4 fill-current" />
+                                    {userProfile?.xp || 0} XP
+                                </div>
+                                <button
+                                    onClick={() => fetchProfile()}
+                                    className="p-1 hover:bg-gray-200 rounded-full transition-colors group"
+                                    title="Actualizar Progreso"
+                                >
+                                    <RotateCcw className={`w-3 h-3 text-gray-400 group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
+                                </button>
                             </div>
                             <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
                                 ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
