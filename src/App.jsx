@@ -1037,22 +1037,38 @@ const parseN8NResponse = (textResponse) => {
 
     const unbox = (data) => {
         if (!data) return data;
+
+        // CASE 1: ARRAY (Common in n8n responses)
+        if (Array.isArray(data)) {
+            if (data.length === 0) return {};
+            if (data.length === 1) return unbox(data[0]);
+            // If it's a list and the first item has questions, it's likely the payload
+            if (data[0] && (data[0].questions || data[0].question)) return unbox(data[0]);
+            return data;
+        }
+
+        // CASE 2: STRING (Potential JSON inside a string)
         if (typeof data === 'string') {
             const possible = data.trim().replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-            if (possible.startsWith('{') || possible.startsWith('[')) {
+            if ((possible.startsWith('{') || possible.startsWith('[')) && possible.length > 2) {
                 try {
                     return unbox(JSON.parse(cleanJsonString(possible)));
                 } catch (e) { return data; }
             }
             return data;
         }
+
+        // CASE 3: OBJECT
         if (typeof data === 'object') {
-            // Buscar contenido útil en llaves comunes
-            if (data.output) return unbox(data.output);
-            if (data.text) return unbox(data.text);
-            if (data.raw_output) return unbox(data.raw_output);
-            if (data.content) return unbox(data.content);
-            if (data.theory) return unbox(data.theory);
+            // Priority list of keys where n8n/AI agents hide the "real" content
+            const keysToTry = ['output', 'text', 'raw_output', 'content', 'theory', 'questions', 'message'];
+            for (const key of keysToTry) {
+                if (data[key] !== undefined && data[key] !== null) {
+                    // Special case: if it's already the 'questions' array we want, just return it
+                    if (key === 'questions' && Array.isArray(data[key])) return data;
+                    return unbox(data[key]);
+                }
+            }
             return data;
         }
         return data;
