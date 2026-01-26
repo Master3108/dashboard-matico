@@ -101,8 +101,8 @@ const parseMarkdown = (text) => {
 // MathRenderer moved to ./components/MathRenderer.jsx
 
 const N8N_URLS = {
-    production: "/webhook/MATICO",
-    test: "/webhook-test/MATICO"
+    production: "https://n8n-n8n.cwf1hb.easypanel.host/webhook/MATICO",
+    test: "https://n8n-n8n.cwf1hb.easypanel.host/webhook-test/MATICO"
 };
 
 // SELECT ACTIVE URL HERE
