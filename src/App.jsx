@@ -1030,20 +1030,19 @@ const parseN8NResponse = (textResponse) => {
     const cleanJsonString = (str) => {
         if (!str || typeof str !== 'string') return str;
 
-        // 1. Contextual LaTeX fixes (Specific common collisions)
-        let processed = str
-            .replace(/\\t(?=imes)/g, '\\\\t')
-            .replace(/\\f(?=rac)/g, '\\\\f');
-
-        // 2. Safe Escape Fixer using Tokenization
-        // Matches: (Double Backslash) OR (Valid Escape) OR (Invalid Escape acting as literal backslash)
-        return processed.replace(/(\\\\)|(\\["\\/bfnrtu])|(\\)/g, (match, doubleSlash, validEscape, invalidSlash) => {
-            if (doubleSlash) return doubleSlash; // Keep \\ as is
-            if (validEscape) return validEscape; // Keep \n, \", etc as is
-            if (invalidSlash) return '\\\\';     // Escape \d -> \\d
+        // 1. Contextual LaTeX fixes & Robust Escape Management
+        // We protect double-backslashes and valid JSON escapes like \" or \/
+        // but we double-escape collisions with LaTeX like \f, \t, \n, \r, \b
+        // and any invalid single backslashes like \d.
+        return str.replace(/(\\\\)|(\\["\/])|(\\u[0-9a-fA-F]{4})|(\\[bfnrt])|(\\)/g, (match, dbl, validStr, uni, collidable, single) => {
+            if (dbl) return dbl; // Keep \\ (already escaped)
+            if (validStr) return validStr; // Keep \" and \/
+            if (uni) return uni; // Keep \uXXXX
+            if (collidable) return '\\' + collidable; // Turn \f into \\f, \n into \\n, etc.
+            if (single) return '\\\\'; // Turn \s into \\s
             return match;
         })
-            .replace(/[\u0000-\u001F]+/g, (match) => match === '\n' || match === '\r' || match === '\t' ? match : '') // Cleanup control chars
+            .replace(/[\u0000-\u001F]+/g, (match) => (match === '\n' || match === '\r' || match === '\t') ? match : '') // Stop control char injection
             .trim();
     };
 
@@ -1094,7 +1093,7 @@ const parseN8NResponse = (textResponse) => {
             if (Array.isArray(data.questions)) return data;
 
             // Otherwise look inside priority keys
-            const priorityKeys = ['questions', 'output', 'text', 'raw_output', 'content', 'theory', 'data'];
+            const priorityKeys = ['questions', 'output', 'json', 'text', 'raw_output', 'content', 'theory', 'data'];
             for (const key of priorityKeys) {
                 if (data[key] !== undefined && data[key] !== null) {
                     const unboxed = unbox(data[key], depth + 1);
@@ -1171,7 +1170,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
         actionHandler = onStartQuiz ? onStartQuiz : () => callAgent(subject, 'generate_quiz', routeTitle);
     }
 
-    const contentTitle = isTheory ? `Teoría Lúdica por Matico (${routeTitle}):` : (isActiveQuiz ? '¡Quiz en Progreso!' : 'Plan de Refuerzo:');
+    const contentTitle = isTheory ? `Teoría Lúdica por Matico (${routeTitle}):` : (isActiveQuiz ? '¡Quiz en Progreso!' : (isQuiz ? '✅ ¡Quiz Generado!' : 'Plan de Refuerzo:'));
 
     const handleOptionClick = (index) => {
         if (showExplanation) return;
@@ -1442,40 +1441,40 @@ const BIOLOGY_SYLLABUS = [
     { session: 4, unit: 'Evolución', topic: 'Registro Fósil', videoLink: 'https://www.youtube.com/watch?v=aBrypvwLLpg' },
     { session: 5, unit: 'Evolución', topic: 'Anatomía Comparada', videoLink: 'https://www.youtube.com/watch?v=DXlVOxWzdwQ' },
     { session: 6, unit: 'Evolución', topic: 'Embriología y Biogeografía', videoLink: 'https://www.youtube.com/watch?v=lZUX9Kv6y7s' },
-    { session: 7, unit: 'Evolución', topic: 'EvoluciÃ³n Humana y HominizaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=9oY_Q5Gf_v4' },
+    { session: 7, unit: 'Evolución', topic: 'Evolución Humana y Hominización', videoLink: 'https://www.youtube.com/watch?v=9oY_Q5Gf_v4' },
     { session: 8, unit: 'Evolución', topic: 'Taller de Integración', videoLink: 'https://www.youtube.com/watch?v=bPr6duAHk4I' },
     { session: 9, unit: 'Evolución', topic: 'Especiación', videoLink: 'https://www.youtube.com/watch?v=CBAwcRaVzA4' },
     { session: 10, unit: 'Evolución', topic: 'Taxonomía y Sistemática', videoLink: 'https://www.youtube.com/watch?v=Ji5aYL0KQoY' },
-    { session: 11, unit: 'Evolución', topic: 'SÃ­ntesis de la Unidad: El Origen de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=UqQ_u5qS5r4' },
+    { session: 11, unit: 'Evolución', topic: 'Síntesis de la Unidad: El Origen de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=UqQ_u5qS5r4' },
     { session: 12, unit: 'Evolución', topic: 'Protista y Fungi', videoLink: 'https://www.youtube.com/watch?v=6tttZ_7Q9a8' },
-    { session: 13, unit: 'Evolución', topic: 'Atributos de una PoblaciÃ³n (Densidad y DistribuciÃ³n)', videoLink: 'https://www.youtube.com/watch?v=S0T0E9y_H0c' },
+    { session: 13, unit: 'Evolución', topic: 'Atributos de una Población (Densidad y Distribución)', videoLink: 'https://www.youtube.com/watch?v=S0T0E9y_H0c' },
 
     // UNIDAD 2: ORGANISMOS EN ECOSISTEMAS
     { session: 14, unit: 'Ecología', topic: 'Organización Ecológica', videoLink: 'https://www.youtube.com/watch?v=18gqzWCPDMU' },
     { session: 15, unit: 'Ecología', topic: 'Distribución Espacial', videoLink: 'https://www.youtube.com/watch?v=MIiIIrZKggI' },
     { session: 16, unit: 'Ecología', topic: 'Crecimiento Poblacional: Modelos J y S', videoLink: 'https://www.youtube.com/watch?v=KzX6yK8jC8U' },
     { session: 17, unit: 'Ecología', topic: 'Crecimiento Logístico', videoLink: 'https://www.youtube.com/watch?v=2IFEZUEL7DQ' },
-    { session: 18, unit: 'Ecología', topic: 'Interacciones BiolÃ³gicas (Competencia, DepredaciÃ³n)', videoLink: 'https://www.youtube.com/watch?v=XF3P8K7XpLc' },
+    { session: 18, unit: 'Ecología', topic: 'Interacciones Biológicas (Competencia, Depredación)', videoLink: 'https://www.youtube.com/watch?v=XF3P8K7XpLc' },
     { session: 19, unit: 'Ecología', topic: 'Regulación Poblacional', videoLink: 'https://www.youtube.com/watch?v=F1_W1qRBV5M' },
     { session: 20, unit: 'Ecología', topic: 'Competencia y Depredación', videoLink: 'https://www.youtube.com/watch?v=1Pqr7RVMx4A' },
     { session: 21, unit: 'Ecología', topic: 'Simbiosis', videoLink: 'https://www.youtube.com/watch?v=GJnXQjFnyxo' },
     { session: 22, unit: 'Ecología', topic: 'Ecología Humana', videoLink: 'https://www.youtube.com/watch?v=xqHjtAFuuc4' },
 
-    // UNIDAD 3: MATERIA Y ENERGÃA
+    // UNIDAD 3: MATERIA Y ENERGÍA
     { session: 23, unit: 'Energía', topic: 'Metabolismo y ATP', videoLink: 'https://www.youtube.com/watch?v=q2y_0wDcTDM' },
     { session: 24, unit: 'Energía', topic: 'Fotosíntesis: Intro', videoLink: 'https://www.youtube.com/watch?v=XTVmIME0XOs' },
     { session: 25, unit: 'Energía', topic: 'Fase Dependiente de Luz', videoLink: 'https://www.youtube.com/watch?v=y-HglExruMI' },
     { session: 26, unit: 'Energía', topic: 'Ciclo de Calvin', videoLink: 'https://www.youtube.com/watch?v=d2DB-kWxg-w' },
-    { session: 27, unit: 'Energía', topic: 'Cadenas y Tramas TrÃ³ficas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
+    { session: 27, unit: 'Energía', topic: 'Cadenas y Tramas Tróficas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
     { session: 28, unit: 'Energía', topic: 'Respiración Celular', videoLink: 'https://www.youtube.com/watch?v=YefwfJ8IpEI' },
     { session: 29, unit: 'Energía', topic: 'Integración Metabólica', videoLink: 'https://www.youtube.com/watch?v=JYSm79-IIHw' },
     { session: 30, unit: 'Energía', topic: 'Tramas Tróficas', videoLink: 'https://www.youtube.com/watch?v=UMrU2peVKcU' },
     { session: 31, unit: 'Energía', topic: 'Flujo de Energía (10%)', videoLink: 'https://www.youtube.com/watch?v=6sUR80wigsU' },
     { session: 32, unit: 'Energía', topic: 'Pirámides Ecológicas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
-    { session: 33, unit: 'Energía', topic: 'Ciclos BiogeoquÃ­micos (Carbono, NitrÃ³geno, Agua)', videoLink: 'https://www.youtube.com/watch?v=hUQoF16DmNk' },
+    { session: 33, unit: 'Energía', topic: 'Ciclos Biogeoquímicos (Carbono, Nitrógeno, Agua)', videoLink: 'https://www.youtube.com/watch?v=hUQoF16DmNk' },
     { session: 34, unit: 'Energía', topic: 'Ciclo del Carbono', videoLink: 'https://www.youtube.com/watch?v=6YE42IePPjM' },
     { session: 35, unit: 'Energía', topic: 'Ciclo del Nitrógeno', videoLink: 'https://www.youtube.com/watch?v=iH3AI-XtNS8' },
-    { session: 36, unit: 'Energía', topic: 'Impacto AntropogÃ©nico en los Ecosistemas', videoLink: 'https://www.youtube.com/watch?v=BKS_rQbalGQ' },
+    { session: 36, unit: 'Energía', topic: 'Impacto Antropogénico en los Ecosistemas', videoLink: 'https://www.youtube.com/watch?v=BKS_rQbalGQ' },
 
     // UNIDAD 4: SUSTENTABILIDAD
     { session: 37, unit: 'Sustentabilidad', topic: 'Efecto Invernadero', videoLink: 'https://www.youtube.com/watch?v=K7MzGe6OSs0' },
@@ -1483,7 +1482,7 @@ const BIOLOGY_SYLLABUS = [
     { session: 39, unit: 'Sustentabilidad', topic: 'Huella Ecológica', videoLink: 'https://www.youtube.com/watch?v=chh0sAmfCwo' },
     { session: 40, unit: 'Sustentabilidad', topic: 'Contaminación', videoLink: 'https://www.youtube.com/watch?v=PH3H1x5CN5I' },
     { session: 41, unit: 'Sustentabilidad', topic: 'Matriz Energética', videoLink: 'https://www.youtube.com/watch?v=YWds9hX3g7c' },
-    { session: 42, unit: 'Sustentabilidad', topic: 'Huella EcolÃ³gica y ConservaciÃ³n de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=Z6z_V9XN8S4' },
+    { session: 42, unit: 'Sustentabilidad', topic: 'Huella Ecológica y Conservación de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=Z6z_V9XN8S4' },
     { session: 43, unit: 'Sustentabilidad', topic: 'Biodiversidad Norte/Centro', videoLink: 'https://www.youtube.com/watch?v=US074D5Y_MY' },
     { session: 44, unit: 'Sustentabilidad', topic: 'Biodiversidad Sur', videoLink: 'https://www.youtube.com/watch?v=SJeRsE9TyBk' },
     { session: 45, unit: 'Sustentabilidad', topic: 'Conservación', videoLink: 'https://www.youtube.com/watch?v=KcIHCEFKloo' },
@@ -1564,7 +1563,7 @@ const HISTORY_SYLLABUS = [
     { session: 33, unit: 'Territorio Nacional', topic: 'Incorporación de Rapa Nui', videoTitle: 'Historia de la anexión de Rapa Nui', videoLink: 'https://www.youtube.com/watch?v=90RzhcA0b0g' },
     { session: 34, unit: 'Territorio Nacional', topic: 'Tratado de 1881 con Argentina', videoTitle: 'Tratado de 1881 Chile-Argentina', videoLink: 'https://www.youtube.com/watch?v=3jypb_mjLyA' },
 
-    // UNIDAD 4: ECONOMÃA Y CIUDADANÃA (Sesiones 35-46)
+    // UNIDAD 4: ECONOMÍA Y CIUDADANÍA (Sesiones 35-46)
     {
         session: 35,
         unit: 'Economía y Ciudadanía',
@@ -1968,10 +1967,10 @@ const App = () => {
 
         console.log(`[QUIZ] Iniciando generación paralela 3x5 para ${level} (Intento ${retryCount + 1})...`);
 
-        // Función helper para pedir UN lote de 5 preguntas
+        // Función helper para pedir UN lote de 10 preguntas (Total 30)
         const fetchSubset = async (batchIndex) => {
             const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION TÉCNICA:
-1. Genera EXACTAMENTE 5 (CINCO) preguntas de selección múltiple (JSON).
+1. Genera EXACTAMENTE 10 (DIEZ) preguntas de selección múltiple (JSON).
 2. Nivel: ${config.instruction}.
 3. LOTE PARCIAL ${batchIndex + 1}/3.
 4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["A",...], "correctIndex": 0, "explanation": "..."}]}.
@@ -2059,15 +2058,14 @@ const App = () => {
 
             console.log(`[QUIZ] Total preguntas recibidas: ${combinedQuestions.length}`);
 
-            // Fallback: Si tenemos MUY pocas (menos de 5), reintentamos UNA VEZ
+            // Fallback: Si tenemos muy pocas, reintentamos UNA VEZ
             if (combinedQuestions.length < 5) {
                 console.warn(`[QUIZ] Pocas preguntas (${combinedQuestions.length}) recibidas. Reintentando...`);
-                // Increase retry count to avoid infinite loop
                 return await generateQuizBatch(level, backgroundMode, retryCount + 1);
             }
 
-            // Formatear final
-            const formattedQuestions = combinedQuestions.slice(0, 15).map(q => {
+            // Formatear final (Limitado a 30)
+            const formattedQuestions = combinedQuestions.slice(0, 30).map(q => {
                 let optsObj = {};
                 let correctKey = 'A';
 
@@ -2384,7 +2382,7 @@ DATOS DEL ESTUDIANTE:
         setQuizStats(prev => ({
             ...prev,
             correct: prev.correct + phaseScore,
-            total: prev.total + 15
+            total: prev.total + 30
         }));
 
         // GUARDAR PROGRESO (LocalStorage)
@@ -2400,8 +2398,8 @@ DATOS DEL ESTUDIANTE:
             phase: currentQuizPhase,
             levelName: levelName,
             score: phaseScore,
-            questionsCompleted: currentQuizPhase * 15,
-            totalQuestions: 45,
+            questionsCompleted: currentQuizPhase * 30,
+            totalQuestions: 90,
             xp_reward: 50
         });
 
@@ -2497,12 +2495,12 @@ DATOS DEL ESTUDIANTE:
                 subject: currentSubject,
                 session: TODAYS_SESSION.session,
                 topic: TODAYS_SESSION.topic,
-                total_questions: 45,
+                total_questions: 90,
                 correct_answers: finalStats.correct,
                 xp_reward: 300
             });
 
-            alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHaz dominado: ${TODAYS_SESSION.topic}\n\nPuntaje Final: ${finalStats.correct}/45\n\n+300 XP 🔥`);
+            alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHaz dominado: ${TODAYS_SESSION.topic}\n\nPuntaje Final: ${finalStats.correct}/90\n\n+300 XP 🔥`);
         }
     };
 
@@ -2603,21 +2601,10 @@ DATOS DEL ESTUDIANTE:
                 content = "⚠️ MODO OFFLINE";
             } else {
                 try {
-                    let jsonData;
-                    try {
-                        jsonData = JSON.parse(textResponse.replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\'));
-                    } catch (e) {
-                        const jsonMatch = textResponse.match(/{[\s\S]*}/);
-                        if (jsonMatch) {
-                            jsonData = JSON.parse(jsonMatch[0].replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\'));
-                        } else {
-                            throw e;
-                        }
-                    }
+                    const jsonData = parseN8NResponse(textResponse);
 
-                    // LOGIC FIX: Handle Refusal & Data Processing
                     if (jsonData.refusal) {
-                        content = `â ï¸ **No pudimos iniciar:**\n\n${jsonData.refusal}`;
+                        content = `⚠️ **No pudimos iniciar:**\n\n${jsonData.refusal}`;
                         setApiJson(null);
                     } else {
 
@@ -2741,7 +2728,7 @@ ${finalData.capsule}`;
             if (content) setAiContent(content);
         } catch (e) {
             console.error(e);
-            setAiContent("â ï¸ Error de Conexión");
+            setAiContent("⚠️ Error de Conexión");
         } finally {
             setIsCallingN8N(false);
             setAiModalOpen(true);
@@ -2867,7 +2854,7 @@ ${finalData.capsule}`;
                                 {userProfile?.xp || 0} XP
                             </div>
                             <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
-                                ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! ??
+                                ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
                             </h1>
 
                             {/* USER INFO CARD */}
@@ -2875,11 +2862,11 @@ ${finalData.capsule}`;
                                 <div className="bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2 mb-2 border border-gray-200/50 shadow-sm inline-block">
                                     <div className="flex flex-col gap-1 text-xs">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-gray-500 font-bold">??</span>
+                                            <span className="text-gray-500 font-bold">📧</span>
                                             <span className="text-gray-700 font-medium">{currentUser.email}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-gray-500 font-bold">??</span>
+                                            <span className="text-gray-500 font-bold">🆔</span>
                                             <span className="text-gray-600 font-mono text-[10px]">{currentUser.user_id?.substring(0, 20)}...</span>
                                         </div>
                                     </div>
@@ -2911,7 +2898,7 @@ ${finalData.capsule}`;
                                 : 'bg-red-100 text-red-600 border-red-200 animate-pulse shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_0_10px_rgba(255,0,0,0.2)]'
                                 }`}
                         >
-                            {activeWebhookUrl === N8N_URLS.test ? '?? TEST' : '?? PROD'}
+                            {activeWebhookUrl === N8N_URLS.test ? '🛠️ TEST' : '🚀 PROD'}
                         </button>
 
                         {/* DEV: SIMULATE 5 DAY DELAY */}
@@ -2948,37 +2935,37 @@ ${finalData.capsule}`;
                                 onClick={() => setCurrentSubject('MATEMATICA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : ''}`}
                             >
-                                ?? Mate
+                                📐 Mate
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('LENGUAJE')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF9F43] !text-white !border-[#E68A35] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,159,67,0.6)]' : ''}`}
                             >
-                                ?? Lenguaje
+                                📚 Lenguaje
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('FISICA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : ''}`}
                             >
-                                ?? Física
+                                🌌 Física
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('QUIMICA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : ''}`}
                             >
-                                ?? Química
+                                🧪 Química
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('BIOLOGIA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : ''}`}
                             >
-                                ?? Biología
+                                🌿 Biología
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('HISTORIA')}
                                 className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : ''}`}
                             >
-                                ?? Historia
+                                📜 Historia
                             </button>
                         </div>
                     </div>
@@ -3009,10 +2996,10 @@ ${finalData.capsule}`;
                                         };
 
                                         if (progress.currentPhase <= 3) {
-                                            const questionsCompleted = (progress.currentPhase - 1) * 15;
+                                            const questionsCompleted = (progress.currentPhase - 1) * 30;
                                             return (
                                                 <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
-                                                    ⚡ Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/45 preguntas completadas
+                                                    ⚡ Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/90 preguntas completadas
                                                 </div>
                                             );
                                         }
@@ -3073,7 +3060,7 @@ ${finalData.capsule}`;
                                                 <p className="text-[#AFAFAF] text-xs font-bold">{
                                                     idx === 0 ? "CLASE DE HOY" :
                                                         (idx === 1 ? "TEORÍA IA" :
-                                                            (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"))
+                                                            (idx === 3 ? "CONSULTA" : "90 PREGUNTAS KAIZEN"))
                                                 }</p>
 
                                                 {/* TRIANGLE POINTER */}
