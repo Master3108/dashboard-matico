@@ -2111,55 +2111,30 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
 
         try {
             const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
-            const levelNameMap = { 1: "Básico", 2: "Avanzado", 3: "Crítico" };
             const currentLevel = levelMap[startingPhase];
-            const levelName = levelNameMap[startingPhase];
 
-            // PASO 1: GENERAR TEORÍA LÚDICA
-            console.log(`[THEORY] Generando teoría única para la sesión...`);
+            // PASO 1: GENERAR TEORÍA (LO MÁS RÁPIDO POSIBLE)
+            console.log(`[QUIZ] Generando teoría...`);
+            setLoadingMessage(`Preparando Teoría Lúdica Matico...`);
+
+            // Iniciamos la generación de preguntas en paralelo pero NO la esperamos todavía
+            console.log(`[BACK] Iniciando generación de preguntas ${currentLevel} en background...`);
+            backgroundTaskRef.current = generateQuizBatch(currentLevel, true).then(q => ({ questions: q }));
+            setIsLoadingNextBatch(true);
+
             const theory = await generateTheory();
 
-            // PASO 2: GENERAR PREGUNTAS (en paralelo a la lectura de teoría)
-            console.log(`[QUIZ] Generando preguntas ${currentLevel} en background...`);
-            const currentPhaseQuestions = await generateQuizBatch(currentLevel, false);
-
-            if (currentPhaseQuestions.length > 0 && theory) {
-                // Guardar preguntas para después de la teoría
-                setPendingQuizQuestions(currentPhaseQuestions);
-
-                // Mostrar teoría primero
+            if (theory) {
+                // Mostrar teoría inmediatamente
                 setTheoryTitle(`📚 Teoría Lúdica: ${TODAYS_SESSION.topic}`);
                 setTheoryContent(theory);
                 setShowTheoryModal(true);
                 setIsCallingN8N(false);
                 setLoadingMessage("");
 
-                console.log(`[THEORY] Teoría mostrada. Usuario debe leer y hacer clic en 'Continuar al Quiz'`);
-
-                // Generar siguiente nivel en background (mientras lee la teoría)
-                if (startingPhase < 3) {
-                    const nextLevel = levelMap[startingPhase + 1];
-                    console.log(`[BACK] Pre-generando Fase ${startingPhase + 1} (${nextLevel})...`);
-                    setIsLoadingNextBatch(true);
-
-                    // Pre-generar siguiente fase en background
-                    backgroundTaskRef.current = generateQuizBatch(nextLevel, true).then(q => {
-                        console.log(`[BACK] ✅ Siguiente fase (${nextLevel}) (15q) pre-generada`);
-                        setBackgroundQuestionsQueue(q);
-                        setIsLoadingNextBatch(false);
-                        backgroundTaskRef.current = null;
-                        return { questions: q };
-                    }).catch(err => {
-                        console.error(`[BACK] Error pre-generando:`, err);
-                        setIsLoadingNextBatch(false);
-                        backgroundTaskRef.current = null;
-                        throw err;
-                    });
-                }
+                console.log(`[THEORY] Teoría mostrada. Las preguntas se siguen generando en background.`);
             } else {
-                alert("No se pudo generar el contenido. Intenta de nuevo.");
-                setIsCallingN8N(false);
-                setAiModalOpen(true);
+                throw new Error("No se pudo obtener la teoría del servidor.");
             }
 
         } catch (e) {
@@ -2172,48 +2147,70 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
 
     // HANDLE "CONTINUAR AL QUIZ" BUTTON - Cerrar teoría y mostrar quiz
     const handleContinueToQuiz = async () => {
-        console.log(`[THEORY] Usuario finalizó lectura. Iniciando quiz...`);
+        console.log(`[THEORY] Usuario finalizó lectura. Verificando preguntas...`);
+        setIsCallingN8N(true);
+        setLoadingMessage("Preparando tus preguntas...");
 
-        // GUARDAR EN GOOGLE SHEETS que leyó la teoría
-        const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
-        const levelName = levelMap[currentQuizPhase];
+        try {
+            let questions = [];
 
-        await saveProgress('theory_completed', {
-            subject: currentSubject,
-            session: TODAYS_SESSION.session,
-            phase: currentQuizPhase,
-            levelName: levelName,
-            xp_reward: 5 // Por leer teoría
-        });
-
-        console.log(`[SAVE] Teoría completada guardada en Sheet: Fase ${currentQuizPhase}`);
-
-        setShowTheoryModal(false);
-        setQuizQuestions(pendingQuizQuestions);
-        setShowInteractiveQuiz(true);
-        setPendingQuizQuestions([]); // Limpiar preguntas pendientes
-
-        // PRE-GENERAR SIGUIENTE NIVEL (Avanzado / Crítico)
-        if (currentQuizPhase < 3 && backgroundQuestionsQueue.length === 0 && !isLoadingNextBatch) {
-            const levelQueueMap = { 1: "AVANZADO", 2: "CRITICO" };
-            const nextLevel = levelQueueMap[currentQuizPhase];
-            console.log(`[BACK] Pre-generando siguiente fase (${nextLevel}) mientras el usuario hace la ${currentQuizPhase}...`);
-            setIsLoadingNextBatch(true);
-
-            const backgroundPromise = generateQuizBatch(nextLevel, true).then(q => {
-                console.log(`[BACK] ✅ Siguiente fase (${nextLevel}) pre-generada`);
-                setBackgroundQuestionsQueue(q);
-                setIsLoadingNextBatch(false);
+            // Esperar a que el background task de las preguntas termine (si no ha terminado ya)
+            if (backgroundTaskRef.current) {
+                console.log("[QUIZ] Esperando a que termine la generación de preguntas iniciada en background...");
+                const result = await backgroundTaskRef.current;
+                questions = result.questions || [];
                 backgroundTaskRef.current = null;
-                return { questions: q };
-            }).catch(err => {
-                console.error("[BACK] Error pre-generando:", err);
                 setIsLoadingNextBatch(false);
-                backgroundTaskRef.current = null;
-                throw err;
-            });
+            } else if (pendingQuizQuestions.length > 0) {
+                questions = pendingQuizQuestions;
+            } else {
+                // Fallback: Si por alguna razón no hay nada, generar ahora
+                const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
+                questions = await generateQuizBatch(levelMap[currentQuizPhase], false);
+            }
 
-            backgroundTaskRef.current = backgroundPromise;
+            if (questions && questions.length > 0) {
+                // GUARDAR EN GOOGLE SHEETS que leyó la teoría
+                const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
+                const levelName = levelMap[currentQuizPhase];
+
+                saveProgress('theory_completed', {
+                    subject: currentSubject,
+                    session: TODAYS_SESSION.session,
+                    phase: currentQuizPhase,
+                    levelName: levelName,
+                    xp_reward: 5
+                });
+
+                setShowTheoryModal(false);
+                setQuizQuestions(questions);
+                setShowInteractiveQuiz(true);
+                setPendingQuizQuestions([]);
+                setIsCallingN8N(false);
+                setLoadingMessage("");
+
+                // DISPARAR PRE-GENERACIÓN DE LA SIGUIENTE FASE (Si existe)
+                if (currentQuizPhase < 3) {
+                    const nextLevel = levelMap[currentQuizPhase + 1];
+                    console.log(`[BACK] Pre-generando siguiente nivel (${nextLevel}) en background...`);
+                    setIsLoadingNextBatch(true);
+                    backgroundTaskRef.current = generateQuizBatch(nextLevel, true).then(q => {
+                        setBackgroundQuestionsQueue(q);
+                        setIsLoadingNextBatch(false);
+                        backgroundTaskRef.current = null;
+                        return { questions: q };
+                    }).catch(() => {
+                        setIsLoadingNextBatch(false);
+                        backgroundTaskRef.current = null;
+                    });
+                }
+            } else {
+                throw new Error("No se pudieron cargar las preguntas.");
+            }
+        } catch (err) {
+            console.error("Error al continuar al quiz:", err);
+            alert("Vaya... no pudimos cargar las preguntas. Reintenta en un momento.");
+            setIsCallingN8N(false);
         }
     };
 
