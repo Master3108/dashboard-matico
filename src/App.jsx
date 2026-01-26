@@ -1029,15 +1029,21 @@ const parseN8NResponse = (textResponse) => {
 
     const cleanJsonString = (str) => {
         if (!str || typeof str !== 'string') return str;
-        return str
-            // RECOVER LATEX COMMANDS DAMAGED BY JSON ESCAPING
-            // \t (tab) -> \\t (literal \t) when followed by 'imes' -> restores \times
-            .replace(/\t(?=imes)/g, '\\\\t')
-            // \f (form feed) -> \\f (literal \f) when followed by 'rac' -> restores \frac
-            .replace(/\f(?=rac)/g, '\\\\f')
 
-            .replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\') // Fix invalid escape sequences (like \d in \div)
-            .replace(/[\u0000-\u001F]+/g, (match) => match === '\n' || match === '\r' || match === '\t' ? match : '') // Remove control chars that break JSON.parse
+        // 1. Contextual LaTeX fixes (Specific common collisions)
+        let processed = str
+            .replace(/\\t(?=imes)/g, '\\\\t')
+            .replace(/\\f(?=rac)/g, '\\\\f');
+
+        // 2. Safe Escape Fixer using Tokenization
+        // Matches: (Double Backslash) OR (Valid Escape) OR (Invalid Escape acting as literal backslash)
+        return processed.replace(/(\\\\)|(\\["\\/bfnrtu])|(\\)/g, (match, doubleSlash, validEscape, invalidSlash) => {
+            if (doubleSlash) return doubleSlash; // Keep \\ as is
+            if (validEscape) return validEscape; // Keep \n, \", etc as is
+            if (invalidSlash) return '\\\\';     // Escape \d -> \\d
+            return match;
+        })
+            .replace(/[\u0000-\u001F]+/g, (match) => match === '\n' || match === '\r' || match === '\t' ? match : '') // Cleanup control chars
             .trim();
     };
 
