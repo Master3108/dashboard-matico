@@ -1030,6 +1030,12 @@ const parseN8NResponse = (textResponse) => {
     const cleanJsonString = (str) => {
         if (!str || typeof str !== 'string') return str;
         return str
+            // RECOVER LATEX COMMANDS DAMAGED BY JSON ESCAPING
+            // \t (tab) -> \\t (literal \t) when followed by 'imes' -> restores \times
+            .replace(/\t(?=imes)/g, '\\\\t')
+            // \f (form feed) -> \\f (literal \f) when followed by 'rac' -> restores \frac
+            .replace(/\f(?=rac)/g, '\\\\f')
+
             .replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\') // Fix invalid escape sequences (like \d in \div)
             .replace(/[\u0000-\u001F]+/g, (match) => match === '\n' || match === '\r' || match === '\t' ? match : '') // Remove control chars that break JSON.parse
             .trim();
@@ -1963,7 +1969,8 @@ const App = () => {
 2. Nivel: ${config.instruction}.
 3. LOTE PARCIAL ${batchIndex + 1}/3.
 4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["A",...], "correctIndex": 0, "explanation": "..."}]}.
-5. NO GENERES TEORIA. SOLO JSON.]`;
+5. FORMATO MATH: Usa LaTeX solo para fórmulas matemáticas ($x^2$). NO encierres oraciones de texto normal en signos de pesos.
+6. NO GENERES TEORIA. SOLO JSON.]`;
 
             try {
                 const body = {
