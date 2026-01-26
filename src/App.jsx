@@ -2883,7 +2883,7 @@ ${finalData.capsule}`;
                                 onClick={() => setAskModalOpen(true)}
                                 className="mt-2 text-xs font-black text-[#FF9F43] uppercase tracking-widest hover:text-[#FFD93D] flex items-center gap-1 transition-colors"
                             >
-                                <MessageCircle className="w-4 h-4" /> ????? Tengo una Duda
+                                <MessageCircle className="w-4 h-4" /> 🤔 Tengo una Duda
                             </button>
                         </div>
                     </div>
@@ -3090,23 +3090,25 @@ ${finalData.capsule}`;
             </div>
 
             {/* Interactive Quiz Modal */}
-            {showInteractiveQuiz && quizQuestions && quizQuestions.length > 0 && (
-                <InteractiveQuiz
-                    questions={quizQuestions}
-                    phase={currentQuizPhase}
-                    onComplete={(score) => {
-                        console.log(`Quiz Fase ${currentQuizPhase} completado:`, score);
-                        // Call progressive quiz handler instead of manual close
-                        onQuizPhaseComplete(score);
-                    }}
-                    onClose={() => {
-                        // Allow manual emergency close
-                        setShowInteractiveQuiz(false);
-                        window.location.reload();
-                    }}
-                />
-            )}
-        </div>
+            {
+                showInteractiveQuiz && quizQuestions && quizQuestions.length > 0 && (
+                    <InteractiveQuiz
+                        questions={quizQuestions}
+                        phase={currentQuizPhase}
+                        onComplete={(score) => {
+                            console.log(`Quiz Fase ${currentQuizPhase} completado:`, score);
+                            // Call progressive quiz handler instead of manual close
+                            onQuizPhaseComplete(score);
+                        }}
+                        onClose={() => {
+                            // Allow manual emergency close
+                            setShowInteractiveQuiz(false);
+                            window.location.reload();
+                        }}
+                    />
+                )
+            }
+        </div >
     );
 };
 
