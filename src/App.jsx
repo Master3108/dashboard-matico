@@ -2988,18 +2988,33 @@ ${finalData.capsule}`;
                         <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
                             ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
                         </h1>
-                        <p className="text-[#9094A6] font-bold text-sm max-w-md">
-                            Sistema activo. Hoy dedicaremos la hora completa a:{' '}
-                            <span className="text-[#2B2E4A] bg-white px-2 py-1 rounded-lg shadow-sm border border-white/50 font-black" style={{ color: TODAYS_SUBJECT.color }}>
-                                {TODAYS_SUBJECT.name}
-                            </span>.
-                        </p>
-                        <button
-                            onClick={() => setAskModalOpen(true)}
-                            className="mt-2 text-xs font-black text-[#FF9F43] uppercase tracking-widest hover:text-[#FFD93D] flex items-center gap-1 transition-colors"
-                        >
-                            <MessageCircle className="w-4 h-4" /> 🤔 Realizar una Consulta
-                        </button>
+                        <div className="mt-4 flex flex-col items-start gap-3">
+                            <p className="text-[#9094A6] font-bold text-base max-w-md leading-tight">
+                                Sistema activo. Hoy dedicaremos la hora completa a:{' '}
+                                <span className="text-[#2B2E4A] bg-white px-2 py-0.5 rounded-lg shadow-sm border border-white/50 font-black inline-block mt-1" style={{ color: TODAYS_SUBJECT.color }}>
+                                    {TODAYS_SUBJECT.name}
+                                </span>
+                            </p>
+
+                            <button
+                                onClick={() => setAskModalOpen(true)}
+                                className="group relative flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#FF9F43] to-[#FFD93D] text-white rounded-2xl shadow-[0_4px_15px_rgba(255,159,67,0.4)] hover:shadow-[0_6px_20px_rgba(255,159,67,0.6)] hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
+                            >
+                                {/* Shine Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shine" />
+
+                                <div className="relative flex items-center justify-center w-8 h-8 bg-white/20 rounded-xl backdrop-blur-sm group-hover:rotate-12 transition-transform">
+                                    <MessageCircle className="w-5 h-5 text-white animate-pulse" />
+                                </div>
+
+                                <div className="flex flex-col items-start leading-none">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">¿Necesitas ayuda?</span>
+                                    <span className="text-lg font-black tracking-tight">TENGO UNA DUDA</span>
+                                </div>
+
+                                <ArrowRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
