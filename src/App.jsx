@@ -1813,13 +1813,22 @@ const App = () => {
     const [theoryContent, setTheoryContent] = useState("");
     const [theoryTitle, setTheoryTitle] = useState("");
     const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
+    const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al día"
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
     useEffect(() => {
-        const { subject, index } = resolveMaticoPlan();
-        console.log(`[MATICO] Startup Plan: ${subject} Session ${index + 1}`);
+        const { subject, index, isMissed, missedSubject } = resolveMaticoPlan();
+        console.log(`[MATICO] Startup Plan: ${subject} Session ${index + 1} | Missed: ${isMissed}`);
         setCurrentSubject(subject);
         setTodayIndex(index);
+
+        if (isMissed) {
+            setMissedSessionAlert({
+                subject: missedSubject,
+                session: index + 1,
+                todaySubject: (WEEKLY_PLAN.find(p => p.day === (new Date()).getDay())?.subject || 'LENGUAJE')
+            });
+        }
     }, []);
 
     // FETCH SERVER PROGRESS ON LOAD
@@ -1904,23 +1913,7 @@ const App = () => {
 
             console.log("[CALENDAR] Resolving plan for today. Completed:", completed);
 
-            // 1. PRIORIDAD: ¿Qué debería estar estudiando HOY según el calendario?
-            const todaysDayOfWeek = today.getDay();
-            const todaysPlan = WEEKLY_PLAN.find(p => p.day === todaysDayOfWeek);
-            const currentWeekNumber = Math.floor(diffDays / 7);
-
-            if (todaysPlan) {
-                const todaysSubject = todaysPlan.subject;
-                const todaysSessionKey = `${todaysSubject}_${currentWeekNumber + 1}`;
-
-                // Si la sesión de HOY no está completada, esa es la prioridad absoluta
-                if (!completed.includes(todaysSessionKey)) {
-                    console.log(`[CALENDAR] Today is ${todaysSubject}. Session ${currentWeekNumber + 1} is pending. Setting as priority.`);
-                    return { subject: todaysSubject, index: currentWeekNumber };
-                }
-            }
-
-            // 2. CATCH-UP: Si lo de hoy ya está listo, buscamos sesiones pendientes de días anteriores
+            // 1. CATCH-UP (PRIORIDAD ABSOLUTA): Escaneamos desde el primer día hasta AYER
             for (let d = 0; d < diffDays; d++) {
                 const dateOfD = new Date(COURSE_START_DATE);
                 dateOfD.setDate(dateOfD.getDate() + d);
@@ -1933,16 +1926,31 @@ const App = () => {
                     const sessionKey = `${subject}_${weekNumber + 1}`;
 
                     if (!completed.includes(sessionKey)) {
-                        console.log(`[CALENDAR] Today is ready! Found a missed session from the past: ${sessionKey}`);
-                        return { subject, index: weekNumber };
+                        console.log(`[CALENDAR] BLOQUEO: Sesión pendiente detectada: ${sessionKey}`);
+                        return { subject, index: weekNumber, isMissed: true, missedSubject: subject };
                     }
                 }
             }
 
-            // 3. FALLBACK: Si todo está al día (incluyendo hoy), mostramos hoy o el índice actual
+            // 2. LO DE HOY: Si todo lo anterior está listo, vemos qué toca hoy
+            const todaysDayOfWeek = today.getDay();
+            const todaysPlan = WEEKLY_PLAN.find(p => p.day === todaysDayOfWeek);
+            const currentWeekNumber = Math.floor(diffDays / 7);
+
+            if (todaysPlan) {
+                const todaysSubject = todaysPlan.subject;
+                const todaysSessionKey = `${todaysSubject}_${currentWeekNumber + 1}`;
+
+                if (!completed.includes(todaysSessionKey)) {
+                    return { subject: todaysSubject, index: currentWeekNumber, isMissed: false };
+                }
+            }
+
+            // 3. FALLBACK: Todo al día
             return {
                 subject: todaysPlan ? todaysPlan.subject : 'MATEMATICA',
-                index: Math.max(0, currentWeekNumber)
+                index: Math.max(0, currentWeekNumber),
+                isMissed: false
             };
         } catch (e) {
             console.error("Error in resolveMaticoPlan:", e);
@@ -2999,6 +3007,34 @@ ${finalData.capsule}`;
                                         {TODAYS_SUBJECT.name}
                                     </span>
                                 </p>
+
+                                {/* ALERTA DE SESIÓN PENDIENTE (CATCH-UP) */}
+                                {missedSessionAlert && (
+                                    <div className="mb-6 w-full max-w-xl animate-clay-pop">
+                                        <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-5 flex items-start gap-4 shadow-[0_10px_30px_rgba(245,158,11,0.1)] relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:rotate-12 transition-transform">
+                                                <Clock className="w-16 h-16 text-amber-600" />
+                                            </div>
+                                            <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                                                <RotateCcw className="w-6 h-6 text-white animate-spin-slow" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <h3 className="text-amber-900 font-black text-lg leading-tight uppercase tracking-tight">¡Ojo al piojo! Tienes algo pendiente</h3>
+                                                <p className="text-amber-700 font-bold text-sm mt-1 leading-snug">
+                                                    Antes de pasar a <strong>{missedSessionAlert.todaySubject}</strong>, debemos completar la sesión de <strong>{missedSessionAlert.subject} (Sesión {missedSessionAlert.session})</strong> que quedó atrás. ¡No dejes huecos en tu camino! 🚀
+                                                </p>
+                                                <div className="flex gap-2 mt-4">
+                                                    <button
+                                                        onClick={() => setMissedSessionAlert(null)}
+                                                        className="px-4 py-2 bg-amber-600 text-white text-xs font-black rounded-xl shadow-md hover:bg-amber-700 transition-colors uppercase"
+                                                    >
+                                                        Entendido, ¡A por ello!
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <button
                                     onClick={() => setAskModalOpen(true)}
