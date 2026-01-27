@@ -33,7 +33,7 @@ const LoginPage = ({ onLogin }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: action,
+                    accion: action,
                     email: formData.email,
                     password: formData.password,
                     name: isRegistering ? formData.name : undefined // Send name only for register

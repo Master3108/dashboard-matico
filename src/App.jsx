@@ -105,8 +105,16 @@ const N8N_URLS = {
     test: "https://n8n-n8n.cwf1hb.easypanel.host/webhook-test/MATICO"
 };
 
-// SELECT ACTIVE URL HERE
-
+// --- PRODUCCIÓN: CALENDARIO MATICO ---
+const COURSE_START_DATE = new Date('2026-01-26T00:00:00'); // Lunes 26 de Enero
+const WEEKLY_PLAN = [
+    { day: 1, subject: 'MATEMATICA' },
+    { day: 2, subject: 'LENGUAJE' },
+    { day: 3, subject: 'FISICA' },
+    { day: 4, subject: 'QUIMICA' },
+    { day: 5, subject: 'BIOLOGIA' },
+    { day: 6, subject: 'HISTORIA' }
+];
 
 const COLORS = {
     bg: '#FFFFFF',
@@ -1651,10 +1659,10 @@ const App = () => {
         if (!USER_ID) return;
         try {
             console.log("[PROFILE] Fetching latest profile for:", USER_ID);
-            const response = await fetch(`${activeWebhookUrl}?action=get_profile&user_id=${USER_ID}`, {
+            const response = await fetch(`${activeWebhookUrl}?accion=get_profile&user_id=${USER_ID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'get_profile', user_id: USER_ID })
+                body: JSON.stringify({ accion: 'get_profile', user_id: USER_ID })
             });
 
             const text = await response.text();
@@ -1740,6 +1748,7 @@ const App = () => {
         );
     };
     const [askModalOpen, setAskModalOpen] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const [aiContent, setAiContent] = useState("");
     const [apiJson, setApiJson] = useState(null);
     const [currentSubject, setCurrentSubject] = useState("MATEMATICA");
@@ -1805,6 +1814,14 @@ const App = () => {
     const [theoryTitle, setTheoryTitle] = useState("");
     const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
 
+    // INITIAL SETUP: Resolve current subject according to Weekly Plan
+    useEffect(() => {
+        const { subject, index } = resolveMaticoPlan();
+        console.log(`[MATICO] Startup Plan: ${subject} Session ${index + 1}`);
+        setCurrentSubject(subject);
+        setTodayIndex(index);
+    }, []);
+
     // FETCH SERVER PROGRESS ON LOAD
     useEffect(() => {
         const fetchProgress = async () => {
@@ -1837,9 +1854,9 @@ const App = () => {
                 }
             } catch (error) {
                 console.error('[MATICO] ? Error fetching progress:', error);
-                // Fallback to localStorage if server fails
-                const fallbackIndex = getSmartSessionIndex(currentSubject);
-                setTodayIndex(fallbackIndex);
+                // Fallback to Matico Plan logic
+                const { index } = resolveMaticoPlan();
+                setTodayIndex(index);
             } finally {
                 setLoadingProgress(false);
             }
@@ -1873,50 +1890,50 @@ const App = () => {
         video_link: TODAYS_SESSION.videoLink
     };
 
-    // --- SMART CALENDAR LOGIC START ---
-    const getSmartSessionIndex = (subject) => {
+    // --- SMART CALENDAR LOGIC (MATICO PRODUCTION PLAN) ---
+    const resolveMaticoPlan = () => {
         try {
-            // Use exact same syllabus reference logic as ACTIVE_SYLLABUS with fallback
-            const syllabus = (subject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (subject === 'FISICA' ? (typeof PHYSICS_SYLLABUS !== 'undefined' ? PHYSICS_SYLLABUS : []) : (subject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (subject === 'BIOLOGIA' ? (typeof BIOLOGY_SYLLABUS !== 'undefined' ? BIOLOGY_SYLLABUS : []) : (subject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS))))) || MATH_SYLLABUS;
-
-            if (!syllabus || syllabus.length === 0) return 0;
-
-            // 1. Get or Init Start Date (Simulation of "User Started Course On...")
-            let startDateStr = localStorage.getItem('MATICO_START_DATE');
-            if (!startDateStr) {
-                startDateStr = new Date().toISOString();
-                localStorage.setItem('MATICO_START_DATE', startDateStr);
-            }
-            const startDate = new Date(startDateStr);
             const today = new Date();
-
-            // Calculate days passed (floored)
-            const diffTime = Math.max(0, today - startDate);
+            const diffTime = today - COURSE_START_DATE;
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-            // 2. Get Completed Sessions
+            if (diffDays < 0) return { subject: 'MATEMATICA', index: 0 };
+
             const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
             const completed = completedStr ? JSON.parse(completedStr) : [];
 
-            // 3. Catch-up Logic: Find first incomplete session up to today's target
-            // We check from Session 0 up to Session [diffDays]
-            for (let i = 0; i <= diffDays; i++) {
-                if (i >= syllabus.length) break;
-                const session = syllabus[i];
-                const sessionKey = `${subject}_${session.session}`;
+            console.log("[CALENDAR] Resolving plan for today. Completed:", completed);
 
-                // If this past/current session is NOT complete, we must do it now (Catch-up)
-                if (!completed.includes(sessionKey)) {
-                    console.log(`SmartCalendar: Catch-up Mode! Found incomplete session ${i + 1} for day ${diffDays}`);
-                    return i;
+            // Escaneamos desde el primer día (Lunes 26) hasta hoy
+            for (let d = 0; d <= diffDays; d++) {
+                const dateOfD = new Date(COURSE_START_DATE);
+                dateOfD.setDate(dateOfD.getDate() + d);
+                const dayOfWeek = dateOfD.getDay();
+
+                const plan = WEEKLY_PLAN.find(p => p.day === dayOfWeek);
+                if (plan) {
+                    const subject = plan.subject;
+                    const weekNumber = Math.floor(d / 7);
+                    const sessionIndex = weekNumber;
+                    const sessionKey = `${subject}_${sessionIndex + 1}`;
+
+                    if (!completed.includes(sessionKey)) {
+                        console.log(`[CALENDAR] Found incomplete session: ${sessionKey} (from day ${d})`);
+                        return { subject, index: sessionIndex };
+                    }
                 }
             }
 
-            // 4. If all up to today are done, return today's index (capped)
-            return Math.min(diffDays, syllabus.length - 1);
+            // Si todo está al día, mostramos lo que toca hoy o el último índice
+            const todaysDayOfWeek = today.getDay();
+            const todaysPlan = WEEKLY_PLAN.find(p => p.day === todaysDayOfWeek);
+            return {
+                subject: todaysPlan ? todaysPlan.subject : 'MATEMATICA',
+                index: Math.max(0, Math.floor(diffDays / 7))
+            };
         } catch (e) {
-            console.warn("Error in getSmartSessionIndex, defaulting to 0", e);
-            return 0;
+            console.error("Error in resolveMaticoPlan:", e);
+            return { subject: 'MATEMATICA', index: 0 };
         }
     };
 
@@ -1925,20 +1942,18 @@ const App = () => {
         const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
         const completed = completedStr ? JSON.parse(completedStr) : [];
 
-        console.log(`[MATICO] markSessionComplete called:`, { subject, sessionId, key, currentCompleted: completed });
+        console.log(`[MATICO] markSessionComplete called:`, { subject, sessionId, key });
 
         if (!completed.includes(key)) {
             const newCompleted = [...completed, key];
             localStorage.setItem('MATICO_COMPLETED_SESSIONS', JSON.stringify(newCompleted));
-            console.log(`[MATICO] ? Marked ${key} as complete!`);
-            console.log(`[MATICO] Updated completed list:`, newCompleted);
+            console.log(`[MATICO] Marked ${key} as complete!`);
 
-            // Trigger Re-calc immediately to show next session if applicable
-            const newIndex = getSmartSessionIndex(subject);
-            console.log(`[MATICO] Calculated new session index: ${newIndex} (was: ${todayIndex})`);
-            setTodayIndex(newIndex);
-        } else {
-            console.log(`[MATICO] ?? Session ${key} already marked as complete`);
+            // Re-calcular inmediatamente para saltar a la siguiente materia/sesión
+            const { subject: nextSubject, index: nextIndex } = resolveMaticoPlan();
+            console.log(`[MATICO] Next up: ${nextSubject} (Session Index ${nextIndex})`);
+            setCurrentSubject(nextSubject);
+            setTodayIndex(nextIndex);
         }
     };
     // --- SMART CALENDAR LOGIC END ---
@@ -2556,13 +2571,13 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 setIsCallingN8N(false);
             }
         } else {
-            // TODAS LAS FASES COMPLETADAS (90 PREGUNTAS TOTALES)
+            // TODAS LAS FASES COMPLETADAS (45 PREGUNTAS TOTALES)
             console.log("[QUIZ] ✅ TODAS LAS 3 FASES COMPLETADAS!");
             setShowInteractiveQuiz(false);
 
             // ENVIAR REPORTE FINAL
             const finalCorrectCount = quizStats.correct + phaseScore;
-            const finalStats = { ...quizStats, correct: finalCorrectCount, total: 90 };
+            const finalStats = { ...quizStats, correct: finalCorrectCount, total: 45 };
 
             console.log("[REPORT] Enviando reporte final con score:", finalCorrectCount);
             sendFinalSessionReport(finalStats);
@@ -2575,12 +2590,12 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 subject: currentSubject,
                 session: TODAYS_SESSION.session,
                 topic: TODAYS_SESSION.topic,
-                total_questions: 90,
+                total_questions: 45,
                 correct_answers: finalCorrectCount,
                 xp_reward: 300
             });
 
-            alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHaz dominado: ${TODAYS_SESSION.topic}\n\nPuntaje Final: ${finalStats.correct}/90\n\n+300 XP 🔥`);
+            alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHaz dominado: ${TODAYS_SESSION.topic}\n\nPuntaje Final: ${finalStats.correct}/45\n\n+300 XP 🔥`);
         }
     };
 
@@ -2934,6 +2949,15 @@ ${finalData.capsule}`;
                                     <Star className="w-4 h-4 fill-current" />
                                     {userProfile?.xp || 0} XP
                                 </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setSettingsOpen(true)}
+                                    className="p-1 hover:bg-gray-200 rounded-full transition-colors group"
+                                    title="Configuración"
+                                >
+                                    <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+                                </button>
                                 <button
                                     onClick={() => fetchProfile()}
                                     className="p-1 hover:bg-gray-200 rounded-full transition-colors group"
@@ -2942,116 +2966,11 @@ ${finalData.capsule}`;
                                     <RotateCcw className={`w-3 h-3 text-gray-400 group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
                                 </button>
                             </div>
-                            <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
-                                ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
-                            </h1>
-
-                            {/* USER INFO CARD */}
-                            {currentUser && (
-                                <div className="bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2 mb-2 border border-gray-200/50 shadow-sm inline-block">
-                                    <div className="flex flex-col gap-1 text-xs">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-gray-500 font-bold">📧</span>
-                                            <span className="text-gray-700 font-medium">{currentUser.email}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-gray-500 font-bold">🆔</span>
-                                            <span className="text-gray-600 font-mono text-[10px]">{currentUser.user_id?.substring(0, 20)}...</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <p className="text-[#9094A6] font-bold text-sm max-w-md">
-                                Sistema activo. Hoy dedicaremos la hora completa a:{' '}
-                                <span className="text-[#2B2E4A] bg-white px-2 py-1 rounded-lg shadow-sm border border-white/50 font-black" style={{ color: TODAYS_SUBJECT.color }}>
-                                    {TODAYS_SUBJECT.name}
-                                </span>.
-                            </p>
-                            <button
-                                onClick={() => setAskModalOpen(true)}
-                                className="mt-2 text-xs font-black text-[#FF9F43] uppercase tracking-widest hover:text-[#FFD93D] flex items-center gap-1 transition-colors"
-                            >
-                                <MessageCircle className="w-4 h-4" /> 🤔 Tengo una Duda
-                            </button>
                         </div>
-                    </div>
-
-                    {/* SYSTEM CONTROLS (Top Right) */}
-                    <div className="w-full md:w-auto flex flex-col items-center md:items-end gap-3 mt-4 md:mt-0">
-                        {/* TEST/PROD TOGGLE SEPARATE */}
-                        <button
-                            onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
-                            className={`text-xs font-black px-3 py-1 rounded-full transition-all border-2 mb-1 ${activeWebhookUrl === N8N_URLS.test
-                                ? 'bg-gray-200 text-gray-500 border-gray-300'
-                                : 'bg-red-100 text-red-600 border-red-200 animate-pulse shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_0_10px_rgba(255,0,0,0.2)]'
-                                }`}
-                        >
-                            {activeWebhookUrl === N8N_URLS.test ? '🛠️ TEST' : '🚀 PROD'}
-                        </button>
-
-                        {/* DEV: SIMULATE 5 DAY DELAY */}
-                        <button
-                            onClick={() => {
-                                const fiveDaysAgo = new Date();
-                                fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-                                localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
-                                localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
-                                alert("Simulación: Inicio hace 5 días. Debes ponerte al día.");
-                                window.location.reload();
-                            }}
-                            className="text-[10px] font-bold text-blue-500 underline mb-2"
-                        >
-                            Simular Atraso (5 Días)
-                        </button>
-
-                        {/* LOGOUT BUTTON */}
-                        <button
-                            onClick={() => {
-                                if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-                                    handleLogout();
-                                }
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-600 font-black text-sm rounded-xl border-2 border-red-200 shadow-sm hover:shadow-md transition-all active:scale-95 mb-2"
-                        >
-                            <XCircle className="w-4 h-4" />
-                            Cerrar Sesión
-                        </button>
-
-                        {/* NOTIFICATION PREFERENCES */}
-                        <div className="bg-white/40 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 shadow-sm flex flex-col gap-2">
-                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">🔔 Alertas Diario</h4>
-                            <div className="flex items-center gap-3">
-                                {/* LOCKED MANDATORY ALARM */}
-                                <div className="flex items-center gap-2 scale-90 opacity-80 cursor-not-allowed" title="Los recordatorios matutinos son obligatorios para asegurar tu éxito">
-                                    <div className="relative">
-                                        <div className="block w-8 h-5 rounded-full bg-blue-500/50"></div>
-                                        <div className="absolute left-4 top-1 bg-white w-3 h-3 rounded-full flex items-center justify-center">
-                                            <Lock className="w-2 h-2 text-blue-500" />
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-gray-500">Morning Alarms</span>
-                                        <span className="text-[8px] font-black text-blue-600 tracking-tighter">OBLIGATORIO</span>
-                                    </div>
-                                </div>
-
-                                {/* OPTIONAL DAILY PROGRESS REPORTS */}
-                                <label className="flex items-center cursor-pointer gap-2 scale-90">
-                                    <div className="relative">
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={progressReportsEnabled}
-                                            onChange={(e) => updateNotificationPrefs('progress_reports', e.target.checked)}
-                                        />
-                                        <div className={`block w-8 h-5 rounded-full transition-colors ${progressReportsEnabled ? 'bg-indigo-500' : 'bg-gray-300'}`}></div>
-                                        <div className={`absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform ${progressReportsEnabled ? 'translate-x-3' : ''}`}></div>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-gray-600">Daily Reports</span>
-                                </label>
-                            </div>
-                        </div>
+                        <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
+                            ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
+                        </h1>
+                        {/* HEADER CLEANED UP */}
                     </div>
                 </div>
 
@@ -3235,6 +3154,153 @@ ${finalData.capsule}`;
                     />
                 )
             }
+            {/* SETTINGS MODAL */}
+            {settingsOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md animate-fade-in">
+                    <div className="bg-[#F4F7FF] w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border-4 border-white animate-clay-pop">
+                        {/* Modal Header */}
+                        <div className="bg-white px-6 py-4 border-b-2 border-gray-100 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Settings className="w-5 h-5 text-[#2B2E4A]" />
+                                <h3 className="text-lg font-black text-[#2B2E4A]">Configuración</h3>
+                            </div>
+                            <button
+                                onClick={() => setSettingsOpen(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X className="w-6 h-6 text-gray-400" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                            {/* USER PROFILE SECTION */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Brain className="w-3 h-3" /> Perfil de Usuario
+                                </h4>
+                                <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl shadow-inner border border-blue-200">
+                                                📧
+                                            </div>
+                                            <div className="flex flex-col overflow-hidden">
+                                                <span className="text-[10px] font-black text-gray-400 uppercase">Email</span>
+                                                <span className="text-sm font-bold text-gray-700 truncate">{currentUser?.email}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-xl shadow-inner border border-purple-200">
+                                                🆔
+                                            </div>
+                                            <div className="flex flex-col overflow-hidden">
+                                                <span className="text-[10px] font-black text-gray-400 uppercase">User ID</span>
+                                                <span className="text-[10px] font-mono text-gray-500 break-all">{currentUser?.user_id}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* NOTIFICATION PREFERENCES */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Lock className="w-3 h-3" /> Alertas Diario
+                                </h4>
+                                <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm space-y-4">
+                                    {/* LOCKED MANDATORY ALARM */}
+                                    <div className="flex items-center justify-between opacity-80 cursor-not-allowed">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
+                                                <RotateCcw className="w-4 h-4 text-blue-500" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-gray-700">Morning Alarms</span>
+                                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">Obligatorio</span>
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <div className="block w-10 h-6 rounded-full bg-blue-500/50"></div>
+                                            <div className="absolute left-5 top-1 bg-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
+                                                <Lock className="w-2 h-2 text-blue-500" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* OPTIONAL DAILY PROGRESS REPORTS */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
+                                                <TrendingUp className="w-4 h-4 text-indigo-500" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-gray-700">Daily Reports</span>
+                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Reporte Nocturno</span>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={progressReportsEnabled}
+                                                onChange={(e) => updateNotificationPrefs('progress_reports', e.target.checked)}
+                                            />
+                                            <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500 shadow-inner"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* SYSTEM & ENVIRONMENT */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Server className="w-3 h-3" /> Sistema y Entorno
+                                </h4>
+                                <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-bold text-gray-700">Modo de Conexión</span>
+                                        <button
+                                            onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
+                                            className={`text-[10px] font-black px-4 py-1.5 rounded-full transition-all border-2 ${activeWebhookUrl === N8N_URLS.test
+                                                ? 'bg-gray-100 text-gray-500 border-gray-200'
+                                                : 'bg-red-50 text-red-600 border-red-100 animate-pulse'
+                                                }`}
+                                        >
+                                            {activeWebhookUrl === N8N_URLS.test ? '🛠️ TEST MODE' : '🚀 PRODUCTION'}
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const fiveDaysAgo = new Date();
+                                            fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+                                            localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
+                                            localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
+                                            alert("Simulación: Inicio hace 5 días. Debes ponerte al día.");
+                                            window.location.reload();
+                                        }}
+                                        className="w-full text-[10px] font-black text-blue-500 uppercase tracking-widest py-2 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
+                                    >
+                                        🛠️ Simular Atraso (5 Días)
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* LOGOUT */}
+                            <button
+                                onClick={() => {
+                                    if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+                                        handleLogout();
+                                    }
+                                }}
+                                className="w-full py-4 bg-red-50 text-red-600 font-black rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                            >
+                                <XCircle className="w-5 h-5" />
+                                Cerrar Sesión
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
