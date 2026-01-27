@@ -2953,43 +2953,34 @@ ${finalData.capsule}`;
             />
 
             <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
-                <div className="flex flex-col items-center text-center md:flex-row md:text-left md:justify-between gap-6 mb-2 animate-fade-in-up">
-                    <div className="flex flex-row items-center gap-4">
+                <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                         <MaticoAvatar
                             mood={isCallingN8N ? 'thinking' : 'excited'}
                             size="lg"
                             isThinking={isCallingN8N}
                             onClick={() => setAskModalOpen(true)}
                         />
-                        <div className="text-left">
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="inline-flex items-center gap-2 bg-[#FFD93D] text-[#2B2E4A] px-3 py-1 rounded-full font-black text-xs shadow-sm animate-bounce-subtle">
+                        <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2">
+                            {/* STATS & SETTINGS SMALLER */}
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="inline-flex items-center gap-2 bg-[#FFD93D] text-[#2B2E4A] px-3 py-1 rounded-xl font-black text-xs shadow-sm">
                                     <Star className="w-4 h-4 fill-current" />
                                     {userProfile?.xp || 0} XP
                                 </div>
+                                <div className="flex gap-2 ml-2">
+                                    <button onClick={() => setSettingsOpen(true)} className="p-1 hover:bg-gray-100 rounded-lg group">
+                                        <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+                                    </button>
+                                    <button onClick={() => fetchProfile()} className="p-1 hover:bg-gray-100 rounded-lg group">
+                                        <RotateCcw className={`w-4 h-4 text-gray-400 group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setSettingsOpen(true)}
-                                    className="p-1 hover:bg-gray-200 rounded-full transition-colors group"
-                                    title="Configuración"
-                                >
-                                    <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                                </button>
-                                <button
-                                    onClick={() => fetchProfile()}
-                                    className="p-1 hover:bg-gray-200 rounded-full transition-colors group"
-                                    title="Actualizar Progreso"
-                                >
-                                    <RotateCcw className={`w-3 h-3 text-gray-400 group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
-                                </button>
-                            </div>
-                        </div>
-                        <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
-                            ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
-                        </h1>
-                        <div className="mt-4 flex flex-col items-start gap-3">
-                            <p className="text-[#9094A6] font-bold text-base max-w-md leading-tight">
+                            <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
+                                ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
+                            </h1>
+                            <p className="text-[#9094A6] font-bold text-base max-w-md leading-tight mb-4">
                                 Sistema activo. Hoy dedicaremos la hora completa a:{' '}
                                 <span className="text-[#2B2E4A] bg-white px-2 py-0.5 rounded-lg shadow-sm border border-white/50 font-black inline-block mt-1" style={{ color: TODAYS_SUBJECT.color }}>
                                     {TODAYS_SUBJECT.name}
@@ -2998,21 +2989,17 @@ ${finalData.capsule}`;
 
                             <button
                                 onClick={() => setAskModalOpen(true)}
-                                className="group relative flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#FF9F43] to-[#FFD93D] text-white rounded-2xl shadow-[0_4px_15px_rgba(255,159,67,0.4)] hover:shadow-[0_6px_20px_rgba(255,159,67,0.6)] hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
+                                className="group relative flex items-center gap-4 px-8 py-4 bg-gradient-to-r from-[#FF9F43] to-[#FFD93D] text-white rounded-2xl shadow-[0_4px_15px_rgba(255,159,67,0.4)] hover:shadow-[0_6px_20px_rgba(255,159,67,0.6)] hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
                             >
-                                {/* Shine Effect */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shine" />
-
-                                <div className="relative flex items-center justify-center w-8 h-8 bg-white/20 rounded-xl backdrop-blur-sm group-hover:rotate-12 transition-transform">
-                                    <MessageCircle className="w-5 h-5 text-white animate-pulse" />
+                                <div className="relative flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl backdrop-blur-sm group-hover:rotate-12 transition-transform">
+                                    <MessageCircle className="w-6 h-6 text-white animate-pulse" />
                                 </div>
-
                                 <div className="flex flex-col items-start leading-none">
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">¿Necesitas ayuda?</span>
-                                    <span className="text-lg font-black tracking-tight">TENGO UNA DUDA</span>
+                                    <span className="text-xl font-black tracking-tight">TENGO UNA DUDA</span>
                                 </div>
-
-                                <ArrowRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                <ArrowRight className="w-6 h-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
                             </button>
                         </div>
                     </div>
