@@ -1904,8 +1904,24 @@ const App = () => {
 
             console.log("[CALENDAR] Resolving plan for today. Completed:", completed);
 
-            // Escaneamos desde el primer día (Lunes 26) hasta hoy
-            for (let d = 0; d <= diffDays; d++) {
+            // 1. PRIORIDAD: ¿Qué debería estar estudiando HOY según el calendario?
+            const todaysDayOfWeek = today.getDay();
+            const todaysPlan = WEEKLY_PLAN.find(p => p.day === todaysDayOfWeek);
+            const currentWeekNumber = Math.floor(diffDays / 7);
+
+            if (todaysPlan) {
+                const todaysSubject = todaysPlan.subject;
+                const todaysSessionKey = `${todaysSubject}_${currentWeekNumber + 1}`;
+
+                // Si la sesión de HOY no está completada, esa es la prioridad absoluta
+                if (!completed.includes(todaysSessionKey)) {
+                    console.log(`[CALENDAR] Today is ${todaysSubject}. Session ${currentWeekNumber + 1} is pending. Setting as priority.`);
+                    return { subject: todaysSubject, index: currentWeekNumber };
+                }
+            }
+
+            // 2. CATCH-UP: Si lo de hoy ya está listo, buscamos sesiones pendientes de días anteriores
+            for (let d = 0; d < diffDays; d++) {
                 const dateOfD = new Date(COURSE_START_DATE);
                 dateOfD.setDate(dateOfD.getDate() + d);
                 const dayOfWeek = dateOfD.getDay();
@@ -1914,22 +1930,19 @@ const App = () => {
                 if (plan) {
                     const subject = plan.subject;
                     const weekNumber = Math.floor(d / 7);
-                    const sessionIndex = weekNumber;
-                    const sessionKey = `${subject}_${sessionIndex + 1}`;
+                    const sessionKey = `${subject}_${weekNumber + 1}`;
 
                     if (!completed.includes(sessionKey)) {
-                        console.log(`[CALENDAR] Found incomplete session: ${sessionKey} (from day ${d})`);
-                        return { subject, index: sessionIndex };
+                        console.log(`[CALENDAR] Today is ready! Found a missed session from the past: ${sessionKey}`);
+                        return { subject, index: weekNumber };
                     }
                 }
             }
 
-            // Si todo está al día, mostramos lo que toca hoy o el último índice
-            const todaysDayOfWeek = today.getDay();
-            const todaysPlan = WEEKLY_PLAN.find(p => p.day === todaysDayOfWeek);
+            // 3. FALLBACK: Si todo está al día (incluyendo hoy), mostramos hoy o el índice actual
             return {
                 subject: todaysPlan ? todaysPlan.subject : 'MATEMATICA',
-                index: Math.max(0, Math.floor(diffDays / 7))
+                index: Math.max(0, currentWeekNumber)
             };
         } catch (e) {
             console.error("Error in resolveMaticoPlan:", e);
