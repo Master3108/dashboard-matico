@@ -2874,480 +2874,498 @@ ${finalData.capsule}`;
     }
 
     return (
-        <div className="min-h-screen bg-[#E0E5EC] p-6 relative">
-            {/* LOADING SCREEN WHILE FETCHING PROGRESS */}
-            {loadingProgress && (
-                <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center z-50">
-                    <div className="text-center">
-                        <Loader className="w-16 h-16 animate-spin text-blue-600 mx-auto mb-6" />
-                        <h2 className="text-2xl font-black text-gray-800 mb-2">Cargando tu progreso...</h2>
-                        <p className="text-gray-600">Conectando con el servidor</p>
-                    </div>
-                </div>
-            )}
+        <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-hidden">
+            {/* AMBIENT BACKGROUND LIGHTS & MOVEMENT */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#4F46E5]/10 rounded-full blur-[120px] animate-blob"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#0EA5E9]/10 rounded-full blur-[120px] animate-blob animation-delay-2000"></div>
+                <div className="absolute top-[20%] right-[10%] w-[30%] h-[40%] bg-[#E84393]/5 rounded-full blur-[100px] animate-blob animation-delay-4000"></div>
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-overlay"></div>
+            </div>
 
-            <VideoModal
-                isOpen={videoModalOpen}
-                onClose={() => setVideoModalOpen(false)}
-                videoUrl={TODAYS_SUBJECT.video_link}
-                title={TODAYS_SESSION.videoTitle}
-                onDoubt={(context) => {
-                    setDoubtContext(context);
-                    // setVideoModalOpen(false); // Close video (DISABLED FOR CONTEXT)
-                    setAskModalOpen(true);    // Open ask modal
-                }}
-                onFinish={async () => {
-                    setVideoModalOpen(false);
-                    await saveProgress('video_completed', { title: TODAYS_SESSION.videoTitle, xp_reward: 50, session: TODAYS_SESSION.session });
-                    // NEW: AUTO-START THEORY AFTER VIDEO
-                    callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
-                }}
-            />
-
-            <ReadingModal
-                isOpen={readingModalOpen}
-                onClose={() => setReadingModalOpen(false)}
-                title={TODAYS_SESSION.readingTitle || "Lectura"}
-                content={TODAYS_SESSION.readingContent || ""}
-                onFinish={handleReadingFinish}
-            />
-
-            {/* THEORY MODAL - Teoría Lúdica antes de cada sub-nivel */}
-            <ReadingModal
-                isOpen={showTheoryModal}
-                onClose={() => setShowTheoryModal(false)}
-                title={theoryTitle}
-                content={theoryContent}
-                onFinish={handleContinueToQuiz}
-                buttonText="INICIAR QUIZ COMPLETO"
-            />
-
-            <QuestionModal
-                isOpen={askModalOpen}
-                onClose={() => {
-                    setAskModalOpen(false);
-                    setDoubtContext(null); // Clear context on close
-                }}
-                onSubmit={(question, image, timestamp, context) => {
-                    setAskModalOpen(false); // Close explicitly to show loading/result over video
-                    // Combine question with context details for the 'topic' argument
-                    let fullTopic = question;
-                    if (context && context.type === 'video') {
-                        fullTopic = `[Context: Video "${context.title}"] ${question}`;
-                    }
-                    callAgent(currentSubject, 'answer_doubts', fullTopic, image, timestamp);
-                }}
-                isCallingN8N={isCallingN8N}
-                initialContext={doubtContext}
-            />
-
-            {/* NEW LOADING OVERLAY */}
-            <LoadingOverlay isOpen={isCallingN8N} message={loadingMessage} />
-
-            <AIContentModal
-                isOpen={aiModalOpen}
-                onClose={() => setAiModalOpen(false)}
-                content={aiContent}
-                subject={currentSubject}
-                callAgent={callAgent}
-                isCallingN8N={isCallingN8N}
-                routeTitle={TODAYS_SUBJECT.oa_title}
-                apiJson={apiJson}
-                quizStats={quizStats}
-                updateQuizStats={updateQuizStats}
-                quizLevel={quizLevel} // Pass Level
-                setQuizLevel={setQuizLevel}
-                quizQuestionNumber={quizQuestionNumber}
-                setQuizQuestionNumber={setQuizQuestionNumber}
-                userQuery={lastUserQuery}
-                onAskDoubt={() => { setLastUserQuery(""); setAskModalOpen(true); }}
-                onStartQuiz={startFullQuiz}
-                quizProgress={getQuizProgress()} // NEW: Pass quiz progress for UI
-            />
-
-            <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
-                <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                        <MaticoAvatar
-                            mood={isCallingN8N ? 'thinking' : 'excited'}
-                            size="lg"
-                            isThinking={isCallingN8N}
-                            onClick={() => setAskModalOpen(true)}
-                        />
-
-                        <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2">
-                            <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
-                                ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
-                            </h1>
-                            <p className="text-[#9094A6] font-bold text-base max-w-md leading-tight mb-4">
-                                Sistema activo. Hoy dedicaremos la hora completa a:{' '}
-                                <span className="text-[#2B2E4A] bg-white px-2 py-0.5 rounded-lg shadow-sm border border-white/50 font-black inline-block mt-1" style={{ color: TODAYS_SUBJECT.color }}>
-                                    {TODAYS_SUBJECT.name}
-                                </span>
-                            </p>
-
-                            <button
-                                onClick={() => setAskModalOpen(true)}
-                                className="group relative flex items-center gap-4 px-8 py-4 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white rounded-2xl shadow-[0_4px_15px_rgba(79,70,229,0.4)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.6)] hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shine" />
-                                <div className="relative flex items-center justify-center w-10 h-10 bg-white/10 rounded-xl backdrop-blur-sm group-hover:rotate-12 transition-transform">
-                                    <MessageCircle className="w-6 h-6 text-white animate-pulse" />
-                                </div>
-                                <div className="flex flex-col items-start leading-none">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">¿NECESITAS AYUDA SOBRE ALGUNA MATERIA?</span>
-                                    <span className="text-xl font-black tracking-tight">TENGO UNA DUDA</span>
-                                </div>
-                                <ArrowRight className="w-6 h-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
-                            </button>
+            <div className="relative z-10 max-w-7xl mx-auto">
+                {/* LOADING SCREEN WHILE FETCHING PROGRESS */}
+                {loadingProgress && (
+                    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center z-50">
+                        <div className="text-center">
+                            <Loader className="w-16 h-16 animate-spin text-blue-600 mx-auto mb-6" />
+                            <h2 className="text-2xl font-black text-gray-800 mb-2">Cargando tu progreso...</h2>
+                            <p className="text-gray-600">Conectando con el servidor</p>
                         </div>
                     </div>
+                )}
 
-                    {/* STATS & SETTINGS BACK TO THE RIGHT SIDE */}
-                    <div className="flex flex-row md:flex-col items-center md:items-end gap-3 mt-4 md:mt-2">
-                        <div className="inline-flex items-center gap-2 bg-[#1E293B] text-[#FACC15] px-4 py-2 rounded-2xl font-black text-sm shadow-sm border-2 border-[#334155] animate-clay-pop">
-                            <Star className="w-4 h-4 fill-current" />
-                            {userProfile?.xp || 0} XP
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setSettingsOpen(true)} className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:-translate-y-0.5 group" title="Configuración">
-                                <Settings className="w-8 h-8 text-gray-400 group-hover:text-gray-600 transition-transform group-hover:rotate-90" />
-                            </button>
-                            <button onClick={() => fetchProfile()} className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:-translate-y-0.5 group" title="Actualizar Progreso">
-                                <RotateCcw className={`w-7 h-7 text-gray-400 group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <VideoModal
+                    isOpen={videoModalOpen}
+                    onClose={() => setVideoModalOpen(false)}
+                    videoUrl={TODAYS_SUBJECT.video_link}
+                    title={TODAYS_SESSION.videoTitle}
+                    onDoubt={(context) => {
+                        setDoubtContext(context);
+                        // setVideoModalOpen(false); // Close video (DISABLED FOR CONTEXT)
+                        setAskModalOpen(true);    // Open ask modal
+                    }}
+                    onFinish={async () => {
+                        setVideoModalOpen(false);
+                        await saveProgress('video_completed', { title: TODAYS_SESSION.videoTitle, xp_reward: 50, session: TODAYS_SESSION.session });
+                        // NEW: AUTO-START THEORY AFTER VIDEO
+                        callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
+                    }}
+                />
 
-                <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                    {/* NEW: HORIZONTAL SUBJECT LINE (Web Format) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
-                        <button
-                            onClick={() => setCurrentSubject('MATEMATICA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : '!bg-[#4D96FF]/10 !text-[#4D96FF] !border-[#4D96FF]/30'}`}
-                        >
-                            <span className="text-lg mr-1 rotate-[-10deg] inline-block">📐</span> Mate
-                        </button>
-                        <button
-                            onClick={() => setCurrentSubject('LENGUAJE')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF7675] !text-white !border-[#E84393] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,118,117,0.6)]' : '!bg-[#FF7675]/10 !text-[#FF7675] !border-[#FF7675]/30'}`}
-                        >
-                            <span className="text-lg mr-1 rotate-[10deg] inline-block">📚</span> Lenguaje
-                        </button>
-                        <button
-                            onClick={() => setCurrentSubject('FISICA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : '!bg-[#9D4EDD]/10 !text-[#9D4EDD] !border-[#9D4EDD]/30'}`}
-                        >
-                            <span className="text-lg mr-1 rotate-[-5deg] inline-block">🌌</span> Física
-                        </button>
-                        <button
-                            onClick={() => setCurrentSubject('QUIMICA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : '!bg-[#E84393]/10 !text-[#E84393] !border-[#E84393]/30'}`}
-                        >
-                            <span className="text-lg mr-1 rotate-[5deg] inline-block">🧪</span> Química
-                        </button>
-                        <button
-                            onClick={() => setCurrentSubject('BIOLOGIA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : '!bg-[#2ECC71]/10 !text-[#2ECC71] !border-[#2ECC71]/30'}`}
-                        >
-                            <span className="text-lg mr-1 rotate-[-10deg] inline-block">🌿</span> Biología
-                        </button>
-                        <button
-                            onClick={() => setCurrentSubject('HISTORIA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : '!bg-[#E67E22]/10 !text-[#E67E22] !border-[#E67E22]/30'}`}
-                        >
-                            <span className="text-lg mr-1 rotate-[10deg] inline-block">📜</span> Historia
-                        </button>
-                    </div>
+                <ReadingModal
+                    isOpen={readingModalOpen}
+                    onClose={() => setReadingModalOpen(false)}
+                    title={TODAYS_SESSION.readingTitle || "Lectura"}
+                    content={TODAYS_SESSION.readingContent || ""}
+                    onFinish={handleReadingFinish}
+                />
 
-                    <div className="w-full">
-                        <AnnualRaceBar currentDay={TODAYS_SESSION.session} totalDays={43} />
-                    </div>
-                </div>
+                {/* THEORY MODAL - Teoría Lúdica antes de cada sub-nivel */}
+                <ReadingModal
+                    isOpen={showTheoryModal}
+                    onClose={() => setShowTheoryModal(false)}
+                    title={theoryTitle}
+                    content={theoryContent}
+                    onFinish={handleContinueToQuiz}
+                    buttonText="INICIAR QUIZ COMPLETO"
+                />
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                <QuestionModal
+                    isOpen={askModalOpen}
+                    onClose={() => {
+                        setAskModalOpen(false);
+                        setDoubtContext(null); // Clear context on close
+                    }}
+                    onSubmit={(question, image, timestamp, context) => {
+                        setAskModalOpen(false); // Close explicitly to show loading/result over video
+                        // Combine question with context details for the 'topic' argument
+                        let fullTopic = question;
+                        if (context && context.type === 'video') {
+                            fullTopic = `[Context: Video "${context.title}"] ${question}`;
+                        }
+                        callAgent(currentSubject, 'answer_doubts', fullTopic, image, timestamp);
+                    }}
+                    isCallingN8N={isCallingN8N}
+                    initialContext={doubtContext}
+                />
 
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className={`${clayCard} relative overflow-visible`}>
-                            <div className="flex justify-between items-start mb-8">
-                                <div>
-                                    <h2 className="text-2xl font-black text-[#2B2E4A] mb-1" style={{ color: TODAYS_SUBJECT.color }}>
-                                        Ruta de {TODAYS_SUBJECT.name}: <span className="text-base font-bold text-[#9094A6] block">{TODAYS_SUBJECT.oa_title}</span>
-                                    </h2>
-                                    <p className="text-[#9094A6] font-bold text-sm">Sesión {TODAYS_SESSION.session}: {TODAYS_SESSION.topic}</p>
+                {/* NEW LOADING OVERLAY */}
+                <LoadingOverlay isOpen={isCallingN8N} message={loadingMessage} />
 
-                                    {/* INDICADOR DE PROGRESO KAIZEN */}
-                                    {(() => {
-                                        const progress = getQuizProgress();
-                                        const phaseNames = { 1: "Básico", 2: "Avanzado", 3: "Crítico" };
-                                        const phaseColors = {
-                                            1: "bg-green-100 text-green-700 border-green-300",
-                                            2: "bg-yellow-100 text-yellow-700 border-yellow-300",
-                                            3: "bg-red-100 text-red-700 border-red-300"
-                                        };
+                <AIContentModal
+                    isOpen={aiModalOpen}
+                    onClose={() => setAiModalOpen(false)}
+                    content={aiContent}
+                    subject={currentSubject}
+                    callAgent={callAgent}
+                    isCallingN8N={isCallingN8N}
+                    routeTitle={TODAYS_SUBJECT.oa_title}
+                    apiJson={apiJson}
+                    quizStats={quizStats}
+                    updateQuizStats={updateQuizStats}
+                    quizLevel={quizLevel} // Pass Level
+                    setQuizLevel={setQuizLevel}
+                    quizQuestionNumber={quizQuestionNumber}
+                    setQuizQuestionNumber={setQuizQuestionNumber}
+                    userQuery={lastUserQuery}
+                    onAskDoubt={() => { setLastUserQuery(""); setAskModalOpen(true); }}
+                    onStartQuiz={startFullQuiz}
+                    quizProgress={getQuizProgress()} // NEW: Pass quiz progress for UI
+                />
 
-                                        if (progress.currentPhase <= 3) {
-                                            const questionsCompleted = (progress.currentPhase - 1) * 15;
-                                            return (
-                                                <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
-                                                    ⚡ Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/45 preguntas completadas
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
-                                </div>
-                                <div className="w-14 h-14 rounded-full bg-[#E0E5EC] flex items-center justify-center">
-                                    <TODAYS_SUBJECT.icon className="w-8 h-8 animate-float" style={{ color: TODAYS_SUBJECT.color }} />
-                                </div>
+                <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
+                    <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">
+                        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative">
+                            {/* RADIAL GLOW BEHIND MATICO */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-[#4F46E5]/10 rounded-full blur-3xl animate-pulse"></div>
+
+                            <div className="relative">
+                                <MaticoAvatar
+                                    mood={isCallingN8N ? 'thinking' : 'excited'}
+                                    size="lg"
+                                    isThinking={isCallingN8N}
+                                    onClick={() => setAskModalOpen(true)}
+                                />
                             </div>
 
-                            {/* ROUTE STEPS RENDERER */}
-                            <div className="flex flex-col items-center gap-8 relative py-8 min-h-[400px]">
-                                {/* CONNECTOR LINE */}
-                                <div className="absolute top-0 bottom-0 w-4 bg-[#E5E5E5] rounded-full z-0"></div>
+                            <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2 relative z-10">
+                                <h1 className="text-4xl font-black text-[#2B2E4A] mb-1 drop-shadow-sm">
+                                    ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
+                                </h1>
+                                <p className="text-[#9094A6] font-bold text-base max-w-md leading-tight mb-6">
+                                    Sistema activo. Hoy dedicaremos la hora completa a:{' '}
+                                    <span className="text-[#2B2E4A] bg-white px-2 py-0.5 rounded-lg shadow-sm border border-white/50 font-black inline-block mt-1" style={{ color: TODAYS_SUBJECT.color }}>
+                                        {TODAYS_SUBJECT.name}
+                                    </span>
+                                </p>
 
-                                {dailyRoute.daily_route_steps.map((step, idx) => {
-                                    const IconComponent = step.icon === "Play" ? Play : (step.icon === "Brain" ? Brain : (step.icon === "MessageCircle" ? MessageCircle : Lock));
-
-                                    const handleClick = () => {
-                                        if (idx === 0) handleStartSession();
-                                        if (idx === 1) callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
-                                        if (idx === 2) callAgent(currentSubject, 'generate_quiz', TODAYS_SUBJECT.oa_title);
-                                        if (idx === 3) setAskModalOpen(true);
-                                    };
-
-                                    // STYLE LOGIC
-                                    let btnStyle = "bg-[#E5E5E5] border-[#CECECE] text-[#AFAFAF]"; // Locked/Future
-                                    let isCurrent = idx === 0; // Default current?
-                                    // Simple logic for demo: Step 0 is completed/current, others locked? 
-                                    // Better: visual variety based on index
-
-                                    if (idx === 0) btnStyle = "bg-[#58CC02] border-[#46A302] text-white animate-bounce-subtle z-20 shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(88,204,2,0.6)]"; // Active
-                                    else if (idx === 1) btnStyle = "bg-[#1CB0F6] border-[#1899D6] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(28,176,246,0.6)]"; // Next
-                                    else if (idx === 2) btnStyle = "bg-[#FFD900] border-[#E5C300] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,217,0,0.6)]"; // Quiz
-                                    else btnStyle = "bg-[#FF4B4B] border-[#D63E3E] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,75,75,0.6)]"; // Practice
-
-                                    // Alternating offset
-                                    const offsetClass = idx % 2 === 0 ? "-translate-x-12" : "translate-x-12";
-                                    const labelSide = idx % 2 === 0 ? "left-28" : "right-28 text-right";
-                                    const labelOrigin = idx % 2 === 0 ? "origin-left" : "origin-right flex-row-reverse";
-
-                                    return (
-                                        <div key={idx} className={`relative z-10 group ${offsetClass}`}>
-                                            <button
-                                                onClick={handleClick}
-                                                className={`w-24 h-24 rounded-full flex items-center justify-center border-b-8 transition-all duration-300 hover:scale-110 hover:-translate-y-2 hover:z-30 active:border-b-0 active:translate-y-2 shadow-sm ${btnStyle}`}
-                                            >
-                                                <IconComponent className="w-10 h-10" fill="currentColor" />
-
-                                                {/* CROWN/STAR for detailed polish */}
-                                                <div className="absolute top-1 right-2 w-3 h-3 bg-white/30 rounded-full"></div>
-                                            </button>
-
-                                            {/* FLOATING LABEL */}
-                                            <div className={`absolute top-6 ${idx % 2 === 0 ? "left-28" : "right-28"} bg-white border-2 border-gray-200 px-4 py-2 rounded-2xl shadow-sm min-w-[140px] transition-transform hover:scale-105`}>
-                                                <h3 className="font-black text-[#3C3C3C] text-sm uppercase">{step.step}</h3>
-                                                <p className="text-[#AFAFAF] text-xs font-bold">{
-                                                    idx === 0 ? "CLASE DE HOY" :
-                                                        (idx === 1 ? "TEORÍA IA" :
-                                                            (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"))
-                                                }</p>
-
-                                                {/* TRIANGLE POINTER */}
-                                                <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-b-2 border-l-2 border-gray-200 transform rotate-45 ${idx % 2 === 0 ? "-left-[7px]" : "-right-[7px] border-l-0 border-b-0 border-t-2 border-r-2"}`}></div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="mt-12">
                                 <button
-                                    onClick={() => setVideoModalOpen(true)}
-                                    className={`${clayBtnAction} ${(localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : ''}`}
-                                    disabled={isCallingN8N}
+                                    onClick={() => setAskModalOpen(true)}
+                                    className="group relative flex items-center gap-4 px-8 py-5 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white rounded-2xl shadow-[0_10px_30px_rgba(79,70,229,0.4)] hover:shadow-[0_15px_40px_rgba(79,70,229,0.5)] hover:-translate-y-1.5 transition-all duration-300 active:scale-95 overflow-hidden animate-float"
                                 >
-                                    {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESIÓN COMPLETADA (Repasar)" : "INICIAR SESIÓN " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shine" />
+                                    <div className="relative flex items-center justify-center w-10 h-10 bg-white/10 rounded-xl backdrop-blur-sm group-hover:rotate-12 transition-transform">
+                                        <MessageCircle className="w-6 h-6 text-white animate-pulse" />
+                                    </div>
+                                    <div className="flex flex-col items-start leading-none">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">¿NECESITAS AYUDA SOBRE ALGUNA MATERIA?</span>
+                                        <span className="text-xl font-black tracking-tight">TENGO UNA DUDA</span>
+                                    </div>
+                                    <ArrowRight className="w-6 h-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* STATS & SETTINGS BACK TO THE RIGHT SIDE */}
+                        <div className="flex flex-row md:flex-col items-center md:items-end gap-4 mt-4 md:mt-2 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                            <div className="inline-flex items-center gap-2 bg-[#1E293B] text-[#FACC15] px-5 py-2.5 rounded-2xl font-black text-sm shadow-[0_10px_20px_rgba(30,41,59,0.2)] border-2 border-[#334155] animate-float">
+                                <Star className="w-5 h-5 fill-current" />
+                                {userProfile?.xp || 0} XP
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setSettingsOpen(true)} className="p-3.5 bg-white rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.05)] border-2 border-white transition-all hover:shadow-xl hover:-translate-y-1 group hover:border-indigo-100" title="Configuración">
+                                    <Settings className="w-8 h-8 text-[#64748B] group-hover:text-indigo-600 transition-transform group-hover:rotate-90" />
+                                </button>
+                                <button onClick={() => fetchProfile()} className="p-3.5 bg-white rounded-2xl shadow-[0_10px_20_rgba(0,0,0,0.05)] border-2 border-white transition-all hover:shadow-xl hover:-translate-y-1 group hover:border-blue-100" title="Actualizar Progreso">
+                                    <RotateCcw className={`w-7 h-7 text-[#64748B] group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
                                 </button>
                             </div>
                         </div>
                     </div>
-                    <div className="space-y-8">
 
-                        <PomodoroTimer />
-                    </div>
-                </div>
-            </div>
-
-            {/* Interactive Quiz Modal */}
-            {
-                showInteractiveQuiz && quizQuestions && quizQuestions.length > 0 && (
-                    <InteractiveQuiz
-                        questions={quizQuestions}
-                        phase={currentQuizPhase}
-                        onComplete={(score) => {
-                            console.log(`Quiz Fase ${currentQuizPhase} completado:`, score);
-                            // Call progressive quiz handler instead of manual close
-                            onQuizPhaseComplete(score);
-                        }}
-                        onClose={() => {
-                            // Allow manual emergency close
-                            setShowInteractiveQuiz(false);
-                            window.location.reload();
-                        }}
-                    />
-                )
-            }
-            {/* SETTINGS MODAL */}
-            {settingsOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md animate-fade-in">
-                    <div className="bg-[#F4F7FF] w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border-4 border-white animate-clay-pop">
-                        {/* Modal Header */}
-                        <div className="bg-white px-6 py-4 border-b-2 border-gray-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Settings className="w-5 h-5 text-[#2B2E4A]" />
-                                <h3 className="text-lg font-black text-[#2B2E4A]">Configuración</h3>
-                            </div>
+                    <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                        {/* NEW: HORIZONTAL SUBJECT LINE (Web Format) */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-8">
                             <button
-                                onClick={() => setSettingsOpen(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                onClick={() => setCurrentSubject('MATEMATICA')}
+                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : '!bg-[#4D96FF]/10 !text-[#4D96FF] !border-[#4D96FF]/30'}`}
                             >
-                                <X className="w-6 h-6 text-gray-400" />
+                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">📐</span> Mate
+                            </button>
+                            <button
+                                onClick={() => setCurrentSubject('LENGUAJE')}
+                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF7675] !text-white !border-[#E84393] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,118,117,0.6)]' : '!bg-[#FF7675]/10 !text-[#FF7675] !border-[#FF7675]/30'}`}
+                            >
+                                <span className="text-lg mr-1 rotate-[10deg] inline-block">📚</span> Lenguaje
+                            </button>
+                            <button
+                                onClick={() => setCurrentSubject('FISICA')}
+                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : '!bg-[#9D4EDD]/10 !text-[#9D4EDD] !border-[#9D4EDD]/30'}`}
+                            >
+                                <span className="text-lg mr-1 rotate-[-5deg] inline-block">🌌</span> Física
+                            </button>
+                            <button
+                                onClick={() => setCurrentSubject('QUIMICA')}
+                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : '!bg-[#E84393]/10 !text-[#E84393] !border-[#E84393]/30'}`}
+                            >
+                                <span className="text-lg mr-1 rotate-[5deg] inline-block">🧪</span> Química
+                            </button>
+                            <button
+                                onClick={() => setCurrentSubject('BIOLOGIA')}
+                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : '!bg-[#2ECC71]/10 !text-[#2ECC71] !border-[#2ECC71]/30'}`}
+                            >
+                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">🌿</span> Biología
+                            </button>
+                            <button
+                                onClick={() => setCurrentSubject('HISTORIA')}
+                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : '!bg-[#E67E22]/10 !text-[#E67E22] !border-[#E67E22]/30'}`}
+                            >
+                                <span className="text-lg mr-1 rotate-[10deg] inline-block">📜</span> Historia
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
-                            {/* USER PROFILE SECTION */}
-                            <div className="space-y-2">
-                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                    <Brain className="w-3 h-3" /> Perfil de Usuario
-                                </h4>
-                                <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm">
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl shadow-inner border border-blue-200">
-                                                📧
-                                            </div>
-                                            <div className="flex flex-col overflow-hidden">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase">Email</span>
-                                                <span className="text-sm font-bold text-gray-700 truncate">{currentUser?.email}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-xl shadow-inner border border-purple-200">
-                                                🆔
-                                            </div>
-                                            <div className="flex flex-col overflow-hidden">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase">User ID</span>
-                                                <span className="text-[10px] font-mono text-gray-500 break-all">{currentUser?.user_id}</span>
-                                            </div>
-                                        </div>
+                        <div className="w-full">
+                            <AnnualRaceBar currentDay={TODAYS_SESSION.session} totalDays={43} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+
+                        <div className="lg:col-span-2 space-y-8">
+                            <div className={`${clayCard} relative overflow-visible`}>
+                                <div className="flex justify-between items-start mb-8">
+                                    <div>
+                                        <h2 className="text-2xl font-black text-[#2B2E4A] mb-1" style={{ color: TODAYS_SUBJECT.color }}>
+                                            Ruta de {TODAYS_SUBJECT.name}: <span className="text-base font-bold text-[#9094A6] block">{TODAYS_SUBJECT.oa_title}</span>
+                                        </h2>
+                                        <p className="text-[#9094A6] font-bold text-sm">Sesión {TODAYS_SESSION.session}: {TODAYS_SESSION.topic}</p>
+
+                                        {/* INDICADOR DE PROGRESO KAIZEN */}
+                                        {(() => {
+                                            const progress = getQuizProgress();
+                                            const phaseNames = { 1: "Básico", 2: "Avanzado", 3: "Crítico" };
+                                            const phaseColors = {
+                                                1: "bg-green-100 text-green-700 border-green-300",
+                                                2: "bg-yellow-100 text-yellow-700 border-yellow-300",
+                                                3: "bg-red-100 text-red-700 border-red-300"
+                                            };
+
+                                            if (progress.currentPhase <= 3) {
+                                                const questionsCompleted = (progress.currentPhase - 1) * 15;
+                                                return (
+                                                    <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
+                                                        ⚡ Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/45 preguntas completadas
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                    </div>
+                                    <div className="w-14 h-14 rounded-full bg-[#E0E5EC] flex items-center justify-center">
+                                        <TODAYS_SUBJECT.icon className="w-8 h-8 animate-float" style={{ color: TODAYS_SUBJECT.color }} />
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* NOTIFICATION PREFERENCES */}
-                            <div className="space-y-2">
-                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                    <Lock className="w-3 h-3" /> Alertas Diario
-                                </h4>
-                                <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm space-y-4">
-                                    {/* LOCKED MANDATORY ALARM */}
-                                    <div className="flex items-center justify-between opacity-80 cursor-not-allowed">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
-                                                <RotateCcw className="w-4 h-4 text-blue-500" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-700">Morning Alarms</span>
-                                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">Obligatorio</span>
-                                            </div>
-                                        </div>
-                                        <div className="relative">
-                                            <div className="block w-10 h-6 rounded-full bg-blue-500/50"></div>
-                                            <div className="absolute left-5 top-1 bg-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
-                                                <Lock className="w-2 h-2 text-blue-500" />
-                                            </div>
-                                        </div>
+                                {/* ROUTE STEPS RENDERER */}
+                                <div className="flex flex-col items-center gap-8 relative py-8 min-h-[400px]">
+                                    {/* CONNECTOR LINE WITH ENERGY GLOW */}
+                                    <div className="absolute top-0 bottom-0 w-4 bg-[#E2E8F0] rounded-full z-0 overflow-hidden shadow-inner">
+                                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/20 via-blue-500/20 to-indigo-500/20 animate-pulse"></div>
+                                        <div className="absolute top-0 w-full h-full bg-gradient-to-b from-transparent via-white/40 to-transparent animate-infinite-scroll" style={{ height: '200%' }}></div>
                                     </div>
 
-                                    {/* OPTIONAL DAILY PROGRESS REPORTS */}
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
-                                                <TrendingUp className="w-4 h-4 text-indigo-500" />
+                                    {dailyRoute.daily_route_steps.map((step, idx) => {
+                                        const IconComponent = step.icon === "Play" ? Play : (step.icon === "Brain" ? Brain : (step.icon === "MessageCircle" ? MessageCircle : Lock));
+
+                                        const handleClick = () => {
+                                            if (idx === 0) handleStartSession();
+                                            if (idx === 1) callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
+                                            if (idx === 2) callAgent(currentSubject, 'generate_quiz', TODAYS_SUBJECT.oa_title);
+                                            if (idx === 3) setAskModalOpen(true);
+                                        };
+
+                                        // STYLE LOGIC
+                                        let btnStyle = "bg-[#E5E5E5] border-[#CECECE] text-[#AFAFAF]"; // Locked/Future
+                                        let isCurrent = idx === 0; // Default current?
+                                        // Simple logic for demo: Step 0 is completed/current, others locked? 
+                                        // Better: visual variety based on index
+
+                                        if (idx === 0) btnStyle = "bg-[#58CC02] border-[#46A302] text-white animate-bounce-subtle z-20 shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(88,204,2,0.6)]"; // Active
+                                        else if (idx === 1) btnStyle = "bg-[#1CB0F6] border-[#1899D6] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(28,176,246,0.6)]"; // Next
+                                        else if (idx === 2) btnStyle = "bg-[#FFD900] border-[#E5C300] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,217,0,0.6)]"; // Quiz
+                                        else btnStyle = "bg-[#FF4B4B] border-[#D63E3E] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,75,75,0.6)]"; // Practice
+
+                                        // Alternating offset
+                                        const offsetClass = idx % 2 === 0 ? "-translate-x-12" : "translate-x-12";
+                                        const labelSide = idx % 2 === 0 ? "left-28" : "right-28 text-right";
+                                        const labelOrigin = idx % 2 === 0 ? "origin-left" : "origin-right flex-row-reverse";
+
+                                        return (
+                                            <div key={idx} className={`relative z-10 group ${offsetClass}`}>
+                                                <button
+                                                    onClick={handleClick}
+                                                    className={`w-24 h-24 rounded-full flex items-center justify-center border-b-8 transition-all duration-300 hover:scale-110 hover:-translate-y-2 hover:z-30 active:border-b-0 active:translate-y-2 shadow-sm ${btnStyle}`}
+                                                >
+                                                    <IconComponent className="w-10 h-10" fill="currentColor" />
+
+                                                    {/* CROWN/STAR for detailed polish */}
+                                                    <div className="absolute top-1 right-2 w-3 h-3 bg-white/30 rounded-full"></div>
+                                                </button>
+
+                                                {/* FLOATING LABEL */}
+                                                <div className={`absolute top-6 ${idx % 2 === 0 ? "left-28" : "right-28"} bg-white border-2 border-gray-200 px-4 py-2 rounded-2xl shadow-sm min-w-[140px] transition-transform hover:scale-105`}>
+                                                    <h3 className="font-black text-[#3C3C3C] text-sm uppercase">{step.step}</h3>
+                                                    <p className="text-[#AFAFAF] text-xs font-bold">{
+                                                        idx === 0 ? "CLASE DE HOY" :
+                                                            (idx === 1 ? "TEORÍA IA" :
+                                                                (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"))
+                                                    }</p>
+
+                                                    {/* TRIANGLE POINTER */}
+                                                    <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-b-2 border-l-2 border-gray-200 transform rotate-45 ${idx % 2 === 0 ? "-left-[7px]" : "-right-[7px] border-l-0 border-b-0 border-t-2 border-r-2"}`}></div>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-700">Daily Reports</span>
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Reporte Nocturno</span>
-                                            </div>
-                                        </div>
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                className="sr-only peer"
-                                                checked={progressReportsEnabled}
-                                                onChange={(e) => updateNotificationPrefs('progress_reports', e.target.checked)}
-                                            />
-                                            <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500 shadow-inner"></div>
-                                        </label>
-                                    </div>
+                                        );
+                                    })}
                                 </div>
-                            </div>
 
-                            {/* SYSTEM & ENVIRONMENT */}
-                            <div className="space-y-2">
-                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                    <Server className="w-3 h-3" /> Sistema y Entorno
-                                </h4>
-                                <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-gray-700">Modo de Conexión</span>
-                                        <button
-                                            onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
-                                            className={`text-[10px] font-black px-4 py-1.5 rounded-full transition-all border-2 ${activeWebhookUrl === N8N_URLS.test
-                                                ? 'bg-gray-100 text-gray-500 border-gray-200'
-                                                : 'bg-red-50 text-red-600 border-red-100 animate-pulse'
-                                                }`}
-                                        >
-                                            {activeWebhookUrl === N8N_URLS.test ? '🛠️ TEST MODE' : '🚀 PRODUCTION'}
-                                        </button>
-                                    </div>
+                                <div className="mt-12">
                                     <button
-                                        onClick={() => {
-                                            const fiveDaysAgo = new Date();
-                                            fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-                                            localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
-                                            localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
-                                            alert("Simulación: Inicio hace 5 días. Debes ponerte al día.");
-                                            window.location.reload();
-                                        }}
-                                        className="w-full text-[10px] font-black text-blue-500 uppercase tracking-widest py-2 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
+                                        onClick={() => setVideoModalOpen(true)}
+                                        className={`${clayBtnAction} ${(localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : ''}`}
+                                        disabled={isCallingN8N}
                                     >
-                                        🛠️ Simular Atraso (5 Días)
+                                        {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESIÓN COMPLETADA (Repasar)" : "INICIAR SESIÓN " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                        <div className="space-y-8">
 
-                            {/* LOGOUT */}
-                            <button
-                                onClick={() => {
-                                    if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-                                        handleLogout();
-                                    }
-                                }}
-                                className="w-full py-4 bg-red-50 text-red-600 font-black rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
-                            >
-                                <XCircle className="w-5 h-5" />
-                                Cerrar Sesión
-                            </button>
+                            <PomodoroTimer />
                         </div>
                     </div>
                 </div>
-            )}
-        </div >
+
+                {/* Interactive Quiz Modal */}
+                {
+                    showInteractiveQuiz && quizQuestions && quizQuestions.length > 0 && (
+                        <InteractiveQuiz
+                            questions={quizQuestions}
+                            phase={currentQuizPhase}
+                            onComplete={(score) => {
+                                console.log(`Quiz Fase ${currentQuizPhase} completado:`, score);
+                                // Call progressive quiz handler instead of manual close
+                                onQuizPhaseComplete(score);
+                            }}
+                            onClose={() => {
+                                // Allow manual emergency close
+                                setShowInteractiveQuiz(false);
+                                window.location.reload();
+                            }}
+                        />
+                    )
+                }
+                {/* SETTINGS MODAL */}
+                {settingsOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md animate-fade-in">
+                        <div className="bg-[#F4F7FF] w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border-4 border-white animate-clay-pop">
+                            {/* Modal Header */}
+                            <div className="bg-white px-6 py-4 border-b-2 border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Settings className="w-5 h-5 text-[#2B2E4A]" />
+                                    <h3 className="text-lg font-black text-[#2B2E4A]">Configuración</h3>
+                                </div>
+                                <button
+                                    onClick={() => setSettingsOpen(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <X className="w-6 h-6 text-gray-400" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                                {/* USER PROFILE SECTION */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Brain className="w-3 h-3" /> Perfil de Usuario
+                                    </h4>
+                                    <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm">
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl shadow-inner border border-blue-200">
+                                                    📧
+                                                </div>
+                                                <div className="flex flex-col overflow-hidden">
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase">Email</span>
+                                                    <span className="text-sm font-bold text-gray-700 truncate">{currentUser?.email}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-xl shadow-inner border border-purple-200">
+                                                    🆔
+                                                </div>
+                                                <div className="flex flex-col overflow-hidden">
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase">User ID</span>
+                                                    <span className="text-[10px] font-mono text-gray-500 break-all">{currentUser?.user_id}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* NOTIFICATION PREFERENCES */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Lock className="w-3 h-3" /> Alertas Diario
+                                    </h4>
+                                    <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm space-y-4">
+                                        {/* LOCKED MANDATORY ALARM */}
+                                        <div className="flex items-center justify-between opacity-80 cursor-not-allowed">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
+                                                    <RotateCcw className="w-4 h-4 text-blue-500" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">Morning Alarms</span>
+                                                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">Obligatorio</span>
+                                                </div>
+                                            </div>
+                                            <div className="relative">
+                                                <div className="block w-10 h-6 rounded-full bg-blue-500/50"></div>
+                                                <div className="absolute left-5 top-1 bg-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
+                                                    <Lock className="w-2 h-2 text-blue-500" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* OPTIONAL DAILY PROGRESS REPORTS */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
+                                                    <TrendingUp className="w-4 h-4 text-indigo-500" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">Daily Reports</span>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Reporte Nocturno</span>
+                                                </div>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={progressReportsEnabled}
+                                                    onChange={(e) => updateNotificationPrefs('progress_reports', e.target.checked)}
+                                                />
+                                                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500 shadow-inner"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* SYSTEM & ENVIRONMENT */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Server className="w-3 h-3" /> Sistema y Entorno
+                                    </h4>
+                                    <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-bold text-gray-700">Modo de Conexión</span>
+                                            <button
+                                                onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
+                                                className={`text-[10px] font-black px-4 py-1.5 rounded-full transition-all border-2 ${activeWebhookUrl === N8N_URLS.test
+                                                    ? 'bg-gray-100 text-gray-500 border-gray-200'
+                                                    : 'bg-red-50 text-red-600 border-red-100 animate-pulse'
+                                                    }`}
+                                            >
+                                                {activeWebhookUrl === N8N_URLS.test ? '🛠️ TEST MODE' : '🚀 PRODUCTION'}
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const fiveDaysAgo = new Date();
+                                                fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+                                                localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
+                                                localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
+                                                alert("Simulación: Inicio hace 5 días. Debes ponerte al día.");
+                                                window.location.reload();
+                                            }}
+                                            className="w-full text-[10px] font-black text-blue-500 uppercase tracking-widest py-2 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
+                                        >
+                                            🛠️ Simular Atraso (5 Días)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* LOGOUT */}
+                                <button
+                                    onClick={() => {
+                                        if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+                                            handleLogout();
+                                        }
+                                    }}
+                                    className="w-full py-4 bg-red-50 text-red-600 font-black rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <XCircle className="w-5 h-5" />
+                                    Cerrar Sesión
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };
 
