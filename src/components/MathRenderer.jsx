@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import 'katex/dist/katex.min.css';
 
-const MathRenderer = ({ text }) => {
+const MathRenderer = ({ text, content }) => {
+    const rawText = text || content;
     const [htmlContent, setHtmlContent] = useState('');
 
     useEffect(() => {
-        if (!text) {
+        if (!rawText) {
             setHtmlContent('');
             return;
         }
@@ -14,7 +15,7 @@ const MathRenderer = ({ text }) => {
             // Import katex dynamically
             const katex = (await import('katex')).default;
 
-            let processed = text;
+            let processed = rawText;
 
             try {
                 // Step 1: Clean N8N triple escaping: \\\[ -> \[, \\\( -> \(
@@ -103,7 +104,7 @@ const MathRenderer = ({ text }) => {
         };
 
         processContent();
-    }, [text]);
+    }, [rawText]);
 
     return (
         <div

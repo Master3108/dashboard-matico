@@ -762,7 +762,7 @@ const ReadingModal = ({ isOpen, onClose, title, content, onFinish, buttonText = 
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-8 font-serif text-lg leading-relaxed text-[#2B2E4A]/90 whitespace-pre-wrap">
-                    <MathRenderer content={content} />
+                    <MathRenderer text={content} />
                 </div>
 
                 {/* Footer */}
