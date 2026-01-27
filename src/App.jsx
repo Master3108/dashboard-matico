@@ -1823,10 +1823,13 @@ const App = () => {
         setTodayIndex(index);
 
         if (isMissed) {
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const todayDayName = days[new Date().getDay()];
             setMissedSessionAlert({
                 subject: missedSubject,
                 session: index + 1,
-                todaySubject: (WEEKLY_PLAN.find(p => p.day === (new Date()).getDay())?.subject || 'LENGUAJE')
+                todaySubject: (WEEKLY_PLAN.find(p => p.day === (new Date()).getDay())?.subject || 'LENGUAJE'),
+                todayName: todayDayName
             });
         }
     }, []);
@@ -3020,27 +3023,40 @@ ${finalData.capsule}`;
                                     </span>
                                 </p>
 
-                                {/* ALERTA DE SESIÓN PENDIENTE (CATCH-UP) */}
+                                {/* MODAL DE SESIÓN PENDIENTE (OVERLAY) */}
                                 {missedSessionAlert && (
-                                    <div className="mb-6 w-full max-w-xl animate-clay-pop">
-                                        <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-5 flex items-start gap-4 shadow-[0_10px_30px_rgba(245,158,11,0.1)] relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:rotate-12 transition-transform">
-                                                <Clock className="w-16 h-16 text-amber-600" />
-                                            </div>
-                                            <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-                                                <RotateCcw className="w-6 h-6 text-white animate-spin-slow" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <h3 className="text-amber-900 font-black text-lg leading-tight uppercase tracking-tight">¡Ojo al piojo! Tienes algo pendiente</h3>
-                                                <p className="text-amber-700 font-bold text-sm mt-1 leading-snug">
-                                                    Antes de pasar a <strong>{missedSessionAlert.todaySubject}</strong>, debemos completar la sesión de <strong>{missedSessionAlert.subject} (Sesión {missedSessionAlert.session})</strong> que quedó atrás. ¡No dejes huecos en tu camino! 🚀
-                                                </p>
-                                                <div className="flex gap-2 mt-4">
+                                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#2B2E4A]/40 backdrop-blur-xl animate-fade-in">
+                                        <div className="bg-white w-full max-w-lg rounded-[40px] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.3)] border-4 border-amber-100 animate-clay-pop relative">
+                                            {/* Decoration */}
+                                            <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-amber-100/50 rounded-full blur-3xl animate-pulse"></div>
+
+                                            <div className="p-8 md:p-10 relative z-10">
+                                                <div className="flex flex-col items-center text-center">
+                                                    <div className="w-24 h-24 rounded-[32px] bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-8 shadow-xl animate-float">
+                                                        <RotateCcw className="w-12 h-12 text-white animate-spin-slow" />
+                                                    </div>
+
+                                                    <h2 className="text-3xl font-black text-[#2B2E4A] mb-4 uppercase tracking-tight">
+                                                        ¡Ojo al piojo! <br />
+                                                        <span className="text-amber-600 text-2xl">Tienes algo pendiente</span>
+                                                    </h2>
+
+                                                    <div className="bg-amber-50 rounded-3xl p-6 border-2 border-amber-100/50 mb-8">
+                                                        <p className="text-gray-700 font-bold text-lg leading-relaxed">
+                                                            Hoy es <span className="text-amber-700 font-black">{missedSessionAlert.todayName}</span> y el plan dice <span className="text-indigo-600 font-black">{missedSessionAlert.todaySubject}</span>...
+                                                            <br /><br />
+                                                            Pero antes de pasar a ella, debemos completar la sesión de <span className="text-orange-600 font-black">{missedSessionAlert.subject} (Sesión {missedSessionAlert.session})</span> que quedó atrás.
+                                                        </p>
+                                                        <p className="text-amber-600 font-black mt-4 text-sm animate-pulse">
+                                                            ¡No dejes huecos en tu camino! 🚀
+                                                        </p>
+                                                    </div>
+
                                                     <button
                                                         onClick={() => setMissedSessionAlert(null)}
-                                                        className="px-4 py-2 bg-amber-600 text-white text-xs font-black rounded-xl shadow-md hover:bg-amber-700 transition-colors uppercase"
+                                                        className="w-full py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black rounded-2xl shadow-[0_10px_25px_rgba(245,158,11,0.4)] hover:shadow-[0_15px_35px_rgba(245,158,11,0.5)] hover:-translate-y-1 transition-all active:scale-95 text-xl tracking-wide uppercase"
                                                     >
-                                                        Entendido, ¡A por ello!
+                                                        ¡A por ello!
                                                     </button>
                                                 </div>
                                             </div>
