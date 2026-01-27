@@ -2961,22 +2961,8 @@ ${finalData.capsule}`;
                             isThinking={isCallingN8N}
                             onClick={() => setAskModalOpen(true)}
                         />
+
                         <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2">
-                            {/* STATS & SETTINGS SMALLER */}
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="inline-flex items-center gap-2 bg-[#FFD93D] text-[#2B2E4A] px-3 py-1 rounded-xl font-black text-xs shadow-sm">
-                                    <Star className="w-4 h-4 fill-current" />
-                                    {userProfile?.xp || 0} XP
-                                </div>
-                                <div className="flex gap-4 ml-2">
-                                    <button onClick={() => setSettingsOpen(true)} className="p-2 hover:bg-gray-100 rounded-xl group transition-all" title="Configuración">
-                                        <Settings className="w-8 h-8 text-gray-400 group-hover:text-gray-600 transition-transform group-hover:rotate-90" />
-                                    </button>
-                                    <button onClick={() => fetchProfile()} className="p-2 hover:bg-gray-100 rounded-xl group transition-all" title="Actualizar Progreso">
-                                        <RotateCcw className={`w-7 h-7 text-gray-400 group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
-                                    </button>
-                                </div>
-                            </div>
                             <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
                                 ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
                             </h1>
@@ -2996,10 +2982,26 @@ ${finalData.capsule}`;
                                     <MessageCircle className="w-6 h-6 text-white animate-pulse" />
                                 </div>
                                 <div className="flex flex-col items-start leading-none">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">¿Necesitas ayuda?</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">¿NECESITAS AYUDA SOBRE ALGUNA MATERIA?</span>
                                     <span className="text-xl font-black tracking-tight">TENGO UNA DUDA</span>
                                 </div>
                                 <ArrowRight className="w-6 h-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* STATS & SETTINGS BACK TO THE RIGHT SIDE */}
+                    <div className="flex flex-row md:flex-col items-center md:items-end gap-3 mt-4 md:mt-2">
+                        <div className="inline-flex items-center gap-2 bg-[#FFD93D] text-[#2B2E4A] px-4 py-2 rounded-2xl font-black text-sm shadow-sm border-2 border-white animate-clay-pop">
+                            <Star className="w-4 h-4 fill-current" />
+                            {userProfile?.xp || 0} XP
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setSettingsOpen(true)} className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:-translate-y-0.5 group" title="Configuración">
+                                <Settings className="w-8 h-8 text-gray-400 group-hover:text-gray-600 transition-transform group-hover:rotate-90" />
+                            </button>
+                            <button onClick={() => fetchProfile()} className="p-3 bg-white rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:-translate-y-0.5 group" title="Actualizar Progreso">
+                                <RotateCcw className={`w-7 h-7 text-gray-400 group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
                             </button>
                         </div>
                     </div>
