@@ -2988,7 +2988,18 @@ ${finalData.capsule}`;
                         <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">
                             ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
                         </h1>
-                        {/* HEADER CLEANED UP */}
+                        <p className="text-[#9094A6] font-bold text-sm max-w-md">
+                            Sistema activo. Hoy dedicaremos la hora completa a:{' '}
+                            <span className="text-[#2B2E4A] bg-white px-2 py-1 rounded-lg shadow-sm border border-white/50 font-black" style={{ color: TODAYS_SUBJECT.color }}>
+                                {TODAYS_SUBJECT.name}
+                            </span>.
+                        </p>
+                        <button
+                            onClick={() => setAskModalOpen(true)}
+                            className="mt-2 text-xs font-black text-[#FF9F43] uppercase tracking-widest hover:text-[#FFD93D] flex items-center gap-1 transition-colors"
+                        >
+                            <MessageCircle className="w-4 h-4" /> 🤔 Realizar una Consulta
+                        </button>
                     </div>
                 </div>
 
