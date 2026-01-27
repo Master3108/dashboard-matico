@@ -2968,12 +2968,12 @@ ${finalData.capsule}`;
                                     <Star className="w-4 h-4 fill-current" />
                                     {userProfile?.xp || 0} XP
                                 </div>
-                                <div className="flex gap-2 ml-2">
-                                    <button onClick={() => setSettingsOpen(true)} className="p-1 hover:bg-gray-100 rounded-lg group">
-                                        <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+                                <div className="flex gap-4 ml-2">
+                                    <button onClick={() => setSettingsOpen(true)} className="p-2 hover:bg-gray-100 rounded-xl group transition-all" title="Configuración">
+                                        <Settings className="w-8 h-8 text-gray-400 group-hover:text-gray-600 transition-transform group-hover:rotate-90" />
                                     </button>
-                                    <button onClick={() => fetchProfile()} className="p-1 hover:bg-gray-100 rounded-lg group">
-                                        <RotateCcw className={`w-4 h-4 text-gray-400 group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
+                                    <button onClick={() => fetchProfile()} className="p-2 hover:bg-gray-100 rounded-xl group transition-all" title="Actualizar Progreso">
+                                        <RotateCcw className={`w-7 h-7 text-gray-400 group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
                                     </button>
                                 </div>
                             </div>
