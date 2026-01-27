@@ -3025,39 +3025,41 @@ ${finalData.capsule}`;
 
                                 {/* MODAL DE SESIÓN PENDIENTE (OVERLAY) */}
                                 {missedSessionAlert && (
-                                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#2B2E4A]/40 backdrop-blur-xl animate-fade-in">
-                                        <div className="bg-white w-full max-w-lg rounded-[40px] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.3)] border-4 border-amber-100 animate-clay-pop relative">
-                                            {/* Decoration */}
-                                            <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-amber-100/50 rounded-full blur-3xl animate-pulse"></div>
+                                    <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-[#2B2E4A]/40 backdrop-blur-md animate-fade-in">
+                                        <div className="w-full max-w-2xl animate-clay-pop">
+                                            <div className="bg-amber-50 border-4 border-amber-200 rounded-[40px] p-8 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-[0_30px_100px_rgba(0,0,0,0.2)] relative overflow-hidden group">
+                                                {/* Background Decoration */}
+                                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                                                    <Clock className="w-32 h-32 text-amber-600" />
+                                                </div>
 
-                                            <div className="p-8 md:p-10 relative z-10">
-                                                <div className="flex flex-col items-center text-center">
-                                                    <div className="w-24 h-24 rounded-[32px] bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-8 shadow-xl animate-float">
-                                                        <RotateCcw className="w-12 h-12 text-white animate-spin-slow" />
+                                                {/* Icon Container */}
+                                                <div className="w-20 h-20 rounded-[30px] bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-lg animate-float">
+                                                    <RotateCcw className="w-10 h-10 text-white animate-spin-slow" />
+                                                </div>
+
+                                                {/* Text Content */}
+                                                <div className="flex flex-col text-center md:text-left">
+                                                    <h3 className="text-amber-900 font-black text-2xl leading-tight uppercase tracking-tight mb-2">
+                                                        ¡Ojo al piojo! Tienes algo pendiente
+                                                    </h3>
+                                                    <p className="text-amber-800 font-bold text-lg leading-relaxed">
+                                                        Hoy es <span className="text-amber-600 font-black uppercase text-xl">{missedSessionAlert.todayName}</span> y el plan dice <span className="text-indigo-600 font-black uppercase text-xl">{missedSessionAlert.todaySubject}</span>...
+                                                        <br /><br />
+                                                        Pero antes de pasar a ella, debemos completar la sesión de <strong className="text-amber-900">{missedSessionAlert.subject} (Sesión {missedSessionAlert.session})</strong> que quedó atrás.
+                                                    </p>
+                                                    <p className="text-amber-600 font-black mt-3 text-sm flex items-center justify-center md:justify-start gap-2">
+                                                        ¡No dejes huecos en tu camino! 🚀✨
+                                                    </p>
+
+                                                    <div className="flex gap-4 mt-6">
+                                                        <button
+                                                            onClick={() => setMissedSessionAlert(null)}
+                                                            className="px-8 py-4 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-lg font-black rounded-2xl shadow-[0_10px_20px_rgba(217,119,6,0.3)] hover:shadow-[0_15px_30px_rgba(217,119,6,0.4)] hover:-translate-y-1 active:scale-95 transition-all uppercase tracking-wide"
+                                                        >
+                                                            ¡Entendido, vamos!
+                                                        </button>
                                                     </div>
-
-                                                    <h2 className="text-3xl font-black text-[#2B2E4A] mb-4 uppercase tracking-tight">
-                                                        ¡Ojo al piojo! <br />
-                                                        <span className="text-amber-600 text-2xl">Tienes algo pendiente</span>
-                                                    </h2>
-
-                                                    <div className="bg-amber-50 rounded-3xl p-6 border-2 border-amber-100/50 mb-8">
-                                                        <p className="text-gray-700 font-bold text-lg leading-relaxed">
-                                                            Hoy es <span className="text-amber-700 font-black">{missedSessionAlert.todayName}</span> y el plan dice <span className="text-indigo-600 font-black">{missedSessionAlert.todaySubject}</span>...
-                                                            <br /><br />
-                                                            Pero antes de pasar a ella, debemos completar la sesión de <span className="text-orange-600 font-black">{missedSessionAlert.subject} (Sesión {missedSessionAlert.session})</span> que quedó atrás.
-                                                        </p>
-                                                        <p className="text-amber-600 font-black mt-4 text-sm animate-pulse">
-                                                            ¡No dejes huecos en tu camino! 🚀
-                                                        </p>
-                                                    </div>
-
-                                                    <button
-                                                        onClick={() => setMissedSessionAlert(null)}
-                                                        className="w-full py-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black rounded-2xl shadow-[0_10px_25px_rgba(245,158,11,0.4)] hover:shadow-[0_15px_35px_rgba(245,158,11,0.5)] hover:-translate-y-1 transition-all active:scale-95 text-xl tracking-wide uppercase"
-                                                    >
-                                                        ¡A por ello!
-                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
