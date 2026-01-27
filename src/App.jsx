@@ -431,7 +431,7 @@ Los años siguientes no trajeron paz al pueblo. Los gemelos Vicario fueron absue
 // --- COMPONENTS ---
 
 const clayCard = 'bg-white rounded-[32px] border-2 border-white/50 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.02)] transition-transform duration-500 hover:-translate-y-2';
-const clayBtnPrimary = 'bg-[#FFC800] text-white font-black rounded-2xl border-b-4 border-[#E0B000] hover:bg-[#FFD700] active:border-b-0 active:translate-y-1 transition-all duration-200 w-full py-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_4px_10px_rgba(0,0,0,0.05)] hover:scale-105 hover:-translate-y-1 active:scale-95';
+const clayBtnPrimary = 'bg-[#4F46E5] text-white font-black rounded-2xl border-b-4 border-[#3730A3] hover:bg-[#4338CA] active:border-b-0 active:translate-y-1 transition-all duration-200 w-full py-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),0_4px_10px_rgba(79,70,229,0.3)] hover:scale-105 hover:-translate-y-1 active:scale-95';
 const clayBtnAction = 'bg-[#58CC02] text-white font-black rounded-2xl border-b-4 border-[#46A302] hover:bg-[#46A302] active:border-b-0 active:translate-y-1 transition-all duration-100 w-full py-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm shadow-[inset_0_4px_4px_rgba(255,255,255,0.4),0_10px_20px_rgba(88,204,2,0.3)] hover:scale-[1.05] hover:-translate-y-1 active:scale-95';
 const clayInset = 'bg-[#F7F7F7] rounded-2xl border-transparent shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]';
 
@@ -1016,7 +1016,7 @@ const PomodoroTimer = () => {
         <div className={`${clayCard} flex flex-col items-center`}>
             <div className="flex items-center gap-2 mb-6"><Clock className="w-5 h-5 text-[#4D96FF] animate-pulse" /><span className="font-black text-[#2B2E4A] text-xs">TIMER</span></div>
             <div className="text-5xl font-black text-[#2B2E4A] mb-8">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</div>
-            <button onClick={() => setIsActive(!isActive)} className={isActive ? clayBtnAction : clayBtnPrimary}>{isActive ? 'PAUSAR' : 'INICIAR'}</button>
+            <button onClick={() => setIsActive(!isActive)} className={isActive ? clayBtnAction : "!bg-[#2B2E4A] !border-[#1E293B] " + clayBtnPrimary}>{isActive ? 'PAUSAR' : 'INICIAR'}</button>
         </div>
     );
 };
@@ -2975,10 +2975,10 @@ ${finalData.capsule}`;
 
                             <button
                                 onClick={() => setAskModalOpen(true)}
-                                className="group relative flex items-center gap-4 px-8 py-4 bg-gradient-to-r from-[#FF9F43] to-[#FFD93D] text-white rounded-2xl shadow-[0_4px_15px_rgba(255,159,67,0.4)] hover:shadow-[0_6px_20px_rgba(255,159,67,0.6)] hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
+                                className="group relative flex items-center gap-4 px-8 py-4 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white rounded-2xl shadow-[0_4px_15px_rgba(79,70,229,0.4)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.6)] hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shine" />
-                                <div className="relative flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl backdrop-blur-sm group-hover:rotate-12 transition-transform">
+                                <div className="relative flex items-center justify-center w-10 h-10 bg-white/10 rounded-xl backdrop-blur-sm group-hover:rotate-12 transition-transform">
                                     <MessageCircle className="w-6 h-6 text-white animate-pulse" />
                                 </div>
                                 <div className="flex flex-col items-start leading-none">
@@ -2992,7 +2992,7 @@ ${finalData.capsule}`;
 
                     {/* STATS & SETTINGS BACK TO THE RIGHT SIDE */}
                     <div className="flex flex-row md:flex-col items-center md:items-end gap-3 mt-4 md:mt-2">
-                        <div className="inline-flex items-center gap-2 bg-[#FFD93D] text-[#2B2E4A] px-4 py-2 rounded-2xl font-black text-sm shadow-sm border-2 border-white animate-clay-pop">
+                        <div className="inline-flex items-center gap-2 bg-[#1E293B] text-[#FACC15] px-4 py-2 rounded-2xl font-black text-sm shadow-sm border-2 border-[#334155] animate-clay-pop">
                             <Star className="w-4 h-4 fill-current" />
                             {userProfile?.xp || 0} XP
                         </div>
@@ -3012,37 +3012,37 @@ ${finalData.capsule}`;
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
                         <button
                             onClick={() => setCurrentSubject('MATEMATICA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : ''}`}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : '!bg-[#4D96FF]/10 !text-[#4D96FF] !border-[#4D96FF]/30'}`}
                         >
                             <span className="text-lg mr-1 rotate-[-10deg] inline-block">📐</span> Mate
                         </button>
                         <button
                             onClick={() => setCurrentSubject('LENGUAJE')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF9F43] !text-white !border-[#E68A35] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,159,67,0.6)]' : ''}`}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF7675] !text-white !border-[#E84393] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,118,117,0.6)]' : '!bg-[#FF7675]/10 !text-[#FF7675] !border-[#FF7675]/30'}`}
                         >
                             <span className="text-lg mr-1 rotate-[10deg] inline-block">📚</span> Lenguaje
                         </button>
                         <button
                             onClick={() => setCurrentSubject('FISICA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : ''}`}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : '!bg-[#9D4EDD]/10 !text-[#9D4EDD] !border-[#9D4EDD]/30'}`}
                         >
                             <span className="text-lg mr-1 rotate-[-5deg] inline-block">🌌</span> Física
                         </button>
                         <button
                             onClick={() => setCurrentSubject('QUIMICA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : ''}`}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : '!bg-[#E84393]/10 !text-[#E84393] !border-[#E84393]/30'}`}
                         >
                             <span className="text-lg mr-1 rotate-[5deg] inline-block">🧪</span> Química
                         </button>
                         <button
                             onClick={() => setCurrentSubject('BIOLOGIA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : ''}`}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : '!bg-[#2ECC71]/10 !text-[#2ECC71] !border-[#2ECC71]/30'}`}
                         >
                             <span className="text-lg mr-1 rotate-[-10deg] inline-block">🌿</span> Biología
                         </button>
                         <button
                             onClick={() => setCurrentSubject('HISTORIA')}
-                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : ''}`}
+                            className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : '!bg-[#E67E22]/10 !text-[#E67E22] !border-[#E67E22]/30'}`}
                         >
                             <span className="text-lg mr-1 rotate-[10deg] inline-block">📜</span> Historia
                         </button>
