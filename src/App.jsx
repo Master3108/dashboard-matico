@@ -1957,6 +1957,24 @@ const App = () => {
         }
     };
     // --- SMART CALENDAR LOGIC END ---
+    // Helper to find the first incomplete session for a specific subject
+    const getSmartSessionIndex = (subject) => {
+        try {
+            const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
+            const completed = completedStr ? JSON.parse(completedStr) : [];
+
+            // Search through weeks (indices)
+            for (let i = 0; i < 10; i++) { // Check up to 10 weeks
+                const sessionKey = `${subject}_${i + 1}`;
+                if (!completed.includes(sessionKey)) {
+                    return i;
+                }
+            }
+            return 0; // Fallback to first session
+        } catch (e) {
+            return 0;
+        }
+    };
 
     // EFFECT: SWITCH ROUTE ON SUBJECT CHANGE
     useEffect(() => {
