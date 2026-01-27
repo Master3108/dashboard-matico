@@ -1696,8 +1696,9 @@ const App = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'save_progress',
+                    accion: 'save_progress', // Unified to 'accion'
                     user_id: USER_ID,
+                    email: currentUser?.email, // Added for n8n mapping
                     data: {
                         type: type,
                         subject: currentSubject,
@@ -1748,6 +1749,37 @@ const App = () => {
     // SERVER PROGRESS STATE
     const [serverProgress, setServerProgress] = useState(null);
     const [loadingProgress, setLoadingProgress] = useState(false);
+
+    // NOTIFICATION PREFERENCES
+    const [remindersEnabled, setRemindersEnabled] = useState(true);
+    const [progressReportsEnabled, setProgressReportsEnabled] = useState(true);
+    const [isUpdatingPrefs, setIsUpdatingPrefs] = useState(false);
+
+    const updateNotificationPrefs = async (type, val) => {
+        setIsUpdatingPrefs(true);
+        // Optimistic UI
+        if (type === 'reminders') setRemindersEnabled(val);
+        else setProgressReportsEnabled(val);
+
+        try {
+            await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    accion: 'update_preferences',
+                    user_id: USER_ID,
+                    email: currentUser?.email, // Added for n8n mapping
+                    type: type,
+                    enabled: val
+                })
+            });
+            console.log(`[PREFS] ${type} updated to ${val}`);
+        } catch (e) {
+            console.error("Error updating prefs:", e);
+        } finally {
+            setIsUpdatingPrefs(false);
+        }
+    };
     const [quizStats, setQuizStats] = useState({ correct: 0, incorrect: 0, total: 0 });
     const [quizLevel, setQuizLevel] = useState(1); // NEW: Adaptive Level State
     const [quizQuestionNumber, setQuizQuestionNumber] = useState(1); // NEW: Persistence State
@@ -1988,10 +2020,10 @@ const App = () => {
 
         console.log(`[QUIZ] Iniciando generación paralela 3x5 para ${level} (Intento ${retryCount + 1})...`);
 
-        // Función helper para pedir UN lote de 10 preguntas (Total 30)
+        // Función helper para pedir UN lote de 5 preguntas (Total 15)
         const fetchSubset = async (batchIndex) => {
             const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION TÉCNICA:
-1. Genera EXACTAMENTE 10 (DIEZ) preguntas de selección múltiple (JSON).
+1. Genera EXACTAMENTE 5 (CINCO) preguntas de selección múltiple (JSON).
 2. Nivel: ${config.instruction}.
 3. LOTE PARCIAL ${batchIndex + 1}/3.
 4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["A",...], "correctIndex": 0, "explanation": "..."}]}.
@@ -2085,8 +2117,8 @@ const App = () => {
                 return await generateQuizBatch(level, backgroundMode, retryCount + 1);
             }
 
-            // Formatear final (Limitado a 30)
-            const formattedQuestions = combinedQuestions.slice(0, 30).map(q => {
+            // Formatear final (Limitado a 15)
+            const formattedQuestions = combinedQuestions.slice(0, 15).map(q => {
                 let optsObj = {};
                 let correctKey = 'A';
 
@@ -2359,19 +2391,19 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
     const sendFinalSessionReport = async (stats) => {
         console.log("[REPORT] Generando reporte final estilo 'Glow & Grace Salon'...");
 
-        // Calcular porcentaje de éxito basado en 90 preguntas (3 fases de 30)
-        const successRate = Math.round((stats.correct / 90) * 100);
+        // Calcular porcentaje de éxito basado en 45 preguntas (3 fases de 15)
+        const successRate = Math.round((stats.correct / 45) * 100);
         const mood = successRate >= 80 ? "excelente" : (successRate >= 60 ? "bueno" : "para mejorar");
 
         const reportPrompt = `[INSTRUCCIÓN AGENTE DE REPORTES MATICO]:
-Eres el Agente de Éxito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 90 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
+Eres el Agente de Éxito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 45 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
 
 DATOS DEL ESTUDIANTE:
 - Nombre: ${currentUser?.username || userProfile?.username || 'Estudiante'}
 - Email: ${currentUser?.email || 'N/A'}
 - Asignatura: ${currentSubject}
 - Sesión: ${TODAYS_SESSION.session} - ${TODAYS_SESSION.topic}
-- Resultado: ${stats.correct} de 90 correctas (${successRate}%)
+- Resultado: ${stats.correct} de 45 correctas (${successRate}%)
 
 SALIDA REQUERIDA (JSON ESTRICTO):
 {
@@ -2384,14 +2416,38 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 }`;
 
         try {
-            await saveProgress('send_session_report', {
-                subject: currentSubject,
-                session: TODAYS_SESSION.session,
-                report_prompt: reportPrompt // n8n recibirá esto y enviará el mail
+            // 1. Enviar Reporte Detallado (IA)
+            await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    accion: 'send_session_report',
+                    user_id: USER_ID,
+                    email: currentUser?.email, // Añadido para facilitar mapeo en n8n
+                    report_prompt: reportPrompt,
+                    subject: currentSubject,
+                    session: TODAYS_SESSION.session,
+                    stats: stats
+                })
             });
-            console.log("[REPORT] ? Reporte enviado a la cola de n8n");
+            console.log("[REPORT] 📧 Reporte detallado enviado a n8n");
+
+            // 2. Notificar al Apoderado (Template Fijo)
+            await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    accion: 'notify_parent',
+                    email: currentUser?.email,
+                    subject: currentSubject,
+                    topic: TODAYS_SESSION.topic,
+                    score: successRate
+                })
+            });
+            console.log("[REPORT] 👨‍👩‍👧‍👦 Notificación a apoderado enviada");
+
         } catch (err) {
-            console.error("[REPORT] Error enviando reporte:", err);
+            console.error("[REPORT] Error en flujo de notificaciones:", err);
         }
     };
 
@@ -2403,7 +2459,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         setQuizStats(prev => ({
             ...prev,
             correct: prev.correct + phaseScore,
-            total: prev.total + 30
+            total: prev.total + 15
         }));
 
         // GUARDAR PROGRESO (LocalStorage)
@@ -2419,8 +2475,8 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             phase: currentQuizPhase,
             levelName: levelName,
             score: phaseScore,
-            questionsCompleted: currentQuizPhase * 30,
-            totalQuestions: 90,
+            questionsCompleted: currentQuizPhase * 15,
+            totalQuestions: 45,
             xp_reward: 50
         });
 
@@ -2625,7 +2681,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 content = "⚠️ MODO OFFLINE";
             } else {
                 try {
-                    const jsonData = parseN8NResponse(textResponse);
+                    let jsonData = parseN8NResponse(textResponse);
 
                     if (jsonData.refusal) {
                         content = `⚠️ **No pudimos iniciar:**\n\n${jsonData.refusal}`;
@@ -2961,6 +3017,41 @@ ${finalData.capsule}`;
                             <XCircle className="w-4 h-4" />
                             Cerrar Sesión
                         </button>
+
+                        {/* NOTIFICATION PREFERENCES */}
+                        <div className="bg-white/40 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 shadow-sm flex flex-col gap-2">
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">🔔 Alertas Diario</h4>
+                            <div className="flex items-center gap-3">
+                                {/* LOCKED MANDATORY ALARM */}
+                                <div className="flex items-center gap-2 scale-90 opacity-80 cursor-not-allowed" title="Los recordatorios matutinos son obligatorios para asegurar tu éxito">
+                                    <div className="relative">
+                                        <div className="block w-8 h-5 rounded-full bg-blue-500/50"></div>
+                                        <div className="absolute left-4 top-1 bg-white w-3 h-3 rounded-full flex items-center justify-center">
+                                            <Lock className="w-2 h-2 text-blue-500" />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-gray-500">Morning Alarms</span>
+                                        <span className="text-[8px] font-black text-blue-600 tracking-tighter">OBLIGATORIO</span>
+                                    </div>
+                                </div>
+
+                                {/* OPTIONAL DAILY PROGRESS REPORTS */}
+                                <label className="flex items-center cursor-pointer gap-2 scale-90">
+                                    <div className="relative">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={progressReportsEnabled}
+                                            onChange={(e) => updateNotificationPrefs('progress_reports', e.target.checked)}
+                                        />
+                                        <div className={`block w-8 h-5 rounded-full transition-colors ${progressReportsEnabled ? 'bg-indigo-500' : 'bg-gray-300'}`}></div>
+                                        <div className={`absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform ${progressReportsEnabled ? 'translate-x-3' : ''}`}></div>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-gray-600">Daily Reports</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3032,10 +3123,10 @@ ${finalData.capsule}`;
                                         };
 
                                         if (progress.currentPhase <= 3) {
-                                            const questionsCompleted = (progress.currentPhase - 1) * 30;
+                                            const questionsCompleted = (progress.currentPhase - 1) * 15;
                                             return (
                                                 <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
-                                                    ⚡ Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/90 preguntas completadas
+                                                    ⚡ Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/45 preguntas completadas
                                                 </div>
                                             );
                                         }
@@ -3096,7 +3187,7 @@ ${finalData.capsule}`;
                                                 <p className="text-[#AFAFAF] text-xs font-bold">{
                                                     idx === 0 ? "CLASE DE HOY" :
                                                         (idx === 1 ? "TEORÍA IA" :
-                                                            (idx === 3 ? "CONSULTA" : "90 PREGUNTAS KAIZEN"))
+                                                            (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"))
                                                 }</p>
 
                                                 {/* TRIANGLE POINTER */}
