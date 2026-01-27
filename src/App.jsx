@@ -2883,12 +2883,24 @@ ${finalData.capsule}`;
 
     return (
         <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-hidden">
-            {/* AMBIENT BACKGROUND LIGHTS & MOVEMENT */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#4F46E5]/10 rounded-full blur-[120px] animate-blob"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#0EA5E9]/10 rounded-full blur-[120px] animate-blob animation-delay-2000"></div>
-                <div className="absolute top-[20%] right-[10%] w-[30%] h-[40%] bg-[#E84393]/5 rounded-full blur-[100px] animate-blob animation-delay-4000"></div>
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-overlay"></div>
+            {/* AMBIENT BACKGROUND LIGHTS & MOVEMENT (JUEGO DE SOMBRAS) */}
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+                {/* Capa 1: Pulso base de luz */}
+                <div className="absolute inset-0 bg-[#F8FAFC] animate-pulse-subtle"></div>
+
+                {/* Capa 2: Sombras de color gigantes (Depth) */}
+                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#4F46E5]/10 rounded-full blur-[140px] animate-blob-giant mix-blend-multiply"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#0EA5E9]/10 rounded-full blur-[140px] animate-blob-giant animation-delay-4000 mix-blend-multiply"></div>
+
+                {/* Capa 3: Luces acentuadas (Vibrancy) */}
+                <div className="absolute top-[20%] right-[10%] w-[40%] h-[50%] bg-[#E84393]/5 rounded-full blur-[110px] animate-blob-drift opacity-60 mix-blend-screen"></div>
+                <div className="absolute bottom-[20%] left-[10%] w-[40%] h-[50%] bg-[#7C3AED]/5 rounded-full blur-[110px] animate-blob-drift animation-delay-2000 opacity-60 mix-blend-screen"></div>
+
+                {/* Capa 4: Textura de lujo */}
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.04] mix-blend-overlay"></div>
+
+                {/* Capa 5: Marco de sombra (Vignette) */}
+                <div className="absolute inset-0 shadow-[inset_0_0_150px_rgba(43,46,74,0.1)] pointer-events-none"></div>
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto">
