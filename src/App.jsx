@@ -2359,26 +2359,26 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
     const sendFinalSessionReport = async (stats) => {
         console.log("[REPORT] Generando reporte final estilo 'Glow & Grace Salon'...");
 
-        // Calcular porcentaje de éxito
-        const successRate = Math.round((stats.correct / 45) * 100);
+        // Calcular porcentaje de éxito basado en 90 preguntas (3 fases de 30)
+        const successRate = Math.round((stats.correct / 90) * 100);
         const mood = successRate >= 80 ? "excelente" : (successRate >= 60 ? "bueno" : "para mejorar");
 
         const reportPrompt = `[INSTRUCCIÓN AGENTE DE REPORTES MATICO]:
-Eres el Agente de Éxito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 45 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
+Eres el Agente de Éxito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 90 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
 
 DATOS DEL ESTUDIANTE:
 - Nombre: ${currentUser?.username || userProfile?.username || 'Estudiante'}
 - Email: ${currentUser?.email || 'N/A'}
 - Asignatura: ${currentSubject}
 - Sesión: ${TODAYS_SESSION.session} - ${TODAYS_SESSION.topic}
-- Resultado: ${stats.correct} de 45 correctas (${successRate}%)
+- Resultado: ${stats.correct} de 90 correctas (${successRate}%)
 
-? Tu SALIDA DEBE ser un objeto JSON con esta estructura exacta:
+SALIDA REQUERIDA (JSON ESTRICTO):
 {
   "email": {
     "to": "${currentUser?.email || 'hola@matico.ai'}",
-    "subject": "?? ¡Sesión Completada! Tus logros en ${currentSubject} - Sesión ${TODAYS_SESSION.session} ??",
-    "html_body": "<html>... (un cuerpo HTML profesional y motivador con tabla de resultados y feedback personalizado basado en el desempeño de ${mood}) ...</html>", 
+    "subject": "¡Sesión Completada! Tus logros en ${currentSubject} - Sesión ${TODAYS_SESSION.session}",
+    "html_body": "Contenido HTML profesional con tabla de resultados y feedback personalizado", 
     "description": "Reporte de Sesión Matico: ${TODAYS_SESSION.topic}"
   }
 }`;
@@ -2500,12 +2500,15 @@ DATOS DEL ESTUDIANTE:
                 setIsCallingN8N(false);
             }
         } else {
-            // TODAS LAS FASES COMPLETADAS (45 PREGUNTAS TOTALES)
+            // TODAS LAS FASES COMPLETADAS (90 PREGUNTAS TOTALES)
             console.log("[QUIZ] ✅ TODAS LAS 3 FASES COMPLETADAS!");
             setShowInteractiveQuiz(false);
 
             // ENVIAR REPORTE FINAL
-            const finalStats = { ...quizStats, correct: quizStats.correct + phaseScore };
+            const finalCorrectCount = quizStats.correct + phaseScore;
+            const finalStats = { ...quizStats, correct: finalCorrectCount, total: 90 };
+
+            console.log("[REPORT] Enviando reporte final con score:", finalCorrectCount);
             sendFinalSessionReport(finalStats);
 
             // LIMPIAR Y MARCAR COMPLETADO
@@ -2517,7 +2520,7 @@ DATOS DEL ESTUDIANTE:
                 session: TODAYS_SESSION.session,
                 topic: TODAYS_SESSION.topic,
                 total_questions: 90,
-                correct_answers: finalStats.correct,
+                correct_answers: finalCorrectCount,
                 xp_reward: 300
             });
 
