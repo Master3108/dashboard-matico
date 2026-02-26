@@ -329,32 +329,36 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
             const systemMsg = `Eres Matico, mentor matemático experto en el currículum chileno de 1° Medio.
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. PRIMERO resuelve mentalmente el problema paso a paso.
-2. ANOTA el resultado numérico correcto.
-3. CREA 4 opciones: una DEBE ser tu resultado correcto, las otras 3 son distractores plausibles.
-4. ASIGNA "correct_answer" a la LETRA (A, B, C o D) que contiene TU resultado correcto.
-5. En "explanation", escribe el desarrollo paso a paso que lleva a tu resultado.
-6. VERIFICA: el valor numérico de options[correct_answer] DEBE coincidir con el resultado de tu explanation.
+1. DEBES hacer el cálculo matemático en "explanation" PRIMERO.
+2. CREA 4 opciones, asegurándote que UNA coincide con tu cálculo.
+3. Al final, escribe la Letra correcta en "correct_answer".
 
-EJEMPLO DE VERIFICACIÓN:
-- Pregunta: "150 × 3 × 4 = ?"
-- Mi cálculo: 150 × 3 = 450, 450 × 4 = 1800
-- Opciones: A: "1800", B: "720", C: "450", D: "600"
-- correct_answer: "A" (porque A contiene 1800, mi resultado)
-- explanation: "150 × 3 = 450, luego 450 × 4 = 1800"
-- ✅ VERIFICO: options["A"] = "1800" = mi cálculo = CORRECTO
+ESTRUCTURA JSON EXACTA QUE DEBES USAR (EL ORDEN ES VITAL):
+{
+  "questions": [
+    {
+      "question": "texto de la pregunta...",
+      "explanation": "ESCRIBE AQUÍ TODO TU DESARROLLO PASO A PASO PRIMERO. Realiza las operaciones matemáticas necesarias. Ej: 5^2=25, 2^3=8, 25x8=200.",
+      "options": {
+        "A": "valor",
+        "B": "valor",
+        "C": "valor",
+        "D": "valor"
+      },
+      "correct_answer": "LETRA EXACTA QUE CONTIENE TU CALCULO"
+    }
+  ]
+}
 
-⚠️ REGLA DE FORMATO: NO USES LATEX (como \\frac{}, $3x^2$, etc.). Usa símbolos de texto simple que sean fáciles de leer en correos electrónicos (ej: 2/3, 3x^2, √(x)). NO pongas expresiones entre \`$...\$\`.
+⚠️ ERROR FATAL A EVITAR: Que correct_answer apunte a una opción con valor DIFERENTE a lo que calculaste en explanation. O que no haya opción correcta.
 
-⚠️ ERROR FATAL A EVITAR: Que correct_answer apunte a una opción con valor DIFERENTE a tu cálculo.
-
-Genera SOLO JSON válido sin markdown. El JSON debe tener: { "questions": [...] }`;
+Genera SOLO JSON válido sin markdown.`;
 
             const comp = await openai.chat.completions.create({
-                model: "gpt-4o",  // GPT-4o completo, NO mini (menos errores matemáticos)
+                model: "gpt-4o",  // GPT-4o completo
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }],
                 response_format: { type: "json_object" },
-                temperature: 0.3  // Baja temperatura = más precisión matemática
+                temperature: 0.2  // Baja temperatura = más precisión matemática
             });
 
             const content = comp.choices[0].message.content;
@@ -376,11 +380,16 @@ Genera SOLO JSON válido sin markdown. El JSON debe tener: { "questions": [...] 
                         const optionsText = Object.entries(q.options || {})
                             .map(([k, v]) => `${k}: ${v}`).join('\n');
 
+                        // EL VERIFICADOR TAMBIEN DEBE CALCULAR PRIMERO
+                        const verifyPrompt = `Resuelve el problema paso a paso. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta.
+Estructura JSON:
+{"my_calculation": "tu desarrollo paso a paso aquí primero", "correct_letter": "LETRA FINAL"}`;
+
                         const verifyComp = await openai.chat.completions.create({
                             model: "gpt-4o",
                             messages: [
-                                { role: "system", content: "Eres un verificador matemático. Tu ÚNICO trabajo es resolver el problema y decir cuál letra (A, B, C o D) tiene la respuesta correcta. Responde SOLO con un JSON: {\"correct_letter\": \"X\", \"my_calculation\": \"resultado numérico\"}" },
-                                { role: "user", content: `Problema: ${q.question}\n\nOpciones:\n${optionsText}\n\n¿Cuál es la letra correcta?` }
+                                { role: "system", content: verifyPrompt },
+                                { role: "user", content: `Problema: ${q.question}\n\nOpciones:\n${optionsText}\n\nHaz tu cálculo y luego dime la letra correcta.` }
                             ],
                             response_format: { type: "json_object" },
                             temperature: 0
