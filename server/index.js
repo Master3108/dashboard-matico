@@ -395,8 +395,78 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             return res.json({ success: true, message: "Reportes enviados con análisis IA" });
         }
 
-        // 7. READ-ONLY ACTIONS
-        const readOnlyActions = ['get_progress', 'update_preferences', 'ping', 'health'];
+        // 7. GET PROGRESS (Leer progreso real desde progress_log por materia)
+        if (currentAction === 'get_progress') {
+            const subjectFilter = body.subject || '';
+
+            const response = await sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: 'progress_log!A:J',
+            });
+            const rows = response.data.values || [];
+
+            // Filtrar por user_id
+            const userRows = rows.filter(row => row[1] === user_id);
+
+            // Filtrar sesiones completadas de esta materia
+            // Columnas: A=timestamp, B=user_id, C=subject, D=session, E=event_type
+            const completedSessions = userRows.filter(row =>
+                row[4] === 'session_completed' &&
+                (subjectFilter ? row[2] === subjectFilter : true)
+            );
+
+            // Encontrar la sesión más alta completada
+            let maxSession = 0;
+            let lastPhase = 0;
+            completedSessions.forEach(row => {
+                const sessionNum = parseInt(row[3]) || 0;
+                if (sessionNum > maxSession) maxSession = sessionNum;
+            });
+
+            // También buscar fases completadas (por si está a mitad de sesión)
+            const phaseRows = userRows.filter(row =>
+                row[4] === 'phase_completed' &&
+                (subjectFilter ? row[2] === subjectFilter : true)
+            );
+
+            let currentSessionInProgress = 0;
+            let currentPhase = 0;
+            phaseRows.forEach(row => {
+                const sessionNum = parseInt(row[3]) || 0;
+                const phase = parseInt(row[5]) || 0;
+                if (sessionNum > currentSessionInProgress ||
+                    (sessionNum === currentSessionInProgress && phase > currentPhase)) {
+                    currentSessionInProgress = sessionNum;
+                    currentPhase = phase;
+                }
+            });
+
+            // Calcular XP total
+            let totalXP = 0;
+            userRows.forEach(row => {
+                totalXP += parseInt(row[9]) || 0;
+            });
+
+            const nextSession = maxSession + 1;
+
+            console.log(`[PROGRESS] User: ${user_id} | Subject: ${subjectFilter} | Last Completed: Session ${maxSession} | Next: Session ${nextSession} | In Progress: Session ${currentSessionInProgress} Phase ${currentPhase}`);
+
+            return res.json({
+                success: true,
+                next_session: nextSession,
+                last_completed_session: maxSession,
+                current_session_in_progress: currentSessionInProgress,
+                current_phase: currentPhase,
+                sessions_completed: completedSessions.length,
+                xp: totalXP,
+                puntos: totalXP,
+                level: Math.floor(totalXP / 100) + 1,
+                subject: subjectFilter
+            });
+        }
+
+        // 8. READ-ONLY ACTIONS
+        const readOnlyActions = ['update_preferences', 'ping', 'health'];
         if (readOnlyActions.includes(currentAction)) {
             return res.json({ success: true });
         }
