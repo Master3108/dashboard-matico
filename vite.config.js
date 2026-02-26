@@ -14,14 +14,12 @@ export default defineConfig({
     host: true,
     proxy: {
       '/webhook': {
-        target: 'https://n8n-n8n.cwf1hb.easypanel.host',
-        changeOrigin: true,
-        secure: true
+        target: 'http://localhost:5000',
+        changeOrigin: true
       },
       '/webhook-test': {
-        target: 'https://n8n-n8n.cwf1hb.easypanel.host',
-        changeOrigin: true,
-        secure: true
+        target: 'http://localhost:5000',
+        changeOrigin: true
       }
     }
   }
