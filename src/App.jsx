@@ -1807,6 +1807,7 @@ const App = () => {
     const [backgroundTheoryQueue, setBackgroundTheoryQueue] = useState("");
     const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false);
     const backgroundTaskRef = useRef(null);
+    const [allWrongAnswers, setAllWrongAnswers] = useState([]); // Acumula errores de las 3 fases
 
     // THEORY STATE - TEORÍA LÚDICA ANTES DE CADA SUB-NIVEL
     const [showTheoryModal, setShowTheoryModal] = useState(false);
@@ -2445,8 +2446,8 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
     };
 
     // --- NOTIFICACIÓN DE RESULTADOS ESTILO SALÓN ---
-    const sendFinalSessionReport = async (stats) => {
-        console.log("[REPORT] Generando reporte final estilo 'Glow & Grace Salon'...");
+    const sendFinalSessionReport = async (stats, wrongAnswers = []) => {
+        console.log("[REPORT] Generando reporte final con análisis IA de", wrongAnswers.length, "errores...");
 
         // Calcular porcentaje de éxito basado en 45 preguntas (3 fases de 15)
         const successRate = Math.round((stats.correct / 45) * 100);
@@ -2480,11 +2481,13 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 body: JSON.stringify({
                     accion: 'send_session_report',
                     user_id: USER_ID,
-                    email: currentUser?.email, // Añadido para facilitar mapeo en n8n
+                    email: currentUser?.email,
                     report_prompt: reportPrompt,
                     subject: currentSubject,
                     session: TODAYS_SESSION.session,
-                    stats: stats
+                    topic: TODAYS_SESSION.topic,
+                    stats: stats,
+                    wrong_answers: wrongAnswers
                 })
             });
             console.log("[REPORT] 📧 Reporte detallado enviado a n8n");
@@ -2509,8 +2512,11 @@ SALIDA REQUERIDA (JSON ESTRICTO):
     };
 
     // HANDLE QUIZ PHASE COMPLETION - SISTEMA KAIZEN SIMPLIFICADO (3 FASES DE 15 PREGUNTAS)
-    const onQuizPhaseComplete = async (phaseScore) => {
-        console.log(`[QUIZ] Fase ${currentQuizPhase} completada con score:`, phaseScore);
+    const onQuizPhaseComplete = async (phaseScore, phaseWrongAnswers = []) => {
+        console.log(`[QUIZ] Fase ${currentQuizPhase} completada con score:`, phaseScore, `errores:`, phaseWrongAnswers.length);
+
+        // Acumular errores de esta fase
+        setAllWrongAnswers(prev => [...prev, ...phaseWrongAnswers]);
 
         // ACTUALIZAR STATS TOTALES (Sumar el score de esta fase)
         setQuizStats(prev => ({
@@ -2620,9 +2626,10 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             // ENVIAR REPORTE FINAL
             const finalCorrectCount = quizStats.correct + phaseScore;
             const finalStats = { ...quizStats, correct: finalCorrectCount, total: 45 };
+            const finalWrong = [...allWrongAnswers, ...phaseWrongAnswers];
 
-            console.log("[REPORT] Enviando reporte final con score:", finalCorrectCount);
-            sendFinalSessionReport(finalStats);
+            console.log("[REPORT] Enviando reporte final con score:", finalCorrectCount, "errores:", finalWrong.length);
+            sendFinalSessionReport(finalStats, finalWrong);
 
             // LIMPIAR Y MARCAR COMPLETADO
             clearQuizProgress();
@@ -3273,10 +3280,9 @@ ${finalData.capsule}`;
                         <InteractiveQuiz
                             questions={quizQuestions}
                             phase={currentQuizPhase}
-                            onComplete={(score) => {
-                                console.log(`Quiz Fase ${currentQuizPhase} completado:`, score);
-                                // Call progressive quiz handler instead of manual close
-                                onQuizPhaseComplete(score);
+                            onComplete={(score, wrongAnswers) => {
+                                console.log(`Quiz Fase ${currentQuizPhase} completado:`, score, 'errores:', wrongAnswers?.length);
+                                onQuizPhaseComplete(score, wrongAnswers || []);
                             }}
                             onClose={() => {
                                 // Allow manual emergency close
@@ -3420,9 +3426,7 @@ ${finalData.capsule}`;
                                 {/* LOGOUT */}
                                 <button
                                     onClick={() => {
-                                        if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-                                            handleLogout();
-                                        }
+                                        handleLogout();
                                     }}
                                     className="w-full py-4 bg-red-50 text-red-600 font-black rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
                                 >

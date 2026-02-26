@@ -96,6 +96,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase }) => {
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [score, setScore] = useState({ correct: 0, incorrect: 0 });
+    const [wrongAnswers, setWrongAnswers] = useState([]); // Registrar errores para análisis IA
     const [showExplanation, setShowExplanation] = useState(false);
 
     // LIVES SYSTEM - 5 hearts
@@ -192,6 +193,16 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase }) => {
             setTimeout(() => setShake(false), 500);
             setScore(prev => ({ ...prev, incorrect: prev.incorrect + 1 }));
 
+            // Registrar pregunta incorrecta para análisis IA
+            if (!question.isRetry) {
+                setWrongAnswers(prev => [...prev, {
+                    question: question.question,
+                    user_answer: option,
+                    correct_answer: question.correct_answer,
+                    explanation: question.explanation || ''
+                }]);
+            }
+
             // LOSE LIFE
             setLives(prev => Math.max(0, prev - 1));
 
@@ -242,8 +253,8 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase }) => {
             spread: 100,
             origin: { y: 0.6 }
         });
-        // Pass only the correct count, as the parent expects a number to add to the total
-        onComplete && onComplete(score.correct);
+        // Pass score AND wrong answers for AI analysis
+        onComplete && onComplete(score.correct, wrongAnswers);
     };
 
     const getButtonClass = (option) => {

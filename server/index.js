@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 import { google } from 'googleapis';
+import nodemailer from 'nodemailer';
+import cron from 'node-cron';
 
 dotenv.config();
 
@@ -13,9 +15,7 @@ app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 5000;
 
 // Configuración OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Configuración Google Sheets
 const SPREADSHEET_ID = '1l1GLMXh8_Uo_O7XJOY7ZJxh1TER2hxrXTOsc_EcByHo';
@@ -31,6 +31,70 @@ const getSheetsClient = async () => {
     return google.sheets({ version: 'v4', auth });
 };
 
+// --- Configuración Nodemailer (Gmail) ---
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+    },
+});
+
+// --- HELPER: Obtener datos del usuario desde la hoja Usuarios ---
+const getUserFromSheet = async (sheets, user_id) => {
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: 'Usuarios!A:I', // A:token, B:pass, C:created, D:mail, E:nombre, F:celular, G:region, H:comuna, I:correo_apoderado
+    });
+    const rows = response.data.values || [];
+    const row = rows.find(r => r[0] === user_id);
+    if (!row) return null;
+    return {
+        token: row[0],
+        email: row[3] || '',
+        nombre: row[4] || 'Estudiante',
+        celular: row[5] || '',
+        region: row[6] || '',
+        comuna: row[7] || '',
+        correo_apoderado: row[8] || '',
+    };
+};
+
+// --- HELPER: Obtener TODOS los usuarios ---
+const getAllUsersFromSheet = async (sheets) => {
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: 'Usuarios!A:I',
+    });
+    const rows = response.data.values || [];
+    // Saltar header (fila 1)
+    return rows.slice(1).map(row => ({
+        token: row[0] || '',
+        email: row[3] || '',
+        nombre: row[4] || 'Estudiante',
+        correo_apoderado: row[8] || '',
+    }));
+};
+
+// --- HELPER: Enviar correo ---
+const sendEmail = async (to, subject, htmlBody) => {
+    if (!to || !process.env.GMAIL_USER) {
+        console.log(`[EMAIL] ⚠️ No se envió: destinatario=${to}, gmail_user=${process.env.GMAIL_USER}`);
+        return;
+    }
+    try {
+        await transporter.sendMail({
+            from: `"Matico 🐶" <${process.env.GMAIL_USER}>`,
+            to: to,
+            subject: subject,
+            html: htmlBody,
+        });
+        console.log(`[EMAIL] ✅ Enviado a ${to}: "${subject}"`);
+    } catch (err) {
+        console.error(`[EMAIL] ❌ Error enviando a ${to}:`, err.message);
+    }
+};
+
 // --- HELPER: Guardar evento en progress_log ---
 const logToSheet = async (sheets, user_id, subject, session, event_type, phase, subLevel, levelName, score, xp) => {
     try {
@@ -40,16 +104,10 @@ const logToSheet = async (sheets, user_id, subject, session, event_type, phase, 
             valueInputOption: 'USER_ENTERED',
             requestBody: {
                 values: [[
-                    new Date().toISOString(),   // timestamp (A)
-                    user_id || '',              // user_id (B)
-                    subject || '',              // subject (C)
-                    session || '',              // session (D)
-                    event_type || '',           // event_type (E)
-                    phase || '',                // phase (F)
-                    subLevel || '',             // sub_level (G)
-                    levelName || '',            // levelName (H)
-                    score || '',                // score (I)
-                    xp || ''                    // xp (J)
+                    new Date().toISOString(),
+                    user_id || '', subject || '', session || '',
+                    event_type || '', phase || '', subLevel || '',
+                    levelName || '', score || '', xp || ''
                 ]]
             },
         });
@@ -59,13 +117,117 @@ const logToSheet = async (sheets, user_id, subject, session, event_type, phase, 
     }
 };
 
-// --- ENDPOINTS ---
+// --- HELPER: Generar HTML bonito para correos ---
+const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAnswers = [], aiAnalysis = '') => {
+    const successRate = Math.round((stats.correct / 45) * 100);
+    const emoji = successRate >= 80 ? '🏆' : (successRate >= 60 ? '👍' : '💪');
+    const color = successRate >= 80 ? '#22c55e' : (successRate >= 60 ? '#eab308' : '#ef4444');
+    const wrongCount = wrongAnswers.length;
+
+    // Generar tabla de errores
+    let errorsHTML = '';
+    if (wrongCount > 0) {
+        const errorRows = wrongAnswers.slice(0, 10).map((w, i) => `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px; font-size: 13px; color: #475569;">${i + 1}. ${w.question?.substring(0, 80) || '...'}${w.question?.length > 80 ? '...' : ''}</td>
+                <td style="padding: 10px; text-align: center; color: #ef4444; font-weight: bold;">${w.user_answer}</td>
+                <td style="padding: 10px; text-align: center; color: #22c55e; font-weight: bold;">${w.correct_answer}</td>
+            </tr>`).join('');
+
+        errorsHTML = `
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #fecaca; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #dc2626;">❌ Preguntas Incorrectas (${wrongCount})</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #fef2f2;">
+                            <th style="padding: 8px; text-align: left;">Pregunta</th>
+                            <th style="padding: 8px; text-align: center;">Tu Resp.</th>
+                            <th style="padding: 8px; text-align: center;">Correcta</th>
+                        </tr>
+                    </thead>
+                    <tbody>${errorRows}</tbody>
+                </table>
+                ${wrongCount > 10 ? `<p style="color: #94a3b8; font-size: 12px; margin-top: 8px;">... y ${wrongCount - 10} más</p>` : ''}
+            </div>`;
+    }
+
+    // Sección de análisis IA
+    let analysisHTML = '';
+    if (aiAnalysis) {
+        analysisHTML = `
+            <div style="background: linear-gradient(135deg, #eff6ff, #f0fdf4); border-radius: 12px; padding: 20px; border: 2px solid #6366f1; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #4f46e5;">🧠 Análisis Inteligente de Matico</h3>
+                <div style="color: #334155; font-size: 14px; line-height: 1.7;">
+                    ${aiAnalysis}
+                </div>
+            </div>`;
+    }
+
+    return `
+    <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 28px;">🐶 Reporte Matico</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9;">Sesión de Estudio Completada</p>
+        </div>
+        <div style="padding: 30px;">
+            <h2 style="color: #1e293b;">¡Hola! Aquí está el reporte de <strong>${nombre}</strong></h2>
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin: 16px 0;">
+                <p><strong>📚 Asignatura:</strong> ${subject}</p>
+                <p><strong>📖 Sesión ${session}:</strong> ${topic}</p>
+                <p><strong>📅 Fecha:</strong> ${new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+            <div style="text-align: center; margin: 24px 0;">
+                <div style="display: inline-block; background: ${color}; color: white; border-radius: 50%; width: 100px; height: 100px; line-height: 100px; font-size: 32px; font-weight: bold;">
+                    ${successRate}%
+                </div>
+                <p style="font-size: 20px; margin-top: 12px;">${emoji} ${stats.correct} de 45 correctas</p>
+            </div>
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0;">
+                <h3 style="margin-top: 0;">📊 Desglose por Nivel</h3>
+                <p>🟢 <strong>Básico (15 preguntas):</strong> Completado</p>
+                <p>🟡 <strong>Avanzado (15 preguntas):</strong> Completado</p>
+                <p>🔴 <strong>Crítico (15 preguntas):</strong> Completado</p>
+            </div>
+            ${errorsHTML}
+            ${analysisHTML}
+            <p style="color: #64748b; font-size: 13px; text-align: center; margin-top: 24px;">
+                Este correo fue enviado automáticamente por Matico 🐶
+            </p>
+        </div>
+    </div>`;
+};
+
+const buildDailyReminderHTML = (nombre, session, topic, subject) => {
+    return `
+    <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #f59e0b, #f97316); padding: 30px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 28px;">☀️ ¡Buenos Días!</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9;">Tu sesión de hoy te espera</p>
+        </div>
+        <div style="padding: 30px;">
+            <h2 style="color: #1e293b;">¡Hola <strong>${nombre}</strong>! 👋</h2>
+            <p style="color: #475569; font-size: 16px;">Hoy es un gran día para aprender. Tu sesión de estudio ya está lista:</p>
+            <div style="background: white; border-radius: 12px; padding: 24px; border: 2px solid #6366f1; margin: 20px 0; text-align: center;">
+                <p style="font-size: 14px; color: #6366f1; font-weight: bold; margin: 0;">📚 ${subject}</p>
+                <h3 style="font-size: 22px; color: #1e293b; margin: 8px 0;">Sesión ${session}: ${topic}</h3>
+                <p style="color: #64748b;">45 preguntas en 3 niveles: Básico → Avanzado → Crítico</p>
+            </div>
+            <p style="color: #475569;">¡Recuerda que cada sesión completada te acerca más a tu meta! 🏆</p>
+            <p style="color: #64748b; font-size: 13px; text-align: center; margin-top: 24px;">
+                Matico 🐶 — Tu compañero de estudio
+            </p>
+        </div>
+    </div>`;
+};
+
+// ========================================================================
+// ENDPOINTS
+// ========================================================================
 
 app.post('/webhook/MATICO', async (req, res) => {
     const body = req.body;
     const currentAction = body.action || body.accion || '';
     const user_id = body.user_id;
-    const email = body.email;
     const data = body.data || {};
 
     console.log(`[MATICO] Accion: "${currentAction}" | Topic: ${body.tema || body.topic || '(sin tema)'}`);
@@ -73,15 +235,13 @@ app.post('/webhook/MATICO', async (req, res) => {
     try {
         const sheets = await getSheetsClient();
 
-        // =====================================================================
         // 1. LOGIN / REGISTER
-        // =====================================================================
         if (currentAction === 'login' || currentAction === 'register') {
-            const { email, password, name, phone, region, commune } = body;
+            const { email, password, name, phone, region, commune, correo_apoderado } = body;
 
             const response = await sheets.spreadsheets.values.get({
                 spreadsheetId: SPREADSHEET_ID,
-                range: 'Usuarios!A:H',
+                range: 'Usuarios!A:I',
             });
             const rows = response.data.values || [];
             const user = rows.find(row => row[3] === email);
@@ -95,153 +255,155 @@ app.post('/webhook/MATICO', async (req, res) => {
 
             if (currentAction === 'register') {
                 if (user) return res.status(400).json({ success: false, message: "El usuario ya existe" });
-
                 const newToken = `TK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
                 await sheets.spreadsheets.values.append({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Usuarios!A:H',
+                    range: 'Usuarios!A:I',
                     valueInputOption: 'USER_ENTERED',
                     requestBody: {
-                        values: [[newToken, password, new Date().toISOString(), email, name || 'Estudiante', phone || '', region || '', commune || '']]
+                        values: [[newToken, password, new Date().toISOString(), email, name || 'Estudiante', phone || '', region || '', commune || '', correo_apoderado || '']]
                     },
                 });
                 return res.json({ success: true, user_id: newToken, name: name || 'Estudiante' });
             }
         }
 
-        // =====================================================================
-        // 2. GENERAR QUIZ (Compatible con frontend Kaizen: 5 preguntas por lote)
-        //    El frontend envía: accion='Generar Quiz de Validación' o action='generate_quiz'
-        // =====================================================================
-        if (currentAction.toLowerCase().includes('quiz') || currentAction.toLowerCase().includes('generar')) {
+        // 2A. GENERAR TEORÍA LÚDICA
+        if (currentAction.toLowerCase().includes('teoría') || currentAction.toLowerCase().includes('teoria')) {
             const tema = body.tema || body.topic || 'Matemáticas General';
-
-            // El prompt del frontend ya viene con instrucciones detalladas en 'tema'
-            const systemMsg = "Eres Matico, mentor experto en el currículum chileno de 1° Medio. Genera SOLO JSON válido sin markdown.";
-
-            const comp = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
-                messages: [
-                    { role: "system", content: systemMsg },
-                    { role: "user", content: tema }
-                ],
-                response_format: { type: "json_object" }
-            });
-
-            const content = comp.choices[0].message.content;
-
-            // Responder en formato compatible con parseN8NResponse del frontend
-            // El frontend espera un JSON con campo "output" O directamente "questions"
-            try {
-                const parsed = JSON.parse(content);
-                // Si ya tiene "questions", enviar tal cual
-                if (parsed.questions) {
-                    return res.json(parsed);
-                }
-                // Si es otro formato, envolver en output
-                return res.json({ output: content });
-            } catch {
-                return res.json({ output: content });
-            }
-        }
-
-        // =====================================================================
-        // 3. RESPONDER DUDAS / REMEDIAL / PROFUNDIZAR
-        // =====================================================================
-        if (currentAction === 'answer_doubts' || currentAction === 'deepen_knowledge' ||
-            currentAction === 'generate_remedial_lesson' || currentAction === 'remedial_explanation') {
-
-            const tema = body.tema || body.topic || body.pregunta_usuario || 'Explícame más';
-            const systemMsg = "Eres Matico, mentor experto y carismático del currículum chileno de 1° Medio. Usa emojis y analogías.";
+            const systemMsg = `Eres Matico 🐶, un mentor carismático y experto en el currículum chileno de 1° Medio.
+Responde SIEMPRE en Markdown legible y amigable para un estudiante joven.
+Usa emojis frecuentemente para hacer la lectura divertida y motivadora.
+Estructura tu respuesta con títulos (##), subtítulos (###), listas, **negritas** y ejemplos claros.
+NUNCA respondas con JSON crudo. Solo texto enriquecido en Markdown.
+Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
 
             const comp = await openai.chat.completions.create({
                 model: "gpt-4o",
-                messages: [
-                    { role: "system", content: systemMsg },
-                    { role: "user", content: tema }
-                ]
+                messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
             });
-
             return res.json({ output: comp.choices[0].message.content });
         }
 
-        // =====================================================================
-        // 4. GUARDAR PROGRESO (save_progress) → progress_log
-        //    El frontend envía: accion='save_progress' con data.type como event_type
-        // =====================================================================
+        // 2B. GENERAR QUIZ (5 preguntas por lote)
+        if (currentAction.toLowerCase().includes('quiz') || currentAction.toLowerCase().includes('generar') || currentAction === 'generate_quiz') {
+            const tema = body.tema || body.topic || 'Matemáticas General';
+            const systemMsg = "Eres Matico, mentor experto en el currículum chileno de 1° Medio. Genera SOLO JSON válido sin markdown.";
+            const comp = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }],
+                response_format: { type: "json_object" }
+            });
+            const content = comp.choices[0].message.content;
+            try {
+                const parsed = JSON.parse(content);
+                return res.json(parsed.questions ? parsed : { output: content });
+            } catch { return res.json({ output: content }); }
+        }
+
+        // 3. RESPONDER DUDAS / REMEDIAL / PROFUNDIZAR
+        if (['answer_doubts', 'deepen_knowledge', 'generate_remedial_lesson', 'remedial_explanation',
+            'Responder Duda', 'Profundizar y Desafiar', 'Explicar y Simplificar'].includes(currentAction)) {
+            const tema = body.tema || body.topic || body.pregunta_usuario || 'Explícame más';
+            const systemMsg = "Eres Matico, mentor experto y carismático del currículum chileno de 1° Medio. Usa emojis y analogías.";
+            const comp = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
+            });
+            return res.json({ output: comp.choices[0].message.content });
+        }
+
+        // 4. GUARDAR PROGRESO
         if (currentAction === 'save_progress' || currentAction === 'save') {
             const eventType = data.type || 'progress_update';
-
-            await logToSheet(
-                sheets,
-                user_id,
-                data.subject || '',
-                data.session || '',
-                eventType,              // event_type: phase_completed, session_completed, etc.
-                data.phase || '',
-                data.subLevel || '',
-                data.levelName || '',
-                data.score || '',
-                data.xp_reward || ''
-            );
-
+            await logToSheet(sheets, user_id, data.subject || '', data.session || '', eventType,
+                data.phase || '', data.subLevel || '', data.levelName || '', data.score || '', data.xp_reward || '');
             return res.json({ success: true, message: `Evento ${eventType} registrado` });
         }
 
-        // =====================================================================
-        // 5. GET PROFILE (Leer XP y progreso del usuario)
-        // =====================================================================
+        // 5. GET PROFILE
         if (currentAction === 'get_profile') {
-            // Leer todas las filas de progress_log para este user_id
             const response = await sheets.spreadsheets.values.get({
-                spreadsheetId: SPREADSHEET_ID,
-                range: 'progress_log!A:J',
+                spreadsheetId: SPREADSHEET_ID, range: 'progress_log!A:J',
             });
             const rows = response.data.values || [];
             const userRows = rows.filter(row => row[1] === user_id);
-
-            // Sumar XP total (columna J)
-            let totalXP = 0;
-            let sessionsCompleted = 0;
+            let totalXP = 0, sessionsCompleted = 0;
             userRows.forEach(row => {
                 totalXP += parseInt(row[9]) || 0;
                 if (row[4] === 'session_completed') sessionsCompleted++;
             });
-
-            // Buscar nombre en Usuarios
-            const usersResponse = await sheets.spreadsheets.values.get({
-                spreadsheetId: SPREADSHEET_ID,
-                range: 'Usuarios!A:E',
-            });
-            const userRow = (usersResponse.data.values || []).find(r => r[0] === user_id);
-
+            const userData = await getUserFromSheet(sheets, user_id);
             return res.json({
-                xp: totalXP,
-                puntos: totalXP,
-                streak: 0,
-                racha: 0,
-                level: Math.floor(totalXP / 100) + 1,
-                nivel: Math.floor(totalXP / 100) + 1,
-                username: userRow?.[4] || 'Estudiante',
-                nombre: userRow?.[4] || 'Estudiante',
+                xp: totalXP, puntos: totalXP, streak: 0, racha: 0,
+                level: Math.floor(totalXP / 100) + 1, nivel: Math.floor(totalXP / 100) + 1,
+                username: userData?.nombre || 'Estudiante', nombre: userData?.nombre || 'Estudiante',
                 sessions_completed: sessionsCompleted
             });
         }
 
-        // =====================================================================
-        // 6. UPDATE PREFERENCES
-        // =====================================================================
-        if (currentAction === 'update_preferences') {
-            return res.json({ success: true, message: "Preferencias actualizadas" });
+        // 6. ENVIAR REPORTE DE SESIÓN (email al alumno + apoderado CON ANÁLISIS IA)
+        if (currentAction === 'send_session_report' || currentAction === 'notify_parent') {
+            const userData = await getUserFromSheet(sheets, user_id);
+            if (userData) {
+                const stats = body.stats || { correct: 0, total: 45 };
+                const subject = body.subject || 'Materia';
+                const session = body.session || '?';
+                const topic = body.topic || body.tema || '';
+                const wrongAnswers = body.wrong_answers || [];
+
+                // GENERAR ANÁLISIS IA DE LOS ERRORES
+                let aiAnalysis = '';
+                if (wrongAnswers.length > 0) {
+                    try {
+                        const errorSummary = wrongAnswers.slice(0, 15).map((w, i) =>
+                            `${i + 1}. Pregunta: "${w.question}" | Respondió: ${w.user_answer} | Correcta: ${w.correct_answer}`
+                        ).join('\n');
+
+                        const analysisComp = await openai.chat.completions.create({
+                            model: "gpt-4o-mini",
+                            messages: [
+                                {
+                                    role: "system", content: `Eres un tutor experto en educación chilena de 1° Medio. Analiza los errores del estudiante y genera un reporte breve EN HTML (usando <p>, <ul>, <li>, <strong>). NO uses markdown. El reporte debe:
+1. Identificar PATRONES en los errores (ej: "confunde fracciones con decimales")
+2. Señalar las ÁREAS DÉBILES específicas
+3. Dar 3 SUGERENCIAS CONCRETAS para mejorar
+4. Un mensaje MOTIVADOR al final
+Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
+                                { role: "user", content: `Estudiante: ${userData.nombre}\nAsignatura: ${subject}\nTema: ${topic}\nResultado: ${stats.correct}/45\n\nPREGUNTAS INCORRECTAS:\n${errorSummary}` }
+                            ]
+                        });
+                        aiAnalysis = analysisComp.choices[0].message.content;
+                        console.log('[AI] ✅ Análisis de errores generado');
+                    } catch (err) {
+                        console.error('[AI] Error generando análisis:', err.message);
+                    }
+                }
+
+                const html = buildSessionReportHTML(userData.nombre, subject, session, topic, stats, wrongAnswers, aiAnalysis);
+                const emailSubject = `📊 Reporte Matico: ${userData.nombre} completó ${subject} - Sesión ${session}`;
+
+                // Enviar al alumno
+                if (userData.email) {
+                    await sendEmail(userData.email, emailSubject, html);
+                }
+                // Enviar al apoderado
+                if (userData.correo_apoderado) {
+                    await sendEmail(userData.correo_apoderado, `👨‍👩‍👧 ${emailSubject}`, html);
+                }
+            }
+            return res.json({ success: true, message: "Reportes enviados con análisis IA" });
         }
 
-        // =====================================================================
-        // FALLBACK: Acción no reconocida → registrar y responder OK
-        // =====================================================================
+        // 7. READ-ONLY ACTIONS
+        const readOnlyActions = ['get_progress', 'update_preferences', 'ping', 'health'];
+        if (readOnlyActions.includes(currentAction)) {
+            return res.json({ success: true });
+        }
+
+        // FALLBACK
         console.log(`[MATICO] Acción no mapeada: "${currentAction}". Registrando...`);
-
         await logToSheet(sheets, user_id, data.subject, data.session, currentAction, data.phase, data.subLevel, data.levelName, data.score, data.xp_reward);
-
         res.json({ success: true, message: `Acción "${currentAction}" registrada` });
 
     } catch (error) {
@@ -249,5 +411,41 @@ app.post('/webhook/MATICO', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// ========================================================================
+// CRON: Recordatorio Diario a las 09:00 AM (Chile)
+// ========================================================================
+cron.schedule('0 9 * * *', async () => {
+    console.log('[CRON] ⏰ Ejecutando recordatorio matutino...');
+    try {
+        const sheets = await getSheetsClient();
+        const users = await getAllUsersFromSheet(sheets);
+
+        // Calcular qué sesión toca hoy (simplificado: día desde inicio)
+        const startDate = new Date('2026-01-15'); // Fecha de inicio del curso
+        const today = new Date();
+        const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+        const sessionNumber = (daysDiff % 43) + 1; // Ciclo de 43 sesiones
+        const topic = `Sesión ${sessionNumber} del día`;
+        const subject = 'MATEMATICA'; // Se podría alternar por día
+
+        for (const user of users) {
+            const html = buildDailyReminderHTML(user.nombre, sessionNumber, topic, subject);
+            const emailSubject = `☀️ ¡Buenos Días ${user.nombre}! Tu sesión de ${subject} te espera`;
+
+            // Al alumno
+            if (user.email) {
+                await sendEmail(user.email, emailSubject, html);
+            }
+            // Al apoderado
+            if (user.correo_apoderado) {
+                await sendEmail(user.correo_apoderado, `📋 Recordatorio: ${user.nombre} tiene sesión hoy`, html);
+            }
+        }
+        console.log(`[CRON] ✅ Recordatorios enviados a ${users.length} usuarios`);
+    } catch (err) {
+        console.error('[CRON] Error:', err.message);
+    }
+}, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
