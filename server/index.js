@@ -285,20 +285,88 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
             return res.json({ output: comp.choices[0].message.content });
         }
 
-        // 2B. GENERAR QUIZ (5 preguntas por lote)
+        // 2B. GENERAR QUIZ (5 preguntas por lote) — CON PROTOCOLO ANTI-ERRORES
         if (currentAction.toLowerCase().includes('quiz') || currentAction.toLowerCase().includes('generar') || currentAction === 'generate_quiz') {
             const tema = body.tema || body.topic || 'Matemáticas General';
-            const systemMsg = "Eres Matico, mentor experto en el currículum chileno de 1° Medio. Genera SOLO JSON válido sin markdown.";
+
+            // PASO 1: Prompt estricto que obliga cálculo paso a paso
+            const systemMsg = `Eres Matico, mentor matemático experto en el currículum chileno de 1° Medio.
+
+PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
+1. PRIMERO resuelve mentalmente el problema paso a paso.
+2. ANOTA el resultado numérico correcto.
+3. CREA 4 opciones: una DEBE ser tu resultado correcto, las otras 3 son distractores plausibles.
+4. ASIGNA "correct_answer" a la LETRA (A, B, C o D) que contiene TU resultado correcto.
+5. En "explanation", escribe el desarrollo paso a paso que lleva a tu resultado.
+6. VERIFICA: el valor numérico de options[correct_answer] DEBE coincidir con el resultado de tu explanation.
+
+EJEMPLO DE VERIFICACIÓN:
+- Pregunta: "150 × 3 × 4 = ?"
+- Mi cálculo: 150 × 3 = 450, 450 × 4 = 1800
+- Opciones: A: "1800", B: "720", C: "450", D: "600"
+- correct_answer: "A" (porque A contiene 1800, mi resultado)
+- explanation: "150 × 3 = 450, luego 450 × 4 = 1800"
+- ✅ VERIFICO: options["A"] = "1800" = mi cálculo = CORRECTO
+
+⚠️ ERROR FATAL A EVITAR: Que correct_answer apunte a una opción con valor DIFERENTE a tu cálculo.
+
+Genera SOLO JSON válido sin markdown. El JSON debe tener: { "questions": [...] }`;
+
             const comp = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
+                model: "gpt-4o",  // GPT-4o completo, NO mini (menos errores matemáticos)
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }],
-                response_format: { type: "json_object" }
+                response_format: { type: "json_object" },
+                temperature: 0.3  // Baja temperatura = más precisión matemática
             });
+
             const content = comp.choices[0].message.content;
+            let questions = [];
             try {
                 const parsed = JSON.parse(content);
-                return res.json(parsed.questions ? parsed : { output: content });
-            } catch { return res.json({ output: content }); }
+                questions = parsed.questions || [];
+            } catch {
+                return res.json({ output: content });
+            }
+
+            // PASO 2: VERIFICACIÓN INDEPENDIENTE — Segunda IA revisa cada pregunta
+            if (questions.length > 0) {
+                console.log(`[VERIFY] 🔍 Verificando ${questions.length} preguntas...`);
+                let corrected = 0;
+
+                const verifyPromises = questions.map(async (q, idx) => {
+                    try {
+                        const optionsText = Object.entries(q.options || {})
+                            .map(([k, v]) => `${k}: ${v}`).join('\n');
+
+                        const verifyComp = await openai.chat.completions.create({
+                            model: "gpt-4o",
+                            messages: [
+                                { role: "system", content: "Eres un verificador matemático. Tu ÚNICO trabajo es resolver el problema y decir cuál letra (A, B, C o D) tiene la respuesta correcta. Responde SOLO con un JSON: {\"correct_letter\": \"X\", \"my_calculation\": \"resultado numérico\"}" },
+                                { role: "user", content: `Problema: ${q.question}\n\nOpciones:\n${optionsText}\n\n¿Cuál es la letra correcta?` }
+                            ],
+                            response_format: { type: "json_object" },
+                            temperature: 0
+                        });
+
+                        const verifyResult = JSON.parse(verifyComp.choices[0].message.content);
+                        const verifiedLetter = verifyResult.correct_letter?.toUpperCase();
+
+                        if (verifiedLetter && verifiedLetter !== q.correct_answer) {
+                            console.log(`[VERIFY] ⚠️ Q${idx + 1} CORREGIDA: "${q.question.substring(0, 50)}..." | AI dijo: ${q.correct_answer} → Verificador: ${verifiedLetter}`);
+                            q.correct_answer = verifiedLetter;
+                            corrected++;
+                        }
+                    } catch (err) {
+                        console.log(`[VERIFY] Error en Q${idx + 1}:`, err.message);
+                    }
+                    return q;
+                });
+
+                questions = await Promise.all(verifyPromises);
+                console.log(`[VERIFY] ✅ Verificación completa. Corregidas: ${corrected}/${questions.length}`);
+            }
+
+            return res.json({ questions });
         }
 
         // 3. RESPONDER DUDAS / REMEDIAL / PROFUNDIZAR
