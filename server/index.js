@@ -124,15 +124,51 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
     const color = successRate >= 80 ? '#22c55e' : (successRate >= 60 ? '#eab308' : '#ef4444');
     const wrongCount = wrongAnswers.length;
 
+    // Helper: Convertir LaTeX a texto legible para emails
+    const cleanLatex = (text) => {
+        if (!text) return '';
+        return text
+            .replace(/\$([^$]+)\$/g, '$1')           // Quitar delimitadores $...$
+            .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')  // \frac{a}{b} → a/b
+            .replace(/\\left\(/g, '(')                // \left( → (
+            .replace(/\\right\)/g, ')')               // \right) → )
+            .replace(/\\left\[/g, '[')
+            .replace(/\\right\]/g, ']')
+            .replace(/\\times/g, '×')                 // \times → ×
+            .replace(/\\div/g, '÷')                   // \div → ÷
+            .replace(/\\cdot/g, '·')                  // \cdot → ·
+            .replace(/\\pm/g, '±')                    // \pm → ±
+            .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')   // \sqrt{x} → √(x)
+            .replace(/\^(\{[^}]+\})/g, (_, exp) => {  // ^{2} → ²
+                const superscripts = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', 'n': 'ⁿ' };
+                const inner = exp.replace(/[{}]/g, '');
+                return inner.split('').map(c => superscripts[c] || `^${c}`).join('');
+            })
+            .replace(/\^(\d)/g, (_, d) => {           // ^2 → ²
+                const sup = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+                return sup[d] || `^${d}`;
+            })
+            .replace(/_(\{[^}]+\})/g, (_, sub) => sub.replace(/[{}]/g, ''))  // _{n} → n
+            .replace(/_(\d)/g, '$1')                   // _1 → 1
+            .replace(/\\text\{([^}]+)\}/g, '$1')       // \text{...} → ...
+            .replace(/\\\\/g, '')                      // Backslashes sueltos
+            .replace(/\s+/g, ' ')                      // Espacios múltiples
+            .trim();
+    };
+
     // Generar tabla de errores
     let errorsHTML = '';
     if (wrongCount > 0) {
-        const errorRows = wrongAnswers.slice(0, 10).map((w, i) => `
+        const errorRows = wrongAnswers.slice(0, 10).map((w, i) => {
+            const cleanQ = cleanLatex(w.question || '');
+            const shortQ = cleanQ.substring(0, 80) + (cleanQ.length > 80 ? '...' : '');
+            return `
             <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 10px; font-size: 13px; color: #475569;">${i + 1}. ${w.question?.substring(0, 80) || '...'}${w.question?.length > 80 ? '...' : ''}</td>
+                <td style="padding: 10px; font-size: 13px; color: #475569;">${i + 1}. ${shortQ}</td>
                 <td style="padding: 10px; text-align: center; color: #ef4444; font-weight: bold;">${w.user_answer}</td>
                 <td style="padding: 10px; text-align: center; color: #22c55e; font-weight: bold;">${w.correct_answer}</td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
 
         errorsHTML = `
             <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #fecaca; margin: 16px 0;">
@@ -307,6 +343,8 @@ EJEMPLO DE VERIFICACIÓN:
 - correct_answer: "A" (porque A contiene 1800, mi resultado)
 - explanation: "150 × 3 = 450, luego 450 × 4 = 1800"
 - ✅ VERIFICO: options["A"] = "1800" = mi cálculo = CORRECTO
+
+⚠️ REGLA DE FORMATO: NO USES LATEX (como \\frac{}, $3x^2$, etc.). Usa símbolos de texto simple que sean fáciles de leer en correos electrónicos (ej: 2/3, 3x^2, √(x)). NO pongas expresiones entre \`$...\$\`.
 
 ⚠️ ERROR FATAL A EVITAR: Que correct_answer apunte a una opción con valor DIFERENTE a tu cálculo.
 
