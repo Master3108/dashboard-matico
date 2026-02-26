@@ -2663,21 +2663,18 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         } else {
             // TODAS LAS FASES COMPLETADAS (45 PREGUNTAS TOTALES)
             console.log("[QUIZ] ✅ TODAS LAS 3 FASES COMPLETADAS!");
-            setShowInteractiveQuiz(false);
+            setShowInteractiveQuiz(false); // Breve cierre para resetear el componente de quiz
 
-            // ENVIAR REPORTE FINAL
+            // ENVIAR REPORTE FINAL Y ESPERAR A QUE TERMINE
             const finalCorrectCount = quizStats.correct + phaseScore;
             const finalStats = { ...quizStats, correct: finalCorrectCount, total: 45 };
             const finalWrong = [...allWrongAnswers, ...phaseWrongAnswers];
 
             console.log("[REPORT] Enviando reporte final con score:", finalCorrectCount, "errores:", finalWrong.length);
-            sendFinalSessionReport(finalStats, finalWrong);
+            await sendFinalSessionReport(finalStats, finalWrong);
 
-            // LIMPIAR Y MARCAR COMPLETADO
-            clearQuizProgress();
-            markSessionComplete(currentSubject, TODAYS_SESSION.session);
-
-            saveProgress('session_completed', {
+            // GUARDAR SESION COMPLETA EN GOOGLE SHEETS PRIMERO (AWAIT)
+            await saveProgress('session_completed', {
                 subject: currentSubject,
                 session: TODAYS_SESSION.session,
                 topic: TODAYS_SESSION.topic,
@@ -2685,8 +2682,18 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 correct_answers: finalCorrectCount,
                 xp_reward: 300
             });
+            console.log("[SAVE] ✅ 'session_completed' guardado en Google Sheets correctamente");
 
+            // Mostrar el alert de victoria al usuario
             alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHaz dominado: ${TODAYS_SESSION.topic}\n\nPuntaje Final: ${finalStats.correct}/45\n\n+300 XP 🔥`);
+
+            // LIMPIAR Y MARCAR COMPLETADO AL FINAL
+            // (Esto dispara setTodayIndex y setCurrentSubject, así que debe ser LO ÚLTIMO que ocurre)
+            clearQuizProgress();
+            setCurrentQuizPhase(1); // Resetear a base para la siguiente materia
+            setQuizStats({ correct: 0, incorrect: 0, total: 0 }); // Limpiar stats
+            setAllWrongAnswers([]); // Limpiar errores
+            markSessionComplete(currentSubject, TODAYS_SESSION.session);
         }
     };
 
