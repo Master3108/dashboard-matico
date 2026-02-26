@@ -42,9 +42,49 @@ app.post('/webhook/MATICO', async (req, res) => {
     try {
         let responseData = { success: true };
 
-        // --- 1. LOGIN / REGISTER ---
+        // --- 1. LOGIN / REGISTER (Google Sheets Real) ---
         if (currentAction === 'login' || currentAction === 'register') {
-            responseData = { success: true, user_id: "matico-son", name: "Estudiante Matico" };
+            const sheets = await getSheetsClient();
+            const { email, password, name, phone, region, commune } = req.body;
+
+            // Traer todos los usuarios
+            const response = await sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: 'Usuarios!A:H',
+            });
+            const rows = response.data.values || [];
+            const user = rows.find(row => row[3] === email); // Columna D es mail
+
+            if (currentAction === 'login') {
+                if (user && user[1] === password) {
+                    return res.json({ success: true, user_id: user[0], name: user[4] || 'Estudiante' });
+                }
+                return res.status(401).json({ success: false, message: "Credenciales inválidas" });
+            }
+
+            if (currentAction === 'register') {
+                if (user) return res.status(400).json({ success: false, message: "El usuario ya existe" });
+
+                const newToken = `TK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+                const newUserRow = [
+                    newToken,           // token (A)
+                    password,           // password (B)
+                    new Date().toISOString(), // created_at (C)
+                    email,              // mail (D)
+                    name || 'Estudiante', // nombre (E)
+                    phone || '',        // celular (F)
+                    region || '',       // region (G)
+                    commune || ''       // comuna (H)
+                ];
+
+                await sheets.spreadsheets.values.append({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'Usuarios!A:H',
+                    valueInputOption: 'USER_ENTERED',
+                    requestBody: { values: [newUserRow] },
+                });
+                return res.json({ success: true, user_id: newToken, name: name || 'Estudiante' });
+            }
         }
 
         // --- 2. GENERADORES IA ---
@@ -75,13 +115,12 @@ app.post('/webhook/MATICO', async (req, res) => {
 
         // --- 3. GUARDAR PROGRESO (Google Sheets) ---
         // Siempre guardamos el evento antes de responder
-        if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+        if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && currentAction !== 'login' && currentAction !== 'register') {
             try {
                 const sheets = await getSheetsClient();
-                let range = 'progress_log!A:G';
-                if (currentAction.includes('quiz')) range = 'quiz_results!A:G';
-                else if (currentAction.includes('session')) range = 'study_sessions!A:G';
-                else if (currentAction === 'login' || currentAction === 'register') range = 'Usuarios!A:G';
+                let range = 'progress_log!A:J';
+                if (currentAction.includes('quiz')) range = 'quiz_results!A:J';
+                else if (currentAction.includes('session')) range = 'study_sessions!A:J';
 
                 await sheets.spreadsheets.values.append({
                     spreadsheetId: SPREADSHEET_ID,
