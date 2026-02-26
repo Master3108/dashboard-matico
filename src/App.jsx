@@ -1865,6 +1865,48 @@ const App = () => {
                     console.log(`[MATICO] Setting session index to ${newIndex} (Session ${data.next_session})`);
                     setTodayIndex(newIndex);
                 }
+
+                // SYNC: Restaurar progreso de fases en localStorage desde el servidor
+                // Esto hace que funcione al cambiar de navegador
+                if (data && data.current_session_in_progress > 0 && data.current_phase > 0) {
+                    const sessionNum = data.current_session_in_progress;
+                    const phase = data.current_phase;
+                    const subj = currentSubject;
+                    const key = `${subj}_session_${sessionNum}`;
+
+                    const existing = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
+
+                    // Solo restaurar si localStorage no tiene datos para esta sesión
+                    if (!existing[key] || !existing[key].completedPhases || existing[key].completedPhases.length < phase) {
+                        const completedPhases = [];
+                        for (let i = 1; i <= phase; i++) completedPhases.push(i);
+
+                        existing[key] = {
+                            completedPhases: completedPhases,
+                            currentPhase: phase < 3 ? phase + 1 : 3,
+                            scores: existing[key]?.scores || {},
+                            restoredFromServer: true,
+                            lastUpdated: new Date().toISOString()
+                        };
+
+                        localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(existing));
+                        console.log(`[SYNC] 🔄 Progreso restaurado desde servidor: ${key} → Fase ${phase} completada, siguiente: ${phase + 1}`);
+                    }
+                }
+
+                // SYNC: Marcar sesiones completadas en localStorage
+                if (data && data.last_completed_session > 0) {
+                    const completedKey = 'MATICO_COMPLETED_SESSIONS';
+                    let completedStr = localStorage.getItem(completedKey) || '';
+                    for (let s = 1; s <= data.last_completed_session; s++) {
+                        const sessionKey = `${currentSubject}_${s}`;
+                        if (!completedStr.includes(sessionKey)) {
+                            completedStr += (completedStr ? ',' : '') + sessionKey;
+                        }
+                    }
+                    localStorage.setItem(completedKey, completedStr);
+                    console.log(`[SYNC] 🔄 Sesiones completadas sincronizadas: ${completedStr}`);
+                }
             } catch (error) {
                 console.error('[MATICO] ? Error fetching progress:', error);
                 // Fallback to Matico Plan logic
