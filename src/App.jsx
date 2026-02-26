@@ -101,8 +101,8 @@ const parseMarkdown = (text) => {
 // MathRenderer moved to ./components/MathRenderer.jsx
 
 const N8N_URLS = {
-    production: "https://n8n-n8n.cwf1hb.easypanel.host/webhook/MATICO",
-    test: "https://n8n-n8n.cwf1hb.easypanel.host/webhook-test/MATICO"
+    production: "/webhook/MATICO",
+    test: "/webhook-test/MATICO"
 };
 
 // --- PRODUCCIÓN: CALENDARIO MATICO ---
@@ -1842,7 +1842,7 @@ const App = () => {
                 setLoadingProgress(true);
                 console.log('[MATICO] Fetching progress from server...');
 
-                const response = await fetch('https://n8n-n8n.cwf1hb.easypanel.host/webhook/MATICO', {
+                const response = await fetch('/webhook/MATICO', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

@@ -24,7 +24,7 @@ const LoginPage = ({ onLogin }) => {
         setError(null);
 
         // N8N Webhook URL (Same as the main app)
-        const WEBHOOK_URL = 'https://n8n-n8n.cwf1hb.easypanel.host/webhook/MATICO';
+        const WEBHOOK_URL = '/webhook/MATICO';
 
         const action = isRegistering ? 'register' : 'login';
 
