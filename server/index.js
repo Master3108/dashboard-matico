@@ -321,44 +321,122 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
             return res.json({ output: comp.choices[0].message.content });
         }
 
-        // 2B. GENERAR QUIZ (5 preguntas por lote) — CON PROTOCOLO ANTI-ERRORES
+        // 2B. GENERAR QUIZ (5 preguntas por lote) — MULTIASIGNATURA
         if (currentAction.toLowerCase().includes('quiz') || currentAction.toLowerCase().includes('generar') || currentAction === 'generate_quiz') {
-            const tema = body.tema || body.topic || 'Matemáticas General';
+            const tema = body.tema || body.topic || 'Conocimiento General';
+            const subject = (body.subject || body.materia || data?.subject || 'MATEMATICA').toUpperCase();
 
-            // PASO 1: Prompt estricto que obliga cálculo paso a paso
-            const systemMsg = `Eres Matico, mentor matemático experto en el currículum chileno de 1° Medio.
+            let systemMsg = "";
+            let verifyPrompt = "";
+            let aiTemperature = 0.2; // Por defecto baja para matemáticas
+
+            if (subject.includes('LENGUAJE') || subject.includes('LECTURA')) {
+                // PROMPT PARA LENGUAJE / COMPRENSIÓN LECTORA
+                aiTemperature = 0.5; // Un poco más creativo para redactar textos
+                systemMsg = `Eres Matico, profesor experto en Lenguaje y Comunicación del currículum chileno.
+El estudiante aprenderá: ${tema}.
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. DEBES hacer el cálculo matemático en "explanation" PRIMERO.
-2. CREA 4 opciones, asegurándote que UNA coincide con tu cálculo.
-3. Al final, escribe la Letra correcta en "correct_answer".
+1. Las preguntas deben evaluar comprensión lectora avanzada, pensamiento crítico e inferencia.
+2. Escribe una explicación clara del porqué esa es la opción correcta en "explanation".
+3. CREA 4 opciones, asegurándote que UNA coincide con tu explicación.
+4. Al final, escribe la Letra correcta (A, B, C, D) en "correct_answer".
 
-ESTRUCTURA JSON EXACTA QUE DEBES USAR (EL ORDEN ES VITAL):
+ESTRUCTURA JSON EXACTA QUE DEBES USAR:
 {
   "questions": [
     {
-      "question": "texto de la pregunta...",
-      "explanation": "ESCRIBE AQUÍ TODO TU DESARROLLO PASO A PASO PRIMERO. Realiza las operaciones matemáticas necesarias. Ej: 5^2=25, 2^3=8, 25x8=200.",
+      "question": "texto de la pregunta de lectura o texto corto más la pregunta...",
+      "explanation": "Explica aquí por qué la opción correcta es la adecuada basados en inferencia o pistas textuales.",
+      "options": {
+        "A": "texto",
+        "B": "texto",
+        "C": "texto",
+        "D": "texto"
+      },
+      "correct_answer": "LETRA EXACTA DE TU EXPLICACION"
+    }
+  ]
+}
+
+Genera SOLO JSON válido sin markdown.`;
+                verifyPrompt = `Lee la pregunta de comprensión crítica cuidadosamente. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta basándote en la inferencia lógica.
+Estructura JSON:
+{"my_calculation": "tu razonamiento aquí", "correct_letter": "LETRA FINAL"}`;
+
+            } else if (subject.includes('HISTORIA')) {
+                // PROMPT PARA HISTORIA
+                aiTemperature = 0.4;
+                systemMsg = `Eres Matico, historiador y profesor experto en Historia y Geografía.
+Tema a evaluar: ${tema}.
+
+PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
+1. Las preguntas deben evaluar análisis histórico, comprensión de contextos y causas/consecuencias, no solo fechas memorizadas.
+2. Escribe una breve explicación histórica en "explanation" PRIMERO.
+3. CREA 4 opciones.
+4. Al final, escribe la Letra correcta en "correct_answer".
+
+ESTRUCTURA JSON EXACTA QUE DEBES USAR:
+{
+  "questions": [
+    {
+      "question": "contexto histórico y la pregunta...",
+      "explanation": "EXPLICA AQUI EL Contexto Y POR QUE LAS OTRAS SON INCORRECTAS",
       "options": {
         "A": "valor",
         "B": "valor",
         "C": "valor",
         "D": "valor"
       },
-      "correct_answer": "LETRA EXACTA QUE CONTIENE TU CALCULO"
+      "correct_answer": "LETRA EXACTA"
     }
   ]
 }
 
-⚠️ ERROR FATAL A EVITAR: Que correct_answer apunte a una opción con valor DIFERENTE a lo que calculaste en explanation. O que no haya opción correcta.
+Genera SOLO JSON válido sin markdown.`;
+                verifyPrompt = `Analiza el hecho histórico. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta.
+Estructura JSON:
+{"my_calculation": "tu razonamiento histórico aquí", "correct_letter": "LETRA FINAL"}`;
+
+            } else {
+                // PROMPT POR DEFECTO: MATEMÁTICAS (Protocolo anti-errores original)
+                aiTemperature = 0.2;
+                systemMsg = `Eres Matico, mentor matemático experto.
+Tema: ${tema}.
+
+PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
+1. DEBES hacer el cálculo matemático en "explanation" PRIMERO.
+2. CREA 4 opciones, asegurándote que UNA coincide con tu cálculo.
+3. Al final, escribe la Letra correcta en "correct_answer".
+
+ESTRUCTURA JSON EXACTA QUE DEBES USAR:
+{
+  "questions": [
+    {
+      "question": "texto de la pregunta...",
+      "explanation": "ESCRIBE AQUI TODO TU DESARROLLO PASO A PASO PRIMERO.",
+      "options": {
+        "A": "valor",
+        "B": "valor",
+        "C": "valor",
+        "D": "valor"
+      },
+      "correct_answer": "LETRA EXACTA"
+    }
+  ]
+}
 
 Genera SOLO JSON válido sin markdown.`;
+                verifyPrompt = `Resuelve el problema matemático paso a paso. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta.
+Estructura JSON:
+{"my_calculation": "tu desarrollo paso a paso aquí primero", "correct_letter": "LETRA FINAL"}`;
+            }
 
             const comp = await openai.chat.completions.create({
-                model: "gpt-4o",  // GPT-4o completo
+                model: "gpt-4o",
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }],
                 response_format: { type: "json_object" },
-                temperature: 0.2  // Baja temperatura = más precisión matemática
+                temperature: aiTemperature
             });
 
             const content = comp.choices[0].message.content;
@@ -372,7 +450,7 @@ Genera SOLO JSON válido sin markdown.`;
 
             // PASO 2: VERIFICACIÓN INDEPENDIENTE — Segunda IA revisa cada pregunta
             if (questions.length > 0) {
-                console.log(`[VERIFY] 🔍 Verificando ${questions.length} preguntas...`);
+                console.log(`[VERIFY] 🔍 Verificando ${questions.length} preguntas de ${subject}...`);
                 let corrected = 0;
 
                 const verifyPromises = questions.map(async (q, idx) => {
@@ -380,16 +458,11 @@ Genera SOLO JSON válido sin markdown.`;
                         const optionsText = Object.entries(q.options || {})
                             .map(([k, v]) => `${k}: ${v}`).join('\n');
 
-                        // EL VERIFICADOR TAMBIEN DEBE CALCULAR PRIMERO
-                        const verifyPrompt = `Resuelve el problema paso a paso. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta.
-Estructura JSON:
-{"my_calculation": "tu desarrollo paso a paso aquí primero", "correct_letter": "LETRA FINAL"}`;
-
                         const verifyComp = await openai.chat.completions.create({
                             model: "gpt-4o",
                             messages: [
                                 { role: "system", content: verifyPrompt },
-                                { role: "user", content: `Problema: ${q.question}\n\nOpciones:\n${optionsText}\n\nHaz tu cálculo y luego dime la letra correcta.` }
+                                { role: "user", content: `Problema: ${q.question}\n\nOpciones:\n${optionsText}\n\nRevisa y dime la letra correcta.` }
                             ],
                             response_format: { type: "json_object" },
                             temperature: 0
