@@ -1897,15 +1897,35 @@ const App = () => {
                 // SYNC: Marcar sesiones completadas en localStorage
                 if (data && data.last_completed_session > 0) {
                     const completedKey = 'MATICO_COMPLETED_SESSIONS';
-                    let completedStr = localStorage.getItem(completedKey) || '';
-                    for (let s = 1; s <= data.last_completed_session; s++) {
-                        const sessionKey = `${currentSubject}_${s}`;
-                        if (!completedStr.includes(sessionKey)) {
-                            completedStr += (completedStr ? ',' : '') + sessionKey;
+                    const stored = localStorage.getItem(completedKey);
+                    let completed = [];
+
+                    try {
+                        completed = stored ? JSON.parse(stored) : [];
+                        // Fallback if it was a string instead of array (from legacy code)
+                        if (!Array.isArray(completed) && typeof stored === 'string') {
+                            completed = stored.split(',').filter(s => s.trim() !== '');
+                        }
+                    } catch (e) {
+                        // Fallback for corrupt data
+                        if (typeof stored === 'string') {
+                            completed = stored.split(',').filter(s => s.trim() !== '');
                         }
                     }
-                    localStorage.setItem(completedKey, completedStr);
-                    console.log(`[SYNC] 🔄 Sesiones completadas sincronizadas: ${completedStr}`);
+
+                    let changed = false;
+                    for (let s = 1; s <= data.last_completed_session; s++) {
+                        const sessionKey = `${currentSubject}_${s}`;
+                        if (!completed.includes(sessionKey)) {
+                            completed.push(sessionKey);
+                            changed = true;
+                        }
+                    }
+
+                    if (changed) {
+                        localStorage.setItem(completedKey, JSON.stringify(completed));
+                        console.log(`[SYNC] 🔄 Sesiones completadas sincronizadas:`, completed);
+                    }
                 }
             } catch (error) {
                 console.error('[MATICO] ? Error fetching progress:', error);
@@ -2516,7 +2536,8 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 }`;
 
         try {
-            // 1. Enviar Reporte Detallado (IA)
+            // 1. Enviar Reporte Detallado al Alumno y Apoderado (IA)
+            // Nota: El servidor ya se encarga de enviarlo a ambos si están configurados
             await fetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2532,21 +2553,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                     wrong_answers: wrongAnswers
                 })
             });
-            console.log("[REPORT] 📧 Reporte detallado enviado a n8n");
-
-            // 2. Notificar al Apoderado (Template Fijo)
-            await fetch(activeWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    accion: 'notify_parent',
-                    email: currentUser?.email,
-                    subject: currentSubject,
-                    topic: TODAYS_SESSION.topic,
-                    score: successRate
-                })
-            });
-            console.log("[REPORT] 👨‍👩‍👧‍👦 Notificación a apoderado enviada");
+            console.log("[REPORT] 📧 Reporte de sesión enviado");
 
         } catch (err) {
             console.error("[REPORT] Error en flujo de notificaciones:", err);
@@ -2555,7 +2562,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
     // HANDLE QUIZ PHASE COMPLETION - SISTEMA KAIZEN SIMPLIFICADO (3 FASES DE 15 PREGUNTAS)
     const onQuizPhaseComplete = async (phaseScore, phaseWrongAnswers = []) => {
-        console.log(`[QUIZ] Fase ${currentQuizPhase} completada con score:`, phaseScore, `errores:`, phaseWrongAnswers.length);
+        console.log(`[QUIZ] Fase ${currentQuizPhase} completada con score: `, phaseScore, `errores: `, phaseWrongAnswers.length);
 
         // Acumular errores de esta fase
         setAllWrongAnswers(prev => [...prev, ...phaseWrongAnswers]);
@@ -2602,11 +2609,11 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
                 // 1. INTENTAR USAR QUEUE O ESPERAR PROMESA PENDIENTE
                 if (backgroundQuestionsQueue.length > 0) {
-                    console.log(`[QUIZ] Usando preguntas pre-generadas para Fase ${nextPhase}`);
+                    console.log(`[QUIZ] Usando preguntas pre - generadas para Fase ${nextPhase} `);
                     nextQuestions = backgroundQuestionsQueue;
                     setBackgroundQuestionsQueue([]);
                 } else if (isLoadingNextBatch && backgroundTaskRef.current) {
-                    console.log(`[BACK] Esperando pre-generación de Fase ${nextPhase}...`);
+                    console.log(`[BACK] Esperando pre - generación de Fase ${nextPhase}...`);
                     setLoadingMessage(`Preparando Nivel ${nextLevel}...`);
                     try {
                         const result = await backgroundTaskRef.current;
@@ -2635,7 +2642,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                     // Disparar pre-generación para la siguiente fase si existe - CON DELAY DE 30s
                     if (nextPhase < 3) {
                         const followingLevel = levelMap[nextPhase + 1];
-                        console.log(`[BACK] Programando pre-generación de Fase ${nextPhase + 1} (${followingLevel}) para dentro de 30 segundos...`);
+                        console.log(`[BACK] Programando pre - generación de Fase ${nextPhase + 1} (${followingLevel}) para dentro de 30 segundos...`);
 
                         setTimeout(() => {
                             console.log(`[BACK] ⏳ Ejecutando carga diferida de ${followingLevel}...`);
@@ -2685,7 +2692,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             console.log("[SAVE] ✅ 'session_completed' guardado en Google Sheets correctamente");
 
             // Mostrar el alert de victoria al usuario
-            alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHaz dominado: ${TODAYS_SESSION.topic}\n\nPuntaje Final: ${finalStats.correct}/45\n\n+300 XP 🔥`);
+            alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHaz dominado: ${TODAYS_SESSION.topic} \n\nPuntaje Final: ${finalStats.correct}/45\n\n+300 XP 🔥`);
 
             // LIMPIAR Y MARCAR COMPLETADO AL FINAL
             // (Esto dispara setTodayIndex y setCurrentSubject, así que debe ser LO ÚLTIMO que ocurre)
