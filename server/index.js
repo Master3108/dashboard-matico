@@ -324,7 +324,7 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
         // 2B. GENERAR QUIZ (5 preguntas por lote) — MULTIASIGNATURA
         if (currentAction.toLowerCase().includes('quiz') || currentAction.toLowerCase().includes('generar') || currentAction === 'generate_quiz') {
             const tema = body.tema || body.topic || 'Conocimiento General';
-            const subject = (body.subject || body.materia || data?.subject || 'MATEMATICA').toUpperCase();
+            const subject = (body.subject || body.sujeto || body.materia || data?.subject || 'MATEMATICA').toUpperCase();
 
             let systemMsg = "";
             let verifyPrompt = "";
