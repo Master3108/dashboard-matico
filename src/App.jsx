@@ -1384,6 +1384,88 @@ const shuffleQuizData = (data) => {
     return { ...data, options: newOptions, correctIndex: newCorrectIndex };
 };
 
+// HELPER: REDISTRIBUTE CORRECT ANSWERS ACROSS A/B/C/D
+// Target distribution: A=25%, B=30%, C=25%, D=20%
+// This prevents the AI from always placing the correct answer in position A
+const redistributeCorrectAnswers = (questions) => {
+    if (!questions || !Array.isArray(questions) || questions.length === 0) return questions;
+
+    const letters = ['A', 'B', 'C', 'D'];
+    // Weighted distribution: A=25%, B=30%, C=25%, D=20%
+    const weights = { A: 25, B: 30, C: 25, D: 20 };
+    const totalWeight = 100;
+
+    // Build a target slot sequence for the batch based on desired %
+    const totalQ = questions.length;
+    const targetCounts = {
+        A: Math.round(totalQ * weights.A / totalWeight),
+        B: Math.round(totalQ * weights.B / totalWeight),
+        C: Math.round(totalQ * weights.C / totalWeight),
+        D: 0 // Will be assigned the remainder
+    };
+    targetCounts.D = totalQ - targetCounts.A - targetCounts.B - targetCounts.C;
+    // Ensure D is at least 0
+    if (targetCounts.D < 0) {
+        targetCounts.D = 0;
+        // Reduce largest to compensate
+        const surplus = targetCounts.A + targetCounts.B + targetCounts.C - totalQ;
+        targetCounts.B = Math.max(0, targetCounts.B - surplus);
+    }
+
+    // Build slot array and shuffle it
+    const slots = [];
+    letters.forEach(letter => {
+        for (let i = 0; i < (targetCounts[letter] || 0); i++) {
+            slots.push(letter);
+        }
+    });
+    // Pad if rounding left us short
+    while (slots.length < totalQ) slots.push(letters[Math.floor(Math.random() * 4)]);
+    // Trim if rounding gave us extra
+    while (slots.length > totalQ) slots.pop();
+
+    // Fisher-Yates shuffle the slot assignments
+    for (let i = slots.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [slots[i], slots[j]] = [slots[j], slots[i]];
+    }
+
+    console.log(`[QUIZ REDISTRIBUTE] Distributing ${totalQ} questions. Slots:`, slots.reduce((acc, s) => { acc[s] = (acc[s] || 0) + 1; return acc; }, {}));
+
+    return questions.map((q, qIndex) => {
+        const targetSlot = slots[qIndex];
+        const currentCorrect = q.correct_answer;
+
+        // If correcto already matches target, no swap needed
+        if (currentCorrect === targetSlot) return q;
+
+        // Swap: move the correct answer content to the target slot
+        const newOptions = { ...q.options };
+        const correctContent = newOptions[currentCorrect];
+        const targetContent = newOptions[targetSlot];
+
+        // Swap the two option values
+        newOptions[currentCorrect] = targetContent;
+        newOptions[targetSlot] = correctContent;
+
+        // Also fix the explanation if it references "alternativa A/B/C/D"
+        let newExplanation = q.explanation || '';
+        // Replace references to the old correct letter with the new one in the explanation
+        const oldLetterRegex = new RegExp(`\\b(alternativa|opción|opcion|letra|respuesta)\\s+(correcta\\s+)?${currentCorrect}\\b`, 'gi');
+        newExplanation = newExplanation.replace(oldLetterRegex, `$1 $2${targetSlot}`);
+        // Also fix simple patterns like "es la A)" or "es A"
+        const simpleRefRegex = new RegExp(`\\b(es\\s+la\\s+)${currentCorrect}(?:\\))?\\b`, 'gi');
+        newExplanation = newExplanation.replace(simpleRefRegex, `$1${targetSlot})`);
+
+        return {
+            ...q,
+            options: newOptions,
+            correct_answer: targetSlot,
+            explanation: newExplanation
+        };
+    });
+};
+
 const PHYSICS_SYLLABUS = [
     // FASE 1: ONDAS Y SONIDO
     { session: 1, unit: 'Ondas y Sonido', topic: 'Introducción a las Ondas: Materia vs Energía', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
@@ -2263,7 +2345,10 @@ const App = () => {
                 };
             });
 
-            return formattedQuestions;
+            // REDISTRIBUTE correct answers across A/B/C/D (prevents all-A pattern)
+            const redistributed = redistributeCorrectAnswers(formattedQuestions);
+            console.log(`[QUIZ] After redistribution, correct answer distribution:`, redistributed.reduce((acc, q) => { acc[q.correct_answer] = (acc[q.correct_answer] || 0) + 1; return acc; }, {}));
+            return redistributed;
 
         } catch (e) {
             console.error(`Error generando batch paralelo ${level}:`, e);
@@ -2896,7 +2981,26 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                         if (isBatchQuiz || isSingleQuiz) {
                             // AUTO-LAUNCH QUIZ
                             console.log("?? Auto-launching Quiz!");
-                            const questionsToLoad = isBatchQuiz ? finalData.questions : [finalData];
+                            let questionsToLoad = isBatchQuiz ? finalData.questions : [finalData];
+
+                            // FORMAT questions for InteractiveQuiz if they use correctIndex format
+                            questionsToLoad = questionsToLoad.map(q => {
+                                if (q.correct_answer) return q; // Already formatted
+                                const letters = ['A', 'B', 'C', 'D'];
+                                let optsObj = {};
+                                let correctKey = 'A';
+                                if (Array.isArray(q.options)) {
+                                    q.options.forEach((opt, idx) => { if (idx < 4) optsObj[letters[idx]] = opt; });
+                                    if (q.correctIndex !== undefined) correctKey = letters[q.correctIndex] || 'A';
+                                } else {
+                                    optsObj = q.options || {};
+                                    correctKey = q.correctIndex !== undefined ? letters[q.correctIndex] : 'A';
+                                }
+                                return { question: q.question, options: optsObj, correct_answer: correctKey, explanation: q.explanation || '' };
+                            });
+
+                            // REDISTRIBUTE correct answers (prevents all-A pattern)
+                            questionsToLoad = redistributeCorrectAnswers(questionsToLoad);
 
                             setQuizQuestions(questionsToLoad);
                             setShowInteractiveQuiz(true);
