@@ -2328,12 +2328,17 @@ const App = () => {
 
         // Función helper para pedir UN lote de 5 preguntas (Total 15)
         const fetchSubset = async (batchIndex) => {
+            let batchModifier = "";
+            if (batchIndex === 0) batchModifier = "Concéntrate estrictamente en preguntas esenciales, conceptos generales y definiciones directas de la lectura.";
+            if (batchIndex === 1) batchModifier = "Concéntrate EXCLUSIVAMENTE en ideas secundarias, detalles específicos y ejemplos concretos. NO generes preguntas sobre el tema global ni repitas lo esencial.";
+            if (batchIndex === 2) batchModifier = "Concéntrate EN INFERENCIAS COMPLEJAS, vocabulario en contexto, deducciones implícitas y evaluación crítica. Deben ser totalmente DISTINTAS a las anteriores.";
+
             const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION TÉCNICA:
-1. Genera EXACTAMENTE 5 (CINCO) preguntas de selección múltiple (JSON).
+1. Genera EXACTAMENTE 5 (CINCO) preguntas de selección múltiple (JSON) TOTALMENTE ÚNICAS.
 2. Nivel: ${config.instruction}.
-3. LOTE PARCIAL ${batchIndex + 1}/3.
+3. LOTE PARCIAL ${batchIndex + 1}/3 - ENFOQUE DEL LOTE: ${batchModifier}
 4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["A",...], "correctIndex": 0, "explanation": "..."}]}.
-5. FORMATO MATH: Usa LaTeX solo para fórmulas matemáticas ($x^2$). NO encierres oraciones de texto normal en signos de pesos.
+5. FORMATO MATH: Usa LaTeX solo para fórmulas matemáticas ($x^2$).
 6. NO GENERES TEORIA. SOLO JSON.]`;
 
             try {
@@ -2344,7 +2349,7 @@ const App = () => {
                     nivel_estudiante: "1° Medio Chile",
                     readingTitle: TODAYS_SUBJECT.readingTitle,
                     readingContent: TODAYS_SUBJECT.readingContent,
-                    baseQuestions: TODAYS_SUBJECT.baseQuestions
+                    baseQuestions: batchIndex === 0 ? TODAYS_SUBJECT.baseQuestions : [] // OJO: Preguntas base SÓLO en el Lote 1 para evitar repetirlas 3 veces
                 };
 
                 // Añadimos un pequeño delay aleatorio para no saturar si n8n tiene rate limits
