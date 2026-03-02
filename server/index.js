@@ -427,7 +427,7 @@ ${baseQuestionsContext}
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
 1. Las preguntas deben evaluar interactivamente el cruce entre el Tema: "${tema}" y la Lectura, exigiendo pensamiento crítico e inferencia.
-2. IMPORTANTE CRÍTICO: Si la pregunta se basa en un texto o extracto específico de la lectura provista, DEBES INCLUIR ESE EXTRACTO DE TEXTO DENTRO DEL CAMPO "question". Ejemplo: "Lee el siguiente fragmento del texto: '...' \\n\\n ¿Qué significa X?". Si no incluyes el texto a leer en la pregunta, el alumno no sabrá qué responder.
+2. IMPORTANTE CRÍTICO: Si la pregunta se basa en un texto o extracto de la lectura provista, DEBES INCLUIR EL TEXTO COMPLETO DENTRO DEL CAMPO "question". NO IMPORTA EL LARGO DEL TEXTO, AUNQUE SEA UN CUENTO COMPLETO O VARIOS PÁRRAFOS, DEBES INCLUIRLO. Ejemplo: "Lee el siguiente texto: '[AQUÍ EL TEXTO COMPLETO SIN RECORTAR]' \\n\\n ¿Qué significa X?". Si no incluyes el texto completo a leer en la pregunta, el alumno no sabrá qué responder.
 3. Escribe una explicación clara de por qué esa es la opción correcta en "explanation", relacionándola con el aprendizaje de PAES o MINEDUC.
 4. CREA 4 opciones, asegurándote que UNA coincide con tu explicación.
 5. Al final, escribe la Letra correcta (A, B, C, D) en "correct_answer".
