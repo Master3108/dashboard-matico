@@ -132,49 +132,122 @@ const COLORS = {
 const LANGUAGE_SYLLABUS = [
     {
         session: 1,
-        unit: 'Diagnóstico',
-        topic: 'Comprensión Lectora: La vida simplemente',
-        videoTitle: 'Contexto Histórico (Opcional)',
+        unit: 'Comprensión Lectora',
+        topic: 'Coherencia y Cohesión Textual',
+        videoTitle: 'Introducción a la Comprensión Lectora',
         videoLink: 'https://www.youtube.com/watch?v=Fyy9nGemSqU',
-        readingTitle: 'La vida simplemente (Resumen y Análisis)',
-        readingContent: `En las profundidades de la ciudad de Rancagua, durante las primeras décadas del siglo XX, la existencia parecía transcurrir bajo una ley distinta a la del resto del mundo, una ley dictada por la geografía del desamparo y el peso del lodo. Allí se extendía el legendario "Callejón de la Muerte", un rincón donde la dignidad humana libraba una batalla diaria contra la precariedad y el olvido. Roberto, el protagonista de este relato, creció respirando el aire cargado de humedad de este callejón, donde las viviendas no eran más que precarias estructuras de tablas y latas que apenas lograban sostenerse en pie sobre un suelo que, con cada lluvia, se convertía en un pantano voraz. Para Roberto, el barro no era simplemente suciedad en los zapatos; era un elemento vivo, una presencia constante que simbolizaba la inmovilidad de la pobreza, esa fuerza que parecía querer succionar cualquier sueño de libertad que intentara elevarse por encima de los techos de zinc.
+        readingTitle: 'Capítulo 1: Coherencia y Cohesión',
+        readingContent: `Es fundamental que, previo al trabajo con las diferentes estrategias de comprensión lectora, examinemos las propiedades de un texto. Una parte importante de los problemas de comprensión se debe a que el estudiante no establece adecuadamente las conexiones entre oraciones al interior de los textos.
 
-El centro del universo de Roberto era una casa de remolienda, un burdel que funcionaba bajo la administración implacable de su tía, Doña Munda. Aquella mujer era el pilar de un negocio que florecía en medio de la miseria, una figura de autoridad que se movía entre el estrépito de las botellas, el humo denso de los cigarrillos "Yolanda" y las risas fingidas de las mujeres que allí trabajaban. Munda entendía la vida como un sistema de engranajes donde el dinero era el único aceite capaz de evitar el colapso, y su carácter se había forjado con la dureza de quien sabe que en el callejón no hay espacio para la debilidad. En un rincón opuesto de esa misma casa habitaba la madre de Roberto, una presencia de dulzura casi milagrosa en aquel ambiente. Ella era la cara de la resignación amorosa, una mujer que se desgastaba físicamente para que su hijo tuviera lo que el entorno le negaba: un rastro de limpieza en su ropa y una barrera protectora, aunque fuera frágil, contra la crudeza de lo que sucedía tras las cortinas del burdel. Roberto creció observando esta dualidad: la fuerza de la tía que garantizaba la supervivencia y la ternura de la madre que alimentaba su alma.
+Un texto es una unidad lingüística construida por una serie de enunciados coherentes y cohesionados que conforman una red de significación mayor. Para encontrarle sentido a un texto, necesitamos un hilo conductor o eje temático. Los procedimientos que entrelazan un texto para darle sentido y progresión temática se conocen como coherencia y cohesión.
 
-Durante su primera infancia, el mundo de Roberto se limitaba a los límites del callejón y al vasto "pajonal", un terreno baldío donde la naturaleza salvaje se mezclaba con los desperdicios de la ciudad. Allí, junto a otros niños de rodillas costrosas y mirada despierta, Roberto descubría los secretos de la vida a través del juego. En el pajonal, los niños eran reyes de reinos invisibles, pero también eran receptores de los miedos colectivos que los adultos sembraban para controlarlos. Historias sobre el "Viejo del Saco" o el "Culebrón" poblaban sus pesadillas nocturnas, dándole una forma fantástica a los peligros reales que acechaban en la oscuridad. Sin embargo, a medida que Roberto dejaba de ser un niño pequeño, empezó a notar que los hombres que llegaban a la casa de su tía eran más aterradores que cualquier monstruo de cuento; eran hombres consumidos por el alcohol, por el trabajo agotador en las minas o en el campo, que buscaban un momento de olvido en los brazos de mujeres que, al igual que ellos, solo intentaban sobrevivir un día más.
+LA COHERENCIA
+Se relaciona con la dimensión semántica. Cuando un texto es coherente es porque le hemos encontrado un sentido, identificando su tema o macroestructura. Cada párrafo aporta información nueva a la ya conocida (progresión temática).
 
-El gran quiebre en la vida de Roberto, el momento en que su horizonte dejó de ser una pared de madera podrida, fue su entrada en la escuela pública. Al principio, la escuela representaba un lugar extraño, con sus reglas rígidas y su atmósfera de orden que contrastaba violentamente con el caos del callejón. Pero fue allí donde Roberto se encontró con el poder transformador de las letras. Su profesor, un hombre que supo detectar la inteligencia vivaz que se escondía tras la apariencia humilde del niño, se convirtió en su mentor silencioso. Roberto descubrió que las palabras eran herramientas, llaves capaces de abrir celdas invisibles. Cada libro que caía en sus manos desde cuentos de aventuras hasta poemas de grandes autores era una invitación a un mundo donde la justicia no era un concepto abstracto y donde la belleza no estaba prohibida para los pobres. La lectura despertó en él una sensibilidad que lo alejaba de sus pares; mientras otros niños aceptaban su destino como obreros o delincuentes en potencia, Roberto empezaba a soñar con ser escritor, con tener una voz que pudiera narrar el dolor de su gente.
+LA COHESIÓN
+Se vincula a la dimensión lingüística y gramatical: son los vínculos sintácticos entre palabras y oraciones. Los mecanismos de cohesión (competencia retórica) son herramientas clave para comprender lo leído.
 
-Sin embargo, este despertar intelectual trajo consigo el veneno de la conciencia de clase. Al salir de su barrio para ir a la escuela o al centro de Rancagua, Roberto comenzó a percibir las miradas de los "otros". Notaba cómo las personas de las casas sólidas y jardines cuidados se apartaban al paso de alguien que venía del callejón, cómo la policía trataba con sospecha a cualquiera que tuviera el rastro del barro en su vestimenta. Surgió entonces una contradicción dolorosa en su pecho: el amor profundo y la gratitud que sentía por su madre y su tía se mezclaban con una vergüenza punzante por el origen de su sustento. Se sentía un traidor al avergonzarse de la casa donde recibía alimento, pero no podía evitar el asco moral que le producía el negocio de la prostitución y la degradación humana que veía a diario. Esta lucha interna marcó su paso de la niñez a la adolescencia, convirtiéndolo en un observador melancólico de su propia realidad.
-
-A medida que Roberto crecía, también veía cómo sus amigos de la infancia eran devorados por la maquinaria del callejón. Algunos terminaban en la cárcel, otros se perdían en el vicio del juego y el aguardiente, y muchos simplemente desaparecían en la mediocridad de un trabajo que les robaba la juventud. Roberto veía en ellos su propio reflejo si decidía rendirse. La novela detalla cómo las experiencias de Roberto en el burdel le enseñaron sobre la naturaleza humana más que cualquier manual de psicología: vio la soledad de los hombres, la desesperación de las mujeres y la fragilidad de las promesas. Todo ese cúmulo de experiencias fue fermentando en su interior. Comprendió que la frase "la vida simplemente" era lo que la gente decía para justificar su falta de lucha, para aceptar que el mundo era así y nada podía cambiarse. Pero él, armado con la educación que tanto le costó conseguir y con la pluma que empezaba a manejar con destreza, decidió que su vida no sería "simplemente" lo que el azar decidió.
-
-Hacia el final de su proceso de formación, Roberto logra una madurez que lo sitúa por encima de sus circunstancias. Comprende que no necesita borrar su pasado ni renegar de su madre para ser alguien; por el contrario, su origen es su mayor fuente de verdad. El libro concluye con una imagen de esperanza contenida: Roberto sabe que el camino hacia afuera del callejón es largo y que todavía tendrá que pisar mucho barro, pero su mente ya ha cruzado el pajonal y ha llegado a las estrellas. Ha entendido que la educación no es solo acumular datos, sino la capacidad de entender el mundo para transformarlo. Al final, Roberto se convierte en el cronista de los olvidados, en aquel que dará testimonio de que en el Callejón de la Muerte también hubo amor, sueños y una lucha incansable por la dignidad. La historia termina no con un final feliz de cuento de hadas, sino con la victoria real de un joven que ha conquistado su propia identidad y que está listo para escribir su destino, dejando atrás la resignación para abrazar la posibilidad de una vida que sea mucho más que "simplemente" existir.`
+Mecanismos principales:
+a. Correferencia sinonímica: Usar sinónimos para evitar repeticiones.
+b. Correferencia por frase nominal: Sustituir por una expresión equivalente o proforma nominal.
+c. Correferencia pronominal: Utilización de pronombres (ella, estos, etc.).
+d. Correferencia adverbial: Sustituir un lugar o idea por un adverbio (allí, ahí).
+e. Correferencia adjetiva: Sustituir por un adjetivo.
+f. La elipsis: Omisión de un elemento que ya se subentiende por contexto.`,
+        baseQuestions: [
+            {
+                q: "Lee el siguiente fragmento del libro base: 'El graffiti también marca un territorio... Así, se afirma la presencia de un grupo humano en un lugar específico... Un claro ejemplo de esto es la pintura de Jean Michel Basquiat'. Según los mecanismos de cohesión vistos, ¿cuál es el referente de la palabra 'Esto'?",
+                options: [
+                    "El barrio o la estación de metro.",
+                    "Que un pictograma puede abrir una vía de reconocimiento público.",
+                    "La violencia contra los negros en Estados Unidos.",
+                    "La obra del autor anónimo."
+                ],
+                answer: "Que un pictograma puede abrir una vía de reconocimiento público."
+            },
+            {
+                q: "Dentro de los mecanismos de cohesión, ¿en qué consiste la elipsis?",
+                options: [
+                    "En reemplazar una palabra por su sinónimo directo.",
+                    "En utilizar pronombres para indicar tiempo o espacio.",
+                    "En omitir un elemento del texto porque el contexto ya permite subentenderlo.",
+                    "En el cambio de dimensión semántica del párrafo completo."
+                ],
+                answer: "En omitir un elemento del texto porque el contexto ya permite subentenderlo."
+            },
+            {
+                q: "Si en un texto digo: 'Fernando compra palitas. Le encantan las maduras'. ¿Qué mecanismo de cohesión se empleó en la palabra 'maduras'?",
+                options: [
+                    "Correferencia pronominal.",
+                    "Elipsis.",
+                    "Correferencia sinonímica.",
+                    "Correferencia adjetiva."
+                ],
+                answer: "Correferencia adjetiva."
+            },
+            {
+                q: "¿Qué diferencia teórica fundamental establece el texto entre 'Coherencia' y 'Cohesión'?",
+                options: [
+                    "La coherencia es gramatical y la cohesión es ortográfica.",
+                    "La coherencia es semántica (significado o tema global) y la cohesión es lingüística y sintáctica (vínculos de palabras).",
+                    "No hay diferencia, ambas propiedades refieren al uso de conectores y pronombres.",
+                    "La cohesión permite la progresión temática global y la coherencia sustituye palabras."
+                ],
+                answer: "La coherencia es semántica (significado o tema global) y la cohesión es lingüística y sintáctica (vínculos de palabras)."
+            }
+        ]
     },
     {
         session: 2,
-        unit: 'Narrativa',
-        topic: 'Narrador y Conflicto: Frankenstein',
-        videoTitle: 'LENGUAJE | El Narrador | Clase N°4',
-        videoLink: 'https://www.youtube.com/watch?v=0Vv5aIgDp9c',
-        readingTitle: 'Frankenstein (Fragmento)',
-        readingContent: `La historia de Victor Frankenstein no comienza en un laboratorio oscuro, sino en la idílica y refinada ciudad de Ginebra, rodeado de una familia que personificaba la bondad y el orden. Victor fue un niño amado, el hijo primogénito de Alphonse Frankenstein, un hombre de leyes respetado, y de Caroline Beaufort, una mujer cuya compasión la llevaba a buscar a los más necesitados. Fue en uno de esos viajes de caridad donde la familia adoptó a Elizabeth Lavenza, una niña de una belleza casi angelical que se convirtió en la compañera inseparable de Victor y, con el tiempo, en el amor de su vida. Junto a ellos creció también Henry Clerval, un joven de espíritu noble y poético que representaba la humanidad y el arte, en contraste con la mente analítica y curiosa de Victor. Esta infancia perfecta, sin embargo, sembró en el joven Frankenstein una sed de conocimiento que no conocía límites. Mientras sus amigos se interesaban por la política o la literatura, Victor se sumergía en los textos antiguos de alquimistas como Cornelio Agrippa y Paracelso, buscando en sus páginas el secreto para dominar la vida y la muerte.
+        unit: 'Estrategias de Comprensión',
+        topic: 'Extraer e Identificar Información Explícita',
+        videoTitle: 'Matico - Información Explícita',
+        videoLink: 'https://www.youtube.com/watch?v=R9K1XW1M3N0',
+        readingTitle: 'CAPÍTULO 2: EXTRAER E IDENTIFICAR INFORMACIÓN EXPLÍCITA',
+        readingContent: `La habilidad de rastrear información literal de un texto constituye el punto de partida de la comprensión lectora, puesto que implica haber decodificado el texto cabalmente y haber establecido relaciones semánticas y sintácticas dentro del mismo.
 
-La tragedia golpeó su hogar cuando la fiebre escarlatina se llevó a su madre, cuya última voluntad fue ver a Victor y Elizabeth unidos en matrimonio. Este dolor, en lugar de detenerlo, impulsó a Victor hacia la Universidad de Ingolstadt en Alemania, donde su mente brillante se enfrentó a la ciencia moderna. Allí, bajo la tutela del profesor Waldman, quien lo alentó a explorar los misterios de la creación, Victor se sumergió en una obsesión que lo aisló del mundo. Durante dos años, dejó de escribir a su familia, descuidó su salud y pasó noches enteras en cementerios y salas de disección, estudiando la descomposición de la carne para entender cómo devolverle la chispa de la vida. Su meta era ambiciosa: quería crear una nueva especie que bendijera a su creador, una raza de seres que no conocieran la enfermedad ni la muerte prematura. En su ceguera científica, no se detuvo a pensar en las consecuencias morales de jugar a ser Dios.
+El primer nivel de lectura que se debe considerar al comprender un texto es el nivel literal:
+- Explícito: Todo aquello que está dicho en el texto. Se obtiene decodificando el significado de las palabras del texto y estableciendo vínculos entre ellas.
+- Implícito: Todo aquello que debe ser deducido o interpretado de un texto a partir de la información proporcionada.
 
-La culminación de sus esfuerzos llegó en una lúgubre noche de noviembre, mientras la lluvia golpeaba las ventanas de su laboratorio. Utilizando una mezcla de química, galvanismo y restos humanos que había recolectado con gran esfuerzo, Victor logró lo imposible. Al aplicar la descarga final, vio cómo el cuerpo gigantesco que había construido abría sus ojos de un amarillo apagado. Pero en ese instante de triunfo, la belleza de su sueño se transformó en una pesadilla insoportable. Al ver la piel amarillenta que apenas cubría los músculos y las arterias, el cabello negro lustroso y los dientes de una blancura aterradora, Victor sintió un asco que le recorrió la médula. No pudo soportar la visión de aquel ser que él mismo había diseñado para ser hermoso y que ahora le devolvía una mirada de muda súplica. Preso del pánico, Victor huyó de la habitación, abandonando a su creación a su suerte, esperando que el olvido o la muerte se llevaran aquel error. Sin embargo, cuando regresó a su habitación escoltado por su amigo Henry Clerval, quien acababa de llegar a Ingolstadt, la criatura había desaparecido.
-
-Mientras Victor caía en una fiebre nerviosa que lo mantuvo postrado durante meses, la criatura iniciaba su propio y doloroso viaje por el mundo. Dotado de una fuerza sobrehumana y una resistencia increíble, el ser vagó por los bosques, sufriendo el acoso del hambre, la sed y el frío. Su mente, inicialmente como la de un niño recién nacido, procesaba los sonidos de los pájaros y el calor del sol con una mezcla de asombro y miedo. Su primer contacto con la humanidad fue desastroso: al entrar en una aldea buscando comida, fue recibido con piedras y gritos de terror. Comprendió rápidamente que su apariencia era una barrera insuperable. Buscando refugio, se escondió en un cobertizo adosado a una pequeña cabaña en el bosque, donde vivía la familia De Lacey. A través de una grieta en la pared, el ser se convirtió en un observador invisible de la vida de esta familia compuesta por un anciano ciego, su hijo Felix y su hija Agatha.
-
-Durante casi un año, el monstruo vivió en las sombras, alimentándose de las sobras y ayudando a los De Lacey de forma anónima, recolectando leña por las noches para que Felix no tuviera que esforzarse tanto. Al observar a los humanos, aprendió el significado de las palabras, los conceptos de propiedad, familia y amor. La llegada de Safie, una joven extranjera, le permitió aprender a hablar y leer al mismo ritmo que ella mientras Felix le enseñaba. El ser encontró tres libros en el bosque: "El paraíso perdido", "Las vidas de Plutarco" y "Las cuitas del joven Werther", los cuales leyó con una sed voraz. Estas obras le enseñaron sobre la historia de las naciones, los sentimientos humanos y, fatalmente, sobre la creación y el abandono. Al leer los diarios de Victor que había guardado en su abrigo al huir del laboratorio, comprendió finalmente su origen: él no era un hijo amado, sino un monstruo despreciado por su propio padre. Su corazón, inicialmente lleno de benevolencia, comenzó a llenarse de una amargura profunda.
-
-El punto de no retorno ocurrió cuando la criatura intentó presentarse ante el anciano De Lacey, confiando en que su ceguera le permitiría juzgarlo por su voz y no por su aspecto. El anciano lo escuchó con amabilidad, pero cuando el resto de la familia regresó, el horror se desató. Felix, creyendo que el monstruo atacaba a su padre, lo golpeó con furia. El ser huyó hacia el bosque, pero esta vez la tristeza se había transformado en un odio ardiente. Al ver que incluso los humanos más nobles lo rechazaban, decidió declarar una guerra eterna contra la especie humana y, especialmente, contra su creador. En su camino hacia Ginebra, salvó a una niña de morir ahogada, solo para recibir un disparo de su padre, quien creyó que el monstruo intentaba hacerle daño. Este fue el último clavo en la tumba de su bondad. Al llegar a las afueras de Ginebra, se encontró con un niño pequeño, William Frankenstein. Al saber que el niño era pariente de su creador, lo asesinó con sus propias manos y colocó un retrato que el niño llevaba en el vestido de Justine, una joven sirvienta de la familia, para incriminarla.
-
-Victor, destrozado por la muerte de su hermano y la posterior ejecución de la inocente Justine, buscó consuelo en las montañas. Fue en el glaciar de Montanvert donde creador y criatura se encontraron cara a cara. Allí, en un discurso de una elocuencia desgarradora, el monstruo le relató sus sufrimientos y le hizo una única petición: "Soy malvado porque soy infeliz. Hazme una compañera tan deforme como yo para que podamos vivir aislados del hombre". Victor, movido por la compasión y el miedo, aceptó el trato. Viajó a Inglaterra y luego a las remotas islas Orcadas en Escocia para comenzar su segunda obra. Sin embargo, mientras trabajaba en la nueva criatura, lo asaltaron dudas atroces: ¿y si ella fuera más malvada que el primero? ¿y si procreaban una raza de demonios? Al ver al monstruo observándolo a través de la ventana con una sonrisa macabra, Victor destruyó el cuerpo de la mujer frente a sus ojos. El ser juró venganza con una frase que sellaría el destino de Victor: "Estaré contigo en tu noche de bodas".
-
-La venganza fue sistemática y cruel. Primero, la criatura asesinó a Henry Clerval, haciendo que Victor fuera arrestado injustamente en Irlanda. Tras recuperar su libertad, Victor regresó a Ginebra para casarse con Elizabeth, esperando que el matrimonio fuera un refugio contra la sombra que lo perseguía. Pero en la noche de bodas, mientras Victor buscaba al monstruo por la casa armado con pistolas, escuchó el grito agónico de su esposa. El ser había cumplido su promesa, estrangulando a Elizabeth en su propia cama. La muerte de Elizabeth provocó también el fallecimiento del padre de Victor, quien no pudo soportar tanto dolor. Habiéndolo perdido todo, Victor Frankenstein transformó su remordimiento en una furia ciega y dedicó sus últimos días a perseguir a su creación por todo el mundo, desde los desiertos de la Tartaria hasta los hielos eternos del Polo Norte.
-
-La persecución terminó cuando un Victor exhausto y moribundo fue rescatado por el barco del capitán Robert Walton, un explorador que buscaba el paso del norte. Victor le confió su historia como una advertencia sobre los peligros de la ambición intelectual sin ética. Tras la muerte de Victor a bordo del barco, Walton encontró a la criatura llorando sobre el cadáver de su creador. En un último monólogo lleno de desesperación, el ser confesó que su odio había sido el resultado de una soledad que ningún humano podía imaginar. Afirmó que su crimen más grande había sido el asesinato de su propia alma. Sin nadie más en el mundo que le diera sentido a su existencia, la criatura le prometió a Walton que se dirigiría al extremo más lejano del írtico para construir una pira funeraria y arrojarse a las llamas, terminando así con el sufrimiento de haber sido el único de su especie. La criatura desapareció en la oscuridad y la distancia, dejando tras de sí la advertencia eterna sobre la responsabilidad que conlleva dar vida a lo que no estamos dispuestos a amar.`
+Procedimiento para rastrear información literal:
+1. Leer el texto completo: Te dará una visión global del discurso y de su propósito.
+2. Leer y analizar la pregunta: Identificar los elementos relevantes de ella, generalmente los referentes, adjetivos y verbos.
+3. Buscar en el texto la información pertinente: Subrayar o localizar la información, prestando atención a los recursos de correferencia (mecanismos que utiliza un discurso para referirse a un elemento mencionado con anterioridad, como pronombres o la frase nominal).
+4. Contrastar la información extraída con las alternativas: Buscar coincidencias directas o parafraseos formales.
+5. Comprobar la respuesta: Justificando por qué las otras opciones no son correctas.`,
+        baseQuestions: [
+            {
+                q: "Lee el siguiente fragmento del libro base: '...acordaron la implementación de ocho propuestas para avanzar en la igualdad de género, medidas que ahora deberán ser validadas en las distintas comunidades universitarias antes de ser aprobadas definitivamente.' ¿Qué se necesita para que las ocho propuestas se aprueben definitivamente?",
+                options: [
+                    "Ser validadas por las comunidades de cada universidad.",
+                    "Ser revisadas por las comunidades y asegurar que no son discriminatorias.",
+                    "Ser aprobadas por el Consejo Asesor del Ministerio de Educación.",
+                    "Ser reconocidas por los diecisiete rectores que participan del Consejo."
+                ],
+                answer: "Ser validadas por las comunidades de cada universidad."
+            },
+            {
+                q: "Según el texto base sobre el procedimiento de comprensión: ¿Por qué es fundamental prestar atención a los 'recursos de correferencia' al buscar información en el texto?",
+                options: [
+                    "Porque son una leyenda urbana.",
+                    "Porque permiten comprender cómo los enunciados aluden a información leída uniendo las distintas partes del discurso.",
+                    "Porque es el primer nivel de lectura que se debe considerar para deducir lo implícito.",
+                    "Porque nos indica la manera en que la emisora estructuró visualmente el texto para responder más rápido."
+                ],
+                answer: "Porque permiten comprender cómo los enunciados aluden a información leída uniendo las distintas partes del discurso."
+            },
+            {
+                q: "Según lo expuesto en la teoría del libro sobre la habilidad de localizar: ¿Qué es lo 'Explícito'?",
+                options: [
+                    "Todo aquello que debe ser deducido o interpretado de un texto a partir de la información proporcionada.",
+                    "La habilidad de establecer un nuevo propósito al discurso ignorando a los referentes verbales.",
+                    "Todo aquello que está dicho en el texto, descifrando el significado de las palabras y los vínculos formales.",
+                    "Las inferencias realizadas sobre eventos de los que carecen pruebas tangibles, pero son probables."
+                ],
+                answer: "Todo aquello que está dicho en el texto, descifrando el significado de las palabras y los vínculos formales."
+            }
+        ]
     },
     {
         session: 3,
@@ -2044,7 +2117,10 @@ const App = () => {
         color: currentSubject === 'LENGUAJE' ? '#FF9F43' : (currentSubject === 'FISICA' ? '#9D4EDD' : (currentSubject === 'QUIMICA' ? '#E84393' : (currentSubject === 'BIOLOGIA' ? '#2ECC71' : (currentSubject === 'HISTORIA' ? '#E67E22' : '#4D96FF')))),
         icon: currentSubject === 'LENGUAJE' ? BookOpen : (currentSubject === 'FISICA' ? Atom : (currentSubject === 'QUIMICA' ? FlaskConical : (currentSubject === 'BIOLOGIA' ? Dna : (currentSubject === 'HISTORIA' ? Globe : Brain)))),
         oa_title: `Sesión ${TODAYS_SESSION.session}: ${TODAYS_SESSION.topic}`,
-        video_link: TODAYS_SESSION.videoLink
+        video_link: TODAYS_SESSION.videoLink,
+        readingTitle: TODAYS_SESSION.readingTitle,
+        readingContent: TODAYS_SESSION.readingContent,
+        baseQuestions: TODAYS_SESSION.baseQuestions
     };
 
     // --- SMART CALENDAR LOGIC (MATICO PRODUCTION PLAN) ---
@@ -2237,7 +2313,10 @@ const App = () => {
                     sujeto: currentSubject,
                     accion: 'Generar Quiz de Validación', // Reutilizamos acción para mantener consistencia
                     tema: subsetPrompt,
-                    nivel_estudiante: "1° Medio Chile"
+                    nivel_estudiante: "1° Medio Chile",
+                    readingTitle: TODAYS_SUBJECT.readingTitle,
+                    readingContent: TODAYS_SUBJECT.readingContent,
+                    baseQuestions: TODAYS_SUBJECT.baseQuestions
                 };
 
                 // Añadimos un pequeño delay aleatorio para no saturar si n8n tiene rate limits
@@ -2844,7 +2923,10 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 accion: n8nAction,
                 tema: finalTopic, // Use modified topic
                 nivel_estudiante: "1° Medio Chile",
-                numero_pregunta: questionNumberOverride || quizQuestionNumber
+                numero_pregunta: questionNumberOverride || quizQuestionNumber,
+                readingTitle: TODAYS_SUBJECT.readingTitle,
+                readingContent: TODAYS_SUBJECT.readingContent,
+                baseQuestions: TODAYS_SUBJECT.baseQuestions
             };
 
             if (image) {

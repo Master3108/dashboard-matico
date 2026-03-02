@@ -307,16 +307,26 @@ app.post('/webhook/MATICO', async (req, res) => {
         // 2A. GENERAR TEORÍA LÚDICA
         if (currentAction.toLowerCase().includes('teoría') || currentAction.toLowerCase().includes('teoria')) {
             const tema = body.tema || body.topic || 'Matemáticas General';
-            const systemMsg = `Eres Matico 🐶, un mentor carismático y experto en el currículum chileno de 1° Medio.
+            let systemMsg = `Eres Matico 🐶, un mentor carismático y experto en el currículum chileno de 1° Medio.
 Responde SIEMPRE en Markdown legible y amigable para un estudiante joven.
 Usa emojis frecuentemente para hacer la lectura divertida y motivadora.
 Estructura tu respuesta con títulos (##), subtítulos (###), listas, **negritas** y ejemplos claros.
 NUNCA respondas con JSON crudo. Solo texto enriquecido en Markdown.
 Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
 
+            let userPrompt = tema;
+
+            // Inyección de Contenido Base (Moraleja)
+            if (body.readingContent) {
+                systemMsg += `\n\n**INSTRUCCIÓN CRÍTICA DE CONTENIDO BASE:**
+Utiliza el texto proporcionado por el usuario como tu *único* marco teórico y empírico. 
+Explica la materia al alumno basándote estrictamente en él. Si la materia requiere mayor profundización para ser entendida, es escueta, o le faltan conectores lógicos, **tu deber es rellenar esos vacíos y nutrir la explicación con total precisión**. No inventes temas fuera del marco del texto base.`;
+                userPrompt = `Tema de la Sesión: ${tema}\n\nMATERIAL DE LECTURA BASE (Verdad Absoluta):\n${body.readingTitle}\n${body.readingContent}`;
+            }
+
             const comp = await openai.chat.completions.create({
                 model: "gpt-4o",
-                messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
+                messages: [{ role: "system", content: systemMsg }, { role: "user", content: userPrompt }]
             });
             return res.json({ output: comp.choices[0].message.content });
         }
@@ -331,13 +341,20 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
             let aiTemperature = 0.2; // Por defecto baja para matemáticas
 
             if (subject.includes('LENGUAJE') || subject.includes('LECTURA')) {
-                // PROMPT PARA LENGUAJE / COMPRENSIÓN LECTORA
+                // PROMPT PARA LENGUAJE / COMPRENSIÓN LECTORA (INTEGRACIÓN MORALEJA)
                 aiTemperature = 0.5; // Un poco más creativo para redactar textos
+
+                let baseQuestionsContext = '';
+                if (body.baseQuestions && Array.isArray(body.baseQuestions) && body.baseQuestions.length > 0) {
+                    baseQuestionsContext = `\nPREGUNTAS BASE DEL LIBRO:\n${JSON.stringify(body.baseQuestions, null, 2)}
+                    \n**REGLA DE ORO:** Existen preguntas base proporcionadas arriba. DEBES incluirlas en tu JSON final sin alterar su sentido original. Si notas errores (ej. faltan alternativas), debes RELLENAR Y COMPLEMENTAR PERFECTAMENTE. Si se requieren generar más preguntas para llegar a 5, constrúyelas basándote 100% en la lectura ingresada.`;
+                }
+
                 systemMsg = `Eres Matico, profesor experto en Lenguaje y Comunicación del currículum chileno.
-El estudiante aprenderá: ${tema}.
+El estudiante aprenderá: ${tema}.${body.readingContent ? `\n\nLECTURA BASE:\n${body.readingContent}` : ''}${baseQuestionsContext}
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. Las preguntas deben evaluar comprensión lectora avanzada, pensamiento crítico e inferencia.
+1. Las preguntas deben evaluar comprensión lectora avanzada, pensamiento crítico e inferencia basadas en el texto.
 2. Escribe una explicación clara del porqué esa es la opción correcta en "explanation".
 3. CREA 4 opciones, asegurándote que UNA coincide con tu explicación.
 4. Al final, escribe la Letra correcta (A, B, C, D) en "correct_answer".
@@ -359,8 +376,8 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
   ]
 }
 
-Genera SOLO JSON válido sin markdown.`;
-                verifyPrompt = `Lee la pregunta de comprensión crítica cuidadosamente. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta basándote en la inferencia lógica.
+Genera SOLO JSON válido sin markdown. No omitas las preguntas base si fueron provistas.`;
+                verifyPrompt = `Lee la pregunta de comprensión crítica cuidadosamente. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta basándote en la inferencia lógica o en el fragmento leído.
 Estructura JSON:
 {"my_calculation": "tu razonamiento aquí", "correct_letter": "LETRA FINAL"}`;
 
