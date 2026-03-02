@@ -132,9 +132,9 @@ const COLORS = {
 const LANGUAGE_SYLLABUS = [
     {
         session: 1,
-        unit: 'Narrativa',
-        topic: 'La Figura de Héroe: El Mío Cid',
-        videoTitle: '¿Qué es el género narrativo?',
+        unit: 'Unidad 1: La Libertad',
+        topic: 'Nivelación y Diagnóstico',
+        videoTitle: 'Introducción a la Comprensión Lectora',
         videoLink: 'https://www.youtube.com/watch?v=Fyy9nGemSqU',
         readingTitle: 'Capítulo 1: Coherencia y Cohesión',
         readingContent: `Es fundamental que, previo al trabajo con las diferentes estrategias de comprensión lectora, examinemos las propiedades de un texto. Una parte importante de los problemas de comprensión se debe a que el estudiante no establece adecuadamente las conexiones entre oraciones al interior de los textos.
@@ -199,8 +199,8 @@ f. La elipsis: Omisión de un elemento que ya se subentiende por contexto.`,
     },
     {
         session: 2,
-        unit: 'Narrativa',
-        topic: 'Narrador y Conflicto: Frankenstein',
+        unit: 'Unidad 1: La Libertad',
+        topic: 'Narrador y Conflicto',
         videoTitle: 'LENGUAJE | El Narrador | Clase N°4',
         videoLink: 'https://www.youtube.com/watch?v=0Vv5aIgDp9c',
         readingTitle: 'CAPÍTULO 2: EXTRAER E IDENTIFICAR INFORMACIÓN EXPLÍCITA',
@@ -251,26 +251,54 @@ Procedimiento para rastrear información literal:
     },
     {
         session: 3,
-        unit: 'Narrativa',
-        topic: 'Terror Gótico: Drácula',
-        videoTitle: 'Intertextualidad-Clase N°16',
+        unit: 'Unidad 1: La Libertad',
+        topic: 'Intertextualidad',
+        videoTitle: 'Intertextualidad - Clase N°16',
         videoLink: 'https://www.youtube.com/watch?v=NBNdpV4AG1g',
-        readingTitle: 'Drácula (Resumen y Análisis)',
-        readingContent: `La historia de la oscuridad más antigua comienza en las páginas del diario de Jonathan Harker, un joven y ambicioso abogado inglés que emprende un viaje agotador hacia los confines de Europa del Este. Su destino son los montes Cárpatos, en la región de Transilvania, donde debe cerrar un negocio inmobiliario con un noble local: el Conde Drácula. A medida que el tren se interna en paisajes cada vez más salvajes y neblinosos, Jonathan percibe un cambio en la atmósfera. Los campesinos locales, al enterarse de su destino final, lo miran con una mezcla de lástima y terror absoluto; le entregan crucifijos, rosarios y ramos de ajo, murmurando oraciones para protegerlo de algo que llaman el "Vurdalak". A pesar de su escepticismo inglés y su fe en la razón moderna, Jonathan empieza a sentir una inquietud creciente cuando, al llegar al desfiladero de Borgo en medio de una noche cerrada, es recogido por un carruaje conducido por un hombre cuya fuerza física parece sobrehumana y cuya mirada brilla con un fulgor rojizo bajo la luz de las antorchas.
+        readingTitle: 'Capítulo 3: Síntesis Local y Global',
+        readingContent: `La síntesis es una de las habilidades fundamentales en la comprensión lectora. El objetivo central es identificar el tema o las ideas centrales de un texto a nivel de un párrafo (local) o del texto completo (global). Esto implica haber seleccionado correctamente la información esencial, descubriendo la macroestructura o asunto determinado.
 
-Al llegar al imponente y ruinoso castillo de Drácula, Jonathan es recibido por el mismo Conde, un hombre de edad avanzada, vestido de negro de pies a cabeza, con un rostro extremadamente pálido, labios inusualmente rojos y dedos largos que terminan en uñas afiladas. Los primeros días transcurren bajo una cortesía aristocrática, pero pronto el abogado descubre que el castillo es una prisión de piedra. Jonathan nota con horror que Drácula no tiene reflejo en los espejos, que posee una fuerza capaz de doblar barras de hierro y que nunca se le ve comer ni beber. Una tarde, al observar por la ventana, ve al Conde trepar por los muros verticales del castillo como si fuera una lagartija gigante, lo que finalmente le confirma que está ante un ser que no pertenece al mundo de los vivos. Su terror alcanza el clímax cuando, tras desobedecer las advertencias del Conde, es atacado por tres mujeres fantasmales de una belleza letal que habitan en las sombras de las salas prohibidas, seres sedientos de sangre que solo son detenidos por la intervención del propio Drácula, quien les promete que Jonathan será de ellas una vez que sus negocios en Londres hayan concluido.
+TEMA: ¿De qué trata el texto? Suele responderse con pocas palabras o un concepto clave (Sujeto Temático).
+IDEA PRINCIPAL: ¿Qué se dice sobre el Tema? (Sujeto Temático + Ideas Complementarias dominantes).
 
-Mientras Jonathan busca desesperadamente una salida de aquella fortaleza rodeada por el aullido constante de los lobos, la acción se traslada a Inglaterra, específicamente a la pintoresca costa de Whitby. Allí, Mina Murray, la virtuosa prometida de Jonathan, espera noticias de su amado mientras acompaña a su mejor amiga, Lucy Westenra, una joven de gran belleza que acaba de recibir tres propuestas de matrimonio simultáneas. La calma se rompe durante una tormenta de proporciones apocalípticas que trae consigo al Demeter, un barco ruso que llega a puerto sin un solo tripulante vivo a bordo. El capitán yace muerto, atado al timón con un rosario entre las manos, y un enorme perro negro salta desde la cubierta desapareciendo entre la niebla. Nadie sospecha que en las bodegas del barco viajan cincuenta cajas llenas de tierra sagrada de Transilvania, el sustento vital que el Conde Drácula necesita para establecer su imperio de terror en la populosa Londres.
+LAS MACRORREGLAS (Herramientas para extraer contenido fundamental):
+Son procesos mentales para resumir información relevante (creadas por van Dijk):
 
-Poco después del desembarco, la salud de Lucy empieza a deteriorarse de una manera que desafía toda lógica médica. Se vuelve sonámbula y, una noche, Mina la encuentra desmayada en un banco del acantilado bajo la luz de la luna, con una figura oscura inclinada sobre ella. A partir de ese momento, Lucy se vuelve cada vez más pálida y débil, y en su cuello aparecen dos pequeñas marcas rojas que parecen negarse a cicatrizar. Su prometido, Arthur Holmwood, ahora Lord Godalming, pide ayuda a su amigo el doctor John Seward, quien dirige un manicomio cercano. Seward, desconcertado por el caso de Lucy y por el extraño comportamiento de uno de sus pacientes, un hombre llamado Renfield que devora moscas y arañas creyendo que así absorbe su fuerza vital, decide convocar a su antiguo maestro en ímsterdam: el eminente profesor Abraham Van Helsing.
-
-Van Helsing representa la síntesis perfecta entre la ciencia moderna y el conocimiento de las tradiciones antiguas. Al examinar a Lucy, comprende de inmediato que no se enfrenta a una anemia común, sino a un depredador sobrenatural. A pesar de realizar múltiples transfusiones de sangre de todos los hombres del grupo y de rodear la habitación de Lucy con flores de ajo y crucifijos, el Conde Drácula logra burlar las defensas utilizando sus poderes para controlar a los animales y la niebla. Lucy muere, pero para Van Helsing su fallecimiento es solo el inicio de una transformación aterradora. El profesor debe convencer a Arthur, Seward y al aventurero estadounidense Quincey Morris de que Lucy se ha convertido en una "No-Muerta" que ahora acecha a los niños de la ciudad bajo el nombre de la "Dama de Blanco". En una de las escenas más intensas de la obra, el grupo desciende a la cripta de los Westenra, donde Arthur, guiado por la mano de Van Helsing, atraviesa el corazón de su amada con una estaca de madera para liberar su alma de la maldición del vampirismo.
-
-Tras el descanso eterno de Lucy, el grupo de hombres se une a Jonathan Harker, quien ha logrado escapar de Transilvania, y a Mina, quien se convierte en el cerebro logístico del equipo. Mina organiza todos los diarios, cartas y recortes de prensa en un registro cronológico que les permite entender los movimientos del Conde. Descubren que Drácula ha comprado una propiedad llamada Carfax, justo al lado del manicomio de Seward, y que está ocultando allí sus cajas de tierra. El Conde, al sentirse acorralado por la inteligencia del grupo, decide atacar a su eslabón más fuerte: Mina. Entra en sus aposentos y, tras asesinar a Renfield por intentar protegerla, obliga a Mina a beber sangre de su propio pecho, creando un vínculo místico y maldito. Drácula le advierte que ahora ella es de su misma sangre y que, tras su muerte, se convertirá en una de sus compañeras eternas.
-
-Este acto de crueldad se convierte en el mayor error del Conde. Van Helsing descubre que, debido al "bautismo de sangre", Mina puede entrar en un estado de hipnosis al amanecer y al anochecer, permitiéndole ver y oír lo que el Conde percibe. Con esta información, el grupo comienza una frenética cacería por todo Londres, purificando con hostias consagradas cada una de las cajas de tierra de Drácula, dejándolo sin refugios donde esconderse durante el día. Sintiéndose vulnerable en una tierra que ya no le es propicia, el Conde huye de regreso a Transilvania por mar, creyendo que su antiguo castillo le devolverá la seguridad. Sin embargo, los cazadores inician una carrera contra el tiempo a través de Europa, viajando por tierra y río para interceptar el carromato de Drácula antes de que el sol se ponga en las faldas de los Cárpatos.
-
-El clímax de la novela ocurre bajo la sombra del imponente castillo de Drácula, en medio de una tormenta de nieve. El grupo se ha dividido: Van Helsing y Mina viajan directamente al castillo, donde el profesor logra destruir a las tres mujeres vampiras en sus tumbas, mientras que Jonathan, Arthur, Seward y Quincey persiguen al carromato protegido por gitanos que transporta el ataúd del Conde. Justo cuando los últimos rayos del sol están por desaparecer y el poder de Drácula alcanzaría su máximo esplendor, se desata una batalla feroz. Quincey Morris resulta herido de muerte, pero en un último esfuerzo de valentía, Jonathan Harker corta el cuello del Conde con su gran cuchillo mientras el puñal de Quincey atraviesa el corazón del monstruo. En un suspiro de alivio absoluto, el cuerpo del Conde Drácula se desintegra convirtiéndose en cenizas, y la marca roja de la maldición en la frente de Mina desaparece para siempre. La historia concluye con el sacrificio de Quincey y una reflexión años después sobre cómo el amor, la lealtad y la unión de la ciencia con la fe lograron vencer a la oscuridad más profunda, dejando un legado de paz para las futuras generaciones.`
+a. La Selección: Solo prestar atención a las partes del texto que son relevantes y dominantes (conceptos clave que se reiteran).
+b. La Supresión: Eliminar información que no es totalmente relevante o constituye una idea secundaria (ejemplificaciones, redundancias, detalles menores). Si se suprime, no se altera el sentido del texto.
+c. La Generalización: Agrupar ideas, palabras, oraciones o segmentos que por su afinidad semántica pueden agruparse bajo un solo concepto (ej: agrupar Francia, España, Egipto bajo "distintos países").`,
+        baseQuestions: [
+            {
+                q: "Según el texto base, ¿en qué consiste la macrorregla de Generalización?",
+                options: [
+                    "En eliminar todas las ejemplificaciones, redundancias y detalles menores del texto sin alterar su sentido.",
+                    "En agrupar ideas, palabras o segmentos bajo un solo concepto o campo semántico afín.",
+                    "En establecer cuál de los subtemas es la causa del tema principal del texto leído.",
+                    "En determinar el sujeto temático a partir del análisis exclusivo del primer párrafo."
+                ],
+                answer: "En agrupar ideas, palabras o segmentos bajo un solo concepto o campo semántico afín."
+            },
+            {
+                q: "Lee el siguiente fragmento del libro base sobre Viktor Frankl: 'Ante una situación anormal, la reacción anormal constituye una conducta normal. Aun nosotros, los psiquiatras, esperamos que los recursos de un hombre ante una situación anormal, como la de estar internado en un asilo, sean anormales en proporción a su grado de normalidad. La reacción de un hombre tras su internamiento en un campo de concentración representa igualmente un estado de ánimo anormal, pero juzgada objetivamente es normal y, como más tarde demostraré, una reacción típica dadas las circunstancias'.\n¿Cuál de las siguientes opciones sintetiza mejor el contenido del fragmento anterior?",
+                options: [
+                    "Un asilo y un campo de concentración son instituciones similares.",
+                    "Lo que es normal en un asilo es anormal en un campo de concentración.",
+                    "El concepto de normalidad es diferente para un psiquiatra que para un hombre común.",
+                    "El ser humano se comporta de acuerdo con las circunstancias."
+                ],
+                answer: "El ser humano se comporta de acuerdo con las circunstancias."
+            },
+            {
+                q: "Considerando las macrorreglas expuestas en la lectura: ¿Qué elemento se debería eliminar mediante la 'supresión' al aplicar síntesis?",
+                options: [
+                    "El sujeto temático o concepto clave.",
+                    "La macroestructura final del párrafo.",
+                    "Las redundancias, ejemplificaciones o datos circunstanciales menores.",
+                    "La generalización de los campos semánticos presentes."
+                ],
+                answer: "Las redundancias, ejemplificaciones o datos circunstanciales menores."
+            }
+        ]
     },
     {
         session: 4,
