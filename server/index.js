@@ -5,12 +5,64 @@ import OpenAI from 'openai';
 import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
 import cron from 'node-cron';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+let moralejaContent = '';
+try {
+    moralejaContent = fs.readFileSync(path.join(__dirname, 'moraleja.txt'), 'utf8');
+    console.log(`[INIT] Loaded moraleja.txt (${moralejaContent.length} chars)`);
+} catch (e) {
+    console.log('[INIT] moraleja.txt not found, skipping local RAG.');
+}
+
+function extractRelevantContext(query, content, maxLength = 35000) {
+    if (!content) return '';
+    // Extraer palabras clave del query, eliminando conectores
+    const ignored = ['para', 'como', 'este', 'esto', 'sobre', 'desde', 'hacia', 'hasta', 'cuando', 'donde'];
+    const words = query.toLowerCase().replace(/[^a-záéíóúüñ]/g, ' ').split(/\s+/).filter(w => w.length > 3 && !ignored.includes(w));
+
+    if (words.length === 0) return content.substring(0, maxLength);
+
+    const paragraphs = content.split(/\n\s*\n/);
+    const scored = paragraphs.map((p, idx) => {
+        const lower = p.toLowerCase();
+        let score = 0;
+        words.forEach(w => {
+            // Dar más puntaje a ocurrencias exactas o en mayúsculas
+            const matches = lower.match(new RegExp(w, 'g'));
+            if (matches) score += matches.length;
+        });
+        return { p, score, idx };
+    });
+
+    // Filtrar párrafos relevantes
+    const relevant = scored.filter(item => item.score > 0).sort((a, b) => b.score - a.score);
+
+    let extracted = '';
+    // Tomamos los párrafos más relevantes hasta alcanzar el límite
+    for (let item of relevant) {
+        if ((extracted.length + item.p.length) > maxLength) break;
+        // Agregamos contexto de párrafos aledaños (+1 y -1) para coherencia leída
+        const prev = paragraphs[item.idx - 1] ? paragraphs[item.idx - 1] + "\n" : "";
+        const next = paragraphs[item.idx + 1] ? "\n" + paragraphs[item.idx + 1] : "";
+
+        extracted += prev + item.p + next + "\n\n---\n\n";
+    }
+
+    if (extracted.length < 1000) return content.substring(0, maxLength); // Fallback if no matching at all
+    return extracted.substring(0, maxLength);
+}
 
 const PORT = process.env.PORT || 5000;
 
@@ -316,14 +368,22 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
 
             let userPrompt = tema;
 
-            // Inyección de Contenido Base (Moraleja)
-            if (body.readingContent) {
+            // Inyección de Contenido Base (Moraleja via Frontend o Búsqueda Interna)
+            let baseText = body.readingContent || '';
+
+            // Si es Lenguaje y no hay suficiente contenido en readingContent, buscamos en todo el libro
+            if (moralejaContent && (tema.toLowerCase().includes('lenguaje') || body.topic || true)) {
+                const extracted = extractRelevantContext(tema, moralejaContent, 40000);
+                baseText += `\n[EXTRACTOS ADICIONALES DEL LIBRO MORALEJA RELACIONADOS AL TEMA]:\n${extracted}`;
+            }
+
+            if (baseText.length > 10) {
                 systemMsg += `\n\n**INSTRUCCIÓN CRÍTICA Y DOBLE ENFOQUE:**
 Hoy debes enseñar el tema del Ministerio de Educación: "${tema}".
-SIN EMBARGO, para preparar al alumno para la prueba PAES, DEBES utilizar el texto que se te proporciona a continuación como tu *único* marco teórico, empírico y caso de estudio.
-Tu deber es **conectar ingeniosamente** el tema del Ministerio ("${tema}") con la materia y los ejemplos que aparecen en esta lectura obligatoria ("${body.readingTitle}").
-Explica la materia al alumno basándote estrictamente en el texto. Nutre y rellena cualquier vacío para que la explicación sea perfecta y sirva tanto para entender el tema escolar como para dominar la habilidad de la lectura proporcionada.`;
-                userPrompt = `Tema Oficial MINEDUC: ${tema}\n\nMATERIAL DE LECTURA BASE PARA PAES (Verdad Absoluta):\n${body.readingTitle}\n${body.readingContent}`;
+SIN EMBARGO, para preparar al alumno para la prueba PAES, DEBES buscar en la información extraída del libro "Moraleja" a continuación y usarla como tu fuente principal.
+Tu deber es **conectar ingeniosamente** el tema del Ministerio ("${tema}") con la materia del libro.
+Explica la materia al alumno basándote estrictamente en esos extractos de texto, rescatando ejercicios, ejemplos y tips de la PAES si los hay. Nutre y rellena cualquier vacío para que la explicación sea perfecta y sirva tanto para entender el tema escolar de MINEDUC como para dominar las habilidades PAES provistas por el libro.`;
+                userPrompt = `Tema Oficial MINEDUC: ${tema}\n\nMATERIAL DE TEXTO (Libro Moraleja PAES):\n${body.readingTitle || 'Extractos Libro Matico'}\n${baseText}`;
             }
 
             const comp = await openai.chat.completions.create({
@@ -353,10 +413,16 @@ Explica la materia al alumno basándote estrictamente en el texto. Nutre y relle
                     \nLuego, si se requieren generar más preguntas para llegar a un total de 5, debes construirlas basándote en la LECTURA ingresada, PERO enfocándolas en el Tema Escolar a evaluar: "${tema}". Así conectamos el currículum con la lectura.`;
                 }
 
+                let finalReadingContent = body.readingContent || '';
+                if (moralejaContent) {
+                    const extractedForQuiz = extractRelevantContext(tema, moralejaContent, 40000);
+                    finalReadingContent += `\n[MÁS EXTRACTOS RELEVANTES DEL LIBRO MORALEJA (PARA FORMULAR LAS PREGUNTAS)]:\n${extractedForQuiz}`;
+                }
+
                 systemMsg = `Eres Matico, profesor experto en Lenguaje y Comunicación del currículum chileno.
 El estudiante aprenderá y será evaluado sobre el TEMA MINEDUC: "${tema}".
-A LA PAR, estamos practicando con la siguiente LECTURA BASE (Libro PAES):
-${body.readingContent ? body.readingContent : ''}
+A LA PAR, estamos practicando basándonos ÚNICAMENTE en este contenido extraído del libro estratégico PAES Moraleja:
+${finalReadingContent}
 ${baseQuestionsContext}
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
