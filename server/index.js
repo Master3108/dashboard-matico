@@ -318,10 +318,12 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
 
             // Inyección de Contenido Base (Moraleja)
             if (body.readingContent) {
-                systemMsg += `\n\n**INSTRUCCIÓN CRÍTICA DE CONTENIDO BASE:**
-Utiliza el texto proporcionado por el usuario como tu *único* marco teórico y empírico. 
-Explica la materia al alumno basándote estrictamente en él. Si la materia requiere mayor profundización para ser entendida, es escueta, o le faltan conectores lógicos, **tu deber es rellenar esos vacíos y nutrir la explicación con total precisión**. No inventes temas fuera del marco del texto base.`;
-                userPrompt = `Tema de la Sesión: ${tema}\n\nMATERIAL DE LECTURA BASE (Verdad Absoluta):\n${body.readingTitle}\n${body.readingContent}`;
+                systemMsg += `\n\n**INSTRUCCIÓN CRÍTICA Y DOBLE ENFOQUE:**
+Hoy debes enseñar el tema del Ministerio de Educación: "${tema}".
+SIN EMBARGO, para preparar al alumno para la prueba PAES, DEBES utilizar el texto que se te proporciona a continuación como tu *único* marco teórico, empírico y caso de estudio.
+Tu deber es **conectar ingeniosamente** el tema del Ministerio ("${tema}") con la materia y los ejemplos que aparecen en esta lectura obligatoria ("${body.readingTitle}").
+Explica la materia al alumno basándote estrictamente en el texto. Nutre y rellena cualquier vacío para que la explicación sea perfecta y sirva tanto para entender el tema escolar como para dominar la habilidad de la lectura proporcionada.`;
+                userPrompt = `Tema Oficial MINEDUC: ${tema}\n\nMATERIAL DE LECTURA BASE PARA PAES (Verdad Absoluta):\n${body.readingTitle}\n${body.readingContent}`;
             }
 
             const comp = await openai.chat.completions.create({
@@ -346,16 +348,20 @@ Explica la materia al alumno basándote estrictamente en él. Si la materia requ
 
                 let baseQuestionsContext = '';
                 if (body.baseQuestions && Array.isArray(body.baseQuestions) && body.baseQuestions.length > 0) {
-                    baseQuestionsContext = `\nPREGUNTAS BASE DEL LIBRO:\n${JSON.stringify(body.baseQuestions, null, 2)}
-                    \n**REGLA DE ORO:** Existen preguntas base proporcionadas arriba. DEBES incluirlas en tu JSON final sin alterar su sentido original. Si notas errores (ej. faltan alternativas), debes RELLENAR Y COMPLEMENTAR PERFECTAMENTE. Si se requieren generar más preguntas para llegar a 5, constrúyelas basándote 100% en la lectura ingresada.`;
+                    baseQuestionsContext = `\nPREGUNTAS BASE DEL LIBRO PAES:\n${JSON.stringify(body.baseQuestions, null, 2)}
+                    \n**REGLA DE ORO:** Existen preguntas obligatorias proporcionadas arriba. DEBES incluirlas textuales en tu JSON final para practicar la prueba estandarizada PAES. Si notas errores (ej. faltan alternativas), Rellénalas.
+                    \nLuego, si se requieren generar más preguntas para llegar a un total de 5, debes construirlas basándote en la LECTURA ingresada, PERO enfocándolas en el Tema Escolar a evaluar: "${tema}". Así conectamos el currículum con la lectura.`;
                 }
 
                 systemMsg = `Eres Matico, profesor experto en Lenguaje y Comunicación del currículum chileno.
-El estudiante aprenderá: ${tema}.${body.readingContent ? `\n\nLECTURA BASE:\n${body.readingContent}` : ''}${baseQuestionsContext}
+El estudiante aprenderá y será evaluado sobre el TEMA MINEDUC: "${tema}".
+A LA PAR, estamos practicando con la siguiente LECTURA BASE (Libro PAES):
+${body.readingContent ? body.readingContent : ''}
+${baseQuestionsContext}
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. Las preguntas deben evaluar comprensión lectora avanzada, pensamiento crítico e inferencia basadas en el texto.
-2. Escribe una explicación clara del porqué esa es la opción correcta en "explanation".
+1. Las preguntas deben evaluar interactivamente el cruce entre el Tema: "${tema}" y la Lectura, exigiendo pensamiento crítico e inferencia.
+2. Escribe una explicación clara de por qué esa es la opción correcta en "explanation", relacionándola con el aprendizaje de PAES o MINEDUC.
 3. CREA 4 opciones, asegurándote que UNA coincide con tu explicación.
 4. Al final, escribe la Letra correcta (A, B, C, D) en "correct_answer".
 
