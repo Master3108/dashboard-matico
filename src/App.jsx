@@ -132,9 +132,9 @@ const COLORS = {
 const LANGUAGE_SYLLABUS = [
     {
         session: 1,
-        unit: 'Comprensión Lectora',
-        topic: 'Coherencia y Cohesión Textual',
-        videoTitle: 'Introducción a la Comprensión Lectora',
+        unit: 'Narrativa',
+        topic: 'La Figura de Héroe: El Mío Cid',
+        videoTitle: '¿Qué es el género narrativo?',
         videoLink: 'https://www.youtube.com/watch?v=Fyy9nGemSqU',
         readingTitle: 'Capítulo 1: Coherencia y Cohesión',
         readingContent: `Es fundamental que, previo al trabajo con las diferentes estrategias de comprensión lectora, examinemos las propiedades de un texto. Una parte importante de los problemas de comprensión se debe a que el estudiante no establece adecuadamente las conexiones entre oraciones al interior de los textos.
@@ -199,10 +199,10 @@ f. La elipsis: Omisión de un elemento que ya se subentiende por contexto.`,
     },
     {
         session: 2,
-        unit: 'Estrategias de Comprensión',
-        topic: 'Extraer e Identificar Información Explícita',
-        videoTitle: 'Matico - Información Explícita',
-        videoLink: 'https://www.youtube.com/watch?v=R9K1XW1M3N0',
+        unit: 'Narrativa',
+        topic: 'Narrador y Conflicto: Frankenstein',
+        videoTitle: 'LENGUAJE | El Narrador | Clase N°4',
+        videoLink: 'https://www.youtube.com/watch?v=0Vv5aIgDp9c',
         readingTitle: 'CAPÍTULO 2: EXTRAER E IDENTIFICAR INFORMACIÓN EXPLÍCITA',
         readingContent: `La habilidad de rastrear información literal de un texto constituye el punto de partida de la comprensión lectora, puesto que implica haber decodificado el texto cabalmente y haber establecido relaciones semánticas y sintácticas dentro del mismo.
 
