@@ -12,8 +12,15 @@ const MathRenderer = ({ text, content }) => {
         }
 
         const processContent = async () => {
-            // Import katex dynamically
-            const katex = (await import('katex')).default;
+            let katex;
+            try {
+                // Import katex dynamically inside try-catch to avoid unhandled rejections
+                katex = (await import('katex')).default;
+            } catch (e) {
+                console.warn('Could not load katex dynamically, falling back to raw text', e);
+                setHtmlContent(rawText);
+                return;
+            }
 
             let processed = rawText;
 
@@ -108,7 +115,7 @@ const MathRenderer = ({ text, content }) => {
 
     return (
         <div
-            className="prose prose-sm max-w-none text-[#2B2E4A]"
+            className="text-[#2B2E4A]"
             dangerouslySetInnerHTML={{ __html: htmlContent }}
         />
     );

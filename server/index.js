@@ -26,6 +26,22 @@ try {
     console.log('[INIT] moraleja.txt not found, skipping local RAG.');
 }
 
+let matematicaContent = '';
+try {
+    matematicaContent = fs.readFileSync(path.join(__dirname, 'matematica_paes.txt'), 'utf8');
+    console.log(`[INIT] Loaded matematica_paes.txt (${matematicaContent.length} chars)`);
+} catch (e) {
+    console.log('[INIT] matematica_paes.txt not found, skipping Math RAG.');
+}
+
+let fisicaContent = '';
+try {
+    fisicaContent = fs.readFileSync(path.join(__dirname, 'fisica_paes.txt'), 'utf8');
+    console.log(`[INIT] Loaded fisica_paes.txt (${fisicaContent.length} chars)`);
+} catch (e) {
+    console.log('[INIT] fisica_paes.txt not found, skipping Physics RAG.');
+}
+
 function extractRelevantContext(query, content, maxLength = 35000) {
     if (!content) return '';
     // Extraer palabras clave del query, eliminando conectores
@@ -368,22 +384,41 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
 
             let userPrompt = tema;
 
-            // Inyección de Contenido Base (Moraleja via Frontend o Búsqueda Interna)
+            // Inyección de Contenido Base según asignatura
             let baseText = body.readingContent || '';
+            const subject = (body.subject || body.sujeto || body.materia || 'MATEMATICA').toUpperCase();
 
-            // Si es Lenguaje y no hay suficiente contenido en readingContent, buscamos en todo el libro
-            if (moralejaContent && (tema.toLowerCase().includes('lenguaje') || body.topic || true)) {
-                const extracted = extractRelevantContext(tema, moralejaContent, 40000);
-                baseText += `\n[EXTRACTOS ADICIONALES DEL LIBRO MORALEJA RELACIONADOS AL TEMA]:\n${extracted}`;
+            let bookName = 'Matemática PAES';
+
+            if (subject.includes('LENGUAJE') || subject.includes('LECTURA')) {
+                // RAG con libro Moraleja para Lenguaje
+                bookName = 'Moraleja';
+                if (moralejaContent) {
+                    const extracted = extractRelevantContext(tema, moralejaContent, 40000);
+                    baseText += `\n[EXTRACTOS DEL LIBRO MORALEJA RELACIONADOS AL TEMA]:\n${extracted}`;
+                }
+            } else if (subject.includes('FISICA') || subject.includes('FÍSICA')) {
+                // RAG con libro Física PAES para Física
+                bookName = 'Física PAES';
+                if (fisicaContent) {
+                    const extracted = extractRelevantContext(tema, fisicaContent, 40000);
+                    baseText += `\n[EXTRACTOS DEL LIBRO FÍSICA PAES RELACIONADOS AL TEMA]:\n${extracted}`;
+                }
+            } else {
+                // RAG con libro Matemática PAES para Matemáticas y otras asignaturas numéricas
+                if (matematicaContent) {
+                    const extracted = extractRelevantContext(tema, matematicaContent, 40000);
+                    baseText += `\n[EXTRACTOS DEL LIBRO MATEMÁTICA PAES RELACIONADOS AL TEMA]:\n${extracted}`;
+                }
             }
 
             if (baseText.length > 10) {
                 systemMsg += `\n\n**INSTRUCCIÓN CRÍTICA Y DOBLE ENFOQUE:**
 Hoy debes enseñar el tema del Ministerio de Educación: "${tema}".
-SIN EMBARGO, para preparar al alumno para la prueba PAES, DEBES buscar en la información extraída del libro "Moraleja" a continuación y usarla como tu fuente principal.
+SIN EMBARGO, para preparar al alumno para la prueba PAES, DEBES buscar en la información extraída del libro "${bookName}" a continuación y usarla como tu fuente principal.
 Tu deber es **conectar ingeniosamente** el tema del Ministerio ("${tema}") con la materia del libro.
 Explica la materia al alumno basándote estrictamente en esos extractos de texto, rescatando ejercicios, ejemplos y tips de la PAES si los hay. Nutre y rellena cualquier vacío para que la explicación sea perfecta y sirva tanto para entender el tema escolar de MINEDUC como para dominar las habilidades PAES provistas por el libro.`;
-                userPrompt = `Tema Oficial MINEDUC: ${tema}\n\nMATERIAL DE TEXTO (Libro Moraleja PAES):\n${body.readingTitle || 'Extractos Libro Matico'}\n${baseText}`;
+                userPrompt = `Tema Oficial MINEDUC: ${tema}\n\nMATERIAL DE TEXTO (Libro ${bookName} PAES):\n${body.readingTitle || 'Extractos Libro'}\n${baseText}`;
             }
 
             const comp = await openai.chat.completions.create({
@@ -489,15 +524,40 @@ Estructura JSON:
 {"my_calculation": "tu razonamiento histórico aquí", "correct_letter": "LETRA FINAL"}`;
 
             } else {
-                // PROMPT POR DEFECTO: MATEMÁTICAS (Protocolo anti-errores original)
+                // PROMPT POR DEFECTO: MATEMÁTICAS Y FÍSICA (Protocolo anti-errores + RAG Libro PAES)
                 aiTemperature = 0.2;
-                systemMsg = `Eres Matico, mentor matemático experto.
+
+                const isFisica = subject.includes('FISICA') || subject.includes('FÍSICA');
+                const bookName = isFisica ? 'Física PAES' : 'Matemática PAES';
+                const mentorRole = isFisica ? 'experto en física' : 'mentor matemático experto';
+
+                let baseQuestionsContext = '';
+                if (body.baseQuestions && Array.isArray(body.baseQuestions) && body.baseQuestions.length > 0) {
+                    baseQuestionsContext = `\nPREGUNTAS BASE DEL LIBRO ${bookName}:\n${JSON.stringify(body.baseQuestions, null, 2)}
+                    \n**REGLA DE ORO:** Incluye estas preguntas textuales en tu JSON final. Si notas errores, corrígelos.
+                    \nLuego genera las preguntas restantes basándote en el contenido teórico provisto, enfocándote en el Tema: "${tema}".`;
+                }
+
+                let readingContent = body.readingContent || '';
+                if (isFisica && fisicaContent) {
+                    const extractedForQuiz = extractRelevantContext(tema, fisicaContent, 40000);
+                    readingContent += `\n[EXTRACTOS RELEVANTES DEL LIBRO FÍSICA PAES]:\n${extractedForQuiz}`;
+                } else if (!isFisica && matematicaContent) {
+                    const extractedForQuiz = extractRelevantContext(tema, matematicaContent, 40000);
+                    readingContent += `\n[EXTRACTOS RELEVANTES DEL LIBRO MATEMÁTICA PAES]:\n${extractedForQuiz}`;
+                }
+
+                systemMsg = `Eres Matico, ${mentorRole} en el currículum MINEDUC de 1° Medio Chile y preparación PAES.
 Tema: ${tema}.
+${readingContent.length > 10 ? `\nCONTENIDO TEÓRICO DE REFERENCIA DEL LIBRO PAES:\n${readingContent}` : ''}
+${baseQuestionsContext}
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. DEBES hacer el cálculo matemático en "explanation" PRIMERO.
+1. DEBES hacer el cálculo o razonamiento en "explanation" PRIMERO.
 2. CREA 4 opciones, asegurándote que UNA coincide con tu cálculo.
 3. Al final, escribe la Letra correcta en "correct_answer".
+4. Si se proveyeron PREGUNTAS BASE del libro, inclúyelas textualmente.
+5. Basa las preguntas nuevas en el contenido teórico del libro PAES si fue provisto.
 
 ESTRUCTURA JSON EXACTA QUE DEBES USAR:
 {
@@ -517,7 +577,7 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
 }
 
 Genera SOLO JSON válido sin markdown.`;
-                verifyPrompt = `Resuelve el problema matemático paso a paso. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta.
+                verifyPrompt = `Resuelve el problema paso a paso. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta.
 Estructura JSON:
 {"my_calculation": "tu desarrollo paso a paso aquí primero", "correct_letter": "LETRA FINAL"}`;
             }
