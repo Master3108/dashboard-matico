@@ -42,6 +42,14 @@ try {
     console.log('[INIT] fisica_paes.txt not found, skipping Physics RAG.');
 }
 
+let quimicaContent = '';
+try {
+    quimicaContent = fs.readFileSync(path.join(__dirname, 'quimica_paes.txt'), 'utf8');
+    console.log(`[INIT] Loaded quimica_paes.txt (${quimicaContent.length} chars)`);
+} catch (e) {
+    console.log('[INIT] quimica_paes.txt not found, skipping Chemistry RAG.');
+}
+
 function extractRelevantContext(query, content, maxLength = 35000) {
     if (!content) return '';
     // Extraer palabras clave del query, eliminando conectores
@@ -404,6 +412,13 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
                     const extracted = extractRelevantContext(tema, fisicaContent, 40000);
                     baseText += `\n[EXTRACTOS DEL LIBRO FÍSICA PAES RELACIONADOS AL TEMA]:\n${extracted}`;
                 }
+            } else if (subject.includes('QUIMICA') || subject.includes('QUÍMICA')) {
+                // RAG con libro Química PAES para Química
+                bookName = 'Química PAES';
+                if (quimicaContent) {
+                    const extracted = extractRelevantContext(tema, quimicaContent, 40000);
+                    baseText += `\n[EXTRACTOS DEL LIBRO QUÍMICA PAES RELACIONADOS AL TEMA]:\n${extracted}`;
+                }
             } else {
                 // RAG con libro Matemática PAES para Matemáticas y otras asignaturas numéricas
                 if (matematicaContent) {
@@ -528,8 +543,18 @@ Estructura JSON:
                 aiTemperature = 0.2;
 
                 const isFisica = subject.includes('FISICA') || subject.includes('FÍSICA');
-                const bookName = isFisica ? 'Física PAES' : 'Matemática PAES';
-                const mentorRole = isFisica ? 'experto en física' : 'mentor matemático experto';
+                const isQuimica = subject.includes('QUIMICA') || subject.includes('QUÍMICA');
+
+                let bookName = 'Matemática PAES';
+                let mentorRole = 'mentor matemático experto';
+
+                if (isFisica) {
+                    bookName = 'Física PAES';
+                    mentorRole = 'experto en física';
+                } else if (isQuimica) {
+                    bookName = 'Química PAES';
+                    mentorRole = 'experto en química';
+                }
 
                 let baseQuestionsContext = '';
                 if (body.baseQuestions && Array.isArray(body.baseQuestions) && body.baseQuestions.length > 0) {
@@ -542,7 +567,10 @@ Estructura JSON:
                 if (isFisica && fisicaContent) {
                     const extractedForQuiz = extractRelevantContext(tema, fisicaContent, 40000);
                     readingContent += `\n[EXTRACTOS RELEVANTES DEL LIBRO FÍSICA PAES]:\n${extractedForQuiz}`;
-                } else if (!isFisica && matematicaContent) {
+                } else if (isQuimica && quimicaContent) {
+                    const extractedForQuiz = extractRelevantContext(tema, quimicaContent, 40000);
+                    readingContent += `\n[EXTRACTOS RELEVANTES DEL LIBRO QUÍMICA PAES]:\n${extractedForQuiz}`;
+                } else if (!isFisica && !isQuimica && matematicaContent) {
                     const extractedForQuiz = extractRelevantContext(tema, matematicaContent, 40000);
                     readingContent += `\n[EXTRACTOS RELEVANTES DEL LIBRO MATEMÁTICA PAES]:\n${extractedForQuiz}`;
                 }
