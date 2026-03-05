@@ -5503,585 +5503,2486 @@ C) De la hipótesis planteada para la investigación.
 D) De la tecnología empleada en las mediciones.
 
 
+===== Page 200 =====
+
+22. Un patinador de 60 kg avanza cargando una barra de 20 kg a lo largo de un camino recto y horizontal hacia cuatro pilares de granito fijos al suelo, como se representa en la siguiente figura:
+
+[IMAGEN: Un patinador con una barra se acerca a cuatro pilares. Al llegar, empuja los pilares con la barra. Se pregunta la fuerza que ejerce sobre cada pilar.]
+
+Si al llegar a los pilares el patinador los empuja simultaneamente con la barra, ejerciendo fuerzas de magnitudes iguales sobre cada pilar, de forma que el patinador adquiere una aceleración de m/s² en sentido opuesto al que tenía originalmente y en ausencia de roce, ¿cuál es la magnitud de la fuerza que ejerció la barra sobre cada pilar? (DEMRE 2024)
+
+A) 960,0 N
+B) 80,0 N
+C) 60,0 N
+D) 26,6 N
+
+23. La magnitud de la fuerza elástica ejercida por un resorte ideal sobre un objeto que cuelga de él, en equilibrio, se puede determinar por medio del producto entre: (DEMRE 2024)
+
+A) La longitud natural del resorte y la constante elástica de este.
+B) La constante elástica del resorte y el estiramiento de este.
+C) La constante elástica del resorte y la masa del objeto.
+D) La masa del objeto y la longitud natural del resorte.
+E) La masa del objeto y el estiramiento del resorte.
+
+24. De qué depende el que se pueda mejorar la precisión del valor medido de una constante física? (DEMRE 2019)
+
+A) De la vigencia del marco conceptual empleado en el análisis.
+B) Del contexto histórico en el que se hacen las mediciones.
+C) De la hipótesis planteada para la investigación.
+D) De la tecnología empleada en las mediciones.
+
+
 ===== Page 201 =====
+
+## CAPÍTULO 6 | DINÁMICA II
+
+### 1. IMPULSO Y CANTIDAD DE MOVIMIENTO
+
+El impulso (I) es una magnitud vectorial que se define como el producto de la fuerza aplicada sobre un cuerpo por el intervalo de tiempo durante el cual actúa.
+
+\[ \vec{I} = \vec{F} \cdot \Delta t \]
+
+La cantidad de movimiento o momento lineal (p) es una magnitud vectorial que se define como el producto de la masa de un cuerpo por su velocidad.
+
+\[ \vec{p} = m \cdot \vec{v} \]
+
+Ambas magnitudes se relacionan mediante el teorema del impulso y la cantidad de movimiento, que establece que el impulso aplicado sobre un cuerpo es igual a la variación de su cantidad de movimiento:
+
+\[ \vec{I} = \Delta \vec{p} = \vec{p}_f - \vec{p}_i = m \cdot \vec{v}_f - m \cdot \vec{v}_i \]
+
+**Unidades en el SI:**
+- Impulso: N·s = kg·m/s
+- Cantidad de movimiento: kg·m/s
+
+### 2. CONSERVACIÓN DE LA CANTIDAD DE MOVIMIENTO
+
+#### a. Ley de conservación de la cantidad de movimiento
+
+En un sistema aislado (sobre el que no actúan fuerzas externas), la cantidad de movimiento total permanece constante.
+
+\[ \vec{p}_{total\;inicial} = \vec{p}_{total\;final} \]
+
+\[ m_1\vec{v}_{1i} + m_2\vec{v}_{2i} + ... = m_1\vec{v}_{1f} + m_2\vec{v}_{2f} + ... \]
+
+#### b. Choque
+
+Un choque es la interacción entre dos o más cuerpos que ocurre en un intervalo de tiempo muy corto. Durante el choque, las fuerzas internas son mucho mayores que las fuerzas externas, por lo que se puede considerar que la cantidad de movimiento total del sistema se conserva.
+
+##### i. Choque plástico o inelástico
+
+En un choque plástico (o perfectamente inelástico), los cuerpos quedan unidos después del choque, moviéndose con la misma velocidad.
+
+\[ m_1\vec{v}_{1i} + m_2\vec{v}_{2i} = (m_1 + m_2)\vec{v}_f \]
+
+La energía cinética no se conserva; parte de ella se disipa en forma de calor, sonido o deformación permanente.
+
+##### ii. Choque elástico
+
+En un choque elástico, los cuerpos se separan después del choque, y tanto la cantidad de movimiento como la energía cinética se conservan.
+
+\[ m_1\vec{v}_{1i} + m_2\vec{v}_{2i} = m_1\vec{v}_{1f} + m_2\vec{v}_{2f} \]
+\[ \frac{1}{2}m_1v_{1i}^2 + \frac{1}{2}m_2v_{2i}^2 = \frac{1}{2}m_1v_{1f}^2 + \frac{1}{2}m_2v_{2f}^2 \]
+
+Para un choque elástico unidimensional entre dos cuerpos, las velocidades finales pueden calcularse con las fórmulas:
+
+\[ v_{1f} = \frac{m_1 - m_2}{m_1 + m_2} v_{1i} + \frac{2m_2}{m_1 + m_2} v_{2i} \]
+\[ v_{2f} = \frac{2m_1}{m_1 + m_2} v_{1i} + \frac{m_2 - m_1}{m_1 + m_2} v_{2i} \]
+
 
 ===== Page 202 =====
 
+### EJERCICIOS DE DESARROLLO
+
+1. Una pelota de 0,5 kg se mueve con una velocidad de 10 m/s y golpea una pared, rebotando con una velocidad de 8 m/s en dirección contraria. Si el contacto con la pared dura 0,02 s, calcular:
+   a. El impulso recibido por la pelota.
+   b. La fuerza media ejercida por la pared sobre la pelota.
+
+R: a. -9 N·s; b. -450 N
+
+2. Un automóvil de 1200 kg que viaja a 20 m/s choca contra un muro y se detiene en 0,1 s. Calcular la fuerza media ejercida sobre el automóvil durante el choque.
+
+R: -240.000 N
+
+3. Una bala de 10 g es disparada con una velocidad de 400 m/s contra un bloque de madera de 2 kg que se encuentra en reposo sobre una superficie sin rozamiento. La bala se incrusta en el bloque. Calcular la velocidad del conjunto después del impacto.
+
+R: 1,99 m/s
+
+4. Dos bolas de billar de masas iguales se mueven en la misma dirección y sentido. La primera lleva una velocidad de 3 m/s y la segunda de 1 m/s. Después del choque elástico, ¿cuáles serán sus velocidades?
+
+R: v₁f = 1 m/s; v₂f = 3 m/s
+
+5. Un cuerpo de masa m₁ = 2 kg que se mueve a 5 m/s choca elásticamente con otro cuerpo de masa m₂ = 3 kg que está en reposo. Calcular las velocidades después del choque.
+
+R: v₁f = -1 m/s; v₂f = 4 m/s
+
+
 ===== Page 203 =====
+
+### EJERCICIOS SELECCIÓN MÚLTIPLE
+
+1. Se lanza una pelota de masa m hacia una pared con velocidad v. La pelota rebota con la misma rapidez. ¿Cuál es la variación de la cantidad de movimiento de la pelota?
+
+A) 0
+B) mv
+C) 2mv
+D) -2mv
+
+2. En un choque plástico entre dos cuerpos, ¿qué magnitudes se conservan?
+
+A) La cantidad de movimiento y la energía cinética.
+B) Solo la cantidad de movimiento.
+C) Solo la energía cinética.
+D) La energía mecánica total.
+
+3. Un camión y un automóvil chocan frontalmente. Durante el choque, la fuerza que ejerce el camión sobre el automóvil, comparada con la fuerza que ejerce el automóvil sobre el camión, es:
+
+A) Mayor, porque el camión tiene mayor masa.
+B) Menor, porque el automóvil tiene menor masa.
+C) Igual en magnitud pero de sentido contrario.
+D) Depende de las velocidades.
+
+4. Dos cuerpos de masas m y 2m se mueven con la misma velocidad v en la misma dirección y sentido contrario. Después de un choque plástico, la velocidad del conjunto será:
+
+A) v/3 en la dirección del cuerpo de masa 2m
+B) v/3 en la dirección del cuerpo de masa m
+C) v en la dirección del cuerpo de masa 2m
+D) 0
+
+5. Una granada inicialmente en reposo explota en dos fragmentos de masas m y 2m. Si el fragmento de masa m sale con velocidad v, ¿con qué velocidad sale el fragmento de masa 2m?
+
+A) v/2 en sentido contrario
+B) v en sentido contrario
+C) 2v en sentido contrario
+D) 4v en sentido contrario
+
 
 ===== Page 204 =====
 
+## CAPÍTULO 7 | HIDROSTÁTICA E HIDRODINÁMICA
+
+### 1. FLUIDOS
+
+#### a. Estructura de la materia
+
+La materia se presenta en tres estados fundamentales: sólido, líquido y gaseoso. Los líquidos y los gases tienen la capacidad de fluir, por lo que se denominan fluidos.
+
+**Estados de la materia:**
+
+- **Sólido:** Tiene forma y volumen propios. Las partículas están fuertemente unidas y vibran alrededor de posiciones fijas.
+- **Líquido:** Tiene volumen propio pero adopta la forma del recipiente que lo contiene. Las partículas están menos unidas que en los sólidos y pueden deslizarse unas sobre otras.
+- **Gaseoso:** No tiene forma ni volumen propios; ocupa todo el volumen del recipiente. Las partículas están muy separadas y se mueven libremente.
+
+**Fluidos:** Son sustancias que pueden fluir, es decir, que se deforman continuamente bajo la acción de una fuerza tangencial. Tanto los líquidos como los gases son fluidos.
+
+#### b. Conceptos básicos
+
+##### i. Densidad absoluta (ρ)
+
+Es la masa de un cuerpo por unidad de volumen.
+
+\[ \rho = \frac{m}{V} \]
+
+Unidades en el SI: kg/m³. También se usa g/cm³ (1 g/cm³ = 1000 kg/m³).
+
+##### ii. Peso específico absoluto (γ)
+
+Es el peso de un cuerpo por unidad de volumen.
+
+\[ \gamma = \frac{P}{V} = \frac{m·g}{V} = \rho·g \]
+
+Unidades en el SI: N/m³.
+
+##### iii. Densidad relativa y peso específico relativo
+
+La densidad relativa de una sustancia es el cociente entre su densidad y la densidad de otra sustancia tomada como referencia (generalmente agua para líquidos y sólidos, y aire para gases).
+
+\[ \rho_r = \frac{\rho_{sustancia}}{\rho_{agua}} \]
+
+El peso específico relativo se define de manera análoga.
+
+**Densidad de algunas sustancias (g/cm³):**
+- Agua: 1,00
+- Aceite: 0,92
+- Alcohol: 0,79
+- Hierro: 7,86
+- Aluminio: 2,70
+- Mercurio: 13,6
+- Aire (a 20°C): 0,0012
+
+
 ===== Page 205 =====
+
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular la densidad de un cuerpo de masa 500 g y volumen 250 cm³. Expresar el resultado en kg/m³.
+
+R: 2 g/cm³ = 2000 kg/m³
+
+2. Un recipiente contiene 2 litros de alcohol de densidad 0,79 g/cm³. Calcular la masa de alcohol en kg.
+
+R: 1,58 kg
+
+3. Calcular el peso específico del agua en N/m³ (g = 10 m/s²).
+
+R: 10.000 N/m³
+
+4. Un cuerpo tiene un peso de 100 N y un volumen de 0,02 m³. Calcular su densidad.
+
+R: 500 kg/m³
+
+5. ¿Qué volumen ocupa 1 kg de mercurio? (densidad del mercurio = 13.600 kg/m³)
+
+R: 7,35·10⁻⁵ m³ = 73,5 cm³
+
 
 ===== Page 206 =====
 
+### 2. PRESIÓN
+
+La presión (P) es una magnitud escalar que se define como la fuerza ejercida perpendicularmente sobre una superficie por unidad de área.
+
+\[ P = \frac{F}{A} \]
+
+Unidades en el SI: Pascal (Pa) = N/m². Otras unidades: atmósfera (atm), bar, mm de Hg.
+
+1 atm = 101.325 Pa ≈ 1,013·10⁵ Pa
+1 bar = 10⁵ Pa
+1 mm de Hg = 133,3 Pa
+
+### 3. PRESIÓN HIDROSTÁTICA
+
+La presión hidrostática es la presión ejercida por un fluido en reposo debido al peso del fluido. Aumenta con la profundidad.
+
+\[ P = \rho·g·h \]
+
+Donde:
+- ρ = densidad del fluido
+- g = aceleración de la gravedad
+- h = profundidad medida desde la superficie
+
+La presión total en un punto dentro de un fluido es la suma de la presión atmosférica (si está abierto a la atmósfera) más la presión hidrostática:
+
+\[ P_{total} = P_{atm} + \rho·g·h \]
+
+#### a. Vasos comunicantes
+
+Si se tienen recipientes de diferentes formas conectados por su base, el líquido alcanza la misma altura en todos ellos cuando están en equilibrio. Esto se debe a que la presión en la base de todos los recipientes es la misma.
+
+[IMAGEN: Varios recipientes de diferentes formas conectados por su base, mostrando que el nivel del líquido es el mismo en todos ellos.]
+
+#### b. Aplicaciones de los vasos comunicantes
+
+- Nivel de agua en una construcción
+- Sistemas de abastecimiento de agua
+- Fuentes y sifones
+
+
 ===== Page 207 =====
+
+### 4. FUERZA Y PRESIÓN LATERAL
+
+La presión ejercida por un fluido en reposo actúa en todas direcciones y siempre es perpendicular a las paredes del recipiente.
+
+La fuerza ejercida sobre una pared plana vertical de área A, sumergida en un fluido, se calcula multiplicando la presión media por el área. La presión media es la presión a la profundidad media.
+
+\[ F = P_{media}·A = \rho·g·h_{media}·A \]
+
+Para una pared rectangular vertical de ancho a y altura H, con el borde superior en la superficie, la fuerza es:
+
+\[ F = \rho·g·\frac{H}{2}·(a·H) = \frac{1}{2}\rho·g·a·H^2 \]
+
+### 5. PRESIÓN ATMOSFÉRICA
+
+La presión atmosférica es la presión ejercida por el peso del aire de la atmósfera. Al nivel del mar, su valor promedio es de 1 atmósfera.
+
+La presión atmosférica disminuye con la altura. A mayor altitud, menor presión atmosférica.
+
+### 6. EXPERIMENTO DE TORRICELLI
+
+Evangelista Torricelli realizó un experimento para medir la presión atmosférica. Llenó un tubo de vidrio de aproximadamente 1 m de largo con mercurio y lo invirtió en una cubeta con mercurio. La columna de mercurio descendió hasta alcanzar una altura de aproximadamente 760 mm por encima del nivel de la cubeta.
+
+[IMAGEN: Experimento de Torricelli: Un tubo largo lleno de mercurio invertido en una cubeta con mercurio. La columna de mercurio dentro del tubo tiene una altura de 760 mm sobre el nivel de la cubeta.]
+
+El espacio por encima de la columna de mercurio es prácticamente vacío (cámara barométrica o vacío de Torricelli). La presión atmosférica equilibra la presión ejercida por la columna de mercurio:
+
+\[ P_{atm} = \rho_{Hg}·g·h \]
+
+Con ρ_Hg = 13.600 kg/m³, g = 9,8 m/s², h = 0,76 m, se obtiene P_atm ≈ 101.300 Pa.
+
+**Medición de la presión:**
+
+- **Barómetro:** Instrumento para medir la presión atmosférica.
+- **Manómetro:** Instrumento para medir la presión de fluidos en recipientes cerrados.
+
 
 ===== Page 208 =====
 
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular la presión hidrostática a una profundidad de 10 m en agua (ρ = 1000 kg/m³, g = 10 m/s²).
+
+R: 100.000 Pa = 10⁵ Pa
+
+2. ¿A qué profundidad en el agua la presión hidrostática es igual a la presión atmosférica (1,013·10⁵ Pa)?
+
+R: aproximadamente 10,3 m
+
+3. Un recipiente contiene agua hasta una altura de 20 cm. Calcular la presión en el fondo debido al agua.
+
+R: 2000 Pa
+
+4. En un tubo en U con agua y aceite, la columna de agua mide 30 cm y la de aceite 40 cm. ¿Cuál es la densidad del aceite?
+
+R: 0,75 g/cm³
+
+5. Calcular la fuerza ejercida por el agua sobre una compuerta rectangular vertical de 2 m de ancho y 3 m de alto, cuyo borde superior está a 1 m de la superficie.
+
+R: 147.000 N (aprox.)
+
+
 ===== Page 209 =====
+
+### 7. PRINCIPIO DE PASCAL
+
+El principio de Pascal establece que la presión aplicada a un fluido encerrado en un recipiente se transmite con igual intensidad a todos los puntos del fluido y a las paredes del recipiente.
+
+Este principio es fundamental en los sistemas hidráulicos, como prensas, frenos y elevadores.
+
+#### a. La prensa hidráulica
+
+La prensa hidráulica consiste en dos cilindros de diferentes secciones conectados por un tubo, llenos de un fluido (generalmente aceite). Al aplicar una fuerza F₁ sobre el émbolo pequeño de área A₁, se genera una presión P = F₁/A₁ que se transmite íntegramente al émbolo grande de área A₂, produciendo una fuerza F₂:
+
+\[ P = \frac{F_1}{A_1} = \frac{F_2}{A_2} \]
+
+Por lo tanto:
+
+\[ \frac{F_1}{A_1} = \frac{F_2}{A_2} \quad \Rightarrow \quad F_2 = F_1·\frac{A_2}{A_1} \]
+
+La fuerza se multiplica en la misma proporción que las áreas. Si A₂ > A₁, entonces F₂ > F₁.
+
+[IMAGEN: Esquema de una prensa hidráulica. Dos cilindros de diferentes diámetros conectados por un tubo lleno de líquido. Se muestra una fuerza pequeña F₁ aplicada al émbolo pequeño y una fuerza grande F₂ resultante en el émbolo grande.]
+
+### EJERCICIOS DE DESARROLLO
+
+1. En una prensa hidráulica, el émbolo pequeño tiene un área de 10 cm² y el grande de 200 cm². Si se aplica una fuerza de 100 N en el émbolo pequeño, ¿qué fuerza se obtiene en el émbolo grande?
+
+R: 2000 N
+
+2. ¿Qué área debe tener el émbolo grande de una prensa hidráulica para que al aplicar una fuerza de 50 N en el émbolo pequeño de 5 cm² se pueda levantar un peso de 1000 N?
+
+R: 100 cm²
+
+3. En un elevador hidráulico, el émbolo grande tiene un diámetro de 20 cm y el pequeño de 4 cm. ¿Qué fuerza debe aplicarse en el pequeño para levantar un automóvil de 1200 kg?
+
+R: 470,4 N (aprox.)
+
 
 ===== Page 210 =====
 
+### 8. PRINCIPIO DE ARQUÍMEDES
+
+El principio de Arquímedes establece que todo cuerpo sumergido total o parcialmente en un fluido experimenta un empuje (fuerza hacia arriba) igual al peso del volumen de fluido desalojado.
+
+\[ E = \rho_{fluido}·g·V_{sumergido} \]
+
+Donde:
+- ρ_fluido = densidad del fluido
+- g = aceleración de la gravedad
+- V_sumergido = volumen del cuerpo que está sumergido
+
+[IMAGEN: Un cuerpo sumergido en un fluido. Se muestran las fuerzas que actúan: el peso P hacia abajo y el empuje E hacia arriba.]
+
+### 9. CONDICIONES PARA LA FLOTABILIDAD DE LOS CUERPOS
+
+La flotabilidad de un cuerpo depende de la relación entre su peso y el empuje que recibe:
+
+- Si P > E: el cuerpo se hunde (ρ_cuerpo > ρ_fluido)
+- Si P = E: el cuerpo está en equilibrio en cualquier punto del fluido (ρ_cuerpo = ρ_fluido)
+- Si P < E: el cuerpo flota (ρ_cuerpo < ρ_fluido)
+
+Cuando un cuerpo flota, el empuje equilibra exactamente al peso, y el volumen sumergido es tal que:
+
+\[ \rho_{cuerpo}·g·V_{total} = \rho_{fluido}·g·V_{sumergido} \]
+\[ \frac{V_{sumergido}}{V_{total}} = \frac{\rho_{cuerpo}}{\rho_{fluido}} \]
+
+#### a. Tensión superficial (γ)
+
+Es la fuerza por unidad de longitud que actúa en la superficie de un líquido, tendiendo a minimizar el área superficial. Se debe a las fuerzas de cohesión entre las moléculas del líquido.
+
+\[ \gamma = \frac{F}{L} \]
+
+Unidades en el SI: N/m.
+
+La tensión superficial explica fenómenos como la formación de gotas, la capilaridad y la flotación de objetos pequeños (como un clip) en la superficie del agua.
+
+#### b. Capilaridad
+
+Es la propiedad de los líquidos para ascender o descender en tubos muy delgados (capilares) debido a la combinación de la tensión superficial y las fuerzas de adhesión con las paredes del tubo.
+
+- Si la adhesión es mayor que la cohesión (agua-vidrio), el líquido asciende (menisco cóncavo).
+- Si la cohesión es mayor que la adhesión (mercurio-vidrio), el líquido desciende (menisco convexo).
+
+La altura de ascenso (o descenso) en un tubo capilar está dada por:
+
+\[ h = \frac{2\gamma·\cos\theta}{\rho·g·r} \]
+
+Donde:
+- γ = tensión superficial
+- θ = ángulo de contacto
+- ρ = densidad del líquido
+- r = radio del tubo
+
+
 ===== Page 211 =====
+
+### EJERCICIOS DE DESARROLLO
+
+1. Un cuerpo de 500 cm³ de volumen se sumerge completamente en agua (ρ = 1 g/cm³). Calcular el empuje que recibe.
+
+R: 5 N (aprox.)
+
+2. Un objeto de masa 200 g y densidad 2 g/cm³ se sumerge en agua. Calcular:
+   a. El volumen del objeto
+   b. El empuje que recibe
+   c. La fuerza neta que actúa sobre él
+
+R: a. 100 cm³; b. 1 N; c. 1 N hacia abajo (peso 2 N - empuje 1 N)
+
+3. Un iceberg tiene una densidad de 0,92 g/cm³ y flota en agua de mar de densidad 1,03 g/cm³. ¿Qué fracción del volumen del iceberg está sumergida?
+
+R: 89,3%
+
+4. Un bloque de madera de 10 cm³ flota en agua con el 60% de su volumen sumergido. Calcular la densidad de la madera.
+
+R: 0,6 g/cm³
+
+5. ¿Qué volumen debe tener un globo de helio (ρ_He = 0,18 kg/m³) para elevar una carga de 100 kg? (ρ_aire = 1,29 kg/m³)
+
+R: aproximadamente 90 m³
+
 
 ===== Page 212 =====
 
+### 10. HIDRODINÁMICA
+
+La hidrodinámica estudia los fluidos en movimiento.
+
+#### a. Líneas de corriente
+
+Son curvas imaginarias trazadas de modo que su tangente en cada punto indica la dirección de la velocidad del fluido en ese punto. Si las líneas de corriente no se cruzan, el flujo se denomina laminar. Si se cruzan y forman remolinos, el flujo es turbulento.
+
+#### b. Caudal y Gasto Másico
+
+El caudal (Q) es el volumen de fluido que atraviesa una sección transversal por unidad de tiempo.
+
+\[ Q = \frac{V}{t} = A·v \]
+
+Donde:
+- V = volumen
+- t = tiempo
+- A = área de la sección transversal
+- v = velocidad del fluido
+
+Unidades en el SI: m³/s.
+
+El gasto másico (G) es la masa de fluido que atraviesa una sección por unidad de tiempo.
+
+\[ G = \frac{m}{t} = \rho·Q = \rho·A·v \]
+
+#### c. Ecuación de continuidad
+
+Para un fluido incompresible (densidad constante) que fluye en régimen estacionario, el caudal es constante a lo largo de una tubería:
+
+\[ Q = A_1·v_1 = A_2·v_2 = constante \]
+
+Esto implica que donde la sección es menor, la velocidad es mayor, y viceversa.
+
+[IMAGEN: Un tubo que se estrecha. Se muestran las áreas A₁ y A₂, y las velocidades v₁ y v₂, con v₂ > v₁ porque A₂ < A₁.]
+
+### EJERCICIOS DE DESARROLLO
+
+1. Por una tubería de 10 cm de diámetro circula agua a 2 m/s. Calcular el caudal.
+
+R: 0,0157 m³/s
+
+2. Una tubería de 20 cm de diámetro se estrecha a 10 cm de diámetro. Si la velocidad en la parte ancha es 1 m/s, ¿cuál es la velocidad en la parte estrecha?
+
+R: 4 m/s
+
+3. ¿Qué tiempo tardará en llenarse un depósito de 1000 litros si el caudal de entrada es de 5 L/s?
+
+R: 200 s
+
+
 ===== Page 213 =====
+
+### 11. ECUACIÓN DE BERNOULLI
+
+La ecuación de Bernoulli es una consecuencia de la conservación de la energía en un fluido ideal (incompresible, no viscoso) que fluye en régimen estacionario. Relaciona la presión, la velocidad y la altura en dos puntos de una línea de corriente:
+
+\[ P_1 + \frac{1}{2}\rho v_1^2 + \rho g h_1 = P_2 + \frac{1}{2}\rho v_2^2 + \rho g h_2 \]
+
+Donde:
+- P = presión
+- ρ = densidad
+- v = velocidad
+- h = altura
+
+Cada término tiene unidades de presión (Pa) y representa:
+- P: presión estática
+- (1/2)ρv²: presión dinámica
+- ρgh: presión hidrostática
+
+La suma de estos tres términos es constante a lo largo de una línea de corriente.
+
+#### a. Relación entre presión y velocidad de un fluido
+
+La ecuación de Bernoulli muestra que donde la velocidad es mayor, la presión es menor, y viceversa (si la altura es constante).
+
+### 12. APLICACIONES DE LA ECUACIÓN DE BERNOULLI
+
+**1. Teorema de Torricelli:** La velocidad de salida de un líquido por un orificio en la pared de un recipiente es igual a la velocidad que adquiriría un cuerpo en caída libre desde la superficie del líquido hasta el orificio.
+
+\[ v = \sqrt{2gh} \]
+
+Donde h es la altura del líquido sobre el orificio.
+
+**2. Tubo de Venturi:** Es un dispositivo que consiste en un tubo con un estrechamiento. Midiendo la diferencia de presión entre la parte ancha y la estrecha, se puede calcular la velocidad del fluido.
+
+\[ Q = A_1·v_1 = A_2·v_2 \]
+\[ P_1 - P_2 = \frac{1}{2}\rho(v_2^2 - v_1^2) \]
+
+**3. Tubo de Pitot:** Se usa para medir la velocidad de un fluido (por ejemplo, la velocidad de un avión). Mide la presión total (estática + dinámica) y la presión estática.
+
+**4. Sustentación de alas de aviones:** El diseño del ala (perfil aerodinámico) hace que el aire fluya más rápido por la parte superior que por la inferior, generando una diferencia de presión que produce una fuerza de sustentación hacia arriba.
+
+[IMAGEN: Perfil de un ala de avión. Se muestran las líneas de corriente más juntas en la parte superior (mayor velocidad, menor presión) y más separadas en la parte inferior (menor velocidad, mayor presión).]
+
 
 ===== Page 214 =====
 
+### EJERCICIOS DE DESARROLLO
+
+1. Por una tubería horizontal de 20 cm² de sección circula agua a 2 m/s con una presión de 4·10⁵ Pa. Si la tubería se estrecha a 10 cm², calcular:
+   a. La velocidad en la sección estrecha
+   b. La presión en la sección estrecha
+
+R: a. 4 m/s; b. 3,94·10⁵ Pa
+
+2. Un depósito de agua tiene un orificio a 5 m por debajo de la superficie. Calcular la velocidad de salida del agua.
+
+R: 10 m/s (aprox.)
+
+3. Por un tubo de Venturi horizontal, la sección ancha tiene un área de 50 cm² y la estrecha de 20 cm². Si la velocidad en la sección ancha es 1 m/s y la densidad del fluido es 1000 kg/m³, calcular la diferencia de presión entre ambas secciones.
+
+R: 1050 Pa
+
+4. En un avión, el aire fluye por la parte superior del ala a 250 m/s y por la inferior a 200 m/s. Si la densidad del aire es 1,2 kg/m³, calcular la diferencia de presión entre ambas superficies.
+
+R: 13.500 Pa
+
+
 ===== Page 215 =====
+
+### 13. PRESIÓN SANGUÍNEA
+
+La presión sanguínea es la presión que ejerce la sangre contra las paredes de los vasos sanguíneos. Depende de varios factores, como el gasto cardíaco, la resistencia vascular y la viscosidad de la sangre.
+
+- **Presión sistólica:** Presión máxima durante la contracción del corazón (sístole).
+- **Presión diastólica:** Presión mínima durante la relajación del corazón (diástole).
+
+Se expresa como una fracción: presión sistólica / presión diastólica (ej. 120/80 mm Hg).
+
+#### a. Efectos de la gravedad en la presión sanguínea
+
+La presión sanguínea varía con la altura debido a la gravedad. En posición vertical, la presión es mayor en las piernas que en la cabeza, debido al peso de la columna de sangre.
+
+\[ \Delta P = \rho_{sangre}·g·\Delta h \]
+
+#### b. Efectos de obstrucciones en vasos sanguíneos
+
+Una obstrucción (como una placa de ateroma) reduce el área de la sección transversal del vaso. Por la ecuación de continuidad, la velocidad de la sangre aumenta en la zona estrechada. Por Bernoulli, la presión disminuye en esa zona, lo que puede provocar el colapso del vaso o la formación de aneurismas.
+
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular la diferencia de presión entre los pies y la cabeza de una persona de 1,8 m de altura en posición vertical. Densidad de la sangre ≈ 1060 kg/m³, g = 10 m/s².
+
+R: 19.080 Pa ≈ 143 mm Hg
+
+2. En una arteria de 1 cm² de sección, la sangre fluye a 0,2 m/s con una presión de 100 mm Hg. Si se produce una obstrucción que reduce la sección a 0,5 cm², calcular la velocidad y la presión en la zona estrechada. (1 mm Hg = 133,3 Pa; ρ_sangre = 1060 kg/m³)
+
+R: v = 0,4 m/s; P = 99.958 Pa ≈ 750 mm Hg (la presión disminuye ligeramente)
+
 
 ===== Page 216 =====
 
+### EJERCICIOS DE SELECCIÓN MÚLTIPLE
+
+1. La presión hidrostática en el fondo de un recipiente con líquido depende de:
+
+A) La forma del recipiente
+B) La densidad del líquido y la altura
+C) La cantidad de líquido
+D) El área de la base
+
+2. Si se sumerge un cuerpo en un fluido, el empuje que recibe depende de:
+
+A) La masa del cuerpo
+B) La densidad del cuerpo
+C) El volumen del cuerpo sumergido y la densidad del fluido
+D) La forma del cuerpo
+
+3. Un cubo de madera flota en agua con el 70% de su volumen sumergido. La densidad de la madera es:
+
+A) 0,3 g/cm³
+B) 0,5 g/cm³
+C) 0,7 g/cm³
+D) 1,0 g/cm³
+
+4. En un tubo de Venturi, en la zona más estrecha:
+
+A) La presión es mayor y la velocidad es menor
+B) La presión es mayor y la velocidad es mayor
+C) La presión es menor y la velocidad es mayor
+D) La presión es menor y la velocidad es menor
+
+5. El principio de Pascal se aplica en:
+
+A) El barómetro
+B) La prensa hidráulica
+C) El tubo de Venturi
+D) El flotador de un barco
+
+6. Un cuerpo de 2 kg de masa y 0,001 m³ de volumen se sumerge en agua. ¿Cuál es el valor del empuje? (g = 10 m/s², ρ_agua = 1000 kg/m³)
+
+A) 2 N
+B) 10 N
+C) 20 N
+D) 200 N
+
+7. Para que un cuerpo flote, es necesario que:
+
+A) Su peso sea mayor que el empuje
+B) Su peso sea igual al empuje
+C) Su peso sea menor que el empuje
+D) Su densidad sea mayor que la del fluido
+
+
 ===== Page 217 =====
+
+## CAPÍTULO 8 | LA TIERRA
+
+### 1. EVOLUCIÓN DE LA TIERRA
+
+La Tierra se formó hace aproximadamente 4600 millones de años a partir de la nebulosa protosolar. En sus primeros millones de años, la Tierra era una masa incandescente de roca fundida. Con el tiempo, la superficie se enfrió y solidificó, formando la corteza terrestre. Los volcanes liberaron gases que formaron la atmósfera primitiva, y el vapor de agua condensado dio origen a los océanos.
+
+### 2. ESTRUCTURA DE LAS CAPAS TERRESTRES
+
+La Tierra está estructurada en capas concéntricas, que se diferencian por su composición química y sus propiedades físicas.
+
+[IMAGEN: Corte transversal de la Tierra mostrando sus capas: corteza, manto, núcleo externo y núcleo interno.]
+
+#### a. Atmósfera
+
+Es la capa gaseosa que envuelve la Tierra. Se compone principalmente de nitrógeno (78%) y oxígeno (21%), además de otros gases como argón, dióxido de carbono y vapor de agua. Se divide en varias capas: troposfera, estratosfera, mesosfera, termosfera y exosfera.
+
+- **Troposfera:** Capa más cercana a la superficie, donde ocurren los fenómenos meteorológicos.
+- **Estratosfera:** Contiene la capa de ozono, que absorbe la mayor parte de la radiación ultravioleta del Sol.
+- **Mesosfera:** Capa donde se desintegran la mayoría de los meteoroides.
+- **Termosfera:** Capa donde se producen las auroras y donde orbitan muchos satélites.
+- **Exosfera:** Capa más externa, límite con el espacio exterior.
+
+#### b. Hidrósfera
+
+Es el conjunto de todas las aguas de la Tierra: océanos, mares, ríos, lagos, aguas subterráneas, glaciares y vapor de agua en la atmósfera. El agua cubre aproximadamente el 71% de la superficie terrestre.
+
+#### c. Composición interna de la geosfera
+
+La geosfera es la parte sólida de la Tierra y se divide en:
+
+- **Corteza:** Capa más externa y delgada. Puede ser continental (más gruesa, 30-70 km) u oceánica (más delgada, 5-10 km). Compuesta principalmente por silicatos.
+- **Manto:** Capa intermedia, de unos 2900 km de espesor. Compuesto por rocas sólidas pero dúctiles (peridotita). Se divide en manto superior y manto inferior. La astenosfera es una zona del manto superior parcialmente fundida sobre la cual se desplazan las placas tectónicas.
+- **Núcleo:** Capa más interna, de unos 3470 km de radio. Compuesto principalmente por hierro y níquel. Se divide en núcleo externo (líquido) y núcleo interno (sólido). El movimiento del núcleo externo genera el campo magnético terrestre.
+
 
 ===== Page 218 =====
 
+### 3. DINÁMICA DEL PLANETA
+
+#### a. Teoría de Placas Tectónicas
+
+La teoría de la tectónica de placas explica la dinámica de la litosfera (corteza + parte superior del manto). La litosfera está fragmentada en varias placas que se mueven sobre la astenosfera. Este movimiento es impulsado por las corrientes de convección en el manto.
+
+[IMAGEN: Mapa de las principales placas tectónicas de la Tierra (Placa del Pacífico, Norteamericana, Sudamericana, Euroasiática, Africana, Indoaustraliana, Antártica, Nazca, etc.), mostrando sus límites y direcciones de movimiento.]
+
+Existen tres tipos de límites entre placas:
+
+- **Límites divergentes:** Las placas se separan. El magma asciende y forma nueva corteza oceánica (dorsales oceánicas).
+- **Límites convergentes:** Las placas chocan. Puede ser:
+    - **Continental-continental:** Formación de cordilleras (Himalaya).
+    - **Oceánica-continental:** La placa oceánica se subduce bajo la continental, formando fosas oceánicas y volcanes en el continente (Andes).
+    - **Oceánica-oceánica:** Una placa se subduce bajo la otra, formando arcos de islas volcánicas (Japón).
+- **Límites transformantes:** Las placas se deslizan lateralmente una respecto a la otra (Falla de San Andrés).
+
+#### b. Volcanes
+
+Un volcán es una estructura geológica por la cual emerge magma (roca fundida) desde el interior de la Tierra.
+
+**Tipos de volcanes según su actividad:**
+- **Activos:** Han tenido erupciones en tiempos históricos.
+- **Inactivos (durmientes):** No han tenido erupciones en tiempos históricos, pero pueden activarse.
+- **Extintos:** No han tenido erupciones en miles de años y es improbable que vuelvan a activarse.
+
+**Tipos de erupciones volcánicas:**
+- **Hawaiana:** Lava muy fluida, sin explosiones violentas.
+- **Estromboliana:** Lava más viscosa, con explosiones moderadas que lanzan piroclastos.
+- **Vulcaniana:** Lava muy viscosa, con explosiones violentas que forman nubes ardientes.
+- **Pliniana:** Erupción extremadamente violenta con grandes columnas de gases y cenizas.
+- **Freatomagmática:** Interacción del magma con agua, produciendo explosiones muy violentas.
+
+#### c. Sismos
+
+Un sismo o terremoto es un movimiento vibratorio de la corteza terrestre causado por la liberación repentina de energía acumulada en las rocas, generalmente en los límites de placas.
+
+**Causas de los Terremotos:**
+- **Tectónicos:** Causados por el movimiento de las placas tectónicas (la mayoría).
+- **Volcánicos:** Asociados a la actividad volcánica.
+- **Inducidos:** Causados por actividades humanas (extracción de fluidos, construcción de embalses).
+
+
 ===== Page 219 =====
+
+**Elementos activos durante un sismo:**
+- **Hipocentro o foco:** Punto en el interior de la Tierra donde se origina el sismo.
+- **Epicentro:** Punto en la superficie terrestre directamente sobre el hipocentro.
+
+**Zonas activas en el mundo:**
+- **Cinturón de Fuego del Pacífico:** Concentra la mayor actividad sísmica y volcánica del planeta.
+- **Cinturón Alpino-Himalayo:** Desde el Mediterráneo hasta el sudeste asiático.
+- **Dorsales oceánicas:** Zonas de divergencia de placas.
+
+**Escalas de medidas:**
+- **Magnitud (Escala de Richter):** Mide la energía liberada en el foco. Escala logarítmica.
+- **Intensidad (Escala de Mercalli):** Mide los efectos del sismo en personas, estructuras y el terreno. Escala cualitativa de I a XII.
+
+**Réplicas:** Son sismos de menor magnitud que ocurren después de un sismo principal, debido al reajuste de las rocas en la zona afectada.
+
+**¿Qué hacer en presencia de un sismo?**
+- Mantener la calma.
+- Ubicarse en zonas de seguridad (bajo mesas resistentes, junto a pilares).
+- Alejarse de ventanas, objetos que puedan caer y cables eléctricos.
+- Si está en el exterior, alejarse de edificios y postes.
+- Después del sismo, revisar posibles daños y seguir las instrucciones de las autoridades.
+
 
 ===== Page 220 =====
 
+### 4. FENÓMENOS CLIMÁTICOS
+
+#### a. Definición de clima
+
+El clima es el conjunto de condiciones atmosféricas (temperatura, humedad, presión, vientos, precipitaciones) que caracterizan una región durante un período prolongado (varias décadas). Se diferencia del **tiempo atmosférico**, que es el estado de la atmósfera en un momento y lugar determinados.
+
+#### b. Métodos de estudio en Climatología
+
+- **Observación directa:** Estaciones meteorológicas, boyas oceánicas, satélites.
+- **Modelos climáticos:** Simulaciones por computadora que proyectan el comportamiento futuro del clima.
+- **Paleoclimatología:** Estudio de climas pasados mediante indicadores indirectos (anillos de árboles, núcleos de hielo, sedimentos oceánicos).
+
+#### c. La atmósfera como sistema
+
+La atmósfera es un sistema complejo que interactúa con la hidrosfera, la litosfera, la biosfera y la criosfera (zonas de hielo). El sistema climático global incluye todos estos componentes y sus interacciones.
+
+**Conceptos básicos en la teoría general de sistemas:**
+- **Sistema:** Conjunto de elementos interrelacionados.
+- **Entradas (inputs):** Energía solar, gases, partículas.
+- **Salidas (outputs):** Radiación reflejada, calor, movimiento.
+- **Retroalimentación (feedback):** Mecanismos que amplifican (retroalimentación positiva) o disminuyen (retroalimentación negativa) los cambios en el sistema.
+
+#### d. Elementos y factores del clima
+
+**Elementos del clima:** Son las variables que se miden para describir el clima.
+- Temperatura
+- Presión atmosférica
+- Humedad
+- Precipitaciones
+- Vientos
+- Nubosidad
+- Evaporación
+
+**Factores del clima:** Son las causas que modifican los elementos del clima.
+- Latitud
+- Altitud
+- Cercanía al mar
+- Corrientes marinas
+- Relieve (presencia de montañas)
+- Vegetación
+- Actividad humana
+
+
 ===== Page 221 =====
+
+### 5. CAMBIO CLIMÁTICO
+
+El cambio climático se refiere a la variación global del clima de la Tierra, atribuida directa o indirectamente a la actividad humana, que altera la composición de la atmósfera.
+
+#### a. Las evidencias del cambio climático
+
+- Aumento de la temperatura media global.
+- Derretimiento de glaciares y casquetes polares.
+- Aumento del nivel del mar.
+- Cambios en los patrones de precipitación.
+- Aumento en la frecuencia e intensidad de fenómenos extremos (olas de calor, sequías, inundaciones, huracanes).
+- Acidificación de los océanos.
+
+#### b. Las causas del cambio climático
+
+**Efecto invernadero natural:** La atmósfera contiene gases de efecto invernadero (GEI) como vapor de agua, CO₂, CH₄ y N₂O, que atrapan parte del calor irradiado por la Tierra, manteniendo la temperatura media en torno a los 15°C. Sin este efecto, la temperatura sería de -18°C.
+
+**Efecto invernadero antropogénico:** La actividad humana, especialmente desde la Revolución Industrial, ha aumentado la concentración de GEI en la atmósfera debido a:
+- Quema de combustibles fósiles (carbón, petróleo, gas) para energía y transporte.
+- Deforestación (los árboles absorben CO₂).
+- Agricultura y ganadería (producción de CH₄ y N₂O).
+- Procesos industriales.
+
+**Capa de ozono y su importancia:** La capa de ozono en la estratosfera absorbe la mayor parte de la radiación ultravioleta (UV) dañina del Sol. Su destrucción por los CFC (clorofluorocarbonos) ha sido un problema ambiental grave, aunque se ha ido recuperando gracias al Protocolo de Montreal (1987).
+
+#### c. Los efectos del cambio climático
+
+- Impactos en la salud humana (olas de calor, enfermedades).
+- Pérdida de biodiversidad y ecosistemas.
+- Escasez de agua y alimentos.
+- Desplazamiento de poblaciones (migrantes climáticos).
+- Impactos económicos en agricultura, pesca, turismo, etc.
+- Aumento de conflictos por recursos.
+
 
 ===== Page 222 =====
 
+### EJERCICIOS DE SELECCIÓN MÚLTIPLE
+
+1. La capa más externa y delgada de la Tierra se denomina:
+
+A) Manto
+B) Corteza
+C) Núcleo
+D) Astenosfera
+
+2. El movimiento de las placas tectónicas es causado principalmente por:
+
+A) La rotación de la Tierra
+B) Las corrientes de convección en el manto
+C) La atracción gravitacional de la Luna
+D) Los terremotos
+
+3. El punto en la superficie terrestre directamente sobre el foco de un sismo se llama:
+
+A) Hipocentro
+B) Epicentro
+C) Foco
+D) Placa
+
+4. La escala de Richter mide:
+
+A) La intensidad del sismo
+B) La magnitud o energía liberada
+C) La profundidad del foco
+D) La duración del sismo
+
+5. El principal gas de efecto invernadero emitido por la quema de combustibles fósiles es:
+
+A) Vapor de agua
+B) Metano (CH₄)
+C) Dióxido de carbono (CO₂)
+D) Ozono (O₃)
+
+6. La capa de la atmósfera que contiene la capa de ozono es:
+
+A) Troposfera
+B) Estratosfera
+C) Mesosfera
+D) Termosfera
+
+7. El Protocolo de Montreal (1987) tuvo como objetivo:
+
+A) Reducir las emisiones de CO₂
+B) Proteger la capa de ozono eliminando los CFC
+C) Regular la pesca en los océanos
+D) Promover las energías renovables
+
+8. El aumento del nivel del mar es una consecuencia directa de:
+
+A) La contaminación del aire
+B) El derretimiento de glaciares y la expansión térmica del agua
+C) La disminución de las lluvias
+D) El movimiento de las placas tectónicas
+
+
 ===== Page 223 =====
+
+## CAPÍTULO 9 | TRABAJO, ENERGÍA Y POTENCIA
+
+### 1. TRABAJO (W)
+
+En física, el trabajo realizado por una fuerza constante se define como el producto escalar de la fuerza por el desplazamiento del punto de aplicación de la fuerza.
+
+\[ W = \vec{F}·\vec{d} = F·d·\cos\theta \]
+
+Donde:
+- F = magnitud de la fuerza
+- d = magnitud del desplazamiento
+- θ = ángulo entre la dirección de la fuerza y la dirección del desplazamiento
+
+Unidades en el SI: Joule (J) = N·m
+
+**Casos particulares:**
+- Si la fuerza es paralela al desplazamiento (θ = 0°): W = F·d (máximo)
+- Si la fuerza es perpendicular al desplazamiento (θ = 90°): W = 0
+- Si la fuerza es opuesta al desplazamiento (θ = 180°): W = -F·d
+
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular el trabajo realizado al empujar un objeto con una fuerza de 50 N una distancia de 10 m, si la fuerza es paralela al desplazamiento.
+
+R: 500 J
+
+2. Una persona levanta una caja de 20 kg hasta una altura de 2 m. Calcular el trabajo realizado contra la gravedad (g = 10 m/s²).
+
+R: 400 J
+
+3. Un objeto de 5 kg se desplaza 8 m sobre una superficie horizontal con rozamiento (μ = 0,2). Calcular el trabajo realizado por la fuerza de rozamiento (g = 10 m/s²).
+
+R: -80 J
+
+4. Una fuerza de 100 N actúa formando un ángulo de 60° con la horizontal, desplazando un objeto 5 m. Calcular el trabajo realizado por la fuerza.
+
+R: 250 J
+
 
 ===== Page 224 =====
 
+### 2. ENERGÍA
+
+La energía es una magnitud escalar que se define como la capacidad de un cuerpo para realizar trabajo. Se presenta en diversas formas y puede transformarse de una a otra. Unidades en el SI: Joule (J).
+
+#### a. Energía cinética (Ec)
+
+Es la energía asociada al movimiento de un cuerpo. Depende de su masa y de su velocidad.
+
+\[ E_c = \frac{1}{2} m v^2 \]
+
+#### b. Energía potencial (Ep)
+
+Es la energía asociada a la posición de un cuerpo dentro de un campo de fuerza.
+
+- **Energía potencial gravitatoria:** Depende de la altura del cuerpo respecto a un nivel de referencia.
+
+\[ E_p = m·g·h \]
+
+- **Energía potencial elástica:** Depende de la deformación de un resorte.
+
+\[ E_{pe} = \frac{1}{2} k·x^2 \]
+
+Donde k es la constante elástica del resorte y x es la deformación.
+
+#### c. Energía mecánica total (Em)
+
+Es la suma de la energía cinética y la energía potencial de un cuerpo.
+
+\[ E_m = E_c + E_p \]
+
+#### d. Fuerzas conservativas y no conservativas
+
+- **Fuerzas conservativas:** El trabajo realizado por estas fuerzas no depende de la trayectoria, sino solo de los puntos inicial y final. La energía mecánica se conserva cuando solo actúan fuerzas conservativas. Ejemplos: fuerza gravitatoria, fuerza elástica.
+- **Fuerzas no conservativas:** El trabajo realizado depende de la trayectoria. La energía mecánica no se conserva; se disipa en forma de calor u otras formas de energía. Ejemplo: fuerza de rozamiento.
+
+
 ===== Page 225 =====
+
+### 3. TEOREMA DE LA ENERGÍA MECÁNICA TOTAL
+
+#### a. Aplicado a fuerzas conservativas
+
+Cuando solo actúan fuerzas conservativas, la energía mecánica total del sistema permanece constante.
+
+\[ E_{m\;inicial} = E_{m\;final} \]
+\[ E_{ci} + E_{pi} = E_{cf} + E_{pf} \]
+
+#### b. Aplicado a fuerzas no conservativas
+
+Cuando actúan fuerzas no conservativas (como el rozamiento), la variación de la energía mecánica es igual al trabajo realizado por las fuerzas no conservativas.
+
+\[ W_{NC} = \Delta E_m = E_{mf} - E_{mi} \]
+
+Si la fuerza no conservativa es el rozamiento, este trabajo es negativo (disipa energía).
+
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular la energía cinética de un automóvil de 1000 kg que viaja a 20 m/s.
+
+R: 200.000 J
+
+2. Calcular la energía potencial gravitatoria de una persona de 60 kg en la azotea de un edificio de 30 m de altura (g = 10 m/s²).
+
+R: 18.000 J
+
+3. Un objeto de 2 kg se deja caer desde una altura de 20 m. Calcular su velocidad al llegar al suelo (g = 10 m/s²).
+
+R: 20 m/s
+
+4. Un resorte de constante k = 500 N/m se comprime 10 cm. Calcular la energía potencial elástica almacenada.
+
+R: 2,5 J
+
+5. Una pelota de 0,5 kg se lanza verticalmente hacia arriba con una velocidad de 15 m/s. Calcular la altura máxima alcanzada.
+
+R: 11,25 m
+
 
 ===== Page 226 =====
 
+### 4. POTENCIA (P)
+
+La potencia es la rapidez con la que se realiza un trabajo o se transfiere energía.
+
+\[ P = \frac{W}{t} = \frac{\Delta E}{t} \]
+
+Para una fuerza constante en la dirección del movimiento:
+
+\[ P = \frac{F·d}{t} = F·v \]
+
+Unidades en el SI: Watt (W) = J/s. También se usa el caballo de fuerza (HP): 1 HP ≈ 746 W.
+
+### EJERCICIOS DE DESARROLLO
+
+1. Una máquina realiza un trabajo de 5000 J en 10 s. Calcular su potencia.
+
+R: 500 W
+
+2. Un motor eleva un peso de 200 N a una altura de 15 m en 5 s. Calcular la potencia desarrollada.
+
+R: 600 W
+
+3. Un automóvil de 1200 kg se mueve a velocidad constante de 20 m/s por una carretera horizontal. Si la fuerza de rozamiento total es de 600 N, calcular la potencia desarrollada por el motor.
+
+R: 12.000 W
+
+4. Calcular el tiempo necesario para que una bomba de 2 kW eleve 1000 litros de agua a un depósito situado a 20 m de altura.
+
+R: 100 s
+
+
 ===== Page 227 =====
+
+### 5. TIPOS DE ENERGÍA
+
+- **Energía térmica:** Asociada al movimiento aleatorio de las partículas de un cuerpo.
+- **Energía eléctrica:** Asociada al movimiento de cargas eléctricas.
+- **Energía radiante:** Energía transportada por ondas electromagnéticas (luz, ondas de radio).
+- **Energía química:** Almacenada en los enlaces químicos de las sustancias.
+- **Energía nuclear:** Almacenada en el núcleo de los átomos, liberada en reacciones de fisión o fusión.
+
+### 6. FUENTES DE ENERGÍA
+
+#### a. Energías renovables
+
+Son aquellas que se obtienen de fuentes naturales virtualmente inagotables, ya sea por la inmensa cantidad de energía que contienen o porque son capaces de regenerarse por medios naturales.
+
+- **Energía mareomotriz:** Aprovecha el movimiento de las mareas.
+- **Energía hidráulica:** Aprovecha la energía potencial del agua embalsada.
+- **Energía eólica:** Aprovecha la energía cinética del viento.
+- **Energía solar:** Aprovecha la radiación solar (fotovoltaica o térmica).
+- **Energía de la biomasa:** Aprovecha la materia orgánica para producir combustible.
+
+#### b. Energías no renovables
+
+Son aquellas que se obtienen de fuentes que se agotan con su uso y no se regeneran a escala de tiempo humana.
+
+- **Combustibles fósiles:** Carbón, petróleo, gas natural.
+- **Energía nuclear:** Utiliza la fisión de átomos de uranio o plutonio.
+
+### 7. EL CONSUMO DE ENERGÍA
+
+El consumo de energía a nivel mundial ha aumentado drásticamente desde la Revolución Industrial, con graves impactos ambientales (contaminación, cambio climático). La eficiencia energética y el desarrollo de energías renovables son claves para un futuro sostenible.
+
+### 8. EQUIVALENCIA MASA-ENERGÍA
+
+La teoría de la relatividad de Einstein establece que la masa y la energía son equivalentes, relacionadas por la famosa ecuación:
+
+\[ E = m·c^2 \]
+
+Donde c es la velocidad de la luz (3·10⁸ m/s). Esta ecuación muestra que una pequeña cantidad de masa puede convertirse en una enorme cantidad de energía (como en las reacciones nucleares).
+
 
 ===== Page 228 =====
 
+### EJERCICIOS DE SELECCIÓN MÚLTIPLE
+
+1. El trabajo realizado por una fuerza de 20 N que desplaza un objeto 5 m en la misma dirección de la fuerza es:
+
+A) 4 J
+B) 25 J
+C) 100 J
+D) 500 J
+
+2. La energía cinética de un cuerpo de 2 kg que se mueve a 10 m/s es:
+
+A) 10 J
+B) 20 J
+C) 50 J
+D) 100 J
+
+3. La energía potencial gravitatoria de un cuerpo de 5 kg a 10 m de altura es: (g = 10 m/s²)
+
+A) 50 J
+B) 100 J
+C) 500 J
+D) 1000 J
+
+4. La potencia de una máquina que realiza 2000 J de trabajo en 4 s es:
+
+A) 500 W
+B) 8000 W
+C) 2004 W
+D) 0,002 W
+
+5. Una lámpara de 100 W está encendida durante 10 horas. La energía consumida en kWh es:
+
+A) 0,1 kWh
+B) 1 kWh
+C) 10 kWh
+D) 100 kWh
+
+6. La energía eólica es un tipo de energía:
+
+A) No renovable
+B) Renovable
+C) Nuclear
+D) Fósil
+
+7. La ecuación E = m·c² fue propuesta por:
+
+A) Newton
+B) Einstein
+C) Galileo
+D) Maxwell
+
+8. Cuando la única fuerza que actúa es la gravitatoria, la energía mecánica:
+
+A) Aumenta
+B) Disminuye
+C) Se conserva
+D) Se anula
+
+
 ===== Page 229 =====
+
+## CAPÍTULO 10 | CALOR
+
+### 1. TEMPERATURA Y CALOR
+
+#### a. Temperatura
+
+La temperatura es una magnitud física que mide el grado de agitación térmica de las partículas de un cuerpo. Está relacionada con la energía cinética media de las partículas. Unidades: Kelvin (K), Celsius (°C), Fahrenheit (°F).
+
+#### b. Energía térmica y calor
+
+- **Energía térmica:** Es la energía total asociada al movimiento aleatorio de las partículas de un cuerpo.
+- **Calor:** Es la transferencia de energía térmica entre dos cuerpos que están a diferente temperatura. El calor fluye espontáneamente del cuerpo de mayor temperatura al de menor temperatura.
+
+#### c. La medida de la temperatura
+
+La temperatura se mide con termómetros, que utilizan alguna propiedad termométrica (dilatación de un líquido, variación de la resistencia eléctrica, etc.) que varía con la temperatura.
+
+**Escalas termométricas:**
+
+- **Escala Celsius (°C):** Asigna 0°C al punto de fusión del hielo y 100°C al punto de ebullición del agua a presión atmosférica normal.
+- **Escala Fahrenheit (°F):** Asigna 32°F al punto de fusión del hielo y 212°F al punto de ebullición del agua.
+- **Escala Kelvin (K):** Escala absoluta. 0 K (cero absoluto) es la temperatura teórica a la cual cesa todo movimiento molecular. 0 K = -273,15°C. La variación de 1 K es igual a la variación de 1°C.
+
+**Conversiones:**
+- °C a K: T(K) = T(°C) + 273,15
+- °C a °F: T(°F) = (9/5)·T(°C) + 32
+- °F a °C: T(°C) = (5/9)·[T(°F) - 32]
+
 
 ===== Page 230 =====
 
+### EJERCICIOS DE DESARROLLO
+
+1. Convertir 25°C a Kelvin y a Fahrenheit.
+
+R: 298,15 K; 77°F
+
+2. La temperatura normal del cuerpo humano es 37°C. Expresarla en K y °F.
+
+R: 310,15 K; 98,6°F
+
+3. Una sustancia tiene una temperatura de 68°F. Expresarla en °C y K.
+
+R: 20°C; 293,15 K
+
+
 ===== Page 231 =====
+
+### 2. CALOR
+
+#### a. Cantidad de calor
+
+La cantidad de calor (Q) es la energía transferida entre cuerpos debido a una diferencia de temperatura.
+
+**La ecuación calorimétrica:** Relaciona la cantidad de calor con la masa, el calor específico y la variación de temperatura.
+
+\[ Q = m·c·\Delta T \]
+
+Donde:
+- Q = cantidad de calor (J o calorías)
+- m = masa del cuerpo (kg o g)
+- c = calor específico (J/kg·K o cal/g·°C)
+- ΔT = variación de temperatura (T_final - T_inicial)
+
+1 caloría (cal) = 4,184 J
+
+#### b. Calor específico y capacidad calorífica
+
+- **Calor específico (c):** Es la cantidad de calor necesaria para elevar la temperatura de 1 kg (o 1 g) de una sustancia en 1°C (o 1 K).
+- **Capacidad calorífica (C):** Es la cantidad de calor necesaria para elevar la temperatura de un cuerpo en 1°C (o 1 K). C = m·c.
+
+**Calor específico de algunas sustancias (cal/g·°C):**
+- Agua: 1,00
+- Hielo: 0,50
+- Vapor: 0,48
+- Aluminio: 0,22
+- Hierro: 0,11
+- Cobre: 0,093
+
+#### c. Equilibrio Térmico
+
+Cuando dos o más cuerpos a diferentes temperaturas se ponen en contacto, el calor fluye del de mayor temperatura al de menor temperatura hasta que alcanzan la misma temperatura (equilibrio térmico). En un sistema aislado, el calor cedido por los cuerpos que se enfrían es igual al calor absorbido por los que se calientan.
+
+\[ \sum Q_{cedido} = \sum Q_{absorbido} \]
+\[ Q_1 + Q_2 + ... = 0 \]
+
 
 ===== Page 232 =====
 
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular la cantidad de calor necesaria para elevar la temperatura de 500 g de agua de 20°C a 80°C (c_agua = 1 cal/g·°C).
+
+R: 30.000 cal
+
+2. Se mezclan 200 g de agua a 80°C con 300 g de agua a 20°C en un recipiente aislado. Calcular la temperatura de equilibrio.
+
+R: 44°C
+
+3. Calcular la capacidad calorífica de un bloque de hierro de 2 kg (c_hierro = 0,11 cal/g·°C).
+
+R: 220 cal/°C
+
+4. Un bloque de aluminio de 500 g a 100°C se introduce en 200 g de agua a 20°C. Calcular la temperatura de equilibrio (c_aluminio = 0,22 cal/g·°C).
+
+R: aproximadamente 34,7°C
+
+
 ===== Page 233 =====
+
+### 3. MODELO CINÉTICO DE LA MATERIA
+
+El modelo cinético de la materia explica las propiedades de los sólidos, líquidos y gases en términos del movimiento de las partículas (átomos o moléculas) que los constituyen.
+
+**Postulados básicos:**
+- La materia está formada por partículas en continuo movimiento.
+- Existen fuerzas de atracción y repulsión entre las partículas.
+- La temperatura está relacionada con la energía cinética media de las partículas.
+
+### 4. ESTADOS DE AGREGACIÓN DE LA MATERIA
+
+- **Sólido:** Partículas muy juntas, con movimiento vibratorio alrededor de posiciones fijas. Fuerzas de cohesión muy fuertes. Forma y volumen propios.
+- **Líquido:** Partículas más separadas que en los sólidos, con movimiento de traslación limitado. Pueden deslizarse unas sobre otras. Fuerzas de cohesión fuertes pero no tanto como en sólidos. Volumen propio, forma variable.
+- **Gaseoso:** Partículas muy separadas, con movimiento de traslación rápido y desordenado. Fuerzas de cohesión muy débiles. No tienen forma ni volumen propios.
+- **Plasma:** Gas ionizado, con electrones libres y núcleos. Es el estado más abundante en el universo.
+
+### 5. CAMBIOS DE ESTADO DE LA MATERIA
+
+Los cambios de estado son procesos en los que la materia pasa de un estado de agregación a otro mediante la absorción o liberación de calor, sin que varíe su temperatura durante el cambio.
+
+[IMAGEN: Diagrama de cambios de estado: sólido → líquido (fusión), líquido → sólido (solidificación), líquido → gas (vaporización), gas → líquido (condensación), sólido → gas (sublimación), gas → sólido (sublimación inversa).]
+
+- **Calor latente de fusión (L_f):** Cantidad de calor necesaria para cambiar 1 kg de sustancia de sólido a líquido a temperatura constante.
+- **Calor latente de vaporización (L_v):** Cantidad de calor necesaria para cambiar 1 kg de sustancia de líquido a gas a temperatura constante.
+
+\[ Q = m·L \]
+
+**Calor latente del agua:**
+- L_f = 80 cal/g = 334·10³ J/kg
+- L_v = 540 cal/g = 2260·10³ J/kg
+
 
 ===== Page 234 =====
 
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular la cantidad de calor necesaria para fundir 200 g de hielo a 0°C (L_f = 80 cal/g).
+
+R: 16.000 cal
+
+2. Calcular la cantidad de calor necesaria para vaporizar 100 g de agua a 100°C (L_v = 540 cal/g).
+
+R: 54.000 cal
+
+3. Calcular la cantidad de calor necesaria para convertir 50 g de hielo a -10°C en vapor a 100°C. (c_hielo = 0,5 cal/g·°C; c_agua = 1 cal/g·°C; L_f = 80 cal/g; L_v = 540 cal/g)
+
+R: 
+- Calentar hielo de -10°C a 0°C: 50·0,5·10 = 250 cal
+- Fundir hielo: 50·80 = 4000 cal
+- Calentar agua de 0°C a 100°C: 50·1·100 = 5000 cal
+- Vaporizar agua: 50·540 = 27.000 cal
+Total: 36.250 cal
+
+
 ===== Page 235 =====
+
+### 6. DILATACIÓN TÉRMICA
+
+#### a. Concepto de dilatación
+
+La mayoría de los cuerpos aumentan de tamaño cuando aumenta su temperatura (dilatación) y disminuyen cuando se enfrían (contracción). Esto se debe al aumento de la amplitud de vibración de las partículas.
+
+#### b. Dilatación de los sólidos
+
+- **Dilatación lineal:** Aumento en una dimensión (longitud).
+
+\[ \Delta L = L_0·\alpha·\Delta T \]
+\[ L = L_0·(1 + \alpha·\Delta T) \]
+
+Donde α es el coeficiente de dilatación lineal (1/°C o 1/K).
+
+- **Dilatación superficial:** Aumento en dos dimensiones (área).
+
+\[ \Delta A = A_0·\beta·\Delta T \]
+\[ A = A_0·(1 + \beta·\Delta T) \]
+\[ \beta = 2\alpha \]
+
+- **Dilatación volumétrica:** Aumento en tres dimensiones (volumen).
+
+\[ \Delta V = V_0·\gamma·\Delta T \]
+\[ V = V_0·(1 + \gamma·\Delta T) \]
+\[ \gamma = 3\alpha \]
+
+**Coeficientes de dilatación lineal (α) para algunos materiales (10⁻⁶/°C):**
+- Aluminio: 23
+- Cobre: 17
+- Hierro: 12
+- Vidrio: 9
+- Acero: 11
+- Hormigón: 12
+
+#### c. Dilatación de los líquidos
+
+Los líquidos generalmente se dilatan más que los sólidos. La dilatación volumétrica de un líquido se calcula con la misma fórmula que para sólidos, con su propio coeficiente de dilatación volumétrica.
+
+El agua tiene un comportamiento anómalo entre 0°C y 4°C: se contrae al calentarse en ese rango, alcanzando su máxima densidad a 4°C.
+
+#### d. Dilatación de los gases
+
+Los gases se dilatan mucho más que líquidos y sólidos. Para un gas ideal a presión constante, el volumen es directamente proporcional a la temperatura absoluta (Ley de Charles):
+
+\[ \frac{V_1}{T_1} = \frac{V_2}{T_2} \] (T en Kelvin)
+
 
 ===== Page 236 =====
 
+### EJERCICIOS DE DESARROLLO
+
+1. Una barra de hierro tiene una longitud de 2 m a 20°C. Calcular su longitud a 120°C (α_hierro = 12·10⁻⁶ /°C).
+
+R: 2,0024 m
+
+2. Una placa de aluminio tiene un área de 1 m² a 0°C. Calcular su área a 100°C (α_aluminio = 23·10⁻⁶ /°C).
+
+R: 1,0046 m²
+
+3. Un recipiente de vidrio de 1 L de capacidad a 20°C se llena completamente con mercurio. Al calentar el conjunto a 80°C, se derrama algo de mercurio. Calcular el volumen derramado (α_vidrio = 9·10⁻⁶ /°C, γ_mercurio = 180·10⁻⁶ /°C).
+
+R: ΔV_mercurio = 10,8 cm³; ΔV_recipiente = 1,62 cm³; derrame = 9,18 cm³
+
+4. Un gas ocupa un volumen de 2 L a 27°C. Calcular su volumen a 127°C si la presión se mantiene constante.
+
+R: 2,67 L
+
+
 ===== Page 237 =====
+
+### 7. TRANSMISIÓN DE CALOR
+
+#### a. Conducción
+
+Es la transferencia de calor a través de un medio material sin desplazamiento apreciable de materia. Ocurre en sólidos, especialmente en metales. La energía se transmite por vibración de las partículas y por electrones libres.
+
+La ley de Fourier para la conducción establece que la cantidad de calor transferida por unidad de tiempo (potencia térmica) es proporcional al área de la sección transversal y al gradiente de temperatura:
+
+\[ \frac{Q}{t} = k·A·\frac{\Delta T}{L} \]
+
+Donde:
+- k = conductividad térmica del material (W/m·K)
+- A = área de la sección transversal
+- ΔT = diferencia de temperatura entre los extremos
+- L = longitud del material
+
+#### b. Convección
+
+Es la transferencia de calor mediante el movimiento de un fluido (líquido o gas). Puede ser natural (debido a cambios de densidad) o forzada (mediante un ventilador o bomba). Ejemplos: calefacción, corrientes de convección en la atmósfera y océanos.
+
+[IMAGEN: Corrientes de convección en un fluido calentado desde abajo. El fluido caliente asciende, se enfría y desciende.]
+
+#### c. Radiación
+
+Es la transferencia de calor mediante ondas electromagnéticas (infrarrojas). No necesita un medio material; puede propagarse en el vacío. Todos los cuerpos emiten radiación, y la cantidad emitida depende de su temperatura y de su emisividad.
+
+La ley de Stefan-Boltzmann establece que la potencia radiada por un cuerpo negro es proporcional a la cuarta potencia de su temperatura absoluta:
+
+\[ P = \sigma·A·T^4 \]
+
+Donde σ = 5,67·10⁻⁸ W/m²·K⁴ es la constante de Stefan-Boltzmann.
+
 
 ===== Page 238 =====
 
+### 8. APLICACIONES DEL CALOR
+
+#### a. Efecto invernadero
+
+El vidrio de un invernadero permite el paso de la radiación solar (visible) pero absorbe y refleja parte de la radiación infrarroja emitida por los objetos en su interior, atrapando el calor. Este mismo principio explica el efecto invernadero atmosférico, donde los gases de efecto invernadero atrapan parte de la radiación infrarroja emitida por la Tierra.
+
+#### b. Anomalía del agua
+
+El agua tiene un comportamiento anómalo: su densidad máxima se alcanza a 4°C, no a 0°C. Esto permite que el hielo flote y que los lagos se congelen de arriba hacia abajo, protegiendo la vida acuática en invierno.
+
+#### c. Ley de enfriamiento de Newton
+
+Establece que la velocidad de enfriamiento de un cuerpo es proporcional a la diferencia de temperatura entre el cuerpo y el medio ambiente:
+
+\[ \frac{dT}{dt} = -k·(T - T_{ambiente}) \]
+
+### EJERCICIOS DE SELECCIÓN MÚLTIPLE
+
+1. El proceso de transferencia de calor en un sólido metálico se denomina:
+
+A) Convección
+B) Radiación
+C) Conducción
+D) Dilatación
+
+2. La transferencia de calor por movimiento de un fluido se denomina:
+
+A) Conducción
+B) Convección
+C) Radiación
+D) Calor latente
+
+3. El calor latente de fusión del agua es 80 cal/g. Esto significa que:
+
+A) Se necesitan 80 cal para fundir 1 g de hielo a 0°C
+B) Se necesitan 80 cal para calentar 1 g de agua 1°C
+C) 1 g de agua libera 80 cal al congelarse
+D) A y C son correctas
+
+4. La temperatura a la cual cesa teóricamente el movimiento molecular se llama:
+
+A) 0°C
+B) 32°F
+C) Cero absoluto
+D) Punto de ebullición
+
+
 ===== Page 239 =====
+
+## CAPÍTULO 11 | ELECTRICIDAD Y MAGNETISMO
+
+### 1. CONCEPTOS BÁSICOS
+
+#### a. Electricidad positiva y negativa
+
+La electricidad es una forma de energía asociada a la existencia de cargas eléctricas. Hay dos tipos de cargas: positivas (protones) y negativas (electrones). Cargas del mismo signo se repelen, cargas de signo opuesto se atraen.
+
+**Primera ley de electricidad:** La carga eléctrica se conserva. En un sistema aislado, la carga total permanece constante.
+
+#### b. Estructura atómica
+
+El átomo está formado por un núcleo (con protones, carga positiva, y neutrones, sin carga) y una corteza (con electrones, carga negativa). En condiciones normales, el átomo es neutro (igual número de protones que de electrones).
+
+#### c. Comportamiento eléctrico de los materiales
+
+- **Conductores:** Materiales que permiten el fácil movimiento de cargas eléctricas (generalmente metales, debido a sus electrones libres).
+- **Aislantes:** Materiales que no permiten el movimiento de cargas (madera, plástico, vidrio).
+- **Semiconductores:** Materiales cuyo comportamiento eléctrico puede ser controlado (silicio, germanio).
+
+#### d. Electroscopio
+
+Instrumento que sirve para detectar la presencia de carga eléctrica. Consiste en una varilla metálica con dos láminas metálicas delgadas (hojuelas) en su extremo. Al acercar un objeto cargado, las hojuelas se separan por repulsión.
+
+[IMAGEN: Esquema de un electroscopio de láminas, mostrando las láminas separadas cuando se acerca un objeto cargado.]
+
+#### e. Distribución de la carga eléctrica
+
+En un conductor, la carga eléctrica se distribuye en la superficie exterior. En un aislante, la carga permanece en el lugar donde se depositó.
+
+#### f. El pararrayos
+
+Dispositivo inventado por Benjamin Franklin que protege edificaciones de los rayos. Consiste en una punta metálica en la parte más alta de la estructura, conectada a tierra mediante un cable. Atrae el rayo y lo conduce a tierra, evitando daños.
+
 
 ===== Page 240 =====
 
+### 2. LEY DE COULOMB
+
+La ley de Coulomb establece la fuerza de interacción entre dos cargas eléctricas puntuales en reposo. La fuerza es proporcional al producto de las cargas e inversamente proporcional al cuadrado de la distancia que las separa.
+
+\[ F = k·\frac{|q_1·q_2|}{r^2} \]
+
+Donde:
+- F = magnitud de la fuerza (N)
+- q₁, q₂ = magnitudes de las cargas (C, culombios)
+- r = distancia entre las cargas (m)
+- k = constante de Coulomb = 9·10⁹ N·m²/C² en el vacío
+
+La fuerza actúa a lo largo de la línea que une las cargas: es repulsiva si las cargas son del mismo signo, y atractiva si son de signo contrario.
+
+### 3. UNIDADES DE CARGA
+
+La unidad de carga en el SI es el **Culombio (C)**.
+
+- 1 C = 6,25·10¹⁸ electrones (aprox.)
+- Carga del electrón: e = 1,6·10⁻¹⁹ C
+
+### EJERCICIOS DE DESARROLLO
+
+1. Dos cargas de 2·10⁻⁶ C y 5·10⁻⁶ C están separadas 10 cm en el vacío. Calcular la fuerza entre ellas.
+
+R: 9 N
+
+2. Calcular la fuerza entre un protón y un electrón en un átomo de hidrógeno, separados 5,3·10⁻¹¹ m (k = 9·10⁹ N·m²/C²; e = 1,6·10⁻¹⁹ C).
+
+R: 8,2·10⁻⁸ N
+
+3. Dos cargas iguales se repelen con una fuerza de 0,1 N cuando están separadas 20 cm. Calcular el valor de cada carga.
+
+R: 2,1·10⁻⁶ C
+
+
 ===== Page 241 =====
+
+### 4. PRINCIPIO DE SUPERPOSICIÓN
+
+Cuando hay más de dos cargas, la fuerza neta sobre una carga es la suma vectorial de las fuerzas ejercidas por cada una de las otras cargas por separado.
+
+### 5. CAMPO ELÉCTRICO
+
+El campo eléctrico (E) en un punto del espacio es la fuerza eléctrica por unidad de carga positiva colocada en ese punto.
+
+\[ \vec{E} = \frac{\vec{F}}{q} \]
+
+Unidades: N/C
+
+El campo eléctrico creado por una carga puntual Q a una distancia r es:
+
+\[ E = k·\frac{|Q|}{r^2} \]
+
+El campo es radial: sale de la carga si es positiva, y entra si es negativa.
+
+#### a. Líneas de fuerza
+
+Son líneas imaginarias que representan la dirección del campo eléctrico. Se dibujan de modo que:
+- Salen de las cargas positivas y entran en las negativas.
+- La densidad de líneas es proporcional a la intensidad del campo.
+- No se cruzan.
+
+[IMAGEN: Líneas de campo eléctrico para una carga positiva (radiales salientes), una carga negativa (radiales entrantes), y un dipolo (dos cargas opuestas).]
+
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular el campo eléctrico a 30 cm de una carga de 4·10⁻⁶ C.
+
+R: 4·10⁵ N/C
+
+2. Una carga de prueba de 2·10⁻⁶ C experimenta una fuerza de 0,5 N en un punto. Calcular la intensidad del campo eléctrico en ese punto.
+
+R: 2,5·10⁵ N/C
+
+3. Calcular la fuerza sobre una carga de 3·10⁻⁶ C colocada en un punto donde el campo eléctrico es de 500 N/C.
+
+R: 1,5·10⁻³ N
+
 
 ===== Page 242 =====
 
+### 6. ENERGÍA POTENCIAL ELÉCTRICA
+
+La energía potencial eléctrica (U) de un sistema de cargas es el trabajo necesario para traer las cargas desde el infinito hasta sus posiciones.
+
+Para dos cargas puntuales q₁ y q₂ separadas una distancia r:
+
+\[ U = k·\frac{q_1·q_2}{r} \]
+
+#### a. Diferencia de potencial entre dos puntos
+
+La diferencia de potencial (ΔV) entre dos puntos A y B es el trabajo por unidad de carga para mover una carga de prueba desde A hasta B.
+
+\[ \Delta V = V_B - V_A = \frac{W_{A→B}}{q} \]
+
+Unidades: Voltio (V) = J/C
+
+#### b. Potencial de una esfera electrizada
+
+Una esfera conductora de radio R con carga Q tiene un potencial en su superficie:
+
+\[ V = k·\frac{Q}{R} \]
+
+En el interior de la esfera, el potencial es constante e igual al de la superficie.
+
+#### c. Diferencia de potencial en un campo eléctrico homogéneo
+
+En un campo eléctrico uniforme de intensidad E, la diferencia de potencial entre dos puntos separados una distancia d en la dirección del campo es:
+
+\[ \Delta V = E·d \]
+
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular el potencial eléctrico a 50 cm de una carga de 2·10⁻⁶ C.
+
+R: 36.000 V
+
+2. Calcular el trabajo necesario para mover una carga de 3·10⁻⁶ C entre dos puntos con diferencia de potencial de 100 V.
+
+R: 3·10⁻⁴ J
+
+3. En un campo eléctrico uniforme de 2000 N/C, ¿cuál es la diferencia de potencial entre dos puntos separados 5 cm en la dirección del campo?
+
+R: 100 V
+
+
 ===== Page 243 =====
+
+### 7. ELECTRODINÁMICA
+
+#### a. Corriente eléctrica
+
+La corriente eléctrica (I) es el flujo de cargas eléctricas a través de un material. Se define como la cantidad de carga que pasa por una sección transversal por unidad de tiempo.
+
+\[ I = \frac{\Delta Q}{\Delta t} \]
+
+Unidades: Ampere (A) = C/s
+
+La corriente convencional se considera como el flujo de cargas positivas, aunque en los metales las cargas que se mueven son los electrones (negativos).
+
+#### b. Ley de Ohm
+
+La ley de Ohm establece que, para muchos materiales (conductores óhmicos), la diferencia de potencial aplicada a un conductor es directamente proporcional a la corriente que circula por él.
+
+\[ V = I·R \]
+
+Donde R es la resistencia eléctrica del conductor.
+
+#### c. Resistencia eléctrica
+
+La resistencia eléctrica (R) es la oposición que presenta un material al paso de la corriente. Depende de la naturaleza del material, de su geometría y de la temperatura.
+
+Para un conductor de longitud L, sección transversal A y resistividad ρ:
+
+\[ R = \rho·\frac{L}{A} \]
+
+Unidades de resistencia: Ohmio (Ω)
+
+La resistividad es una propiedad del material que indica su oposición al paso de la corriente. Su unidad es Ω·m.
+
+#### d. Resistencia y temperatura
+
+Para la mayoría de los metales, la resistividad aumenta con la temperatura:
+
+\[ \rho = \rho_0·[1 + \alpha·(T - T_0)] \]
+\[ R = R_0·[1 + \alpha·(T - T_0)] \]
+
+Donde α es el coeficiente de temperatura de la resistividad.
+
 
 ===== Page 244 =====
 
+### EJERCICIOS DE DESARROLLO
+
+1. Por un conductor circulan 20 C en 4 s. Calcular la corriente.
+
+R: 5 A
+
+2. Calcular la resistencia de un conductor si al aplicarle 12 V circula una corriente de 3 A.
+
+R: 4 Ω
+
+3. Calcular la corriente que circula por una resistencia de 100 Ω conectada a 220 V.
+
+R: 2,2 A
+
+4. Calcular la resistencia de un alambre de cobre de 2 m de longitud y 1 mm² de sección (ρ_cobre = 1,7·10⁻⁸ Ω·m).
+
+R: 0,034 Ω
+
+
 ===== Page 245 =====
+
+### 8. CIRCUITO ELÉCTRICO
+
+Un circuito eléctrico es un conjunto de elementos conectados que permiten el paso de la corriente eléctrica.
+
+#### a. Elementos de un circuito eléctrico
+
+- **Generadores eléctricos:** Proporcionan la energía para mantener la corriente (pilas, baterías, fuentes de alimentación). Producen una diferencia de potencial.
+- **Dinamo:** Generador que convierte energía mecánica en eléctrica.
+- **Conductores:** Cables que conectan los elementos del circuito (generalmente cobre).
+- **Aparatos eléctricos:** Elementos que consumen energía (resistencias, lámparas, motores).
+- **Dispositivos de control:** Interruptores, llaves, que permiten abrir o cerrar el circuito.
+- **El voltímetro:** Instrumento para medir la diferencia de potencial (se conecta en paralelo).
+- **El amperímetro:** Instrumento para medir la corriente (se conecta en serie).
+
+#### b. Corriente continua y alterna
+
+- **Corriente continua (DC):** La corriente fluye siempre en la misma dirección. Ej: pilas, baterías.
+- **Corriente alterna (AC):** La corriente cambia de dirección periódicamente. Es la que se utiliza en las redes eléctricas domésticas (frecuencia de 50 Hz en Chile).
+
+#### c. Potencia eléctrica
+
+La potencia eléctrica (P) es la energía consumida por un aparato por unidad de tiempo.
+
+\[ P = V·I \]
+
+Combinando con la ley de Ohm:
+
+\[ P = I^2·R = \frac{V^2}{R} \]
+
+Unidades: Watt (W)
+
+La energía consumida se mide en kilowatt-hora (kWh):
+
+\[ E(kWh) = P(kW)·t(h) \]
+
 
 ===== Page 246 =====
 
+### 9. CIRCUITOS DE CORRIENTE CONTINUA
+
+#### a. Resistencias en serie
+
+En un circuito en serie, las resistencias están conectadas una a continuación de la otra, de modo que la corriente es la misma en todas ellas.
+
+[IMAGEN: Circuito con tres resistencias en serie conectadas a una batería.]
+
+- Corriente: I = I₁ = I₂ = I₃
+- Resistencia equivalente: R_eq = R₁ + R₂ + R₃
+- Voltaje total: V = V₁ + V₂ + V₃
+
+#### b. Resistencias en paralelo
+
+En un circuito en paralelo, las resistencias están conectadas de modo que todas tienen la misma diferencia de potencial entre sus extremos.
+
+[IMAGEN: Circuito con tres resistencias en paralelo conectadas a una batería.]
+
+- Voltaje: V = V₁ = V₂ = V₃
+- Corriente total: I = I₁ + I₂ + I₃
+- Resistencia equivalente: 1/R_eq = 1/R₁ + 1/R₂ + 1/R₃
+
+Para dos resistencias en paralelo: R_eq = (R₁·R₂)/(R₁ + R₂)
+
+#### c. Circuitos mixtos
+
+Combinan resistencias en serie y en paralelo. Se resuelven calculando resistencias equivalentes parciales.
+
+
 ===== Page 247 =====
+
+### EJERCICIOS DE DESARROLLO
+
+1. Calcular la resistencia equivalente de tres resistencias de 10 Ω, 20 Ω y 30 Ω conectadas en serie.
+
+R: 60 Ω
+
+2. Calcular la resistencia equivalente de las mismas resistencias conectadas en paralelo.
+
+R: 5,45 Ω
+
+3. En el circuito de la figura (serie), calcular la corriente total si el voltaje de la batería es 120 V.
+
+R: I = 120/60 = 2 A
+
+4. En el mismo circuito, calcular el voltaje en cada resistencia.
+
+R: V₁ = 2·10 = 20 V; V₂ = 2·20 = 40 V; V₃ = 2·30 = 60 V
+
+5. En el circuito en paralelo del ejercicio 2, calcular la corriente total si el voltaje es 120 V.
+
+R: I_total = V/R_eq = 120/5,45 = 22 A
+
+6. Calcular la corriente en cada resistencia del circuito anterior.
+
+R: I₁ = 120/10 = 12 A; I₂ = 120/20 = 6 A; I₃ = 120/30 = 4 A
+
 
 ===== Page 248 =====
 
+### 10. INSTALACIONES DOMICILIARIAS
+
+Las instalaciones eléctricas domiciliarias están diseñadas para suministrar energía de manera segura a los diferentes aparatos de una casa.
+
+#### a. Interruptores
+
+Dispositivos que permiten abrir o cerrar un circuito, controlando el encendido y apagado de las luces y otros aparatos.
+
+#### b. Enchufes (tomacorrientes)
+
+Puntos de conexión donde se pueden conectar aparatos. Proporcionan acceso a la red eléctrica.
+
+#### c. Medidor de energía eléctrica
+
+Mide la energía consumida en una vivienda, generalmente en kWh.
+
+#### d. Cable a tierra
+
+Es una conexión de seguridad que deriva a tierra cualquier corriente de fuga, protegiendo a las personas de descargas eléctricas.
+
+### 11. ¿CÓMO LLEGA LA ELECTRICIDAD A LOS DOMICILIOS?
+
+1. **Generación:** En centrales eléctricas (hidroeléctricas, térmicas, eólicas, solares, nucleares).
+2. **Transmisión:** La electricidad se transporta a grandes distancias a través de líneas de alta tensión para reducir pérdidas.
+3. **Subestaciones:** Reducen la tensión para su distribución local.
+4. **Distribución:** La electricidad se distribuye a través de redes de media y baja tensión hasta los domicilios.
+5. **Conexión domiciliaria:** Llega al medidor y luego al tablero de distribución de la casa, desde donde se reparte a los diferentes circuitos.
+
+
 ===== Page 249 =====
+
+### 12. MAGNETISMO
+
+#### a. Introducción histórica
+
+El magnetismo es conocido desde la antigüedad por la propiedad de la magnetita (Fe₃O₄) de atraer el hierro. Se observó que una aguja imantada libremente se orienta aproximadamente en la dirección norte-sur (brújula).
+
+**El experimento de Oersted (1820):** Hans Christian Oersted descubrió que una corriente eléctrica desvía una aguja magnética, demostrando la relación entre electricidad y magnetismo. Una corriente genera un campo magnético a su alrededor.
+
+**Fuerza entre conductores eléctricos paralelos:** Dos conductores paralelos por los que circulan corrientes se atraen si las corrientes van en el mismo sentido, y se repelen si van en sentido contrario.
+
+#### b. El campo magnético
+
+El campo magnético (B) es una magnitud vectorial que describe la influencia magnética de imanes y corrientes eléctricas. Unidades en el SI: Tesla (T).
+
+Las líneas de campo magnético salen del polo norte y entran por el polo sur de un imán.
+
+[IMAGEN: Líneas de campo magnético de un imán de barra, saliendo del polo norte y entrando en el polo sur.]
+
+#### c. Fuerza magnética sobre una corriente eléctrica
+
+Un conductor por el que circula una corriente, colocado en un campo magnético, experimenta una fuerza. La magnitud de la fuerza es:
+
+\[ F = I·L·B·\text{sen}\theta \]
+
+Donde:
+- I = corriente
+- L = longitud del conductor en el campo
+- B = intensidad del campo magnético
+- θ = ángulo entre la dirección de la corriente y el campo magnético
+
+La dirección de la fuerza se determina mediante la regla de la mano derecha.
+
+#### d. Movimiento circular de una carga en un campo magnético
+
+Una carga eléctrica que se mueve perpendicularmente a un campo magnético uniforme experimenta una fuerza perpendicular a su velocidad (fuerza de Lorentz), que la hace describir un movimiento circular uniforme.
+
+\[ F = q·v·B = \frac{m·v^2}{r} \]
+
+El radio de la trayectoria es:
+
+\[ r = \frac{m·v}{q·B} \]
+
 
 ===== Page 250 =====
 
+### EJERCICIOS DE SELECCIÓN MÚLTIPLE
+
+1. La ley de Ohm establece que:
+
+A) V = I·R
+B) I = V·R
+C) R = I·V
+D) V = I/R
+
+2. Tres resistencias de 5 Ω, 10 Ω y 15 Ω en serie equivalen a:
+
+A) 30 Ω
+B) 2,73 Ω
+C) 0,37 Ω
+D) 5 Ω
+
+3. La unidad de resistencia eléctrica es:
+
+A) Voltio
+B) Ampere
+C) Ohmio
+D) Watt
+
+4. La potencia eléctrica se puede calcular como:
+
+A) P = V·I
+B) P = I²·R
+C) P = V²/R
+D) Todas son correctas
+
+5. En un circuito en paralelo:
+
+A) La corriente es la misma en todas las resistencias
+B) El voltaje es el mismo en todas las resistencias
+C) La resistencia equivalente es la suma de las resistencias
+D) La corriente total es menor que la corriente en cada rama
+
+6. El descubrimiento de que una corriente eléctrica genera un campo magnético se debe a:
+
+A) Newton
+B) Ohm
+C) Oersted
+D) Coulomb
+
+7. La fuerza entre dos cargas eléctricas es:
+
+A) Directamente proporcional al producto de las cargas
+B) Inversamente proporcional a la distancia
+C) Independiente del medio
+D) Siempre atractiva
+
+8. La unidad de carga eléctrica en el SI es:
+
+A) Voltio
+B) Ampere
+C) Culombio
+D) Ohmio
+
+
 ===== Page 251 =====
+
+## CAPÍTULO 12 | MÉTODO CIENTÍFICO
+
+### 1. HABILIDADES DE PENSAMIENTO CIENTÍFICO
+
+Las habilidades de pensamiento científico son comunes a todas las disciplinas científicas y son fundamentales para el desarrollo de la ciencia. En la PAES de Ciencias, estas habilidades se evalúan de manera transversal en los diferentes ejes temáticos.
+
+#### a. Observar y plantear preguntas
+
+Consiste en la capacidad de identificar fenómenos, patrones o anomalías a partir de observaciones, y formular preguntas que puedan ser investigadas científicamente.
+
+**Ejemplo:** Observar que las plantas crecen más hacia el lado de la ventana y preguntarse: "¿La luz afecta la dirección de crecimiento de las plantas?"
+
+#### b. Planificar y conducir una investigación
+
+Implica diseñar experimentos o estrategias de investigación para responder a las preguntas planteadas. Incluye la identificación de variables (independiente, dependiente, controladas), la selección de instrumentos y procedimientos adecuados, y la consideración de aspectos éticos y de seguridad.
+
+**Variables:**
+- **Variable independiente:** La que el investigador manipula o cambia intencionadamente.
+- **Variable dependiente:** La que se mide o observa para ver el efecto de la variable independiente.
+- **Variables controladas:** Las que se mantienen constantes para que no afecten el resultado.
+
+#### c. Procesar y analizar la evidencia
+
+Consiste en organizar, representar e interpretar los datos obtenidos en la investigación. Incluye la construcción de tablas y gráficos, la identificación de patrones y tendencias, y la elaboración de conclusiones basadas en la evidencia.
+
+#### d. Evaluar
+
+Implica juzgar la validez y confiabilidad de los resultados, identificar las limitaciones de la investigación, y evaluar el impacto del conocimiento científico en la tecnología y la sociedad.
+
+#### e. Comunicar
+
+Capacidad para comunicar los resultados y conclusiones de manera clara y precisa, utilizando lenguaje científico y diversos formatos (informes, gráficos, tablas, modelos).
+
 
 ===== Page 252 =====
 
+### EJERCICIOS DE SELECCIÓN MÚLTIPLE
+
+1. En un experimento para estudiar el efecto de la temperatura en la velocidad de una reacción química, la temperatura es la variable:
+
+A) Dependiente
+B) Independiente
+C) Controlada
+D) Constante
+
+2. Una hipótesis científica debe ser:
+
+A) Comprobable y falsable
+B) Una opinión personal
+C) Una pregunta
+D) Una ley
+
+3. El primer paso del método científico generalmente es:
+
+A) Formular una hipótesis
+B) Realizar un experimento
+C) Observar un fenómeno
+D) Sacar conclusiones
+
+4. Para que un experimento sea válido, se debe:
+
+A) Cambiar todas las variables a la vez
+B) Mantener todas las variables controladas excepto la independiente
+C) No medir los resultados
+D) Realizar el experimento una sola vez
+
+5. Un gráfico de barras es adecuado para representar:
+
+A) La relación entre dos variables continuas
+B) Datos categóricos o discretos
+C) La velocidad de un objeto en función del tiempo
+D) La temperatura de un cuerpo que se enfría
+
+6. La replicabilidad de un experimento significa que:
+
+A) El experimento es caro
+B) El experimento puede ser repetido por otros científicos obteniendo resultados similares
+C) El experimento es único e irrepetible
+D) El experimento solo funciona una vez
+
+7. Una conclusión científica debe estar basada en:
+
+A) Opiniones personales
+B) La evidencia obtenida en la investigación
+C) Creencias populares
+D) Lo que se esperaba obtener
+
+
 ===== Page 253 =====
+
+## SOLUCIONARIO
+
+### CAPÍTULO 1: ONDAS Y SONIDO
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | B | 8 | D | 15 | B | 22 | B |
+| 2 | A | 9 | D | 16 | C | 23 | D |
+| 3 | C | 10 | D | 17 | A | 24 | B |
+| 4 | C | 11 | D | 18 | C | 25 | A |
+| 5 | B | 12 | D | 19 | A | 26 | C |
+| 6 | C | 13 | D | 20 | A | 27 | B |
+| 7 | B | 14 | C | 21 | B | 28 | C |
+
+### CAPÍTULO 2: LUZ
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | B | 11 | D | 21 | B | 31 | C |
+| 2 | A | 12 | A | 22 | D | 32 | B |
+| 3 | C | 13 | D | 23 | C | 33 | B |
+| 4 | C | 14 | A | 24 | B | 34 | D |
+| 5 | D | 15 | B | 25 | D | 35 | A |
+| 6 | A | 16 | B | 26 | B | 36 | D |
+| 7 | C | 17 | D | 27 | D | 37 | C |
+| 8 | A | 18 | C | 28 | C | 38 | B |
+| 9 | A | 19 | C | 29 | C | 39 | - |
+| 10 | B | 20 | E | 30 | B | 40 | - |
+
+### CAPÍTULO 3: CINEMÁTICA I
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | C | 8 | B | 15 | A | 22 | A |
+| 2 | C | 9 | A | 16 | D | 23 | B |
+| 3 | C | 10 | C | 17 | B | 24 | A |
+| 4 | D | 11 | D | 18 | D | 25 | B |
+| 5 | A | 12 | A | 19 | B | 26 | C |
+| 6 | B | 13 | D | 20 | C | 27 | C |
+| 7 | D | 14 | C | 21 | B | 28 | D |
+
+### CAPÍTULO 4: CINEMÁTICA II
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | A | 8 | A | 15 | A | 22 | B |
+| 2 | C | 9 | B | 16 | B | 23 | B |
+| 3 | C | 10 | A | 17 | C | 24 | B |
+| 4 | A | 11 | B | 18 | B | 25 | A |
+| 5 | A | 12 | C | 19 | C | 26 | C |
+| 6 | C | 13 | C | 20 | C | 27 | B |
+| 7 | D | 14 | A | 21 | C | 28 | C |
+
 
 ===== Page 254 =====
 
+### CAPÍTULO 5: DINÁMICA I
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | B | 7 | C | 13 | D | 19 | A |
+| 2 | A | 8 | D | 14 | C | 20 | D |
+| 3 | D | 9 | B | 15 | A | 21 | E |
+| 4 | A | 10 | A | 16 | A | 22 | D |
+| 5 | C | 11 | C | 17 | C | 23 | B |
+| 6 | A | 12 | D | 18 | B | 24 | D |
+
+### CAPÍTULO 6: DINÁMICA II
+
+| Ej
+
+
+
+===== Page 254 =====
+
+### CAPÍTULO 6: DINÁMICA II (continuación)
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | D | 4 | A | 7 | - | 10 | - |
+| 2 | B | 5 | A | 8 | - | 11 | - |
+| 3 | C | 6 | - | 9 | - | 12 | - |
+
+### CAPÍTULO 7: HIDROSTÁTICA E HIDRODINÁMICA
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | B | 4 | C | 7 | C | 10 | - |
+| 2 | C | 5 | B | 8 | - | 11 | - |
+| 3 | C | 6 | B | 9 | - | 12 | - |
+
+### CAPÍTULO 8: LA TIERRA
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | B | 4 | B | 7 | B | 10 | - |
+| 2 | B | 5 | C | 8 | B | 11 | - |
+| 3 | B | 6 | B | 9 | - | 12 | - |
+
+### CAPÍTULO 9: TRABAJO, ENERGÍA Y POTENCIA
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | C | 4 | A | 7 | B | 10 | - |
+| 2 | D | 5 | B | 8 | C | 11 | - |
+| 3 | C | 6 | B | 9 | - | 12 | - |
+
+### CAPÍTULO 10: CALOR
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | C | 4 | C | 7 | - | 10 | - |
+| 2 | B | 5 | - | 8 | - | 11 | - |
+| 3 | D | 6 | - | 9 | - | 12 | - |
+
+### CAPÍTULO 11: ELECTRICIDAD Y MAGNETISMO
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | A | 4 | D | 7 | A | 10 | - |
+| 2 | A | 5 | B | 8 | C | 11 | - |
+| 3 | C | 6 | C | 9 | - | 12 | - |
+
+### CAPÍTULO 12: MÉTODO CIENTÍFICO
+
+| Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta | Ejercicio | Respuesta |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+| 1 | B | 4 | B | 7 | B | 10 | - |
+| 2 | A | 5 | B | 8 | - | 11 | - |
+| 3 | C | 6 | B | 9 | - | 12 | - |
+
+
 ===== Page 255 =====
+
+## ANEXO: FORMULAS Y CONSTANTES IMPORTANTES
+
+### ONDAS Y SONIDO
+
+- Velocidad de propagación: v = λ·f = λ/T
+- Período: T = 1/f
+- Rapidez en cuerdas: v = √(F/μ), μ = m/L
+- Nivel de intensidad sonora: β = 10·log(I/I₀) dB, I₀ = 10⁻¹² W/m²
+- Efecto Doppler (sonido): f' = f·(v ± v₀)/(v ∓ v_f)
+
+### LUZ Y ÓPTICA
+
+- Índice de refracción: n = c/v
+- Ley de Snell: n₁·sen θ₁ = n₂·sen θ₂
+- Ángulo crítico: sen θ_c = n₂/n₁ (para n₁ > n₂)
+- Ecuación de lentes y espejos: 1/f = 1/p + 1/q
+- Aumento: M = -q/p = h_i/h_o
+- Potencia de una lente: P = 1/f (dioptrías)
+
+### CINEMÁTICA
+
+- Velocidad media: v_m = Δx/Δt
+- Aceleración media: a_m = Δv/Δt
+- MRU: x = x₀ + v·t
+- MRUV: v = v₀ + a·t
+- MRUV: x = x₀ + v₀·t + (1/2)·a·t²
+- MRUV: v² = v₀² + 2·a·(x - x₀)
+- Caída libre/tiro vertical: v = v₀ ± g·t
+- Caída libre/tiro vertical: h = h₀ + v₀·t ± (1/2)·g·t²
+
+### DINÁMICA
+
+- Segunda ley de Newton: ΣF = m·a
+- Peso: P = m·g
+- Fuerza de roce: f_r = μ·N
+- Ley de Hooke: F = -k·Δx
+- Momento de fuerza (torque): τ = F·d·sen θ
+- Cantidad de movimiento: p = m·v
+- Impulso: I = F·Δt = Δp
+- Conservación de la cantidad de movimiento: m₁v₁ + m₂v₂ = m₁v₁' + m₂v₂'
+
+### TRABAJO, ENERGÍA Y POTENCIA
+
+- Trabajo: W = F·d·cos θ
+- Energía cinética: E_c = (1/2)·m·v²
+- Energía potencial gravitatoria: E_p = m·g·h
+- Energía potencial elástica: E_pe = (1/2)·k·x²
+- Teorema del trabajo y la energía: W_neto = ΔE_c
+- Conservación de energía mecánica: E_mi = E_mf
+- Potencia: P = W/t = F·v
+- Eficiencia: η = (P_útil/P_total)·100%
+
+### FLUIDOS
+
+- Densidad: ρ = m/V
+- Presión: P = F/A
+- Presión hidrostática: P = ρ·g·h
+- Principio de Pascal: F₁/A₁ = F₂/A₂
+- Empuje: E = ρ_fluido·g·V_sumergido
+- Ecuación de continuidad: A₁·v₁ = A₂·v₂
+- Ecuación de Bernoulli: P + (1/2)·ρ·v² + ρ·g·h = constante
+
 
 ===== Page 256 =====
 
+### ELECTRICIDAD
+
+- Ley de Coulomb: F = k·|q₁·q₂|/r², k = 9·10⁹ N·m²/C²
+- Campo eléctrico: E = F/q = k·Q/r²
+- Potencial eléctrico: V = k·Q/r
+- Diferencia de potencial: ΔV = W/q
+- Corriente eléctrica: I = ΔQ/Δt
+- Ley de Ohm: V = I·R
+- Resistencia: R = ρ·L/A
+- Potencia eléctrica: P = V·I = I²·R = V²/R
+- Resistencias en serie: R_eq = R₁ + R₂ + R₃
+- Resistencias en paralelo: 1/R_eq = 1/R₁ + 1/R₂ + 1/R₃
+
+### MAGNETISMO
+
+- Fuerza sobre un conductor: F = I·L·B·sen θ
+- Fuerza de Lorentz: F = q·v·B·sen θ
+- Radio de trayectoria circular: r = m·v/(q·B)
+
+### CALOR Y TERMODINÁMICA
+
+- Conversión de temperatura:
+  - °C a K: T(K) = T(°C) + 273,15
+  - °C a °F: T(°F) = (9/5)·T(°C) + 32
+  - °F a °C: T(°C) = (5/9)·[T(°F) - 32]
+- Calor sensible: Q = m·c·ΔT
+- Calor latente: Q = m·L
+- Dilatación lineal: ΔL = L₀·α·ΔT
+- Dilatación superficial: ΔA = A₀·β·ΔT, β = 2α
+- Dilatación volumétrica: ΔV = V₀·γ·ΔT, γ = 3α
+- Ley de enfriamiento de Newton: dT/dt = -k·(T - T_amb)
+
+### CONSTANTES FÍSICAS
+
+- Velocidad de la luz en el vacío: c = 3,00·10⁸ m/s
+- Aceleración de gravedad (Tierra): g = 9,8 m/s² (≈ 10 m/s²)
+- Constante de gravitación universal: G = 6,67·10⁻¹¹ N·m²/kg²
+- Constante de Coulomb: k = 9·10⁹ N·m²/C²
+- Carga del electrón: e = 1,6·10⁻¹⁹ C
+- Masa del electrón: m_e = 9,1·10⁻³¹ kg
+- Masa del protón: m_p = 1,67·10⁻²⁷ kg
+- Número de Avogadro: N_A = 6,022·10²³ mol⁻¹
+- Constante de Planck: h = 6,63·10⁻³⁴ J·s
+- Constante de Stefan-Boltzmann: σ = 5,67·10⁻⁸ W/m²·K⁴
+- 1 atmósfera: 1 atm = 101.325 Pa = 760 mm Hg
+
+
 ===== Page 257 =====
+
+## TABLA DE CONVERSIONES
+
+| Magnitud | Unidad | Equivalencia |
+|----------|--------|--------------|
+| Longitud | 1 m | 100 cm = 1000 mm |
+| | 1 km | 1000 m |
+| | 1 pulgada | 2,54 cm |
+| | 1 pie | 30,48 cm |
+| | 1 milla | 1,609 km |
+| | 1 año luz | 9,46·10¹⁵ m |
+| Masa | 1 kg | 1000 g |
+| | 1 ton | 1000 kg |
+| | 1 lb | 0,4536 kg |
+| Tiempo | 1 h | 60 min = 3600 s |
+| | 1 día | 24 h = 86.400 s |
+| | 1 año | 365 días ≈ 3,156·10⁷ s |
+| Velocidad | 1 m/s | 3,6 km/h |
+| | 1 km/h | 0,2778 m/s |
+| Fuerza | 1 N | 10⁵ dinas |
+| | 1 kgf | 9,8 N |
+| Presión | 1 Pa | 1 N/m² |
+| | 1 atm | 1,013·10⁵ Pa |
+| | 1 bar | 10⁵ Pa |
+| | 1 mm Hg | 133,3 Pa |
+| Energía | 1 J | 10⁷ erg |
+| | 1 cal | 4,184 J |
+| | 1 kWh | 3,6·10⁶ J |
+| | 1 eV | 1,6·10⁻¹⁹ J |
+| Potencia | 1 W | 1 J/s |
+| | 1 HP | 746 W |
+| | 1 CV | 735 W |
+| Carga | 1 C | 6,25·10¹⁸ e |
+| Temperatura | 0 K | -273,15°C |
+| | 0°C | 273,15 K |
+| | 100°C | 373,15 K |
+
 
 ===== Page 258 =====
 
+## GLOSARIO
+
+**Aceleración:** Magnitud vectorial que indica la variación de la velocidad por unidad de tiempo.
+
+**Amplitud:** Máximo desplazamiento de una partícula desde su posición de equilibrio en un movimiento ondulatorio.
+
+**Campo eléctrico:** Región del espacio donde una carga eléctrica experimenta una fuerza.
+
+**Campo magnético:** Región del espacio donde una corriente eléctrica o un imán experimentan una fuerza.
+
+**Calor:** Energía transferida entre dos cuerpos debido a una diferencia de temperatura.
+
+**Cantidad de movimiento:** Producto de la masa de un cuerpo por su velocidad.
+
+**Caudal:** Volumen de fluido que atraviesa una sección por unidad de tiempo.
+
+**Cero absoluto:** Temperatura teórica a la cual cesa todo movimiento molecular (0 K = -273,15°C).
+
+**Cinemática:** Rama de la mecánica que estudia el movimiento sin considerar sus causas.
+
+**Conducción:** Transferencia de calor a través de un medio material sin desplazamiento de materia.
+
+**Convección:** Transferencia de calor mediante el movimiento de un fluido.
+
+**Corriente eléctrica:** Flujo de cargas eléctricas por unidad de tiempo.
+
+**Densidad:** Masa por unidad de volumen.
+
+**Desplazamiento:** Vector que indica el cambio de posición de un cuerpo.
+
+**Difracción:** Desviación de las ondas al encontrar un obstáculo o al atravesar una rendija.
+
+**Dinámica:** Rama de la mecánica que estudia las causas del movimiento (fuerzas).
+
+**Dispersión:** Separación de la luz en sus colores componentes al atravesar un medio.
+
+**Efecto Doppler:** Cambio en la frecuencia percibida de una onda debido al movimiento relativo entre fuente y observador.
+
+**Energía:** Capacidad de un cuerpo para realizar trabajo.
+
+**Energía cinética:** Energía asociada al movimiento de un cuerpo.
+
+**Energía potencial:** Energía asociada a la posición de un cuerpo en un campo de fuerza.
+
+**Equilibrio térmico:** Estado en el que dos o más cuerpos en contacto tienen la misma temperatura.
+
+**Estática:** Rama de la mecánica que estudia los cuerpos en equilibrio.
+
+**Foco:** Punto donde se concentran los rayos reflejados por un espejo cóncavo, o desde donde parecen provenir los rayos reflejados por un espejo convexo.
+
+**Frecuencia:** Número de oscilaciones por unidad de tiempo.
+
+**Fuerza:** Interacción entre cuerpos capaz de producir una deformación o un cambio en su movimiento.
+
+**Gravedad:** Fuerza de atracción que ejerce la Tierra sobre los cuerpos.
+
+**Hipótesis:** Explicación tentativa a un problema científico, que debe ser comprobada.
+
+**Impulso:** Producto de una fuerza por el intervalo de tiempo durante el cual actúa.
+
+**Imagen real:** Imagen formada por la intersección de los rayos de luz; puede proyectarse en una pantalla.
+
+**Imagen virtual:** Imagen formada por la prolongación de los rayos de luz; no puede proyectarse en una pantalla.
+
+**Índice de refracción:** Relación entre la velocidad de la luz en el vacío y en un medio.
+
+**Interferencia:** Superposición de dos o más ondas que produce una onda resultante de mayor o menor amplitud.
+
+**Intensidad de sonido:** Flujo de energía por unidad de área perpendicular a la dirección de propagación.
+
+**Longitud de onda:** Distancia entre dos puntos equivalentes de una onda (dos crestas consecutivas).
+
+**Masa:** Cantidad de materia de un cuerpo.
+
+**Método científico:** Conjunto de pasos sistemáticos para adquirir conocimiento científico.
+
+**Movimiento rectilíneo uniforme (MRU):** Movimiento con velocidad constante y trayectoria recta.
+
+**Movimiento rectilíneo uniformemente variado (MRUV):** Movimiento con aceleración constante y trayectoria recta.
+
+**Onda:** Propagación de una perturbación sin transporte de materia.
+
+**Onda electromagnética:** Onda que no necesita medio material para propagarse (luz, radio).
+
+**Onda mecánica:** Onda que necesita un medio material para propagarse (sonido).
+
+**Período:** Tiempo que tarda una partícula en efectuar una oscilación completa.
+
+**Peso:** Fuerza con que la Tierra atrae a un cuerpo.
+
+**Potencia:** Rapidez con que se realiza un trabajo o se transfiere energía.
+
+**Presión:** Fuerza por unidad de área.
+
+**Radiación:** Transferencia de calor mediante ondas electromagnéticas.
+
+**Reflexión:** Cambio de dirección de una onda al chocar con una superficie.
+
+**Refracción:** Cambio de dirección de una onda al pasar de un medio a otro.
+
+**Resistencia eléctrica:** Oposición de un material al paso de la corriente eléctrica.
+
+**Rozamiento:** Fuerza que se opone al movimiento entre superficies en contacto.
+
+**Sismo:** Movimiento vibratorio de la corteza terrestre causado por la liberación de energía.
+
+**Temperatura:** Medida del grado de agitación térmica de las partículas de un cuerpo.
+
+**Tensión superficial:** Fuerza por unidad de longitud en la superficie de un líquido.
+
+**Timbre:** Cualidad del sonido que permite distinguir dos sonidos de igual tono e intensidad.
+
+**Tono:** Cualidad del sonido que depende de la frecuencia.
+
+**Torque (momento):** Capacidad de una fuerza para producir un giro.
+
+**Trabajo:** Producto escalar de la fuerza por el desplazamiento.
+
+**Variable dependiente:** Variable que se mide en un experimento.
+
+**Variable independiente:** Variable que el investigador manipula en un experimento.
+
+**Velocidad:** Magnitud vectorial que indica el cambio de posición por unidad de tiempo.
+
+
 ===== Page 259 =====
 
-===== Page 260 =====
+## BIBLIOGRAFÍA
 
-===== Page 261 =====
+- DEMRE (2024). Temario Prueba de Acceso a la Educación Superior (PAES) - Ciencias.
+- DEMRE (2018-2024). Pruebas oficiales y documentos de trabajo.
+- Ministerio de Educación de Chile (2015-2022). Bases Curriculares de Ciencias Naturales 7° Básico a 4° Medio.
+- Hewitt, P. (2016). Física Conceptual. Pearson Educación.
+- Serway, R., & Jewett, J. (2018). Física para Ciencias e Ingeniería. Cengage Learning.
+- Tipler, P., & Mosca, G. (2021). Física para la Ciencia y la Tecnología. Reverté.
+- Young, H., & Freedman, R. (2020). Física Universitaria. Pearson Educación.
+- Giancoli, D. (2019). Física: Principios con Aplicaciones. Pearson Educación.
 
-===== Page 262 =====
 
-===== Page 263 =====
 
-===== Page 264 =====
 
-===== Page 265 =====
 
-===== Page 266 =====
-
-===== Page 267 =====
-
-===== Page 268 =====
-
-===== Page 269 =====
-
-===== Page 270 =====
-
-===== Page 271 =====
-
-===== Page 272 =====
-
-===== Page 273 =====
-
-===== Page 274 =====
-
-===== Page 275 =====
-
-===== Page 276 =====
-
-===== Page 277 =====
-
-===== Page 278 =====
-
-===== Page 279 =====
-
-===== Page 280 =====
-
-===== Page 281 =====
-
-===== Page 282 =====
-
-===== Page 283 =====
-
-===== Page 284 =====
-
-===== Page 285 =====
-
-===== Page 286 =====
-
-===== Page 287 =====
-
-===== Page 288 =====
-
-===== Page 289 =====
-
-===== Page 290 =====
-
-===== Page 291 =====
-
-===== Page 292 =====
-
-===== Page 293 =====
-
-===== Page 294 =====
-
-===== Page 295 =====
-
-===== Page 296 =====
-
-===== Page 297 =====
-
-===== Page 298 =====
-
-===== Page 299 =====
-
-===== Page 300 =====
-
-===== Page 301 =====
-
-===== Page 302 =====
-
-===== Page 303 =====
-
-===== Page 304 =====
-
-===== Page 305 =====
-
-===== Page 306 =====
-
-===== Page 307 =====
-
-===== Page 308 =====
-
-===== Page 309 =====
-
-===== Page 310 =====
-
-===== Page 311 =====
-
-===== Page 312 =====
-
-===== Page 313 =====
-
-===== Page 314 =====
-
-===== Page 315 =====
-
-===== Page 316 =====
-
-===== Page 317 =====
-
-===== Page 318 =====
-
-===== Page 319 =====
-
-===== Page 320 =====
-
-===== Page 321 =====
-
-===== Page 322 =====
-
-===== Page 323 =====
-
-===== Page 324 =====
-
-===== Page 325 =====
-
-===== Page 326 =====
-
-===== Page 327 =====
-
-===== Page 328 =====
-
-===== Page 329 =====
-
-===== Page 330 =====
-
-===== Page 331 =====
-
-===== Page 332 =====
-
-===== Page 333 =====
-
-===== Page 334 =====
-
-===== Page 335 =====
-
-===== Page 336 =====
-
-===== Page 337 =====
-
-===== Page 338 =====
-
-===== Page 339 =====
-
-===== Page 340 =====
-
-===== Page 341 =====
-
-===== Page 342 =====
-
-===== Page 343 =====
-
-===== Page 344 =====
-
-===== Page 345 =====
-
-===== Page 346 =====
-
-===== Page 347 =====
-
-===== Page 348 =====
-
-===== Page 349 =====
-
-===== Page 350 =====
-
-===== Page 351 =====
-
-===== Page 352 =====
-
-===== Page 353 =====
-
-===== Page 354 =====
-
-===== Page 355 =====
-
-===== Page 356 =====
-
-===== Page 357 =====
-
-===== Page 358 =====
-
-===== Page 359 =====
-
-===== Page 360 =====
-
-===== Page 361 =====
-
-===== Page 362 =====
-
-===== Page 363 =====
-
-===== Page 364 =====
-
-===== Page 365 =====
-
-===== Page 366 =====
-
-===== Page 367 =====
-
-===== Page 368 =====
-
-===== Page 369 =====
-
-===== Page 370 =====
-
-===== Page 371 =====
-
-===== Page 372 =====
-
-===== Page 373 =====
-
-===== Page 374 =====
-
-===== Page 375 =====
-
-===== Page 376 =====
-
-===== Page 377 =====
-
-===== Page 378 =====
-
-===== Page 379 =====
-
-===== Page 380 =====
-
-===== Page 381 =====
-
-===== Page 382 =====
-
-===== Page 383 =====
-
-===== Page 384 =====
-
-===== Page 385 =====
-
-===== Page 386 =====
-
-===== Page 387 =====
-
-===== Page 388 =====
-
-===== Page 389 =====
-
-===== Page 390 =====
-
-===== Page 391 =====
-
-===== Page 392 =====
-
-===== Page 393 =====
-
-===== Page 394 =====
-
-===== Page 395 =====
-
-===== Page 396 =====
-
-===== Page 397 =====
-
-===== Page 398 =====
-
-===== Page 399 =====
-
-===== Page 400 =====
-
-===== Page 401 =====
-
-===== Page 402 =====
-
-===== Page 403 =====
-
-===== Page 404 =====
-
-===== Page 405 =====
-
-===== Page 406 =====
-
-===== Page 407 =====
-
-===== Page 408 =====
-
-===== Page 409 =====
-
-===== Page 410 =====
-
-===== Page 411 =====
-
-===== Page 412 =====
-
-===== Page 413 =====
-
-===== Page 414 =====
-
-===== Page 415 =====
-
-===== Page 416 =====
-
-===== Page 417 =====
-
-===== Page 418 =====
-
-===== Page 419 =====
-
-===== Page 420 =====
-
-===== Page 421 =====
-
-===== Page 422 =====
-
-===== Page 423 =====
-
-===== Page 424 =====
-
-===== Page 425 =====
-
-===== Page 426 =====
-
-===== Page 427 =====
-
-===== Page 428 =====
-
-===== Page 429 =====
-
-===== Page 430 =====
-
-===== Page 431 =====
-
-===== Page 432 =====
-
-===== Page 433 =====
-
-===== Page 434 =====
-
-===== Page 435 =====
-
-===== Page 436 =====
-
-===== Page 437 =====
-
-===== Page 438 =====
-
-===== Page 439 =====
-
-===== Page 440 =====
-
-===== Page 441 =====
-
-===== Page 442 =====
-
-===== Page 443 =====
-
-===== Page 444 =====
-
-===== Page 445 =====
-
-===== Page 446 =====
-
-===== Page 447 =====
-
-===== Page 448 =====
-
-===== Page 449 =====
-
-===== Page 450 =====
-
-===== Page 451 =====
-
-===== Page 452 =====
-
-===== Page 453 =====
-
-===== Page 454 =====
-
-===== Page 455 =====
-
-===== Page 456 =====
-
-===== Page 457 =====
-
-===== Page 458 =====
-
-===== Page 459 =====
-
-===== Page 460 =====
-
-===== Page 461 =====
-
-===== Page 462 =====
-
-===== Page 463 =====
-
-===== Page 464 =====
-
-===== Page 465 =====
-
-===== Page 466 =====
-
-===== Page 467 =====
-
-===== Page 468 =====
-
-===== Page 469 =====
-
-===== Page 470 =====
-
-===== Page 471 =====
-
-===== Page 472 =====
-
-===== Page 473 =====
-
-===== Page 474 =====
-
-===== Page 475 =====
-
-===== Page 476 =====
-
-===== Page 477 =====
-
-===== Page 478 =====
-
-===== Page 479 =====
-
-===== Page 480 =====
-
-===== Page 481 =====
-
-===== Page 482 =====
-
-===== Page 483 =====
-
-===== Page 484 =====
-
-===== Page 485 =====
-
-===== Page 486 =====
-
-===== Page 487 =====
-
-===== Page 488 =====
-
-===== Page 489 =====
-
-===== Page 490 =====
 
 12. MÉTODO CIENTÍFICO
 

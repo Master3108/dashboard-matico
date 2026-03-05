@@ -617,9 +617,69 @@ const DEFAULT_LANG_ROUTE = {
 
 
 const CHEMISTRY_SYLLABUS = [
-    // UNIDAD 1: REACCIONES (Sesiones 1-10)
-    { session: 1, unit: 'Reacciones', topic: 'Transformaciones Físicas vs. Químicas', videoTitle: 'Cambios Físicos y Químicos', videoLink: 'https://www.youtube.com/watch?v=Zz0xuNCpAQc' },
-    { session: 2, unit: 'Reacciones', topic: 'Evidencias Empíricas de Reacción', videoTitle: 'Reacciones cotidianas', videoLink: 'https://www.curriculumnacional.cl/docente/629/w3-article-34461.html' },
+    // UNIDAD 1: ESTRUCTURA Y SISTEMAS (Sesiones 1-10)
+    {
+        session: 1,
+        unit: 'Estructura Atómica',
+        topic: 'El Átomo: Historia y Concepto',
+        videoTitle: 'Introducción al Átomo',
+        videoLink: 'https://www.youtube.com/watch?v=Zz0xuNCpAQc',
+        readingTitle: 'Capítulo 1: Introducción a la Estructura Atómica',
+        readingContent: `En la antigüedad, existió una gran controversia sobre la composición de la materia. Filósofos griegos como Demócrito acuñaron la palabra "átomo" para designar partículas "indivisibles" e "indestructibles".\n\nDEFINICIÓN ACTUAL:\nEl átomo es la unidad más pequeña de materia con identidad propia capaz de participar en una reacción química. Aunque originalmente se creía indivisible, hoy sabemos que posee una estructura definida:\n- Núcleo: Contiene protones (carga positiva) y neutrones (carga neutra).\n- Corteza: Contiene electrones (carga negativa).\n\nEn átomos neutros, el número de protones compensa al de electrones. Los diferentes elementos químicos se distinguen por el tipo de átomo que los constituye, organizados hoy en la Tabla Periódica.`,
+        baseQuestions: [
+            {
+                q: "¿Qué significa etimológicamente la palabra 'átomo' según los filósofos griegos?",
+                options: [
+                    "Pequeña esfera de fuego.",
+                    "Partícula primordial de hueso.",
+                    "Indivisible e indestructible.",
+                    "Unidad de carga eléctrica."
+                ],
+                answer: "Indivisible e indestructible."
+            },
+            {
+                q: "En un átomo neutro, ¿qué partículas deben encontrarse en igual cantidad?",
+                options: [
+                    "Protones y Neutrones.",
+                    "Neutrones y Electrones.",
+                    "Protones y Electrones.",
+                    "Átomos y Moléculas."
+                ],
+                answer: "Protones y Electrones."
+            }
+        ]
+    },
+    {
+        session: 2,
+        unit: 'Sistemas Materiales',
+        topic: 'Sistemas y Cambios de Estado',
+        videoTitle: 'Sistemas Materiales y Materia',
+        videoLink: 'https://www.curriculumnacional.cl/docente/629/w3-article-34461.html',
+        readingTitle: 'Capítulo 1: Sistemas Materiales y Propiedades',
+        readingContent: `Un sistema material es una porción limitada de materia separada para su estudio. Se clasifican según el intercambio con el medio:\n- Abierto: Transfiere masa y energía.\n- Cerrado: Solo transfiere energía.\n- Aislado: No transfiere masa ni energía.\n\nCAMBIOS DE ESTADO (Fenómenos Físicos):\n- Fusión: Sólido a Líquido.\n- Solidificación: Líquido a Sólido.\n- Vaporización: Líquido a Vapor.\n- Sublimación: Sólido a Gas (sin pasar por líquido).\n- Volatilización: Sólido a Vapor.\n\nPROPIEDADES DE LA MATERIA:\n- Extensivas: Varían con la cantidad de materia (Peso, Volumen).\n- Intensivas: No varían con la cantidad (Densidad, Punto de fusión).`,
+        baseQuestions: [
+            {
+                q: "Un termo para café que mantiene la temperatura y no permite fugas de líquido se comporta idealmente como un sistema:",
+                options: [
+                    "Abierto.",
+                    "Cerrado.",
+                    "Aislado.",
+                    "Disperso."
+                ],
+                answer: "Aislado."
+            },
+            {
+                q: "¿Cuál de las siguientes es una propiedad intensiva de la materia?",
+                options: [
+                    "Masa.",
+                    "Volumen.",
+                    "Densidad.",
+                    "Longitud."
+                ],
+                answer: "Densidad."
+            }
+        ]
+    },
     { session: 3, unit: 'Reacciones', topic: 'Teoría de las Colisiones', videoTitle: 'Teoría de Colisiones', videoLink: 'https://www.youtube.com/watch?v=-RQIfEefAzg' },
     { session: 4, unit: 'Reacciones', topic: 'Energía de Activación', videoTitle: 'Perfil de Energía', videoLink: 'https://www.youtube.com/watch?v=vkNZKYPfBss' },
     { session: 5, unit: 'Reacciones', topic: 'La Ecuación Química', videoTitle: 'Anatomía de la Ecuación', videoLink: 'https://www.youtube.com/watch?v=G4kiAaLiigI' },
@@ -684,6 +744,20 @@ const DEFAULT_CHEM_ROUTE = {
         { step: '3. Quiz de Reacciones', action: 'quiz', icon: 'Atom', isComplete: false }
     ],
     recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+};
+
+const DEFAULT_BIO_ROUTE = {
+    sujeto: 'Biología',
+    oa_title: 'S1: Método Científico',
+    color: '#10B981',
+    icon: Dna,
+    video_link: 'https://youtube.com',
+    daily_route_steps: [
+        { step: '1. Video Análisis', action: 'video', icon: 'Play', isComplete: false },
+        { step: '2. Simulación Biológica', action: 'start_route', icon: 'Dna', isComplete: false },
+        { step: '3. Quiz de Conceptos', action: 'quiz', icon: 'Atom', isComplete: false }
+    ],
+    recommended_action_text: "INICIAR RUTA BIOLÓGICA"
 };
 
 
@@ -1626,8 +1700,68 @@ const PHYSICS_SYLLABUS = [
 
 const BIOLOGY_SYLLABUS = [
     // UNIDAD 1: EVOLUCIÓN Y BIODIVERSIDAD
-    { session: 1, unit: 'Evolución', topic: 'Teorías Pre-Darwinianas', videoLink: 'https://www.youtube.com/watch?v=c1oJKMtVLYQ' },
-    { session: 2, unit: 'Evolución', topic: 'Darwin y Wallace', videoLink: 'https://www.youtube.com/watch?v=J7fsT_85Ld0' },
+    {
+        session: 1,
+        unit: 'Método Científico',
+        topic: 'Concepto e Hipótesis',
+        videoTitle: 'Método Científico',
+        videoLink: 'https://www.youtube.com/watch?v=c1oJKMtVLYQ',
+        readingTitle: 'Capítulo 1: Método Científico (Parte 1)',
+        readingContent: `La ciencia se encuentra en una constante búsqueda, que tiene como principal objetivo comprender e interpretar lo que nos rodea. Para ello utiliza un proceso denominado: método científico utilizando métodos empíricos, una medición rigurosa, y fundamentados en el razonamiento.\n\nEl método científico es el camino hacia el conocimiento científico. Existen dos principios fundamentales: la reproductibilidad (repetir un experimento y obtener los mismos resultados) y la refutabilidad (toda afirmación científica puede ser refutada).\n\nETAPAS DEL MÉTODO CIENTÍFICO:\ni. Observación: Permite examinar hechos y fenómenos de la naturaleza directamente a través de los sentidos.\nii. Planteamiento de un problema: Una vez reunida la información, se define una pregunta o incógnita a resolver que debe conducir a una experimentación. No debe responderse con "sí" o "no".\niii. Hipótesis: Es una posible respuesta a la pregunta del problema, verificable o refutable.`,
+        baseQuestions: [
+            {
+                q: "¿Cuáles son los dos principios fundamentales del método científico?",
+                options: [
+                    "Observación y Experimentación.",
+                    "Reproductibilidad y Refutabilidad.",
+                    "Hipótesis y Predicción.",
+                    "Inferencia y Conclusión."
+                ],
+                answer: "Reproductibilidad y Refutabilidad."
+            },
+            {
+                q: "¿Qué característica debe tener el planteamiento de un problema científico?",
+                options: [
+                    "Debe ser formulado como una afirmación irrefutable.",
+                    "Debe poder responderse simplemente con un 'sí' o 'no'.",
+                    "Debe enunciar una pregunta o incógnita a resolver que conduzca a experimentación.",
+                    "Debe ser la conclusión final del experimento."
+                ],
+                answer: "Debe enunciar una pregunta o incógnita a resolver que conduzca a experimentación."
+            }
+        ]
+    },
+    {
+        session: 2,
+        unit: 'Método Científico',
+        topic: 'Predicción vs Inferencia',
+        videoTitle: 'Predicción e Inferencia',
+        videoLink: 'https://www.youtube.com/watch?v=J7fsT_85Ld0',
+        readingTitle: 'Capítulo 1: Método Científico (Predicción vs Inferencia)',
+        readingContent: `Conjuntamente con desarrollar el tema de las predicciones es necesario diferenciarlo de otro concepto que es INFERIR.\n\nDiferencias Claves:\n- Predicción: Una declaración anticipada sobre lo que podría suceder en el futuro, basada en patrones históricos, tendencias y relaciones conocidas. A menudo se formulan antes de llevar a cabo un estudio o experimento.\n- Inferencia: Una conclusión lógica que se obtiene a partir de observaciones y evidencias disponibles obtenidas tras analizar los datos. Se realizan después de obtener datos y permiten comprender relaciones entre variables y refutar o validar hipótesis.`,
+        baseQuestions: [
+            {
+                q: "Se realiza un experimento y al finalizar se extrae una conclusión lógica sobre los resultados observados. ¿A qué concepto corresponde esto?",
+                options: [
+                    "Hipótesis",
+                    "Observación",
+                    "Predicción",
+                    "Inferencia"
+                ],
+                answer: "Inferencia"
+            },
+            {
+                q: "¿Cuál es una diferencia temporal clave entre predecir e inferir en el método científico?",
+                options: [
+                    "Se predice durante el análisis estadístico, se infiere en la observación.",
+                    "Se predice antes de investigar para establecer qué materiales usar, y se infiere después de publicarlo.",
+                    "La predicción se formula a menudo antes de obtener los datos (anticipación), mientras que la inferencia se realiza después de obtenerlos.",
+                    "No hay diferencia temporal, ambas se realizan exclusivamente al redactar la hipótesis."
+                ],
+                answer: "La predicción se formula a menudo antes de obtener los datos (anticipación), mientras que la inferencia se realiza después de obtenerlos."
+            }
+        ]
+    },
     { session: 3, unit: 'Evolución', topic: 'Teoría Sintética', videoLink: 'https://www.youtube.com/watch?v=6QfDA44028s' },
     { session: 4, unit: 'Evolución', topic: 'Registro Fósil', videoLink: 'https://www.youtube.com/watch?v=aBrypvwLLpg' },
     { session: 5, unit: 'Evolución', topic: 'Anatomía Comparada', videoLink: 'https://www.youtube.com/watch?v=DXlVOxWzdwQ' },
@@ -2255,6 +2389,8 @@ const App = () => {
             setDailyRoute(DEFAULT_LANG_ROUTE);
         } else if (currentSubject === 'QUIMICA') {
             setDailyRoute(DEFAULT_CHEM_ROUTE);
+        } else if (currentSubject === 'BIOLOGIA') {
+            setDailyRoute(DEFAULT_BIO_ROUTE);
         } else if (currentSubject === 'HISTORIA') {
             setDailyRoute(DEFAULT_HISTORY_ROUTE);
         } else {
