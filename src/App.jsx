@@ -1925,8 +1925,9 @@ const DEFAULT_HISTORY_ROUTE = {
     daily_route_steps: [
         { step: '1. Video Documental', action: 'video', icon: 'Play', isComplete: false },
         { step: '2. Análisis Histórico', action: 'start_route', icon: 'Globe', isComplete: false },
-        { step: '3. Quiz Ciudadano', action: 'quiz', icon: 'Brain', isComplete: false },
-        { step: '4. Debate', action: 'doubt', icon: 'MessageCircle', isComplete: false }
+        { step: '3. 📝 Cuaderno de Matico', action: 'cuaderno', icon: 'Camera', isComplete: false },
+        { step: '4. Quiz Ciudadano', action: 'quiz', icon: 'Brain', isComplete: false },
+        { step: '5. Debate', action: 'doubt', icon: 'MessageCircle', isComplete: false }
     ],
     recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
 };
