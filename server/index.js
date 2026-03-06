@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
 import cron from 'node-cron';
@@ -932,29 +933,33 @@ REGLAS FINALES:
 - ❌ NO inventes conceptos que no estén en la lección original.`;
 
             try {
-                const visionResponse = await openai.chat.completions.create({
-                    model: "gpt-4o",
-                    messages: [
-                        {
-                            role: "user",
-                            content: [
-                                { type: "text", text: cuadernoPrompt },
-                                {
-                                    type: "image_url",
-                                    image_url: {
-                                        url: `data:image/jpeg;base64,${image}`,
-                                        detail: "high"
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    response_format: { type: "json_object" },
-                    max_tokens: 1000,
-                    temperature: 0.3
+                if (!process.env.GEMINI_API_KEY) {
+                    throw new Error("GEMINI_API_KEY no configurada en el servidor");
+                }
+
+                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+                // Usamos gemini-1.5-pro por ser experto en OCR y vision
+                const model = genAI.getGenerativeModel({
+                    model: "gemini-1.5-pro",
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        temperature: 0.2
+                    }
                 });
 
-                const resultText = visionResponse.choices[0].message.content;
+                const promptAndImage = [
+                    cuadernoPrompt,
+                    {
+                        inlineData: {
+                            data: image,
+                            mimeType: "image/jpeg"
+                        }
+                    }
+                ];
+
+                const visionResponse = await model.generateContent(promptAndImage);
+                const resultText = visionResponse.response.text();
+
                 let result;
                 try {
                     result = JSON.parse(resultText);
