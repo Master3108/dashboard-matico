@@ -16,7 +16,14 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
+
+// Servir archivos estáticos del frontend (dist/)
+const distPath = path.join(__dirname, '..', 'dist');
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    console.log(`[INIT] Serving frontend from ${distPath}`);
+}
 
 let moralejaContent = '';
 try {
@@ -1046,5 +1053,12 @@ cron.schedule('0 9 * * *', async () => {
         console.error('[CRON] Error:', err.message);
     }
 }, { timezone: 'America/Santiago' });
+
+// SPA catch-all: cualquier ruta que no sea /webhook/ devuelve index.html
+if (fs.existsSync(distPath)) {
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+    });
+}
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
