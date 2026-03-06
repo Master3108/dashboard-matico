@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import MathRenderer from './components/MathRenderer';
 import InteractiveQuiz from './components/InteractiveQuiz';
 import LoginPage from './components/LoginPage';
+import CuadernoMission from './components/CuadernoMission';
 import {
     BookOpen,
     Brain,
@@ -596,9 +597,10 @@ const DEFAULT_DAILY_ROUTE = {
     daily_route_steps: [
         { step: '1. Video de la Clase', action: 'video', icon: 'Play', isComplete: false },
         { step: '2. Teoría Lúdica IA', action: 'start_route', icon: 'Brain', isComplete: false },
-        { step: '3. Quiz de 45 Preguntas Kaizen', action: 'quiz', icon: 'Lock', isComplete: false }
+        { step: '3. 📝 Cuaderno de Matico', action: 'cuaderno', icon: 'Camera', isComplete: false },
+        { step: '4. Quiz de 45 Preguntas Kaizen', action: 'quiz', icon: 'Lock', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR SESIÓN"
 };
 
 const DEFAULT_LANG_ROUTE = {
@@ -610,9 +612,10 @@ const DEFAULT_LANG_ROUTE = {
     daily_route_steps: [
         { step: '1. Video Análisis', action: 'video', icon: 'Play', isComplete: false },
         { step: '2. Crítica Literaria IA', action: 'start_route', icon: 'BookOpen', isComplete: false },
-        { step: '3. Redacción/Quiz', action: 'quiz', icon: 'Star', isComplete: false }
+        { step: '3. 📝 Cuaderno de Matico', action: 'cuaderno', icon: 'Camera', isComplete: false },
+        { step: '4. Redacción/Quiz', action: 'quiz', icon: 'Star', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR SESIÓN"
 };
 
 
@@ -741,9 +744,10 @@ const DEFAULT_CHEM_ROUTE = {
     daily_route_steps: [
         { step: '1. Video Análisis', action: 'video', icon: 'Play', isComplete: false },
         { step: '2. Laboratorio Virtual', action: 'start_route', icon: 'FlaskConical', isComplete: false },
-        { step: '3. Quiz de Reacciones', action: 'quiz', icon: 'Atom', isComplete: false }
+        { step: '3. 📝 Cuaderno de Matico', action: 'cuaderno', icon: 'Camera', isComplete: false },
+        { step: '4. Quiz de Reacciones', action: 'quiz', icon: 'Atom', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR SESIÓN"
 };
 
 const DEFAULT_BIO_ROUTE = {
@@ -755,7 +759,8 @@ const DEFAULT_BIO_ROUTE = {
     daily_route_steps: [
         { step: '1. Video Análisis', action: 'video', icon: 'Play', isComplete: false },
         { step: '2. Simulación Biológica', action: 'start_route', icon: 'Dna', isComplete: false },
-        { step: '3. Quiz de Conceptos', action: 'quiz', icon: 'Atom', isComplete: false }
+        { step: '3. 📝 Cuaderno de Matico', action: 'cuaderno', icon: 'Camera', isComplete: false },
+        { step: '4. Quiz de Conceptos', action: 'quiz', icon: 'Atom', isComplete: false }
     ],
     recommended_action_text: "INICIAR RUTA BIOLÓGICA"
 };
@@ -1932,6 +1937,7 @@ const App = () => {
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [readingModalOpen, setReadingModalOpen] = useState(false);
     const [videoModalOpen, setVideoModalOpen] = useState(false);
+    const [cuadernoMissionOpen, setCuadernoMissionOpen] = useState(false);
     const [activeWebhookUrl, setActiveWebhookUrl] = useState(N8N_URLS.production);
 
     // --- DATABASE INTEGRATION START ---
@@ -2054,7 +2060,34 @@ const App = () => {
         setReadingModalOpen(false);
         saveProgress('reading_completed', { title: TODAYS_SESSION.readingTitle, xp_reward: 20, session: TODAYS_SESSION.session });
 
-        // Automatically open the Doubt modal with context
+        // Abrir Misión del Cuaderno de Matico (en vez de ir directo al chat)
+        setCuadernoMissionOpen(true);
+    };
+
+    const handleCuadernoComplete = (xpReward, tier) => {
+        setCuadernoMissionOpen(false);
+        saveProgress('xp_gain', { amount: xpReward, reason: `cuaderno_${tier}` });
+        saveProgress('cuaderno_completed', {
+            subject: currentSubject,
+            session: TODAYS_SESSION.session,
+            tier: tier,
+            xp_reward: xpReward
+        });
+
+        // Ahora sí, abrir el chat de dudas con contexto
+        callAgent(
+            currentSubject,
+            'answer_doubts',
+            `[CONTEXTO LECTURA]: ${TODAYS_SESSION.readingTitle}\n\n${TODAYS_SESSION.readingContent}\n\nGenera 3 preguntas de comprensión lectora sobre este texto para el estudiante.`,
+            null,
+            null,
+            `Generar control de lectura para: "${TODAYS_SESSION.readingTitle}"`
+        );
+    };
+
+    const handleCuadernoSkip = () => {
+        setCuadernoMissionOpen(false);
+        // Ir directo al chat de dudas sin XP del cuaderno
         callAgent(
             currentSubject,
             'answer_doubts',
@@ -2439,18 +2472,18 @@ const App = () => {
 
         const levelConfig = {
             "BASICO": {
-                name: "Nivel Básico PAES",
-                instruction: "RECORDAR/COMPRENDER - Preguntas directas sobre definiciones y conceptos elementales",
+                name: "Nivel Básico",
+                instruction: "RECORDAR/COMPRENDER - Aplicación directa de fórmulas y conceptos.",
                 startingIndex: 1
             },
             "AVANZADO": {
-                name: "Nivel Avanzado PAES",
-                instruction: "APLICAR - Problemas prácticos de nivel avanzado",
+                name: "Nivel Avanzado",
+                instruction: "APLICAR - Problemas de 2-3 pasos que requieren más razonamiento.",
                 startingIndex: 16
             },
             "CRITICO": {
-                name: "Nivel Crítico PAES",
-                instruction: "ANALIZAR/EVALUAR - Nivel PAES Universidad MUY DIFÍCIL",
+                name: "Nivel Crítico (PAES)",
+                instruction: "ANALIZAR/EVALUAR - Problemas complejos de integración (Nivel PAES).",
                 startingIndex: 31
             }
         };
@@ -3406,6 +3439,18 @@ ${finalData.capsule}`;
                     content={TODAYS_SESSION.readingContent || ""}
                     onFinish={handleReadingFinish}
                 />
+
+                {/* CUADERNO DE MATICO MISSION */}
+                {cuadernoMissionOpen && (
+                    <CuadernoMission
+                        sessionId={TODAYS_SESSION.session}
+                        subject={currentSubject}
+                        topic={TODAYS_SESSION.topic}
+                        readingContent={TODAYS_SESSION.readingContent}
+                        onComplete={handleCuadernoComplete}
+                        onSkip={handleCuadernoSkip}
+                    />
+                )}
 
                 {/* THEORY MODAL - Teoría Lúdica antes de cada sub-nivel */}
                 <ReadingModal

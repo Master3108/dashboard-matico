@@ -831,7 +831,170 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             });
         }
 
-        // 8. READ-ONLY ACTIONS
+        // 8. VERIFICAR ESCRITURA A MANO — CUADERNO DE MATICO (GPT-4o Vision)
+        if (currentAction === 'verify_handwriting') {
+            const { image, sessionId, topic: cuadernoTopic, readingContent: cuadernoReading } = body;
+            const cuadernoSubject = (body.subject || 'MATEMATICA').toUpperCase();
+
+            if (!image) {
+                return res.status(400).json({ success: false, error: 'No se recibió imagen' });
+            }
+
+            console.log(`[CUADERNO] 📝 Verificando escritura para ${cuadernoSubject} - Sesión ${sessionId}`);
+
+            const readingExcerpt = (cuadernoReading || '').substring(0, 2500);
+
+            const cuadernoPrompt = `Eres Matico 🐶, un tutor perrito inteligente y cariñoso. Un estudiante de 1° Medio Chile acaba de subir una foto de su cuaderno con un resumen manuscrito de la lección.
+
+═══════════════════════════════════════════
+CONTENIDO ORIGINAL DE LA LECCIÓN:
+═══════════════════════════════════════════
+Tema: ${cuadernoTopic || 'Sesión de estudio'}
+Asignatura: ${cuadernoSubject}
+
+${readingExcerpt}
+
+═══════════════════════════════════════════
+INSTRUCCIONES DE EVALUACIÓN (Rúbrica Pedagógica)
+═══════════════════════════════════════════
+
+PASO 1 — OCR Y VERIFICACIÓN DE ESCRITURA A MANO:
+- Realiza OCR de la imagen.
+- VERIFICA que sea escritura A MANO (lápiz/lapicera sobre papel real).
+- RECHAZA si es captura de pantalla, texto impreso, texto de computador/celular.
+- Si la imagen está muy oscura, borrosa o no se lee, indica el problema.
+
+PASO 2 — IDENTIFICAR "NUGGETS" DE CONTENIDO:
+- Del texto original de la lección, identifica los 3-5 conceptos clave "no negociables".
+- Verifica si esos conceptos están PRESENTES en el cuaderno del alumno.
+- ACEPTA sinónimos, lenguaje más sencillo, o reformulaciones. NO busques coincidencia exacta de palabras.
+
+PASO 3 — EVALUAR ESFUERZO DE PARÁFRASIS:
+- Análisis de "solapamiento verbatim": ¿El alumno copió literalmente frases del texto original o las reformuló con sus propias palabras?
+- Si el texto es DEMASIADO idéntico al original → "plata" o "insuficiente" (según cuánto copió).
+- Si el alumno parafraseó bien → puntos a favor para "oro".
+
+PASO 4 — SELECCIÓN Y JERARQUIZACIÓN:
+- ¿El alumno se centró en las ideas principales (reglas generales, conclusiones) u omitió lo esencial y solo puso ejemplos secundarios?
+- Califica positivamente si omitió detalles menores y capturó lo vital.
+
+PASO 5 — ORGANIZADORES GRÁFICOS (BONUS):
+- ¿Usó flechas, esquemas, mapas conceptuales, dibujos, diagramas, subrayados o colores?
+- Si detectas organización visual → puntos extra para "oro".
+
+═══════════════════════════════════════════
+RÚBRICA DE CALIFICACIÓN FINAL
+═══════════════════════════════════════════
+
+TIER "oro":
+- Captura los conceptos clave con palabras propias.
+- Usa flechas, esquemas o diagramas.
+- Demuestra comprensión genuina.
+
+TIER "plata":
+- Captura los conceptos clave PERO se parece mucho al texto original (poca paráfrasis).
+- O le falta un concepto clave importante.
+- Aún así demuestra que leyó y se esforzó.
+
+TIER "insuficiente":
+- Copia literal de una sola frase sin procesamiento.
+- Contenido que NO tiene que ver con el tema.
+- Imagen ilegible, vacía, o no es escritura a mano.
+- Captura de pantalla del texto digital.
+
+═══════════════════════════════════════════
+FORMATO DE RESPUESTA (JSON ESTRICTO)
+═══════════════════════════════════════════
+
+{
+  "success": true o false,
+  "tier": "oro" | "plata" | "insuficiente",
+  "feedback": "Mensaje motivador de Matico (máximo 2-3 oraciones), MENCIONANDO algo específico que el niño escribió. Ejemplo: '¡Me encantó cómo explicaste la fracción con tu propio dibujo!'",
+  "suggestion": "Si es plata: sugerencia para mejorar. Si es insuficiente: pregunta socrática para guiarlo. Si es oro: vacío o tip extra. Ejemplo para plata: '¡Buen intento! Pero trata de decírmelo como si me lo explicaras a mí, Matico 🐶. ¡No solo copies!'",
+  "conceptos_detectados": ["concepto1", "concepto2"],
+  "conceptos_faltantes": ["concepto que faltó"],
+  "es_manuscrito": true o false,
+  "tiene_organizadores": true o false
+}
+
+REGLAS FINALES:
+- ✅ Tutea al estudiante
+- ✅ Español de Chile
+- ✅ Tono cercano y motivador (eres un perrito amigable)
+- ✅ Si es insuficiente, NUNCA seas cruel. Sé empático y guía con preguntas socráticas.
+- ❌ NO inventes conceptos que no estén en la lección original.`;
+
+            try {
+                const visionResponse = await openai.chat.completions.create({
+                    model: "gpt-4o",
+                    messages: [
+                        {
+                            role: "user",
+                            content: [
+                                { type: "text", text: cuadernoPrompt },
+                                {
+                                    type: "image_url",
+                                    image_url: {
+                                        url: `data:image/jpeg;base64,${image}`,
+                                        detail: "high"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    response_format: { type: "json_object" },
+                    max_tokens: 1000,
+                    temperature: 0.3
+                });
+
+                const resultText = visionResponse.choices[0].message.content;
+                let result;
+                try {
+                    result = JSON.parse(resultText);
+                } catch (parseErr) {
+                    console.error('[CUADERNO] Error parsing response:', parseErr);
+                    return res.json({
+                        success: false,
+                        tier: 'insuficiente',
+                        feedback: 'Matico no pudo analizar la respuesta. Intenta de nuevo.',
+                        suggestion: ''
+                    });
+                }
+
+                console.log(`[CUADERNO] ✅ Resultado: ${result.tier?.toUpperCase()} | Manuscrito: ${result.es_manuscrito} | Organizadores: ${result.tiene_organizadores}`);
+                console.log(`[CUADERNO] Conceptos detectados: ${result.conceptos_detectados?.join(', ')}`);
+                if (result.conceptos_faltantes?.length > 0) {
+                    console.log(`[CUADERNO] Conceptos faltantes: ${result.conceptos_faltantes.join(', ')}`);
+                }
+
+                // Registrar en progress_log
+                const xpGained = result.tier === 'oro' ? 50 : (result.tier === 'plata' ? 30 : 0);
+                if (xpGained > 0) {
+                    await logToSheet(sheets, user_id, cuadernoSubject, sessionId || '',
+                        'cuaderno_completed', '', '', result.tier, '', xpGained);
+                }
+
+                return res.json({
+                    success: result.success !== false && result.tier !== 'insuficiente',
+                    tier: result.tier || 'insuficiente',
+                    feedback: result.feedback || '',
+                    suggestion: result.suggestion || '',
+                    conceptos_detectados: result.conceptos_detectados || [],
+                    conceptos_faltantes: result.conceptos_faltantes || []
+                });
+
+            } catch (visionError) {
+                console.error('[CUADERNO] ❌ Error Vision API:', visionError.message);
+                return res.status(500).json({
+                    success: false,
+                    tier: 'insuficiente',
+                    feedback: 'Error de conexión con Matico IA. Intenta de nuevo.',
+                    suggestion: 'Asegúrate de tener buena conexión a internet.'
+                });
+            }
+        }
+
+        // 9. READ-ONLY ACTIONS
         const readOnlyActions = ['update_preferences', 'ping', 'health'];
         if (readOnlyActions.includes(currentAction)) {
             return res.json({ success: true });
