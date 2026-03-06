@@ -43,7 +43,7 @@ import {
     HelpCircle,
     Loader,
     Image as ImageIcon, Maximize, Minimize
-    , FlaskConical, Globe
+    , FlaskConical, Globe, Camera
 } from 'lucide-react';
 import {
     BarChart,
@@ -3658,25 +3658,33 @@ ${finalData.capsule}`;
                                     </div>
 
                                     {dailyRoute.daily_route_steps.map((step, idx) => {
-                                        const IconComponent = step.icon === "Play" ? Play : (step.icon === "Brain" ? Brain : (step.icon === "MessageCircle" ? MessageCircle : Lock));
+                                        const iconMap = { Play, Brain, MessageCircle, Lock, Camera, FlaskConical, Dna, Atom, BookOpen, Star };
+                                        const IconComponent = iconMap[step.icon] || Lock;
 
                                         const handleClick = () => {
-                                            if (idx === 0) handleStartSession();
-                                            if (idx === 1) callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
-                                            if (idx === 2) callAgent(currentSubject, 'generate_quiz', TODAYS_SUBJECT.oa_title);
-                                            if (idx === 3) setAskModalOpen(true);
+                                            if (step.action === 'video') handleStartSession();
+                                            else if (step.action === 'start_route') callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
+                                            else if (step.action === 'cuaderno') setCuadernoMissionOpen(true);
+                                            else if (step.action === 'quiz') callAgent(currentSubject, 'generate_quiz', TODAYS_SUBJECT.oa_title);
                                         };
 
-                                        // STYLE LOGIC
+                                        // STYLE LOGIC — 4 colores para 4 pasos
                                         let btnStyle = "bg-[#E5E5E5] border-[#CECECE] text-[#AFAFAF]"; // Locked/Future
-                                        let isCurrent = idx === 0; // Default current?
-                                        // Simple logic for demo: Step 0 is completed/current, others locked? 
-                                        // Better: visual variety based on index
 
-                                        if (idx === 0) btnStyle = "bg-[#58CC02] border-[#46A302] text-white animate-bounce-subtle z-20 shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(88,204,2,0.6)]"; // Active
-                                        else if (idx === 1) btnStyle = "bg-[#1CB0F6] border-[#1899D6] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(28,176,246,0.6)]"; // Next
-                                        else if (idx === 2) btnStyle = "bg-[#FFD900] border-[#E5C300] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,217,0,0.6)]"; // Quiz
-                                        else btnStyle = "bg-[#FF4B4B] border-[#D63E3E] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,75,75,0.6)]"; // Practice
+                                        if (step.action === 'video') btnStyle = "bg-[#58CC02] border-[#46A302] text-white animate-bounce-subtle z-20 shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(88,204,2,0.6)]";
+                                        else if (step.action === 'start_route') btnStyle = "bg-[#1CB0F6] border-[#1899D6] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(28,176,246,0.6)]";
+                                        else if (step.action === 'cuaderno') btnStyle = "bg-[#FF9500] border-[#E08600] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,149,0,0.6)]";
+                                        else if (step.action === 'quiz') btnStyle = "bg-[#FFD900] border-[#E5C300] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,217,0,0.6)]";
+                                        else btnStyle = "bg-[#FF4B4B] border-[#D63E3E] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,75,75,0.6)]";
+
+                                        // Label subtitles
+                                        const subtitleMap = {
+                                            'video': 'CLASE DE HOY',
+                                            'start_route': 'TEORÍA IA',
+                                            'cuaderno': '📝 ESCRITURA',
+                                            'quiz': '45 PREGUNTAS KAIZEN',
+                                        };
+                                        const subtitle = subtitleMap[step.action] || step.action?.toUpperCase();
 
                                         // Alternating offset
                                         const offsetClass = idx % 2 === 0 ? "-translate-x-12" : "translate-x-12";
@@ -3698,11 +3706,7 @@ ${finalData.capsule}`;
                                                 {/* FLOATING LABEL */}
                                                 <div className={`absolute top-6 ${idx % 2 === 0 ? "left-28" : "right-28"} bg-white border-2 border-gray-200 px-4 py-2 rounded-2xl shadow-sm min-w-[140px] transition-transform hover:scale-105`}>
                                                     <h3 className="font-black text-[#3C3C3C] text-sm uppercase">{step.step}</h3>
-                                                    <p className="text-[#AFAFAF] text-xs font-bold">{
-                                                        idx === 0 ? "CLASE DE HOY" :
-                                                            (idx === 1 ? "TEORÍA IA" :
-                                                                (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"))
-                                                    }</p>
+                                                    <p className="text-[#AFAFAF] text-xs font-bold">{subtitle}</p>
 
                                                     {/* TRIANGLE POINTER */}
                                                     <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-b-2 border-l-2 border-gray-200 transform rotate-45 ${idx % 2 === 0 ? "-left-[7px]" : "-right-[7px] border-l-0 border-b-0 border-t-2 border-r-2"}`}></div>
