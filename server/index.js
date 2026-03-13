@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
 import cron from 'node-cron';
+import { Readable } from 'stream';
 
 dotenv.config();
 
@@ -29,6 +30,42 @@ const getSheetsClient = async () => {
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
     return google.sheets({ version: 'v4', auth });
+};
+
+// --- HELPER: Subir imagen a Google Drive ---
+const uploadToDrive = async (base64Image, fileName, folderId) => {
+    try {
+        const auth = new google.auth.GoogleAuth({
+            credentials: {
+                client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+                private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            },
+            scopes: ['https://www.googleapis.com/auth/drive'],
+        });
+        const drive = google.drive({ version: 'v3', auth });
+
+        const buffer = Buffer.from(base64Image, 'base64');
+        const media = {
+            mimeType: 'image/jpeg',
+            body: Readable.from(buffer),
+        };
+
+        const fileMetadata = {
+            name: fileName,
+            parents: [folderId],
+        };
+
+        const response = await drive.files.create({
+            resource: fileMetadata,
+            media: media,
+            fields: 'id',
+        });
+
+        return response.data.id;
+    } catch (err) {
+        console.error(`[DRIVE] Error uploadToDrive:`, err.message);
+        throw err;
+    }
 };
 
 // --- Configuración Nodemailer (Gmail) ---
@@ -98,22 +135,30 @@ const sendEmail = async (to, subject, htmlBody) => {
 // --- HELPER: Guardar evento en progress_log ---
 const logToSheet = async (sheets, user_id, subject, session, event_type, phase, subLevel, levelName, score, xp) => {
     try {
+        const timestamp = new Date().toISOString();
+        const values = [
+            timestamp,
+            user_id || '', 
+            subject || '', 
+            session || '',
+            event_type || '', 
+            phase || '', 
+            subLevel || '',
+            levelName || '', 
+            score || '0', 
+            xp || '0'
+        ];
+
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
             range: 'progress_log!A:J',
             valueInputOption: 'USER_ENTERED',
-            requestBody: {
-                values: [[
-                    new Date().toISOString(),
-                    user_id || '', subject || '', session || '',
-                    event_type || '', phase || '', subLevel || '',
-                    levelName || '', score || '', xp || ''
-                ]]
-            },
+            requestBody: { values: [values] },
         });
-        console.log(`[SHEET] ✅ Registrado: ${event_type} | ${subject} | ${levelName}`);
+
+        console.log(`[SHEET] ✅ ${event_type} | User: ${user_id} | Subj: ${subject} | Phase: ${phase} | XP: ${xp}`);
     } catch (err) {
-        console.error("[SHEET] Error:", err.message);
+        console.error("[SHEET] ❌ Error:", err.message);
     }
 };
 
@@ -453,10 +498,14 @@ Estructura JSON:
                 console.log(`[VERIFY] 🔍 Verificando ${questions.length} preguntas de ${subject}...`);
                 let corrected = 0;
 
-                const verifyPromises = questions.map(async (q, idx) => {
+                for (let idx = 0; idx < questions.length; idx++) {
+                    const q = questions[idx];
                     try {
                         const optionsText = Object.entries(q.options || {})
                             .map(([k, v]) => `${k}: ${v}`).join('\n');
+
+                        // Delay de 500ms para evitar Rate Limits de NVIDIA / OpenAI al paralelizar 3 batches de 5 preguntas
+                        if (idx > 0) await new Promise(r => setTimeout(r, 500));
 
                         const verifyComp = await openai.chat.completions.create({
                             model: "gpt-4o",
@@ -479,10 +528,7 @@ Estructura JSON:
                     } catch (err) {
                         console.log(`[VERIFY] Error en Q${idx + 1}:`, err.message);
                     }
-                    return q;
-                });
-
-                questions = await Promise.all(verifyPromises);
+                }
                 console.log(`[VERIFY] ✅ Verificación completa. Corregidas: ${corrected}/${questions.length}`);
             }
 
@@ -653,7 +699,121 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             });
         }
 
-        // 8. READ-ONLY ACTIONS
+        // 9. VERIFICAR ESCRITURA A MANO — CUADERNO DE MATICO (NVIDIA Kimi K2.5 Vision)
+        if (currentAction === 'verify_handwriting') {
+            const { image, sessionId, topic: cuadernoTopic, readingContent: cuadernoReading } = body;
+            const cuadernoSubject = (body.subject || 'MATEMATICA').toUpperCase();
+
+            if (!image) {
+                return res.status(400).json({ success: false, error: 'No se recibió imagen' });
+            }
+
+            console.log(`[CUADERNO] Verificando escritura para ${cuadernoSubject} - Sesion ${sessionId}`);
+            
+            // 1. Guardar en Drive inmediatamente
+            let driveFileId = null;
+            const DRIVE_FOLDER_ID = '1Tia5H-gpnJLMoHu_rBMbIkFaDNVkQygs';
+            
+            try {
+                const fileName = `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${Date.now()}.jpg`;
+                driveFileId = await uploadToDrive(image, fileName, DRIVE_FOLDER_ID);
+                console.log(`[DRIVE] ✅ Imagen guardada: ${driveFileId}`);
+            } catch (driveErr) {
+                console.error(`[DRIVE] ❌ Error subiendo: ${driveErr.message}`);
+            }
+
+            // 2. Responder al frontend inmediatamente para que no espere
+            res.json({
+                success: true,
+                background: true,
+                message: '¡Imagen guardada! Matico la analizará mientras sigues con el quiz.',
+                drive_file_id: driveFileId
+            });
+
+            // 3. PROCESAMIENTO EN SEGUNDO PLANO
+            (async () => {
+                try {
+                    console.log('[CUADERNO-BG] Iniciando análisis AI en segundo plano...');
+                    const readingExcerpt = (cuadernoReading || '').substring(0, 2000);
+                    const cuadernoPrompt = `Analiza esta foto de cuaderno manuscrito de un estudiante de 1ro Medio Chile.
+TEMA: ${cuadernoTopic || 'Sesion de estudio'}
+ASIGNATURA: ${cuadernoSubject}
+CONTENIDO ORIGINAL DE LA LECCION:
+${readingExcerpt}
+
+INSTRUCCIONES:
+1. Haz OCR de la imagen
+2. Verifica que sea escritura A MANO (no captura de pantalla)
+3. Compara con el contenido original
+4. Identifica conceptos clave presentes y faltantes
+
+CALIFICACION:
+- "oro": Parafraseo con palabras propias, conceptos clave capturados, organizadores visuales
+- "plata": Conceptos capturados pero muy parecido al original, falta alguno
+- "insuficiente": Copia literal, ilegible, no es manuscrito, contenido incorrecto
+
+RESPONDE SOLO CON JSON VALIDO:
+{"success":true,"tier":"oro|plata|insuficiente","feedback":"Mensaje motivador 2-3 oraciones","suggestion":"Tip para mejorar","conceptos_detectados":["concepto1"],"conceptos_faltantes":["concepto"],"es_manuscrito":true,"tiene_organizadores":true}`;
+
+                    if (!process.env.NVIDIA_API_KEY) {
+                        console.error('[CUADERNO-BG] NVIDIA_API_KEY no configurada');
+                        return;
+                    }
+
+                    const nvidiaResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: 'moonshotai/kimi-k2.5',
+                            messages: [{
+                                role: 'user',
+                                content: [
+                                    { type: 'text', text: cuadernoPrompt },
+                                    { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}` } }
+                                ]
+                            }],
+                            max_tokens: 2048,
+                            temperature: 0.3
+                        })
+                    });
+
+                    if (!nvidiaResponse.ok) {
+                        const errText = await nvidiaResponse.text();
+                        throw new Error(`NVIDIA API error: ${nvidiaResponse.status} - ${errText.substring(0, 100)}`);
+                    }
+
+                    const nvidiaData = await nvidiaResponse.json();
+                    let resultText = nvidiaData.choices?.[0]?.message?.content || '';
+                    resultText = resultText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+                    let result;
+                    try {
+                        result = JSON.parse(resultText);
+                    } catch {
+                        const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) result = JSON.parse(jsonMatch[0]);
+                    }
+
+                    if (result) {
+                        console.log(`[CUADERNO-BG] Resultado: ${result.tier?.toUpperCase()}`);
+                        const xpGained = result.tier === 'oro' ? 50 : (result.tier === 'plata' ? 30 : 0);
+                        if (xpGained > 0) {
+                            await logToSheet(sheets, user_id, cuadernoSubject, sessionId || '', 'cuaderno_completed', '', '', result.tier, '', xpGained);
+                            console.log(`[CUADERNO-BG] XP Registrado: ${xpGained} (${result.tier})`);
+                        }
+                    }
+                } catch (bgError) {
+                    console.error('[CUADERNO-BG] Error en análisis diferido:', bgError.message);
+                }
+            })();
+
+            return; // Ya respondimos arriba
+        }
+
+        // 10. READ-ONLY ACTIONS
         const readOnlyActions = ['update_preferences', 'ping', 'health'];
         if (readOnlyActions.includes(currentAction)) {
             return res.json({ success: true });

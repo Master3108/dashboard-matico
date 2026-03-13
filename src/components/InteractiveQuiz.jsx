@@ -37,7 +37,7 @@ const playSound = (type) => {
     }
 };
 
-const InteractiveQuiz = ({ questions, onComplete, onClose, phase }) => {
+const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, subject, readingContent }) => {
 
     // MATH SAFETY NET: Validate questions on load
     const validateMath = (q) => {
@@ -98,6 +98,17 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase }) => {
     const [score, setScore] = useState({ correct: 0, incorrect: 0 });
     const [wrongAnswers, setWrongAnswers] = useState([]); // Registrar errores para análisis IA
     const [showExplanation, setShowExplanation] = useState(false);
+    
+    // NEW: Sync activeQuestions if props change without remount
+    useEffect(() => {
+        if (questions && questions.length > 0) {
+            setActiveQuestions(questions.map(validateMath));
+            setCurrentQuestion(0);
+            setIsAnswered(false);
+            setShowExplanation(false);
+            setShowMiniLesson(false);
+        }
+    }, [questions]);
 
     // LIVES SYSTEM - 5 hearts
     const [lives, setLives] = useState(5);
@@ -554,6 +565,9 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase }) => {
                     correctAnswer={question.correct_answer}
                     explanation={question.explanation}
                     onComplete={handleNext}
+                    sessionId={sessionId}
+                    subject={subject}
+                    readingContent={readingContent}
                 />
             )}
         </div>

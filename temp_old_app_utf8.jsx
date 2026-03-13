@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import MathRenderer from './components/MathRenderer';
 import InteractiveQuiz from './components/InteractiveQuiz';
-import LoginPage from './components/LoginPage';
+import { generateMiniLesson, generateRetryQuestion, generateTheoryCheckpoint } from './utils/quizHelpers';
 import {
     BookOpen,
     Brain,
@@ -105,16 +105,8 @@ const N8N_URLS = {
     test: "/webhook-test/MATICO"
 };
 
-// --- PRODUCCIÓN: CALENDARIO MATICO ---
-const COURSE_START_DATE = new Date('2026-01-26T00:00:00'); // Lunes 26 de Enero
-const WEEKLY_PLAN = [
-    { day: 1, subject: 'MATEMATICA' },
-    { day: 2, subject: 'LENGUAJE' },
-    { day: 3, subject: 'FISICA' },
-    { day: 4, subject: 'QUIMICA' },
-    { day: 5, subject: 'BIOLOGIA' },
-    { day: 6, subject: 'HISTORIA' }
-];
+// SELECT ACTIVE URL HERE
+
 
 const COLORS = {
     bg: '#FFFFFF',
@@ -143,7 +135,7 @@ El centro del universo de Roberto era una casa de remolienda, un burdel que func
 
 Durante su primera infancia, el mundo de Roberto se limitaba a los límites del callejón y al vasto "pajonal", un terreno baldío donde la naturaleza salvaje se mezclaba con los desperdicios de la ciudad. Allí, junto a otros niños de rodillas costrosas y mirada despierta, Roberto descubría los secretos de la vida a través del juego. En el pajonal, los niños eran reyes de reinos invisibles, pero también eran receptores de los miedos colectivos que los adultos sembraban para controlarlos. Historias sobre el "Viejo del Saco" o el "Culebrón" poblaban sus pesadillas nocturnas, dándole una forma fantástica a los peligros reales que acechaban en la oscuridad. Sin embargo, a medida que Roberto dejaba de ser un niño pequeño, empezó a notar que los hombres que llegaban a la casa de su tía eran más aterradores que cualquier monstruo de cuento; eran hombres consumidos por el alcohol, por el trabajo agotador en las minas o en el campo, que buscaban un momento de olvido en los brazos de mujeres que, al igual que ellos, solo intentaban sobrevivir un día más.
 
-El gran quiebre en la vida de Roberto, el momento en que su horizonte dejó de ser una pared de madera podrida, fue su entrada en la escuela pública. Al principio, la escuela representaba un lugar extraño, con sus reglas rígidas y su atmósfera de orden que contrastaba violentamente con el caos del callejón. Pero fue allí donde Roberto se encontró con el poder transformador de las letras. Su profesor, un hombre que supo detectar la inteligencia vivaz que se escondía tras la apariencia humilde del niño, se convirtió en su mentor silencioso. Roberto descubrió que las palabras eran herramientas, llaves capaces de abrir celdas invisibles. Cada libro que caía en sus manos desde cuentos de aventuras hasta poemas de grandes autores era una invitación a un mundo donde la justicia no era un concepto abstracto y donde la belleza no estaba prohibida para los pobres. La lectura despertó en él una sensibilidad que lo alejaba de sus pares; mientras otros niños aceptaban su destino como obreros o delincuentes en potencia, Roberto empezaba a soñar con ser escritor, con tener una voz que pudiera narrar el dolor de su gente.
+El gran quiebre en la vida de Roberto, el momento en que su horizonte dejó de ser una pared de madera podrida, fue su entrada en la escuela pública. Al principio, la escuela representaba un lugar extraño, con sus reglas rígidas y su atmósfera de orden que contrastaba violentamente con el caos del callejón. Pero fue allí donde Roberto se encontró con el poder transformador de las letras. Su profesor, un hombre que supo detectar la inteligencia vivaz que se escondía tras la apariencia humilde del niño, se convirtió en su mentor silencioso. Roberto descubrió que las palabras eran herramientas, llaves capaces de abrir celdas invisibles. Cada libro que caía en sus manos —desde cuentos de aventuras hasta poemas de grandes autores— era una invitación a un mundo donde la justicia no era un concepto abstracto y donde la belleza no estaba prohibida para los pobres. La lectura despertó en él una sensibilidad que lo alejaba de sus pares; mientras otros niños aceptaban su destino como obreros o delincuentes en potencia, Roberto empezaba a soñar con ser escritor, con tener una voz que pudiera narrar el dolor de su gente.
 
 Sin embargo, este despertar intelectual trajo consigo el veneno de la conciencia de clase. Al salir de su barrio para ir a la escuela o al centro de Rancagua, Roberto comenzó a percibir las miradas de los "otros". Notaba cómo las personas de las casas sólidas y jardines cuidados se apartaban al paso de alguien que venía del callejón, cómo la policía trataba con sospecha a cualquiera que tuviera el rastro del barro en su vestimenta. Surgió entonces una contradicción dolorosa en su pecho: el amor profundo y la gratitud que sentía por su madre y su tía se mezclaban con una vergüenza punzante por el origen de su sustento. Se sentía un traidor al avergonzarse de la casa donde recibía alimento, pero no podía evitar el asco moral que le producía el negocio de la prostitución y la degradación humana que veía a diario. Esta lucha interna marcó su paso de la niñez a la adolescencia, convirtiéndolo en un observador melancólico de su propia realidad.
 
@@ -309,7 +301,7 @@ El clímax ocurre fuera de escena, pero su impacto es devastador. Leonardo y el 
         readingTitle: 'El curioso incidente del perro a medianoche (Resumen y Análisis)',
         readingContent: `La historia comienza en una calle tranquila de Swindon, Inglaterra, durante una medianoche que cambiaría para siempre la percepción del mundo de Christopher John Francis Boone. Christopher es un joven de quince años con una mente prodigiosa para las matemáticas y la lógica, pero que experimenta el mundo de una manera radicalmente distinta a la mayoría de las personas debido a un trastorno del espectro autista, probablemente síndrome de Asperger, aunque nunca se menciona explícitamente en el texto. Para Christopher, el mundo es un caos de estímulos sensoriales que debe ser ordenado meticulosamente a través de reglas, números primos y hechos comprobables. Esa noche, Christopher descubre el cadáver de Wellington, el caniche de su vecina la señora Shears, atravesado por una horca de jardín en medio del césped. Este evento, que para otros podría ser un incidente lamentable pero menor, se convierte para Christopher en el punto de partida de un enigma que debe resolver, decidiendo escribir un libro sobre su investigación, al estilo de sus admiradas historias de Sherlock Holmes.
 
-La vida de Christopher está regida por una estructura rígida diseñada para protegerlo del abrumador ruido del mundo exterior. No soporta que lo toquen, no comprende las metáforas porque las considera mentiras y juzga la calidad de su día basándose en el color de los coches que ve desde el autobús escolar: cuatro coches rojos seguidos significan un "Buen Día", mientras que cuatro coches amarillos presagian un "Día Negro" en el que no hablará con nadie. Su principal apoyo es Siobhan, su tutora en la escuela, quien le enseña a descifrar las complejas emociones humanas a través de dibujos de caras y le anima a seguir escribiendo su crónica detectivesca. Sin embargo, su padre, Ed Boone, reacciona con una furia desproporcionada y angustiante cuando descubre que su hijo está haciendo preguntas sobre la muerte del perro, prohibiéndole terminantemente continuar con su investigación y exigiéndole que deje de meter las narices en los asuntos de los vecinos.
+La vida de Christopher está regida por una estructura rígida diseñada para protegerlo del abrumador ruido del mundo exterior. No soporta que lo toquen, no comprende las metáforas —porque las considera mentiras— y juzga la calidad de su día basándose en el color de los coches que ve desde el autobús escolar: cuatro coches rojos seguidos significan un "Buen Día", mientras que cuatro coches amarillos presagian un "Día Negro" en el que no hablará con nadie. Su principal apoyo es Siobhan, su tutora en la escuela, quien le enseña a descifrar las complejas emociones humanas a través de dibujos de caras y le anima a seguir escribiendo su crónica detectivesca. Sin embargo, su padre, Ed Boone, reacciona con una furia desproporcionada y angustiante cuando descubre que su hijo está haciendo preguntas sobre la muerte del perro, prohibiéndole terminantemente continuar con su investigación y exigiéndole que deje de meter las narices en los asuntos de los vecinos.
 
 A pesar de la prohibición de su padre, la curiosidad lógica de Christopher lo lleva a desobedecer. Durante sus pesquisas, descubre verdades que los adultos a su alrededor han intentado ocultar bajo capas de silencio y engaño. La más devastadora de estas verdades se revela cuando Christopher, buscando su libro de notas que su padre le había confiscado, encuentra una caja con cartas escondidas en el armario de Ed. Al leerlas, su mundo lógico se colapsa: las cartas están escritas por su madre, Judy, y tienen fechas posteriores al momento en que su padre le dijo que ella había muerto de un ataque al corazón en el hospital. Christopher descubre que su madre no está muerta, sino que vive en Londres con el señor Shears, el exmarido de su vecina. La revelación de que su padre le ha mentido durante años sobre el hecho más fundamental de su vida rompe el único vínculo de confianza que Christopher poseía, llevándolo a un estado de pánico y parálisis emocional.
 
@@ -399,92 +391,98 @@ Los años siguientes no trajeron paz al pueblo. Los gemelos Vicario fueron absue
     { session: 17, unit: 'Teatro', topic: 'Estructura Dramática', videoTitle: 'Estructura interna obra dramática', videoLink: 'https://www.youtube.com/watch?v=Tn4XSVX5Ais' },
     { session: 18, unit: 'Teatro', topic: 'Visión de Mundo (Tragedia)', videoTitle: 'Género Dramático: Tragedia', videoLink: 'https://www.youtube.com/watch?v=tXWk5TcEAAc' },
     { session: 19, unit: 'Teatro', topic: 'Evolución de Personajes', videoTitle: 'El lenguaje dramático', videoLink: 'https://www.youtube.com/watch?v=NhHbymnMAR0' },
-    { session: 20, unit: 'Teatro', topic: 'Crítica de Obra', videoTitle: 'Puesta en Escena y Virtualidad', videoLink: 'https://www.youtube.com/watch?v=_PB3SSNzwCQ' },
-    { session: 21, unit: 'Medios', topic: 'Hecho vs Opinión', videoTitle: 'Diferencia Hecho y Opinión', videoLink: 'https://www.youtube.com/watch?v=UsiqUeoyIaw' },
-    { session: 22, unit: 'Argumentación', topic: 'Estructura Argumentativa', videoTitle: 'Texto Argumentativo', videoLink: 'https://www.youtube.com/watch?v=5bZ42hoiYh8' },
-    { session: 23, unit: 'Argumentación', topic: 'Falacias Argumentativas I', videoTitle: 'Falacias Lógicas', videoLink: 'https://www.youtube.com/watch?v=qY0e9dYp1kM' },
-    { session: 24, unit: 'Argumentación', topic: 'Falacias Argumentativas II', videoTitle: 'Más Falacias', videoLink: 'https://www.youtube.com/watch?v=qY0e9dYp1kM' },
-    { session: 25, unit: 'Argumentación', topic: 'Debate: Técnicas y Estructura', videoTitle: 'El Debate', videoLink: 'https://www.youtube.com/watch?v=TxkM_8M_b2U' },
-    { session: 26, unit: 'Medios', topic: 'Lectura Crítica de Prensa', videoTitle: 'Géneros Periodísticos', videoLink: 'https://www.youtube.com/watch?v=6rXJp1a0W2k' },
-    { session: 27, unit: 'Medios', topic: 'Publicidad y Propaganda', videoTitle: 'Publicidad vs Propaganda', videoLink: 'https://www.youtube.com/watch?v=Xw8om9x1i1M' },
-    { session: 28, unit: 'Medios', topic: 'Estereotipos en Medios', videoTitle: 'Estereotipos de Género', videoLink: 'https://www.youtube.com/watch?v=3X9z1X1X1X1' },
-    { session: 29, unit: 'Medios', topic: 'Fake News y Desinformación', videoTitle: 'Cómo detectar Fake News', videoLink: 'https://www.youtube.com/watch?v=4X9z1X1X1X1' },
-    { session: 30, unit: 'Escritura', topic: 'Ensayo: La Tesis', videoTitle: 'Cómo escribir una Tesis', videoLink: 'https://www.youtube.com/watch?v=5X9z1X1X1X1' },
-    { session: 31, unit: 'Escritura', topic: 'Ensayo: Argumentos', videoTitle: 'Tipos de Argumentos', videoLink: 'https://www.youtube.com/watch?v=6X9z1X1X1X1' },
-    { session: 32, unit: 'Evaluación', topic: 'Evaluación Argumentación', videoTitle: 'Repaso Argumentación', videoLink: 'https://www.youtube.com/watch?v=7X9z1X1X1X1' },
-    { session: 33, unit: 'Literatura', topic: 'Boom Latinoamericano', videoTitle: 'El Boom Latinoamericano', videoLink: 'https://www.youtube.com/watch?v=8X9z1X1X1X1' },
-    { session: 34, unit: 'Literatura', topic: 'Realismo Mágico', videoTitle: 'Qué es el Realismo Mágico', videoLink: 'https://www.youtube.com/watch?v=9X9z1X1X1X1' },
-    { session: 35, unit: 'Literatura', topic: 'Literatura Distópica', videoTitle: 'Distopías Literarias', videoLink: 'https://www.youtube.com/watch?v=0X9z1X1X1X1' },
-    { session: 36, unit: 'Literatura', topic: 'Ciencia Ficción', videoTitle: 'Historia de la Ciencia Ficción', videoLink: 'https://www.youtube.com/watch?v=1X9z1X1X1X1' },
-    { session: 37, unit: 'Literatura', topic: 'Cine y Literatura', videoTitle: 'Adaptaciones Cinematográficas', videoLink: 'https://www.youtube.com/watch?v=2X9z1X1X1X1' },
-    { session: 38, unit: 'Literatura', topic: 'Intertextualidad Pop', videoTitle: 'Intertextualidad en los Simpson', videoLink: 'https://www.youtube.com/watch?v=3X9z1X1X1X1' },
-    { session: 39, unit: 'Poesía', topic: 'Poesía Visual (Parra)', videoTitle: 'Nicanor Parra y Antipoesía', videoLink: 'https://www.youtube.com/watch?v=4X9z1X1X1X1' },
-    { session: 40, unit: 'Medios', topic: 'Narrativa Gráfica', videoTitle: 'Lenguaje del Cómic', videoLink: 'https://www.youtube.com/watch?v=5X9z1X1X1X1' },
-    { session: 41, unit: 'Escritura', topic: 'Taller Microcuentos', videoTitle: 'Cómo escribir Microcuentos', videoLink: 'https://www.youtube.com/watch?v=6X9z1X1X1X1' },
-    { session: 42, unit: 'Oralidad', topic: 'Taller de Oratoria', videoTitle: 'Técnicas de Oratoria', videoLink: 'https://www.youtube.com/watch?v=7X9z1X1X1X1' },
-    { session: 43, unit: 'PAES', topic: 'Estrategias Lectura PAES', videoTitle: 'Tips PAES Lectura', videoLink: 'https://www.youtube.com/watch?v=8X9z1X1X1X1' },
-    { session: 44, unit: 'PAES', topic: 'Vocabulario Contextual', videoTitle: 'Ejercicios Vocabulario', videoLink: 'https://www.youtube.com/watch?v=9X9z1X1X1X1' },
-    { session: 45, unit: 'PAES', topic: 'Ensayo Final Lectura', videoTitle: 'Resolución Ensayo PAES', videoLink: 'https://www.youtube.com/watch?v=0X9z1X1X1X1' },
-    { session: 46, unit: 'Cierre', topic: 'Cierre Año Escolar', videoTitle: 'Reflexión Final', videoLink: 'https://www.youtube.com/watch?v=1X9z1X1X1X1' }
+    { session: 20, unit: 'Teatro', topic: 'Crítica de Obra', videoTitle: 'Puesta en Escena y Virtualidad', videoLink: 'https://www.youtube.com/watch?v=_PB3SSNzwCQ' }
 ];
 
 // --- COMPONENTS ---
 
 const clayCard = 'bg-white rounded-[32px] border-2 border-white/50 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.02)] transition-transform duration-500 hover:-translate-y-2';
-const clayBtnPrimary = 'bg-[#4F46E5] text-white font-black rounded-2xl border-b-4 border-[#3730A3] hover:bg-[#4338CA] active:border-b-0 active:translate-y-1 transition-all duration-200 w-full py-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),0_4px_10px_rgba(79,70,229,0.3)] hover:scale-105 hover:-translate-y-1 active:scale-95';
+const clayBtnPrimary = 'bg-[#FFC800] text-white font-black rounded-2xl border-b-4 border-[#E0B000] hover:bg-[#FFD700] active:border-b-0 active:translate-y-1 transition-all duration-200 w-full py-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_4px_10px_rgba(0,0,0,0.05)] hover:scale-105 hover:-translate-y-1 active:scale-95';
 const clayBtnAction = 'bg-[#58CC02] text-white font-black rounded-2xl border-b-4 border-[#46A302] hover:bg-[#46A302] active:border-b-0 active:translate-y-1 transition-all duration-100 w-full py-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm shadow-[inset_0_4px_4px_rgba(255,255,255,0.4),0_10px_20px_rgba(88,204,2,0.3)] hover:scale-[1.05] hover:-translate-y-1 active:scale-95';
 const clayInset = 'bg-[#F7F7F7] rounded-2xl border-transparent shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]';
 
+// SYLLABUS MATEMÁTICA 1° MEDIO - NIVEL PAES/UNIVERSITARIO
+// Alineado 100% con Objetivos de Aprendizaje MINEDUC 2024-2025
+// Priorización Curricular: Aprendizajes Basales
 const MATH_SYLLABUS = [
-    { session: 1, unit: 'Números', topic: 'Racionales: Concepto y Conversión', videoTitle: 'Matemática-Clase N°1-Racionales', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' },
-    { session: 2, unit: 'Números', topic: 'Operatoria Combinada en Q', videoTitle: 'Operatoria combinada con racionales', videoLink: 'https://www.youtube.com/watch?v=vbh4lcMtpoI' },
-    { session: 3, unit: 'Números', topic: 'Multiplicación y División Q', videoTitle: 'Capsule-Rational Numbers', videoLink: 'https://www.youtube.com/watch?v=M6qOX1Xj_tY' },
-    { session: 4, unit: 'Números', topic: 'Potencias: Definición', videoTitle: 'Ayudantía PTU-Potencias', videoLink: 'https://www.youtube.com/watch?v=0BILyJ_NyDA' },
-    { session: 5, unit: 'Números', topic: 'Propiedades de Potencias', videoTitle: '#PruebadeInvierno Matemática-POTENCIAS', videoLink: 'https://www.youtube.com/watch?v=9VCg25rf7xg' },
-    { session: 6, unit: 'Números', topic: 'Exponente Cero y Negativo', videoTitle: 'Potencias y sus propiedades (Segmento)', videoLink: 'https://www.youtube.com/watch?v=Cdti7efBqVc' },
-    { session: 7, unit: 'Números', topic: 'Crecimiento Exponencial', videoTitle: 'Matemática-Potencias 1° Medio', videoLink: 'https://www.youtube.com/watch?v=1RjOhQwPJB4' },
-    { session: 8, unit: 'Números', topic: 'Raíces Enésimas', videoTitle: 'Prueba de Transición-Raíces', videoLink: 'https://www.youtube.com/watch?v=xMYFzXcFYns' },
-    { session: 9, unit: 'Números', topic: 'Operatoria con Raíces', videoTitle: 'Capsule-Roots', videoLink: 'https://www.youtube.com/watch?v=HwxfKSq0lh8' },
-    { session: 10, unit: 'Números', topic: 'Porcentajes', videoTitle: 'PAES M1-Porcentaje', videoLink: 'https://www.youtube.com/watch?v=YJ9l1Ew_rns' },
-    { session: 11, unit: 'ílgebra', topic: 'Lenguaje Algebraico', videoTitle: 'EXPRESIONES ALGEBRAICAS Clase NíâÃº3', videoLink: 'https://www.youtube.com/watch?v=lojCGXH4Odk' },
-    { session: 12, unit: 'ílgebra', topic: 'Cuadrado de Binomio', videoTitle: 'Cuadrado de binomio', videoLink: 'https://www.youtube.com/watch?v=IjL5zOyxs20' },
-    { session: 13, unit: 'ílgebra', topic: 'Suma por Diferencia', videoTitle: 'Suma por diferencia', videoLink: 'https://www.youtube.com/watch?v=-w_lg-r7pDg' },
-    { session: 14, unit: 'ílgebra', topic: 'Binomio con Término Común', videoTitle: 'Clase 6: ílgebra y funciones', videoLink: 'https://www.youtube.com/watch?v=CvgRtkMJ7ao' },
-    { session: 15, unit: 'ílgebra', topic: 'Factorización: Factor Común', videoTitle: 'Factorización', videoLink: 'https://www.youtube.com/watch?v=JpYUEEqYxbU' },
-    { session: 16, unit: 'ílgebra', topic: 'Factorización de Trinomios', videoTitle: 'Mathematical Factorization Criteria', videoLink: 'https://www.youtube.com/watch?v=pKwJBMHSeAY' },
-    { session: 17, unit: 'ílgebra', topic: 'Ecuaciones Lineales', videoTitle: 'PAES M1-Ecuaciones lineales', videoLink: 'https://www.youtube.com/watch?v=vnjowqDBGB8' },
-    { session: 18, unit: 'ílgebra', topic: 'Sistemas Ecuaciones (Intro)', videoTitle: 'Sistemas de ecuaciones (Casos)', videoLink: 'https://www.youtube.com/watch?v=AFKpBTCc6oU' },
-    { session: 19, unit: 'ílgebra', topic: 'Método de Sustitución', videoTitle: 'Sistemas de ecuaciones-Sustitución', videoLink: 'https://www.youtube.com/watch?v=aBmuYyKeWaE' },
-    { session: 20, unit: 'ílgebra', topic: 'Método de Reducción', videoTitle: 'INTENSIVO SISTEMAS DE ECUACIONES', videoLink: 'https://www.youtube.com/watch?v=J2dRZ2iM3sY' },
-    { session: 21, unit: 'ílgebra', topic: 'Método de Igualación', videoTitle: 'METODO DE IGUALACIÓN', videoLink: 'https://www.youtube.com/watch?v=tr78m4H9BIw' },
-    { session: 22, unit: 'ílgebra', topic: 'Problemas de Planteo', videoTitle: 'PLANTEO DE PROBLEMAS', videoLink: 'https://www.youtube.com/watch?v=780RStmengs' },
-    { session: 23, unit: 'ílgebra', topic: 'Función Lineal', videoTitle: 'FUNCIÓN LINEAL Y AFíN', videoLink: 'https://www.youtube.com/watch?v=XC6VLf8pOVg' },
-    { session: 24, unit: 'ílgebra', topic: 'Función Afín', videoTitle: 'Función lineal y afín (Parte 2)', videoLink: 'https://www.youtube.com/watch?v=TU0NMpLS88U' },
-    { session: 25, unit: 'Geometría', topic: 'Vectores', videoTitle: 'Vectores en el plano cartesiano', videoLink: 'https://www.youtube.com/watch?v=fjKr9TnAKYs' },
-    { session: 26, unit: 'Geometría', topic: 'Transformaciones Isométricas', videoTitle: 'TRANSFORMACIONES ISOMíÆÃ¢â¬°TRICAS', videoLink: 'https://www.youtube.com/watch?v=_tIaG3tmVgI' },
-    { session: 27, unit: 'Geometría', topic: 'Homotecia: Concepto', videoTitle: 'Homotecia', videoLink: 'https://www.youtube.com/watch?v=_rJoKG8MLg8' },
-    { session: 28, unit: 'Geometría', topic: 'Homotecia: Propiedades', videoTitle: 'Homotecia de figuras planas', videoLink: 'https://www.youtube.com/watch?v=OTGPT5AG2ww' },
-    { session: 29, unit: 'Geometría', topic: 'Congruencia de Triángulos', videoTitle: 'Congruencia de triángulos', videoLink: 'https://www.youtube.com/watch?v=PX9FjNz7yR8' },
-    { session: 30, unit: 'Geometría', topic: 'Criterios de Congruencia', videoTitle: 'Guía de ejercicios Congruencia', videoLink: 'https://www.youtube.com/watch?v=uuQ31qlYNaQ' },
-    { session: 31, unit: 'Geometría', topic: 'Semejanza de Triángulos', videoTitle: 'Estudia para la PSU-Semejanza', videoLink: 'https://www.youtube.com/watch?v=S8RVnQG2q3I' },
-    { session: 32, unit: 'Geometría', topic: 'Teorema de Thales', videoTitle: 'TEOREMA DE THALES Clase N°27', videoLink: 'https://www.youtube.com/watch?v=2ExAmja3378' },
-    { session: 33, unit: 'Geometría', topic: 'Aplicación de Thales', videoTitle: 'Prueba de Transición-Teorema Thales', videoLink: 'https://www.youtube.com/watch?v=AhUyh4IZmHI' },
-    { session: 34, unit: 'Geometría', topic: 'Ecuación de la Recta', videoTitle: 'Ecuación de la recta', videoLink: 'https://www.youtube.com/watch?v=-_MUgcyh3Ig' },
-    { session: 35, unit: 'Datos', topic: 'Tablas de Frecuencia', videoTitle: 'Tablas de Frecuencia-Clase N°24', videoLink: 'https://www.youtube.com/watch?v=1EZyGLlUQGw' },
-    { session: 36, unit: 'Datos', topic: 'Medidas Tendencia Central', videoTitle: 'Medidas tendencia central y rango', videoLink: 'https://www.youtube.com/watch?v=Vb5AzDzQcwo' },
-    { session: 37, unit: 'Datos', topic: 'Medidas de Posición', videoTitle: 'Medidas de posición Clase N°28', videoLink: 'https://www.youtube.com/watch?v=jCfQjycgwdM' },
-    { session: 38, unit: 'Datos', topic: 'Diagrama de Cajón', videoTitle: 'Diagrama de cajón y bigotes', videoLink: 'https://www.youtube.com/watch?v=GBNpyyApgdA' },
-    { session: 39, unit: 'Datos', topic: 'Medidas de Dispersión', videoTitle: 'Medidas de dispersión', videoLink: 'https://www.youtube.com/watch?v=uwHz-WYYVpQ' },
-    { session: 40, unit: 'Datos', topic: 'Probabilidad (Laplace)', videoTitle: 'Regla de Laplace', videoLink: 'https://www.youtube.com/watch?v=bazKrpT91kY' },
-    { session: 41, unit: 'Datos', topic: 'Regla Aditiva', videoTitle: 'Probabilidades (Unión)', videoLink: 'https://www.youtube.com/watch?v=zI6Aly68P0Q' },
-    { session: 42, unit: 'Datos', topic: 'Regla Multiplicativa', videoTitle: 'Probabilidad condicional', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
-    { session: 43, unit: 'Datos', topic: 'Técnicas de Conteo', videoTitle: 'TíÆÃ¢â¬°CNICAS DE CONTEO', videoLink: 'https://www.youtube.com/watch?v=klUzWXgLBRM' },
-    { session: 44, unit: 'Datos', topic: 'Probabilidad Condicional', videoTitle: 'Probabilidad Condicional Intro', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
-    { session: 45, unit: 'Datos', topic: 'Proyecto Estadística', videoTitle: 'Estadística en la Vida Real', videoLink: 'https://www.youtube.com/watch?v=GBNpyyApgdA' },
-    { session: 46, unit: 'Cierre', topic: 'Gran Desafío Final', videoTitle: 'Ensayo General Matemática', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' }
-];
+    // ============================================
+    // UNIDAD 1: NÚMEROS RACIONALES (MA1M OA 01 BASAL)
+    // ============================================
+    { session: 1, unit: 'Números Racionales', topic: 'Introducción a Números Racionales', videoTitle: 'Números Racionales: Concepto', videoLink: 'https://www.youtube.com/watch?v=G0S_SH1ZKUI', oa: 'MA1M OA 01 BASAL' },
+    { session: 2, unit: 'Números Racionales', topic: 'Representación en la Recta Numérica', videoTitle: 'Racionales en la Recta', videoLink: 'https://www.youtube.com/watch?v=yN_xeFZlLJQ', oa: 'MA1M OA 01 BASAL' },
+    { session: 3, unit: 'Números Racionales', topic: 'Adición y Sustracción de Racionales', videoTitle: 'Suma y Resta de Fracciones', videoLink: 'https://www.youtube.com/watch?v=kMznNdMrMwg', oa: 'MA1M OA 01 BASAL' },
+    { session: 4, unit: 'Números Racionales', topic: 'Multiplicación de Racionales', videoTitle: 'Multiplicación de Fracciones', videoLink: 'https://www.youtube.com/watch?v=KOWuHUTDQHU', oa: 'MA1M OA 01 BASAL' },
+    { session: 5, unit: 'Números Racionales', topic: 'División de Racionales', videoTitle: 'División de Fracciones', videoLink: 'https://www.youtube.com/watch?v=SZb0K3wFpC4', oa: 'MA1M OA 01 BASAL' },
+    { session: 6, unit: 'Números Racionales', topic: 'Operatoria Combinada', videoTitle: 'Operaciones Combinadas', videoLink: 'https://www.youtube.com/watch?v=TBvCpEp4q1U', oa: 'MA1M OA 01 BASAL' },
+    { session: 7, unit: 'Números Racionales', topic: 'Decimales y Fracciones', videoTitle: 'Conversión Decimal-Fracción', videoLink: 'https://www.youtube.com/watch?v=9WDqNWxKTlE', oa: 'MA1M OA 01 BASAL' },
+    { session: 8, unit: 'Números Racionales', topic: 'Aplicaciones de Racionales', videoTitle: 'Problemas con Racionales', videoLink: 'https://www.youtube.com/watch?v=fZgLjxMRNIU', oa: 'MA1M OA 01 BASAL' },
 
-// ---------------------------------------------------
+    // ============================================
+    // UNIDAD 2: POTENCIAS (MA1M OA 02 BASAL) - CRÍTICO PAES
+    // ============================================
+    { session: 9, unit: 'Potencias', topic: 'Potencias de Base Racional (Exponente Natural)', videoTitle: 'Concepto de Potencia', videoLink: 'https://www.youtube.com/watch?v=GjZ_bGKTe3M', oa: 'MA1M OA 02 BASAL' },
+    { session: 10, unit: 'Potencias', topic: 'Potencias con Exponente Cero y Uno', videoTitle: 'Exponentes Especiales', videoLink: 'https://www.youtube.com/watch?v=3xHMuOqgJD4', oa: 'MA1M OA 02 BASAL' },
+    { session: 11, unit: 'Potencias', topic: 'Potencias con Exponente Negativo', videoTitle: 'Exponentes Negativos', videoLink: 'https://www.youtube.com/watch?v=qwZszIqmg_k', oa: 'MA1M OA 02 BASAL' },
+    { session: 12, unit: 'Potencias', topic: 'Multiplicación de Potencias (Igual Base)', videoTitle: 'Propiedades de Potencias I', videoLink: 'https://www.youtube.com/watch?v=Aj7D7mmvJF4', oa: 'MA1M OA 02 BASAL' },
+    { session: 13, unit: 'Potencias', topic: 'División de Potencias y Potencia de Potencia', videoTitle: 'Propiedades de Potencias II', videoLink: 'https://www.youtube.com/watch?v=eP0u5DL-kFE', oa: 'MA1M OA 02 BASAL' },
+    { session: 14, unit: 'Potencias', topic: 'Notación Científica', videoTitle: 'Números Muy Grandes y Pequeños', videoLink: 'https://www.youtube.com/watch?v=i6lfVUp5RW8', oa: 'MA1M OA 02 BASAL' },
+    { session: 15, unit: 'Potencias', topic: 'Crecimiento y Decrecimiento Exponencial', videoTitle: 'Aplicaciones Exponenciales', videoLink: 'https://www.youtube.com/watch?v=AXqhWeUEtQU', oa: 'MA1M OA 02 BASAL' },
+    { session: 16, unit: 'Potencias', topic: 'Problemas de Aplicación (Biología, Física)', videoTitle: 'Potencias en la Vida Real', videoLink: 'https://www.youtube.com/watch?v=WbN9cpVnJo8', oa: 'MA1M OA 02 BASAL' },
+
+    // ============================================
+    // UNIDAD 3: PRODUCTOS NOTABLES (MA1M OA 03 BASAL) - CRÍTICO PAES
+    // ============================================
+    { session: 17, unit: 'Algebra', topic: 'Cuadrado de Binomio (a+b)²', videoTitle: 'Primer Producto Notable', videoLink: 'https://www.youtube.com/watch?v=Ct0M6B-c_pA', oa: 'MA1M OA 03 BASAL' },
+    { session: 18, unit: 'Algebra', topic: 'Cuadrado de Binomio (a-b)²', videoTitle: 'Cuadrado de Diferencia', videoLink: 'https://www.youtube.com/watch?v=E74-kNZPPqc', oa: 'MA1M OA 03 BASAL' },
+    { session: 19, unit: 'Algebra', topic: 'Suma por Diferencia (a+b)(a-b)', videoTitle: 'Diferencia de Cuadrados', videoLink: 'https://www.youtube.com/watch?v=mfQ1eKMjWho', oa: 'MA1M OA 03 BASAL' },
+    { session: 20, unit: 'Algebra', topic: 'Representación Pictórica de Productos Notables', videoTitle: 'Visualización Geométrica', videoLink: 'https://www.youtube.com/watch?v=yPPSNPKZS0M', oa: 'MA1M OA 03 BASAL' },
+    { session: 21, unit: 'Algebra', topic: 'Aplicación a Reducción de Expresiones', videoTitle: 'Simplificación Algebraica', videoLink: 'https://www.youtube.com/watch?v=RgZq2BQE4hQ', oa: 'MA1M OA 03 BASAL' },
+    { session: 22, unit: 'Algebra', topic: 'Factorización usando Productos Notables', videoTitle: 'Factorización', videoLink: 'https://www.youtube.com/watch?v=jjP6iI7B1Fs', oa: 'MA1M OA 03 BASAL' },
+
+    // ============================================
+    // UNIDAD 4: ECUACIONES (MA1M OA 04)
+    // ============================================
+    { session: 23, unit: 'Ecuaciones', topic: 'Ecuaciones de 1er Grado (Concepto)', videoTitle: 'Introducción a Ecuaciones', videoLink: 'https://www.youtube.com/watch?v=juNRJSxCAuY', oa: 'MA1M OA 04' },
+    { session: 24, unit: 'Ecuaciones', topic: 'Resolución Tipo ax = b', videoTitle: 'Ecuaciones Simples', videoLink: 'https://www.youtube.com/watch?v=fQLN8ZHDJQI', oa: 'MA1M OA 04' },
+    { session: 25, unit: 'Ecuaciones', topic: 'Resolución Tipo ax + b = c', videoTitle: 'Ecuaciones con Suma', videoLink: 'https://www.youtube.com/watch?v=SXMRw6JoARQ', oa: 'MA1M OA 04' },
+    { session: 26, unit: 'Ecuaciones', topic: 'Ecuaciones con Paréntesis', videoTitle: 'Ecuaciones con Distribución', videoLink: 'https://www.youtube.com/watch?v=bNPaAB5tq5k', oa: 'MA1M OA 04' },
+    { session: 27, unit: 'Ecuaciones', topic: 'Ecuaciones con x en Ambos Lados', videoTitle: 'Ecuaciones Complejas', videoLink: 'https://www.youtube.com/watch?v=v8KyQDWWQrs', oa: 'MA1M OA 04' },
+    { session: 28, unit: 'Ecuaciones', topic: 'Problemas de Modelamiento', videoTitle: 'Planteo de Ecuaciones', videoLink: 'https://www.youtube.com/watch?v=D1QqBLM27Oc', oa: 'MA1M OA 04' },
+
+    // ============================================
+    // UNIDAD 5: SISTEMAS DE ECUACIONES (MA1M OA 05) - CRÍTICO PAES
+    // ============================================
+    { session: 29, unit: 'Sistemas', topic: 'Sistemas 2x2 (Concepto)', videoTitle: 'Introducción a Sistemas', videoLink: 'https://www.youtube.com/watch?v=Oz0rqc6fZLo', oa: 'MA1M OA 05' },
+    { session: 30, unit: 'Sistemas', topic: 'Método Gráfico', videoTitle: 'Resolución Gráfica', videoLink: 'https://www.youtube.com/watch?v=zLqqXlmGGTs', oa: 'MA1M OA 05' },
+    { session: 31, unit: 'Sistemas', topic: 'Método de Sustitución', videoTitle: 'Método de Sustitución', videoLink: 'https://www.youtube.com/watch?v=0k8bMFcF-60', oa: 'MA1M OA 05' },
+    { session: 32, unit: 'Sistemas', topic: 'Método de Igualación', videoTitle: 'Método de Igualación', videoLink: 'https://www.youtube.com/watch?v=B0wJApfBRU4', oa: 'MA1M OA 05' },
+    { session: 33, unit: 'Sistemas', topic: 'Método de Reducción', videoTitle: 'Método de Eliminación', videoLink: 'https://www.youtube.com/watch?v=UNcIQZB_Eoc', oa: 'MA1M OA 05' },
+    { session: 34, unit: 'Sistemas', topic: 'Aplicaciones de Sistemas', videoTitle: 'Problemas con Sistemas', videoLink: 'https://www.youtube.com/watch?v=sNYCWwG67a4', oa: 'MA1M OA 05' },
+
+    // ============================================
+    // UNIDAD 6: PROPORCIONALIDAD (MA1M OA 06)
+    // ============================================
+    { session: 35, unit: 'Proporcionalidad', topic: 'Razones y Proporciones', videoTitle: 'Concepto de Razón', videoLink: 'https://www.youtube.com/watch?v=pWVkJ5dmCTU', oa: 'MA1M OA 06' },
+    { session: 36, unit: 'Proporcionalidad', topic: 'Proporcionalidad Directa', videoTitle: 'Proporcionalidad Directa', videoLink: 'https://www.youtube.com/watch?v=dTfk0bQLQrE', oa: 'MA1M OA 06' },
+    { session: 37, unit: 'Proporcionalidad', topic: 'Proporcionalidad Inversa', videoTitle: 'Proporcionalidad Inversa', videoLink: 'https://www.youtube.com/watch?v=9K0ZGJBECxM', oa: 'MA1M OA 06' },
+    { session: 38, unit: 'Proporcionalidad', topic: 'Porcentajes', videoTitle: 'Cálculo de Porcentajes', videoLink: 'https://www.youtube.com/watch?v=cR0fXqBvh9M', oa: 'MA1M OA 06' },
+
+    // ============================================
+    // UNIDAD 7: GEOMETRÍA (MA1M OA 07-08)
+    // ============================================
+    { session: 39, unit: 'Geometría', topic: 'Teorema de Pitágoras', videoTitle: 'Pitágoras y Aplicaciones', videoLink: 'https://www.youtube.com/watch?v=AA6RfgP-AHU', oa: 'MA1M OA 07' },
+    { session: 40, unit: 'Geometría', topic: 'Áreas y Perímetros', videoTitle: 'Cálculo de Áreas', videoLink: 'https://www.youtube.com/watch?v=3KP0FTiZZLE', oa: 'MA1M OA 08' },
+    { session: 41, unit: 'Geometría', topic: 'Volúmenes de Cuerpos Geométricos', videoTitle: 'Volumen de Prismas', videoLink: 'https://www.youtube.com/watch?v=RmWM-Ior6Gg', oa: 'MA1M OA 08' },
+    { session: 42, unit: 'Geometría', topic: 'Transformaciones Isométricas', videoTitle: 'Traslación, Rotación, Reflexión', videoLink: 'https://www.youtube.com/watch?v=j6p4rbOepd4', oa: 'MA1M OA 09' },
+
+    // ============================================
+    // UNIDAD 8: DATOS Y PROBABILIDAD (MA1M OA 10-11)
+    // ============================================
+    { session: 43, unit: 'Estadística', topic: 'Medidas de Tendencia Central', videoTitle: 'Media, Mediana, Moda', videoLink: 'https://www.youtube.com/watch?v=wYoN_cISZT8', oa: 'MA1M OA 10' },
+    { session: 44, unit: 'Estadística', topic: 'Gráficos Estadísticos', videoTitle: 'Interpretación de Gráficos', videoLink: 'https://www.youtube.com/watch?v=lPp2Pyw_FRs', oa: 'MA1M OA 10' },
+    { session: 45, unit: 'Probabilidad', topic: 'Probabilidad Clásica', videoTitle: 'Cálculo de Probabilidades', videoLink: 'https://www.youtube.com/watch?v=8bPJJMJwZNI', oa: 'MA1M OA 11' },
+    { session: 46, unit: 'Cierre', topic: 'Síntesis Final Matemática PAES', videoTitle: 'Resumen PAES Matemática', videoLink: 'https://www.youtube.com/watch?v=3xHtjqRRNJo', oa: 'TODAS' }
+];
 
 const DEFAULT_DAILY_ROUTE = {
     sujeto: 'Matemática',
@@ -495,9 +493,9 @@ const DEFAULT_DAILY_ROUTE = {
     daily_route_steps: [
         { step: '1. Video de la Clase', action: 'video', icon: 'Play', isComplete: false },
         { step: '2. Teoría Lúdica IA', action: 'start_route', icon: 'Brain', isComplete: false },
-        { step: '3. Quiz de 45 Preguntas Kaizen', action: 'quiz', icon: 'Lock', isComplete: false }
+        { step: '3. Quiz de 30 Preguntas', action: 'quiz', icon: 'Lock', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR ESTUDIO DE HOY (TEORíA)"
 };
 
 const DEFAULT_LANG_ROUTE = {
@@ -511,7 +509,7 @@ const DEFAULT_LANG_ROUTE = {
         { step: '2. Crítica Literaria IA', action: 'start_route', icon: 'BookOpen', isComplete: false },
         { step: '3. Redacción/Quiz', action: 'quiz', icon: 'Star', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR ANíLISIS CRíTICO"
 };
 
 
@@ -556,7 +554,7 @@ const CHEMISTRY_SYLLABUS = [
     { session: 33, unit: 'Estequiometría', topic: 'Cálculo Masa-Masa', videoTitle: 'Estequiometría Masa-Masa', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
     { session: 34, unit: 'Estequiometría', topic: 'Taller Estequiometría', videoTitle: 'Ejercicios Mixtos', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
 
-    // UNIDAD 4: SOLUCIONES Y CINÃTICA (Sesiones 35-46)
+    // UNIDAD 4: SOLUCIONES Y CINÃ‰TICA (Sesiones 35-46)
     { session: 35, unit: 'Estequiometría Real', topic: 'Reactivo Limitante Concepto', videoTitle: 'Intro Reactivo Limitante', videoLink: 'https://www.youtube.com/watch?v=_rts32wOiv0' },
     { session: 36, unit: 'Estequiometría Real', topic: 'Cálculo Reactivo Limitante', videoTitle: 'Cálculo RL', videoLink: 'https://www.youtube.com/watch?v=bOrVhbELagw' },
     { session: 37, unit: 'Estequiometría Real', topic: 'Rendimiento de Reacción', videoTitle: 'Porcentaje de Rendimiento', videoLink: 'https://www.youtube.com/watch?v=iAATyWldpqs' },
@@ -582,7 +580,7 @@ const DEFAULT_CHEM_ROUTE = {
         { step: '2. Laboratorio Virtual', action: 'start_route', icon: 'FlaskConical', isComplete: false },
         { step: '3. Quiz de Reacciones', action: 'quiz', icon: 'Atom', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR EXPERIMENTO"
 };
 
 
@@ -598,45 +596,138 @@ const VideoModal = ({ isOpen, onClose, videoUrl, title, onDoubt, onFinish }) => 
     };
     const videoId = getVideoId(videoUrl);
 
+    // Detect if user is on mobile device
+    const isMobileDevice = () => {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+            (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+    };
+
+    // Handle photo upload from camera/gallery (mobile)
+    const handlePhotoUpload = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment'; // Prefer back camera
+
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                // Convert to base64
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const base64Image = event.target.result;
+
+                    console.log(`📸 Foto capturada desde móvil: ${base64Image.length} bytes`);
+
+                    // Auto-Pause Video
+                    const iframe = document.getElementById('youtube-player');
+                    if (iframe) {
+                        iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                    }
+
+                    // Open Doubt Modal with Image
+                    onDoubt({
+                        type: 'video',
+                        title: title,
+                        url: videoUrl,
+                        timestamp: "photo_upload",
+                        image: base64Image
+                    });
+                };
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('Error al procesar foto:', error);
+                alert('Error al procesar la foto. Intenta de nuevo.');
+            }
+        };
+
+        input.click();
+    };
+
     // NEW: Automatic Screen Capture for Doubt
-    // NEW: Automatic Screen Capture for Doubt
+    // NEW: Automatic Screen Capture for Doubt (IMPROVED)
     const handleDoubt = async () => {
         try {
+            // Check browser support
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                alert('❌ Tu navegador no soporta captura de pantalla. Usa Chrome, Edge o Firefox.');
+                // Fallback: Open without image
+                onDoubt({
+                    type: 'video',
+                    title: title,
+                    url: videoUrl,
+                    timestamp: "unknown",
+                    image: null
+                });
+                return;
+            }
+
+            console.log('🎯 Iniciando captura de pantalla...');
+
             // 1. Request Screen Share (User must select tab)
-            // We use 'selfBrowserSurface: "include"' to ensure the current tab is listed
             const stream = await navigator.mediaDevices.getDisplayMedia({
-                video: { cursor: "always" },
+                video: {
+                    cursor: "always",
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                },
                 audio: false,
-                selfBrowserSurface: "include", // Standard
-                preferCurrentTab: true         // Chrome/Non-standard hint
+                selfBrowserSurface: "include",
+                preferCurrentTab: true
             });
 
-            // WAIT for the modal/picker to fully close (Animation delay)
-            await new Promise(resolve => setTimeout(resolve, 800));
+            console.log('✅ Stream obtenido, esperando estabilización...');
 
-            // 2. Capture a single frame (Video is still playing -> Clean shot)
+            // WAIT for the modal/picker to fully close + video stabilization
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // 2. Capture using Canvas (more compatible than ImageCapture)
             const videoTrack = stream.getVideoTracks()[0];
-            const imageCapture = new ImageCapture(videoTrack);
-            const bitmap = await imageCapture.grabFrame();
+            const settings = videoTrack.getSettings();
 
-            // 3. Stop sharing immediately
+            console.log('📸 Capturando frame...', settings);
+
+            // Create video element to capture frame
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.autoplay = true;
+            video.muted = true;
+
+            // Wait for video to be ready
+            await new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    video.play();
+                    // Wait a bit more for first frame
+                    setTimeout(resolve, 500);
+                };
+            });
+
+            // 3. Draw to canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || settings.width || 1920;
+            canvas.height = video.videoHeight || settings.height || 1080;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 4. Convert to Base64
+            const base64Image = canvas.toDataURL('image/png', 0.8);
+
+            console.log(`✅ Captura exitosa: ${base64Image.length} bytes`);
+
+            // 5. Stop sharing immediately
             videoTrack.stop();
+            video.srcObject = null;
 
-            // 4. Auto-Pause Video NOW (After capture)
+            // 6. Auto-Pause Video NOW (After capture)
             const iframe = document.getElementById('youtube-player');
             if (iframe) {
                 iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                console.log('⏸️ Video pausado');
             }
 
-            // 4. Convert to Base64
-            const canvas = document.createElement('canvas');
-            canvas.width = bitmap.width;
-            canvas.height = bitmap.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height);
-            const base64Image = canvas.toDataURL('image/png');
-
-            // 5. Open Doubt Modal with Image
+            // 7. Open Doubt Modal with Image
             onDoubt({
                 type: 'video',
                 title: title,
@@ -645,8 +736,21 @@ const VideoModal = ({ isOpen, onClose, videoUrl, title, onDoubt, onFinish }) => 
                 image: base64Image
             });
 
+            console.log('✅ Modal de duda abierto con captura');
+
         } catch (err) {
-            console.warn("Screen capture cancelled or failed:", err);
+            console.error("❌ Error en captura de pantalla:", err);
+
+            // User-friendly error messages
+            let errorMessage = "No se pudo capturar la pantalla.";
+            if (err.name === 'NotAllowedError') {
+                errorMessage = "Cancelaste la captura de pantalla.";
+            } else if (err.name === 'NotFoundError') {
+                errorMessage = "No se encontró ninguna pantalla para capturar.";
+            }
+
+            console.warn(errorMessage);
+
             // Fallback: Open without image
             onDoubt({
                 type: 'video',
@@ -716,16 +820,18 @@ const VideoModal = ({ isOpen, onClose, videoUrl, title, onDoubt, onFinish }) => 
                         disabled={isLoading}
                         className={`${isLoading ? 'bg-gray-400 border-gray-500' : 'bg-[#6BCB77]'} text-[#2B2E4A] font-black rounded-xl shadow-[0_4px_0_#4dad5b] active:shadow-none active:translate-y-[4px] transition-all py-3 px-6 flex items-center justify-center gap-2 uppercase tracking-widest text-xs hover:bg-[#7ce089]`}
                     >
-                        {isLoading ? '? Guardando...' : '? Terminar Video'}
+                        {isLoading ? '⏳ Guardando...' : '✅ Terminar Video'}
                     </button>
 
                     <button
-                        onClick={handleDoubt}
+                        onClick={isMobileDevice() ? handlePhotoUpload : handleDoubt}
                         className="bg-[#2B2E4A] text-[#FFD93D] font-bold rounded-2xl border-2 border-[#FFD93D] shadow-[0_8px_16px_rgba(0,0,0,0.3)] active:scale-95 transition-all p-4 flex items-center justify-center gap-2 hover:bg-[#34385a] animate-bounce-subtle"
-                        title="Capturar Pantalla y Preguntar"
+                        title={isMobileDevice() ? "Tomar Foto y Preguntar" : "Capturar Pantalla y Preguntar"}
                     >
                         <ImageIcon className="w-6 h-6" />
-                        <span className="uppercase tracking-wider text-xs font-black">Capturar y Hacer Pregunta</span>
+                        <span className="uppercase tracking-wider text-xs font-black">
+                            {isMobileDevice() ? '📸 Tomar Foto' : '🖥️ Capturar Pantalla'}
+                        </span>
                     </button>
                     <p className="text-white/40 text-[10px] text-center uppercase font-bold tracking-widest">
                         No cubre el video
@@ -737,7 +843,7 @@ const VideoModal = ({ isOpen, onClose, videoUrl, title, onDoubt, onFinish }) => 
 };
 
 // COMPONENT: Reading Modal
-const ReadingModal = ({ isOpen, onClose, title, content, onFinish, buttonText = "Terminar y Analizar" }) => {
+const ReadingModal = ({ isOpen, onClose, title, content, onFinish }) => {
     if (!isOpen) return null;
 
     return (
@@ -762,7 +868,7 @@ const ReadingModal = ({ isOpen, onClose, title, content, onFinish, buttonText = 
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-8 font-serif text-lg leading-relaxed text-[#2B2E4A]/90 whitespace-pre-wrap">
-                    <MathRenderer text={content} />
+                    {content}
                 </div>
 
                 {/* Footer */}
@@ -771,7 +877,7 @@ const ReadingModal = ({ isOpen, onClose, title, content, onFinish, buttonText = 
                         onClick={onFinish}
                         className="bg-[#2B2E4A] text-white font-bold rounded-xl py-3 px-8 shadow-lg hover:bg-[#34385a] transition-all flex items-center gap-2"
                     >
-                        <span>{buttonText}</span>
+                        <span>Terminar y Analizar</span>
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
@@ -914,7 +1020,7 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
                         className={`${clayBtnAction} w-full`}
                         disabled={isCallingN8N || (!question.trim() && !pastedImage)}
                     >
-                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '? Confirmar y Analizar Imagen' : 'Preguntar a Matico ??')}
+                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '✅ Confirmar y Analizar Imagen' : 'Preguntar a Matico 🚀')}
                     </button>
                 </form>
             </div >
@@ -930,7 +1036,7 @@ const LoadingOverlay = ({ isOpen, message }) => {
             <div className={`${clayCard} !bg-[#FFC300] flex flex-col items-center p-8 animate-bounce max-w-sm`}>
                 <Brain className="w-16 h-16 text-[#2B2E4A] animate-spin mb-4" />
                 <h2 className="text-2xl font-black text-[#2B2E4A] text-center uppercase tracking-widest whitespace-pre-line">
-                    {message || "? ESPÉRATE...\nESTOY PENSANDO ??"}
+                    {message || "✋ ESPÉRATE...\nESTOY PENSANDO 🤔"}
                 </h2>
             </div>
         </div >
@@ -1016,7 +1122,7 @@ const PomodoroTimer = () => {
         <div className={`${clayCard} flex flex-col items-center`}>
             <div className="flex items-center gap-2 mb-6"><Clock className="w-5 h-5 text-[#4D96FF] animate-pulse" /><span className="font-black text-[#2B2E4A] text-xs">TIMER</span></div>
             <div className="text-5xl font-black text-[#2B2E4A] mb-8">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</div>
-            <button onClick={() => setIsActive(!isActive)} className={isActive ? clayBtnAction : "!bg-[#2B2E4A] !border-[#1E293B] " + clayBtnPrimary}>{isActive ? 'PAUSAR' : 'INICIAR'}</button>
+            <button onClick={() => setIsActive(!isActive)} className={isActive ? clayBtnAction : clayBtnPrimary}>{isActive ? 'PAUSAR' : 'INICIAR'}</button>
         </div>
     );
 };
@@ -1033,96 +1139,51 @@ const cleanLatex = (text) => {
 
 // HELPER FOR ROBUST N8N JSON PARSING
 const parseN8NResponse = (textResponse) => {
-    if (!textResponse || typeof textResponse !== 'string') return {};
-
-    const cleanJsonString = (str) => {
-        if (!str || typeof str !== 'string') return str;
-
-        // 1. Contextual LaTeX fixes & Robust Escape Management
-        // We protect double-backslashes and valid JSON escapes like \" or \/
-        // but we double-escape collisions with LaTeX like \f, \t, \n, \r, \b
-        // and any invalid single backslashes like \d.
-        return str.replace(/(\\\\)|(\\["\/])|(\\u[0-9a-fA-F]{4})|(\\[bfnrt])|(\\)/g, (match, dbl, validStr, uni, collidable, single) => {
-            if (dbl) return dbl; // Keep \\ (already escaped)
-            if (validStr) return validStr; // Keep \" and \/
-            if (uni) return uni; // Keep \uXXXX
-            if (collidable) return '\\' + collidable; // Turn \f into \\f, \n into \\n, etc.
-            if (single) return '\\\\'; // Turn \s into \\s
-            return match;
-        })
-            .replace(/[\u0000-\u001F]+/g, (match) => (match === '\n' || match === '\r' || match === '\t') ? match : '') // Stop control char injection
-            .trim();
-    };
-
-    const attemptParse = (str) => {
-        if (!str) return null;
-        try {
-            return JSON.parse(str);
-        } catch (e1) {
-            try {
-                return JSON.parse(cleanJsonString(str));
-            } catch (e2) {
-                // If it looks like a JSON block trapped in text
-                const match = str.match(/({[\s\S]*})|(\[[\s\S]*\])/);
-                if (match) {
-                    try {
-                        return JSON.parse(cleanJsonString(match[0]));
-                    } catch (e3) { return null; }
-                }
-                return null;
-            }
-        }
-    };
-
-    const unbox = (data, depth = 0) => {
-        if (!data || depth > 6) return data;
-
-        // CASE 1: ARRAY
-        if (Array.isArray(data)) {
-            if (data.length === 0) return {};
-            // Prefer items that look like they contain questions
-            const bestItem = data.find(i => i && (i.questions || i.question || i.output)) || data[0];
-            return unbox(bestItem, depth + 1);
-        }
-
-        // CASE 2: STRING (Potential nested JSON string)
-        if (typeof data === 'string') {
-            const trimmed = data.trim();
-            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-                const parsed = attemptParse(trimmed);
-                if (parsed) return unbox(parsed, depth + 1);
-            }
-            return data;
-        }
-
-        // CASE 3: OBJECT
-        if (typeof data === 'object') {
-            // First check if this object IS already what we want
-            if (Array.isArray(data.questions)) return data;
-
-            // Otherwise look inside priority keys
-            const priorityKeys = ['questions', 'output', 'json', 'text', 'raw_output', 'content', 'theory', 'data'];
-            for (const key of priorityKeys) {
-                if (data[key] !== undefined && data[key] !== null) {
-                    const unboxed = unbox(data[key], depth + 1);
-                    if (unboxed && (unboxed.questions || unboxed.question || Array.isArray(unboxed))) return unboxed;
-                }
-            }
-            return data;
-        }
-        return data;
-    };
-
+    let jsonData = {};
     try {
-        const initialData = attemptParse(textResponse);
-        if (!initialData) return { error: true, raw: textResponse };
+        // First try standard parse cleaning logic
+        try {
+            jsonData = JSON.parse(textResponse.replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\'));
+        } catch (e) {
+            const jsonMatch = textResponse.match(/{[\s\S]*}/);
+            if (jsonMatch) {
+                jsonData = JSON.parse(jsonMatch[0].replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\'));
+            } else {
+                throw e;
+            }
+        }
 
-        const result = unbox(initialData);
-        // If unbox found an object/array, return it. If it's still a string, wrap it.
-        if (typeof result === 'string') return { output: result };
-        return result || {};
-    } catch (e) {
-        console.warn("[PARSER] Error final:", e);
+        // Handle recursive encoded JSON inside .output
+        if (jsonData.output && typeof jsonData.output === 'string') {
+            let raw = jsonData.output;
+            raw = raw.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+
+            const sanitized = raw
+                .replace(/\\"/g, '"')
+                .replace(/[\u000A\u000D]/g, "\\n")
+                .replace(/\\(.)/g, (match, char) => {
+                    if (char === '$') return '$';
+                    if ('"\\/nrtu'.includes(char)) return match;
+                    return '\\\\' + char;
+                });
+
+            try {
+                const parsed = JSON.parse(sanitized);
+                if (parsed && typeof parsed === 'object') {
+                    jsonData = { ...jsonData, ...parsed };
+                }
+            } catch (e) {
+                try {
+                    const parsedRaw = JSON.parse(raw);
+                    if (parsedRaw && typeof parsedRaw === 'object') {
+                        jsonData = { ...jsonData, ...parsedRaw };
+                    }
+                } catch (e2) { }
+            }
+        }
+        return jsonData;
+    } catch (error) {
+        console.error("Parse Error:", error);
         return { error: true, raw: textResponse };
     }
 };
@@ -1147,8 +1208,8 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
 
     if (!isOpen) return null;
 
-    const isQuiz = (content || '').includes('QUIZ DE VALIDACIÓN');
-    const isReview = (content || '').includes('Módulo de Refuerzo');
+    const isQuiz = content.includes('QUIZ DE VALIDACIÓN');
+    const isReview = content.includes('Módulo de Refuerzo');
     const isActiveQuiz = apiJson && apiJson.question;
     // NEW: DETECT VIDEO CONTEXT FROM QUERY
     const isVideoContext = userQuery && userQuery.includes('[Context: Video');
@@ -1167,7 +1228,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
         actionColor = 'bg-[#4D96FF] text-white shadow-[6px_6px_12px_#2a6bc7,-6px_-6px_12px_#70b9ff] hover:bg-[#3f80d6]';
         actionHandler = onStartQuiz ? onStartQuiz : () => callAgent(subject, 'generate_quiz', routeTitle);
     } else if (isActiveQuiz) {
-        actionText = 'SIGUIENTE PREGUNTA ? ';
+        actionText = 'SIGUIENTE PREGUNTA ➡ ';
         actionColor = clayBtnAction;
         actionHandler = () => {
             callAgent(subject, 'deepen_knowledge', `${routeTitle}-Continuación`);
@@ -1178,7 +1239,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
         actionHandler = onStartQuiz ? onStartQuiz : () => callAgent(subject, 'generate_quiz', routeTitle);
     }
 
-    const contentTitle = isTheory ? `Teoría Lúdica por Matico (${routeTitle}):` : (isActiveQuiz ? '¡Quiz en Progreso!' : (isQuiz ? '✅ ¡Quiz Generado!' : 'Plan de Refuerzo:'));
+    const contentTitle = isTheory ? `Teoría Lúdica por Matico (${routeTitle}):` : (isActiveQuiz ? '¡Quiz en Progreso!' : 'Plan de Refuerzo:');
 
     const handleOptionClick = (index) => {
         if (showExplanation) return;
@@ -1268,7 +1329,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                     {apiJson && apiJson.question && (
                         <div className="mt-8 pt-6 border-t border-gray-300/50">
                             <h5 className="font-black text-[#2B2E4A] mb-4 flex items-center gap-2">
-                                <span className="text-xl">?? </span>? Desafío Rápido:
+                                <span className="text-xl">🧠 </span>⚡ Desafío Rápido:
                             </h5>
                             <div className="font-bold text-[#2B2E4A] mb-4">
                                 <MathRenderer text={apiJson.question} />
@@ -1318,7 +1379,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             onClick={onAskDoubt}
                                             className="px-4 py-2 bg-white/50 text-[#FF9F43] font-bold rounded-xl text-xs flex items-center gap-1 hover:bg-white transition-colors"
                                         >
-                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? ??
+                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? 🤔
                                         </button>
 
                                         <button
@@ -1326,7 +1387,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             className={`${clayBtnAction} w-auto px-6 py-2 text-xs`}
                                             disabled={isCallingN8N}
                                         >
-                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! ??' : 'Refuerzo ?ï¸')}
+                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! 🚀' : 'Refuerzo ➡ï¸')}
                                         </button>
                                     </div>
                                 </div>
@@ -1335,13 +1396,27 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                     )}
                 </div>
 
-                <div className="flex-shrink-0 pt-2">
+                <div className="flex-shrink-0 pt-2 flex flex-col gap-2">
                     <button
                         onClick={actionHandler}
                         className={actionColor}
                         disabled={isCallingN8N}
                     >
                         {isCallingN8N ? 'ESPERA...' : actionText}
+                    </button>
+
+                    {/* BOTÓN DE EMERGENCIA PARA SALTAR NIVELES (DEBUG) */}
+                    <button
+                        onClick={() => {
+                            if (confirm("¿Estás seguro de que quieres saltar esta sesión manualmente?")) {
+                                markSessionComplete(currentSubject, TODAYS_SESSION.session);
+                                alert("✅ Sesión marcada como completada. Recargando...");
+                                window.location.reload();
+                            }
+                        }}
+                        className="text-[10px] text-gray-400 underline hover:text-red-500 pb-4"
+                    >
+                        ⏩ (Debug) Saltar Nivel Manualmente
                     </button>
                 </div>
             </div>
@@ -1434,10 +1509,7 @@ const PHYSICS_SYLLABUS = [
     { session: 40, unit: 'Repaso Integral', topic: 'Repaso Óptica Geométrica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
     { session: 41, unit: 'Repaso Integral', topic: 'Repaso Sismos y Universo', videoLink: 'https://www.youtube.com/watch?v=jalVd4_I3jM' },
     { session: 42, unit: 'Cierre', topic: 'ENSAYO FINAL SIMULACIÓN', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 43, unit: 'Cierre', topic: 'Análisis de Errores y Cierre', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 44, unit: 'Cierre', topic: 'Física Moderna', videoTitle: 'Introducción a Física Cuántica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 45, unit: 'Cierre', topic: 'Física y Tecnología', videoTitle: 'Aplicaciones de la Física', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 46, unit: 'Cierre', topic: 'Gran Desafío Final', videoTitle: 'Evaluación Final Física', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' }
+    { session: 43, unit: 'Cierre', topic: 'Análisis de Errores y Cierre', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' }
 ];
 
 
@@ -1449,40 +1521,40 @@ const BIOLOGY_SYLLABUS = [
     { session: 4, unit: 'Evolución', topic: 'Registro Fósil', videoLink: 'https://www.youtube.com/watch?v=aBrypvwLLpg' },
     { session: 5, unit: 'Evolución', topic: 'Anatomía Comparada', videoLink: 'https://www.youtube.com/watch?v=DXlVOxWzdwQ' },
     { session: 6, unit: 'Evolución', topic: 'Embriología y Biogeografía', videoLink: 'https://www.youtube.com/watch?v=lZUX9Kv6y7s' },
-    { session: 7, unit: 'Evolución', topic: 'Evolución Humana y Hominización', videoLink: 'https://www.youtube.com/watch?v=9oY_Q5Gf_v4' },
+    { session: 7, unit: 'Evolución', topic: 'EvoluciÃƒ³n Humana y HominizaciÃƒ³n', videoLink: 'https://www.youtube.com/watch?v=9oY_Q5Gf_v4' },
     { session: 8, unit: 'Evolución', topic: 'Taller de Integración', videoLink: 'https://www.youtube.com/watch?v=bPr6duAHk4I' },
     { session: 9, unit: 'Evolución', topic: 'Especiación', videoLink: 'https://www.youtube.com/watch?v=CBAwcRaVzA4' },
     { session: 10, unit: 'Evolución', topic: 'Taxonomía y Sistemática', videoLink: 'https://www.youtube.com/watch?v=Ji5aYL0KQoY' },
-    { session: 11, unit: 'Evolución', topic: 'Síntesis de la Unidad: El Origen de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=UqQ_u5qS5r4' },
+    { session: 11, unit: 'Evolución', topic: 'SÃƒ­ntesis de la Unidad: El Origen de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=UqQ_u5qS5r4' },
     { session: 12, unit: 'Evolución', topic: 'Protista y Fungi', videoLink: 'https://www.youtube.com/watch?v=6tttZ_7Q9a8' },
-    { session: 13, unit: 'Evolución', topic: 'Atributos de una Población (Densidad y Distribución)', videoLink: 'https://www.youtube.com/watch?v=S0T0E9y_H0c' },
+    { session: 13, unit: 'Evolución', topic: 'Atributos de una PoblaciÃƒ³n (Densidad y DistribuciÃƒ³n)', videoLink: 'https://www.youtube.com/watch?v=S0T0E9y_H0c' },
 
     // UNIDAD 2: ORGANISMOS EN ECOSISTEMAS
     { session: 14, unit: 'Ecología', topic: 'Organización Ecológica', videoLink: 'https://www.youtube.com/watch?v=18gqzWCPDMU' },
     { session: 15, unit: 'Ecología', topic: 'Distribución Espacial', videoLink: 'https://www.youtube.com/watch?v=MIiIIrZKggI' },
     { session: 16, unit: 'Ecología', topic: 'Crecimiento Poblacional: Modelos J y S', videoLink: 'https://www.youtube.com/watch?v=KzX6yK8jC8U' },
     { session: 17, unit: 'Ecología', topic: 'Crecimiento Logístico', videoLink: 'https://www.youtube.com/watch?v=2IFEZUEL7DQ' },
-    { session: 18, unit: 'Ecología', topic: 'Interacciones Biológicas (Competencia, Depredación)', videoLink: 'https://www.youtube.com/watch?v=XF3P8K7XpLc' },
+    { session: 18, unit: 'Ecología', topic: 'Interacciones BiolÃƒ³gicas (Competencia, DepredaciÃƒ³n)', videoLink: 'https://www.youtube.com/watch?v=XF3P8K7XpLc' },
     { session: 19, unit: 'Ecología', topic: 'Regulación Poblacional', videoLink: 'https://www.youtube.com/watch?v=F1_W1qRBV5M' },
     { session: 20, unit: 'Ecología', topic: 'Competencia y Depredación', videoLink: 'https://www.youtube.com/watch?v=1Pqr7RVMx4A' },
     { session: 21, unit: 'Ecología', topic: 'Simbiosis', videoLink: 'https://www.youtube.com/watch?v=GJnXQjFnyxo' },
     { session: 22, unit: 'Ecología', topic: 'Ecología Humana', videoLink: 'https://www.youtube.com/watch?v=xqHjtAFuuc4' },
 
-    // UNIDAD 3: MATERIA Y ENERGÍA
+    // UNIDAD 3: MATERIA Y ENERGÃA
     { session: 23, unit: 'Energía', topic: 'Metabolismo y ATP', videoLink: 'https://www.youtube.com/watch?v=q2y_0wDcTDM' },
     { session: 24, unit: 'Energía', topic: 'Fotosíntesis: Intro', videoLink: 'https://www.youtube.com/watch?v=XTVmIME0XOs' },
     { session: 25, unit: 'Energía', topic: 'Fase Dependiente de Luz', videoLink: 'https://www.youtube.com/watch?v=y-HglExruMI' },
     { session: 26, unit: 'Energía', topic: 'Ciclo de Calvin', videoLink: 'https://www.youtube.com/watch?v=d2DB-kWxg-w' },
-    { session: 27, unit: 'Energía', topic: 'Cadenas y Tramas Tróficas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
+    { session: 27, unit: 'Energía', topic: 'Cadenas y Tramas TrÃƒ³ficas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
     { session: 28, unit: 'Energía', topic: 'Respiración Celular', videoLink: 'https://www.youtube.com/watch?v=YefwfJ8IpEI' },
     { session: 29, unit: 'Energía', topic: 'Integración Metabólica', videoLink: 'https://www.youtube.com/watch?v=JYSm79-IIHw' },
     { session: 30, unit: 'Energía', topic: 'Tramas Tróficas', videoLink: 'https://www.youtube.com/watch?v=UMrU2peVKcU' },
     { session: 31, unit: 'Energía', topic: 'Flujo de Energía (10%)', videoLink: 'https://www.youtube.com/watch?v=6sUR80wigsU' },
     { session: 32, unit: 'Energía', topic: 'Pirámides Ecológicas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
-    { session: 33, unit: 'Energía', topic: 'Ciclos Biogeoquímicos (Carbono, Nitrógeno, Agua)', videoLink: 'https://www.youtube.com/watch?v=hUQoF16DmNk' },
+    { session: 33, unit: 'Energía', topic: 'Ciclos BiogeoquÃƒ­micos (Carbono, NitrÃƒ³geno, Agua)', videoLink: 'https://www.youtube.com/watch?v=hUQoF16DmNk' },
     { session: 34, unit: 'Energía', topic: 'Ciclo del Carbono', videoLink: 'https://www.youtube.com/watch?v=6YE42IePPjM' },
     { session: 35, unit: 'Energía', topic: 'Ciclo del Nitrógeno', videoLink: 'https://www.youtube.com/watch?v=iH3AI-XtNS8' },
-    { session: 36, unit: 'Energía', topic: 'Impacto Antropogénico en los Ecosistemas', videoLink: 'https://www.youtube.com/watch?v=BKS_rQbalGQ' },
+    { session: 36, unit: 'Energía', topic: 'Impacto AntropogÃƒ©nico en los Ecosistemas', videoLink: 'https://www.youtube.com/watch?v=BKS_rQbalGQ' },
 
     // UNIDAD 4: SUSTENTABILIDAD
     { session: 37, unit: 'Sustentabilidad', topic: 'Efecto Invernadero', videoLink: 'https://www.youtube.com/watch?v=K7MzGe6OSs0' },
@@ -1490,7 +1562,7 @@ const BIOLOGY_SYLLABUS = [
     { session: 39, unit: 'Sustentabilidad', topic: 'Huella Ecológica', videoLink: 'https://www.youtube.com/watch?v=chh0sAmfCwo' },
     { session: 40, unit: 'Sustentabilidad', topic: 'Contaminación', videoLink: 'https://www.youtube.com/watch?v=PH3H1x5CN5I' },
     { session: 41, unit: 'Sustentabilidad', topic: 'Matriz Energética', videoLink: 'https://www.youtube.com/watch?v=YWds9hX3g7c' },
-    { session: 42, unit: 'Sustentabilidad', topic: 'Huella Ecológica y Conservación de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=Z6z_V9XN8S4' },
+    { session: 42, unit: 'Sustentabilidad', topic: 'Huella EcolÃƒ³gica y ConservaciÃƒ³n de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=Z6z_V9XN8S4' },
     { session: 43, unit: 'Sustentabilidad', topic: 'Biodiversidad Norte/Centro', videoLink: 'https://www.youtube.com/watch?v=US074D5Y_MY' },
     { session: 44, unit: 'Sustentabilidad', topic: 'Biodiversidad Sur', videoLink: 'https://www.youtube.com/watch?v=SJeRsE9TyBk' },
     { session: 45, unit: 'Sustentabilidad', topic: 'Conservación', videoLink: 'https://www.youtube.com/watch?v=KcIHCEFKloo' },
@@ -1571,7 +1643,7 @@ const HISTORY_SYLLABUS = [
     { session: 33, unit: 'Territorio Nacional', topic: 'Incorporación de Rapa Nui', videoTitle: 'Historia de la anexión de Rapa Nui', videoLink: 'https://www.youtube.com/watch?v=90RzhcA0b0g' },
     { session: 34, unit: 'Territorio Nacional', topic: 'Tratado de 1881 con Argentina', videoTitle: 'Tratado de 1881 Chile-Argentina', videoLink: 'https://www.youtube.com/watch?v=3jypb_mjLyA' },
 
-    // UNIDAD 4: ECONOMÍA Y CIUDADANÍA (Sesiones 35-46)
+    // UNIDAD 4: ECONOMÃA Y CIUDADANÃA (Sesiones 35-46)
     {
         session: 35,
         unit: 'Economía y Ciudadanía',
@@ -1606,7 +1678,7 @@ const DEFAULT_HISTORY_ROUTE = {
         { step: '3. Quiz Ciudadano', action: 'quiz', icon: 'Brain', isComplete: false },
         { step: '4. Debate', action: 'doubt', icon: 'MessageCircle', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR ANÃLISIS HISTÓRICO"
 };
 
 const App = () => {
@@ -1617,87 +1689,16 @@ const App = () => {
     const [videoModalOpen, setVideoModalOpen] = useState(false);
     const [activeWebhookUrl, setActiveWebhookUrl] = useState(N8N_URLS.production);
 
-    // --- DATABASE INTEGRATION START ---
-
-    // --- AUTHENTICATION STATE ---
-    const [currentUser, setCurrentUser] = useState(null);
-    const [authChecking, setAuthChecking] = useState(true);
-
-    // Check for saved session
-    useEffect(() => {
-        const savedUser = localStorage.getItem('MATICO_USER');
-        if (savedUser) {
-            try {
-                setCurrentUser(JSON.parse(savedUser));
-            } catch (e) {
-                console.error("Error parsing saved user", e);
-                localStorage.removeItem('MATICO_USER');
-            }
-        }
-        setAuthChecking(false);
-    }, []);
-
-    const handleLogin = (userData) => {
-        console.log("Logged in:", userData);
-        setCurrentUser(userData);
-        localStorage.setItem('MATICO_USER', JSON.stringify(userData));
-    };
-
-    const handleLogout = () => {
-        setCurrentUser(null);
-        localStorage.removeItem('MATICO_USER');
-        window.location.reload(); // Clean state reset
-    };
-
-    // --- DATABASE INTEGRATION START ---
-    // Use dynamic USER_ID if available, else null
-    const USER_ID = currentUser ? currentUser.user_id : null;
-    const [userProfile, setUserProfile] = useState({ xp: 0, streak: 0, level: 1, username: 'Estudiante' });
-
-    // 1. Fetch Profile on Load
-    const fetchProfile = async () => {
-        if (!USER_ID) return;
-        try {
-            console.log("[PROFILE] Fetching latest profile for:", USER_ID);
-            const response = await fetch(`${activeWebhookUrl}?accion=get_profile&user_id=${USER_ID}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accion: 'get_profile', user_id: USER_ID })
-            });
-
-            const text = await response.text();
-            const data = parseN8NResponse(text);
-
-            console.log("[PROFILE] Raw data received:", data);
-
-            if (data && (data.xp !== undefined || data.puntos !== undefined)) {
-                // Handle different field names if necessary (e.g. pontos, xp, puntos)
-                const normalized = {
-                    xp: data.xp || data.puntos || 0,
-                    streak: data.streak || data.racha || 0,
-                    level: data.level || data.nivel || 1,
-                    username: data.username || data.nombre || currentUser?.username || 'Estudiante'
-                };
-                setUserProfile(normalized);
-                console.log("[PROFILE] Updated state:", normalized);
-            }
-        } catch (e) {
-            console.error("Error fetching profile:", e);
-        }
-    };
-
-    useEffect(() => {
-        if (USER_ID) fetchProfile();
-    }, [activeWebhookUrl, USER_ID]);
+    // --- DATABASE INTEGRATION (REMOVED - Now using Registration System) ---
+    // User profile is now managed by the registration system below
 
     // 2. Save Progress Function
     const saveProgress = async (type, payload) => {
         console.log("SAVING PROGRESS:", type, payload);
 
-        // Optimistic UI Update for XP
-        if (type === 'xp_gain' || type === 'theory_completed' || type === 'phase_completed') {
-            const amount = payload.xp_reward || payload.amount || 0;
-            setUserProfile(prev => ({ ...prev, xp: (prev.xp || 0) + amount }));
+        // Optimistic UI Update
+        if (type === 'xp_gain') {
+            setUserProfile(prev => ({ ...prev, xp: prev.xp + payload.amount }));
         }
 
         try {
@@ -1705,9 +1706,8 @@ const App = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    accion: 'save_progress', // Unified to 'accion'
+                    action: 'save_progress',
                     user_id: USER_ID,
-                    email: currentUser?.email, // Added for n8n mapping
                     data: {
                         type: type,
                         subject: currentSubject,
@@ -1716,9 +1716,6 @@ const App = () => {
                     }
                 })
             });
-
-            // After successful save, refresh full profile from Sheet to ensure sync
-            setTimeout(() => fetchProfile(), 1500); // Small delay to allow Sheet update
         } catch (e) {
             console.error("Error saving progress:", e);
         }
@@ -1736,1798 +1733,851 @@ const App = () => {
 
     const handleReadingFinish = () => {
         setReadingModalOpen(false);
-        saveProgress('reading_completed', { 
-            title: TODAYS_SESSION.readingTitle, 
-            xp_reward: 20, 
-            session: TODAYS_SESSION.session,
-            subject: currentSubject
-        });
+        saveProgress('reading_completed', { title: TODAYS_SESSION.readingTitle, xp_reward: 20, session: TODAYS_SESSION.session });
+        import RegistrationScreen from './components/RegistrationScreen';
 
-        // Automatically open the Doubt modal with context
-        callAgent(
-            currentSubject,
-            'answer_doubts',
-            `[CONTEXTO LECTURA]: ${TODAYS_SESSION.readingTitle}\n\n${TODAYS_SESSION.readingContent}\n\nGenera 3 preguntas de comprensión lectora sobre este texto para el estudiante.`,
-            null,
-            null,
-            `Generar control de lectura para: "${TODAYS_SESSION.readingTitle}"`
-        );
-    };
-    const [askModalOpen, setAskModalOpen] = useState(false);
-    const [settingsOpen, setSettingsOpen] = useState(false);
-    const [aiContent, setAiContent] = useState("");
-    const [apiJson, setApiJson] = useState(null);
-    const [currentSubject, setCurrentSubject] = useState("MATEMATICA");
-    const [dailyRoute, setDailyRoute] = useState(DEFAULT_DAILY_ROUTE);
-    const [todayIndex, setTodayIndex] = useState(0);
+        /*
+           ==========================================================================
+           MAIN APP COMPONENT
+           ==========================================================================
+        */
 
-    // SERVER PROGRESS STATE
-    const [serverProgress, setServerProgress] = useState(null);
-    const [loadingProgress, setLoadingProgress] = useState(false);
-
-    // NOTIFICATION PREFERENCES
-    const [remindersEnabled, setRemindersEnabled] = useState(true);
-    const [progressReportsEnabled, setProgressReportsEnabled] = useState(true);
-    const [isUpdatingPrefs, setIsUpdatingPrefs] = useState(false);
-
-    const updateNotificationPrefs = async (type, val) => {
-        setIsUpdatingPrefs(true);
-        // Optimistic UI
-        if (type === 'reminders') setRemindersEnabled(val);
-        else setProgressReportsEnabled(val);
-
-        try {
-            await fetch(activeWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    accion: 'update_preferences',
-                    user_id: USER_ID,
-                    email: currentUser?.email, // Added for n8n mapping
-                    type: type,
-                    enabled: val
-                })
+        function App() {
+            // STATE: User Profile (New)
+            const [userProfile, setUserProfile] = useState(() => {
+                const saved = localStorage.getItem('MATICO_USER_PROFILE');
+                return saved ? JSON.parse(saved) : null;
             });
-            console.log(`[PREFS] ${type} updated to ${val}`);
-        } catch (e) {
-            console.error("Error updating prefs:", e);
-        } finally {
-            setIsUpdatingPrefs(false);
-        }
-    };
-    const [quizStats, setQuizStats] = useState({ correct: 0, incorrect: 0, total: 0 });
-    const [quizLevel, setQuizLevel] = useState(1); // NEW: Adaptive Level State
-    const [quizQuestionNumber, setQuizQuestionNumber] = useState(1); // NEW: Persistence State
-    const [lastUserQuery, setLastUserQuery] = useState("");
 
-    //NEW: CONTEXT STATE FOR VIDEO/PASTE
-    const [doubtContext, setDoubtContext] = useState(null);
-
-    // INTERACTIVE QUIZ STATE
-    const [showInteractiveQuiz, setShowInteractiveQuiz] = useState(false);
-    const [quizQuestions, setQuizQuestions] = useState([]);
-
-    // PROGRESSIVE QUIZ STATE - SISTEMA JAPONÉS/KAIZEN (3 FASES × 15 PREGUNTAS = 45 TOTAL)
-    const [currentQuizPhase, setCurrentQuizPhase] = useState(1); // 1, 2, or 3 (Fase actual)
-    const [backgroundQuestionsQueue, setBackgroundQuestionsQueue] = useState([]);
-    const [backgroundTheoryQueue, setBackgroundTheoryQueue] = useState("");
-    const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false);
-    const backgroundTaskRef = useRef(null);
-    const [allWrongAnswers, setAllWrongAnswers] = useState([]); // Acumula errores de las 3 fases
-
-    // THEORY STATE - TEORÍA LÚDICA ANTES DE CADA SUB-NIVEL
-    const [showTheoryModal, setShowTheoryModal] = useState(false);
-    const [theoryContent, setTheoryContent] = useState("");
-    const [theoryTitle, setTheoryTitle] = useState("");
-    const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
-    const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al día"
-
-    // INITIAL SETUP: Resolve current subject according to Weekly Plan
-    useEffect(() => {
-        const { subject, index, isMissed, missedSubject } = resolveMaticoPlan();
-        console.log(`[MATICO] Startup Plan: ${subject} Session ${index + 1} | Missed: ${isMissed}`);
-        setCurrentSubject(subject);
-        setTodayIndex(index);
-
-        if (isMissed) {
-            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-            const todayDayName = days[new Date().getDay()];
-            setMissedSessionAlert({
-                subject: missedSubject,
-                session: index + 1,
-                todaySubject: (WEEKLY_PLAN.find(p => p.day === (new Date()).getDay())?.subject || 'LENGUAJE'),
-                todayName: todayDayName
+            // STATE: Smart Calendar & Progress
+            const [startDate, setStartDate] = useState(() => {
+                const saved = localStorage.getItem('MATICO_START_DATE');
+                return saved ? new Date(saved) : new Date(); // Default to today
             });
-        }
-    }, []);
 
-    // FETCH SERVER PROGRESS ON LOAD
-    useEffect(() => {
-        const fetchProgress = async () => {
-            if (!USER_ID) return;
-            try {
-                setLoadingProgress(true);
-                console.log('[MATICO] Fetching progress from server...');
+            const [currentSubject, setCurrentSubject] = useState('MATEMATICA');
 
-                const response = await fetch('/webhook/MATICO', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'get_progress',
-                        user_id: USER_ID,
-                        subject: currentSubject
-                    })
-                });
+            // Nueva lógica: Buscar la primera sesión incompleta REAL
+            // Ya no dependemos solo de "días desde inicio", sino del PROGRESO REAL.
+            const [completedSessions, setCompletedSessions] = useState(() => {
+                const saved = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
+                return saved ? JSON.parse(saved) : [];
+            });
 
-                const data = await response.json();
-                console.log('[MATICO] ? Server progress loaded:', data);
-                setServerProgress(data);
+            // ... (rest of existing state) ...
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [activeTab, setActiveTab] = useState('ruta'); // 'ruta', 'perfil', 'logros'
+            const [showVideoModal, setShowVideoModal] = useState(false);
+            const [showQuiz, setShowQuiz] = useState(false); // Controls Quiz visibility
+            const [videoLink, setVideoLink] = useState(''); // Current video URL
+            const [quizQuestions, setQuizQuestions] = useState([]); // Questions from N8N
+            const [isCallingN8N, setIsCallingN8N] = useState(false); // Loading state
+            const [aiTheory, setAiTheory] = useState(''); // Theory text
+            const [showAiModal, setShowAiModal] = useState(false);
 
-                // Update todayIndex based on server's next_session
-                if (data && data.next_session) {
-                    const newIndex = data.next_session - 1; // Convert to 0-indexed
-                    console.log(`[MATICO] Setting session index to ${newIndex} (Session ${data.next_session})`);
-                    setTodayIndex(newIndex);
+            // ... (rest of state items like doubts, quizScore, etc.) ...
+
+            // --- USER REGISTRATION HANDLER ---
+            const handleRegister = async (data) => {
+                console.log("📝 Registrando usuario:", data);
+
+                // 1. Guardar localmente
+                localStorage.setItem('MATICO_USER_PROFILE', JSON.stringify(data));
+                setUserProfile(data);
+
+                // 2. Enviar a N8N para guardar en Sheets
+                try {
+                    await fetch('/webhook/MATICO', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'register_user',
+                            email: data.email,
+                            name: data.name,
+                            parentEmail: data.parentEmail,
+                            parentPhone: data.parentPhone,
+                            region: data.region,
+                            commune: data.commune
+                        })
+                    });
+                    console.log("✅ Usuario sincronizado con N8N");
+                } catch (e) {
+                    console.error("❌ Error syncing user:", e);
+                }
+            };
+
+            // Si no hay usuario registrado, mostrar pantalla de registro
+            if (!userProfile) {
+                return <RegistrationScreen onRegister={handleRegister} />;
+            }
+
+            // ... (Existing logic for Subjects, Syllabus, etc.) ...
+
+            // SUBJECTS CONFIGURATION
+            const SUBJECTS = {
+                'MATEMATICA': { id: 'MATEMATICA', name: 'Matemática', color: 'bg-blue-500', icon: '📐' },
+                'LENGUAJE': { id: 'LENGUAJE', name: 'Lenguaje', color: 'bg-yellow-500', icon: '📖' },
+                'FISICA': { id: 'FISICA', name: 'Física', color: 'bg-purple-500', icon: '⚛️' },
+                'QUIMICA': { id: 'QUIMICA', name: 'Química', color: 'bg-green-500', icon: '🧪' },
+                'BIOLOGIA': { id: 'BIOLOGIA', name: 'Biología', color: 'bg-teal-500', icon: '🧬' },
+                'HISTORIA': { id: 'HISTORIA', name: 'Historia', color: 'bg-orange-500', icon: '📜' }
+            };
+            console.log("APP RENDER:", { currentSubject, todayIndex, syllabusLen: ACTIVE_SYLLABUS?.length });
+
+            const RAW_SESSION = ACTIVE_SYLLABUS[todayIndex] || ACTIVE_SYLLABUS[0];
+            const TODAYS_SESSION = RAW_SESSION || {
+                session: 0,
+                unit: 'Cargando...',
+                topic: 'Esperando datos',
+                videoTitle: '',
+                videoLink: '',
+                readingTitle: '',
+                readingContent: ''
+            };
+
+            const TODAYS_SUBJECT = {
+                name: TODAYS_SESSION.unit || 'Sin Unidad',
+                color: currentSubject === 'LENGUAJE' ? '#FF9F43' : (currentSubject === 'FISICA' ? '#9D4EDD' : (currentSubject === 'QUIMICA' ? '#E84393' : (currentSubject === 'BIOLOGIA' ? '#2ECC71' : (currentSubject === 'HISTORIA' ? '#E67E22' : '#4D96FF')))),
+                icon: currentSubject === 'LENGUAJE' ? BookOpen : (currentSubject === 'FISICA' ? Atom : (currentSubject === 'QUIMICA' ? FlaskConical : (currentSubject === 'BIOLOGIA' ? Dna : (currentSubject === 'HISTORIA' ? Globe : Brain)))),
+                oa_title: `Sesión ${TODAYS_SESSION.session}: ${TODAYS_SESSION.topic}`,
+                video_link: TODAYS_SESSION.videoLink
+            };
+
+            // --- SMART CALENDAR LOGIC START ---
+            const getSmartSessionIndex = (subject) => {
+                // Use exact same syllabus reference logic as ACTIVE_SYLLABUS
+                const syllabus = subject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (subject === 'FISICA' ? (typeof PHYSICS_SYLLABUS !== 'undefined' ? PHYSICS_SYLLABUS : []) : (subject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (subject === 'BIOLOGIA' ? (typeof BIOLOGY_SYLLABUS !== 'undefined' ? BIOLOGY_SYLLABUS : []) : (subject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS))));
+
+                if (!syllabus || syllabus.length === 0) return 0;
+
+                // 1. Get or Init Start Date (Simulation of "User Started Course On...")
+                let startDateStr = localStorage.getItem('MATICO_START_DATE');
+                if (!startDateStr) {
+                    startDateStr = new Date().toISOString();
+                    localStorage.setItem('MATICO_START_DATE', startDateStr);
+                }
+                const startDate = new Date(startDateStr);
+                const today = new Date();
+
+                // Calculate days passed (floored)
+                const diffTime = Math.max(0, today - startDate);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                // 2. Get Completed Sessions
+                const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
+                const completed = completedStr ? JSON.parse(completedStr) : [];
+
+                // 3. Self-Paced Logic: Find first incomplete session in the ENTIRE syllabus
+                // This allows users to advance faster than 1 session per day if they want.
+                for (let i = 0; i < syllabus.length; i++) {
+                    const session = syllabus[i];
+                    const sessionKey = `${subject}_${session.session}`;
+
+                    // If this session is NOT complete, this is our next target
+                    if (!completed.includes(sessionKey)) {
+                        console.log(`SmartCalendar: Found next incomplete session: ${i + 1} (Session ID: ${session.session})`);
+                        return i;
+                    }
                 }
 
-                // SYNC: Restaurar progreso de fases en localStorage desde el servidor
-                // Esto hace que funcione al cambiar de navegador
-                if (data && data.current_session_in_progress > 0 && data.current_phase > 0) {
-                    const sessionNum = data.current_session_in_progress;
-                    const phase = data.current_phase;
-                    const subj = currentSubject;
-                    const key = `${subj}_session_${sessionNum}`;
+                // 4. If ALL sessions are done, return the last one (Course Complete)
+                return syllabus.length - 1;
+            };
 
-                    const existing = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
+            const markSessionComplete = (subject, sessionId) => {
+                const key = `${subject}_${sessionId}`;
+                const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
+                const completed = completedStr ? JSON.parse(completedStr) : [];
 
-                    // Solo restaurar si localStorage no tiene datos para esta sesión
-                    if (!existing[key] || !existing[key].completedPhases || existing[key].completedPhases.length < phase) {
-                        const completedPhases = [];
-                        for (let i = 1; i <= phase; i++) completedPhases.push(i);
+                if (!completed.includes(key)) {
+                    const newCompleted = [...completed, key];
+                    localStorage.setItem('MATICO_COMPLETED_SESSIONS', JSON.stringify(newCompleted));
+                    console.log(`SmartCalendar: Marked ${key} as complete! Updating view...`);
 
-                        existing[key] = {
-                            completedPhases: completedPhases,
-                            currentPhase: phase < 3 ? phase + 1 : 3,
-                            scores: existing[key]?.scores || {},
-                            restoredFromServer: true,
-                            lastUpdated: new Date().toISOString()
+                    // Trigger Re-calc immediately to show next session if applicable
+                    // We need to use a timeout to ensure state updates propagate if called in a tight loop, 
+                    // but for React state setter it's fine.
+                    setTodayIndex(getSmartSessionIndex(subject));
+                }
+            };
+            // --- SMART CALENDAR LOGIC END ---
+
+            // EFFECT: SWITCH ROUTE ON SUBJECT CHANGE
+            useEffect(() => {
+                if (currentSubject === 'LENGUAJE') {
+                    setDailyRoute(DEFAULT_LANG_ROUTE);
+                } else if (currentSubject === 'QUIMICA') {
+                    setDailyRoute(DEFAULT_CHEM_ROUTE);
+                } else if (currentSubject === 'HISTORIA') {
+                    setDailyRoute(DEFAULT_HISTORY_ROUTE);
+                } else {
+                    setDailyRoute(DEFAULT_DAILY_ROUTE);
+                }
+
+                // NEW: Load the smart session index instead of resetting to 0
+                const smartIndex = getSmartSessionIndex(currentSubject);
+                console.log(`Subject Change: ${currentSubject} -> Loaded Smart Session Index: ${smartIndex}`);
+                setTodayIndex(smartIndex);
+
+            }, [currentSubject]);
+
+            const updateQuizStats = (isCorrect) => {
+                setQuizStats(prev => ({
+                    correct: prev.correct + (isCorrect ? 1 : 0),
+                    incorrect: prev.incorrect + (isCorrect ? 0 : 1),
+                    total: prev.total + 1
+                }));
+
+                if (isCorrect) {
+                    saveProgress('xp_gain', { amount: 10, reason: 'quiz_correct_answer' });
+
+                    // NEW: SAVE QUIZ PROGRESS IMMEDIATELY SO AI KNOWS WE MASTERED THIS
+                    saveProgress('quiz_completed', {
+                        subject: currentSubject,
+                        topic: TODAYS_SESSION.topic, // Or a more specific sub-topic if available
+                        score: 100, // Per-question score (binary success)
+                        correct: 1,
+                        total: 1,
+                        question_index: quizStats.total + 1 // Track which question number this was
+                    });
+                }
+            };
+
+            // START FULL MULTI-STAGE QUIZ
+            const startFullQuiz = async () => {
+                setIsCallingN8N(true);
+                setAiModalOpen(false); // Close theory modal
+                setLoadingMessage("Iniciando Generación de Quiz...");
+
+                const totalQuestions = [];
+                const stages = [
+                    { name: "Conceptos Básicos", level: "RECORDAR/COMPRENDER", count: 10, difficulty: 1 },
+                    { name: "Aplicación Práctica", level: "APLICAR", count: 10, difficulty: 2 },
+                    { name: "Desafío Crítico", level: "ANALIZAR", count: 10, difficulty: 3 }
+                ];
+
+                try {
+                    for (let i = 0; i < stages.length; i++) {
+                        const stage = stages[i];
+                        setLoadingMessage(`Generando Etapa ${i + 1}/${stages.length}: ${stage.name}...`);
+
+                        const bulkPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION CRITICA: Genera un JSON con un campo 'questions' que sea un array con ${stage.count} preguntas de selección múltiple nivel ${stage.level}.
+
+            ESTRUCTURA EXACTA:
+            {
+                "question": "texto de la pregunta",
+            "options": ["opción A", "opción B", "opción C", "opción D"],
+            "correctIndex": X,  // NUMERO 0-3 donde 0=primera opción, 1=segunda, 2=tercera, 3=cuarta
+            "explanation": "explicación breve"
+}
+
+            VALIDACION OBLIGATORIA: Verifica que el valor de correctIndex (0, 1, 2, o 3) apunta EXACTAMENTE a la opción correcta en el array options[]. Por ejemplo, si correctIndex=2, entonces options[2] DEBE ser la respuesta correcta.
+
+            NO USAR MARKDOWN. SOLO JSON PURO.]`;
+
+                        // Creating request body manually to bypass callAgent state updates
+                        const body = {
+                            sujeto: currentSubject,
+                            accion: 'Generar Quiz de Validación',
+                            tema: bulkPrompt,
+                            nivel_estudiante: "1° Medio Chile"
                         };
 
-                        localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(existing));
-                        console.log(`[SYNC] 🔄 Progreso restaurado desde servidor: ${key} → Fase ${phase} completada, siguiente: ${phase + 1}`);
-                    }
-                }
-
-                // SYNC: Marcar sesiones completadas en localStorage
-                if (data && data.last_completed_session > 0) {
-                    const completedKey = 'MATICO_COMPLETED_SESSIONS';
-                    const stored = localStorage.getItem(completedKey);
-                    let completed = [];
-
-                    try {
-                        completed = stored ? JSON.parse(stored) : [];
-                        // Fallback if it was a string instead of array (from legacy code)
-                        if (!Array.isArray(completed) && typeof stored === 'string') {
-                            completed = stored.split(',').filter(s => s.trim() !== '');
-                        }
-                    } catch (e) {
-                        // Fallback for corrupt data
-                        if (typeof stored === 'string') {
-                            completed = stored.split(',').filter(s => s.trim() !== '');
-                        }
-                    }
-
-                    let changed = false;
-                    for (let s = 1; s <= data.last_completed_session; s++) {
-                        const sessionKey = `${currentSubject}_${s}`;
-                        if (!(completed || []).includes(sessionKey)) {
-                            completed.push(sessionKey);
-                            changed = true;
-                        }
-                    }
-
-                    if (changed) {
-                        localStorage.setItem(completedKey, JSON.stringify(completed));
-                        console.log(`[SYNC] 🔄 Sesiones completadas sincronizadas:`, completed);
-                    }
-                }
-            } catch (error) {
-                console.error('[MATICO] ? Error fetching progress:', error);
-                // Fallback to Matico Plan logic
-                const { index } = resolveMaticoPlan();
-                setTodayIndex(index);
-            } finally {
-                setLoadingProgress(false);
-            }
-        };
-
-        if (USER_ID) fetchProgress();
-    }, [currentSubject, USER_ID]); // Reload when subject changes or user logs in
-
-
-    // DYNAMIC SYLLABUS
-    const ACTIVE_SYLLABUS = currentSubject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (currentSubject === 'FISICA' ? PHYSICS_SYLLABUS : (currentSubject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (currentSubject === 'BIOLOGIA' ? BIOLOGY_SYLLABUS : (currentSubject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS)))) || MATH_SYLLABUS;
-
-    console.log("APP RENDER:", { currentSubject, todayIndex, syllabusLen: ACTIVE_SYLLABUS?.length });
-
-    const RAW_SESSION = (ACTIVE_SYLLABUS && ACTIVE_SYLLABUS[todayIndex]) || (ACTIVE_SYLLABUS && ACTIVE_SYLLABUS[0]);
-    const TODAYS_SESSION = RAW_SESSION || {
-        session: 0,
-        unit: 'Cargando...',
-        topic: 'Esperando datos',
-        videoTitle: '',
-        videoLink: '',
-        readingTitle: '',
-        readingContent: ''
-    };
-
-    const TODAYS_SUBJECT = {
-        name: TODAYS_SESSION.unit || 'Sin Unidad',
-        color: currentSubject === 'LENGUAJE' ? '#FF9F43' : (currentSubject === 'FISICA' ? '#9D4EDD' : (currentSubject === 'QUIMICA' ? '#E84393' : (currentSubject === 'BIOLOGIA' ? '#2ECC71' : (currentSubject === 'HISTORIA' ? '#E67E22' : '#4D96FF')))),
-        icon: currentSubject === 'LENGUAJE' ? BookOpen : (currentSubject === 'FISICA' ? Atom : (currentSubject === 'QUIMICA' ? FlaskConical : (currentSubject === 'BIOLOGIA' ? Dna : (currentSubject === 'HISTORIA' ? Globe : Brain)))),
-        oa_title: `Sesión ${TODAYS_SESSION.session}: ${TODAYS_SESSION.topic}`,
-        video_link: TODAYS_SESSION.videoLink
-    };
-
-    // --- SMART CALENDAR LOGIC (MATICO PRODUCTION PLAN) ---
-    const resolveMaticoPlan = () => {
-        try {
-            const today = new Date();
-            const diffTime = today - COURSE_START_DATE;
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays < 0) return { subject: 'MATEMATICA', index: 0 };
-
-            const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
-            const completed = completedStr ? JSON.parse(completedStr) : [];
-
-            console.log("[CALENDAR] Resolving plan for today. Completed:", completed);
-
-            // 1. CATCH-UP (PRIORIDAD ABSOLUTA): Escaneamos desde el primer día hasta AYER
-            for (let d = 0; d < diffDays; d++) {
-                const dateOfD = new Date(COURSE_START_DATE);
-                dateOfD.setDate(dateOfD.getDate() + d);
-                const dayOfWeek = dateOfD.getDay();
-
-                const plan = WEEKLY_PLAN.find(p => p.day === dayOfWeek);
-                if (plan) {
-                    const subject = plan.subject;
-                    const weekNumber = Math.floor(d / 7);
-                    const sessionKey = `${subject}_${weekNumber + 1}`;
-
-                    if (!(completed || []).includes(sessionKey)) {
-                        console.log(`[CALENDAR] BLOQUEO: Sesión pendiente detectada: ${sessionKey}`);
-                        return { subject, index: weekNumber, isMissed: true, missedSubject: subject };
-                    }
-                }
-            }
-
-            // 2. LO DE HOY: Si todo lo anterior está listo, vemos qué toca hoy
-            const todaysDayOfWeek = today.getDay();
-            const todaysPlan = WEEKLY_PLAN.find(p => p.day === todaysDayOfWeek);
-            const currentWeekNumber = Math.floor(diffDays / 7);
-
-            if (todaysPlan) {
-                const todaysSubject = todaysPlan.subject;
-                const todaysSessionKey = `${todaysSubject}_${currentWeekNumber + 1}`;
-
-                if (!(completed || []).includes(todaysSessionKey)) {
-                    return { subject: todaysSubject, index: currentWeekNumber, isMissed: false };
-                }
-            }
-
-            // 3. FALLBACK: Todo al día
-            return {
-                subject: todaysPlan ? todaysPlan.subject : 'MATEMATICA',
-                index: Math.max(0, currentWeekNumber),
-                isMissed: false
-            };
-        } catch (e) {
-            console.error("Error in resolveMaticoPlan:", e);
-            return { subject: 'MATEMATICA', index: 0 };
-        }
-    };
-
-    const markSessionComplete = (subject, sessionId) => {
-        const key = `${subject}_${sessionId}`;
-        const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
-        const completed = completedStr ? JSON.parse(completedStr) : [];
-
-        console.log(`[MATICO] markSessionComplete called:`, { subject, sessionId, key });
-
-        if (!(completed || []).includes(key)) {
-            const newCompleted = [...(completed || []), key];
-            localStorage.setItem('MATICO_COMPLETED_SESSIONS', JSON.stringify(newCompleted));
-            console.log(`[MATICO] Marked ${key} as complete!`);
-
-            // Re-calcular inmediatamente para saltar a la siguiente materia/sesión
-            const { subject: nextSubject, index: nextIndex } = resolveMaticoPlan();
-            console.log(`[MATICO] Next up: ${nextSubject} (Session Index ${nextIndex})`);
-            setCurrentSubject(nextSubject);
-            setTodayIndex(nextIndex);
-        }
-    };
-    // --- SMART CALENDAR LOGIC END ---
-    // Helper to find the first incomplete session for a specific subject
-    const getSmartSessionIndex = (subject) => {
-        try {
-            const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
-            const completed = completedStr ? JSON.parse(completedStr) : [];
-
-            // Search through weeks (indices)
-            for (let i = 0; i < 10; i++) { // Check up to 10 weeks
-                const sessionKey = `${subject}_${i + 1}`;
-                if (!(completed || []).includes(sessionKey)) {
-                    return i;
-                }
-            }
-            return 0; // Fallback to first session
-        } catch (e) {
-            return 0;
-        }
-    };
-
-    // EFFECT: SWITCH ROUTE ON SUBJECT CHANGE
-    useEffect(() => {
-        if (currentSubject === 'LENGUAJE') {
-            setDailyRoute(DEFAULT_LANG_ROUTE);
-        } else if (currentSubject === 'QUIMICA') {
-            setDailyRoute(DEFAULT_CHEM_ROUTE);
-        } else if (currentSubject === 'HISTORIA') {
-            setDailyRoute(DEFAULT_HISTORY_ROUTE);
-        } else {
-            setDailyRoute(DEFAULT_DAILY_ROUTE);
-        }
-
-        // NEW: Load the smart session index instead of resetting to 0
-        const smartIndex = getSmartSessionIndex(currentSubject);
-        console.log(`Subject Change: ${currentSubject} -> Loaded Smart Session Index: ${smartIndex}`);
-        setTodayIndex(smartIndex);
-
-    }, [currentSubject]);
-
-    const updateQuizStats = (isCorrect) => {
-        setQuizStats(prev => ({
-            correct: prev.correct + (isCorrect ? 1 : 0),
-            incorrect: prev.incorrect + (isCorrect ? 0 : 1),
-            total: prev.total + 1
-        }));
-
-        if (isCorrect) {
-            saveProgress('xp_gain', { amount: 10, reason: 'quiz_correct_answer' });
-
-            // NEW: SAVE QUIZ PROGRESS IMMEDIATELY SO AI KNOWS WE MASTERED THIS
-            saveProgress('quiz_completed', {
-                subject: currentSubject,
-                topic: TODAYS_SESSION.topic, // Or a more specific sub-topic if available
-                score: 100, // Per-question score (binary success)
-                correct: 1,
-                total: 1,
-                question_index: quizStats.total + 1 // Track which question number this was
-            });
-        }
-    };
-
-    // GENERATE QUIZ BATCH - SISTEMA KAIZEN (3 FASES)
-    // Genera un batch de 15 preguntas para un nivel específico
-    // GENERATE QUIZ BATCH - OPTIMIZADO: PARALELO 3x5 (Total 15)
-    // Genera 3 lotes de 5 preguntas simultáneamente para evitar timeouts de 50s+
-    const generateQuizBatch = async (level, backgroundMode = false, retryCount = 0) => {
-        // SAFETY LIMIT: Stop after 1 retry to prevent infinite loops
-        if (retryCount > 1) {
-            console.error("[QUIZ] Max retries reached. Aborting generation to accept partial results or failure.");
-            return []; // Or return null to handle upstream
-        }
-
-        const levelConfig = {
-            "BASICO": {
-                name: "Nivel Básico PAES",
-                instruction: "RECORDAR/COMPRENDER - Preguntas directas sobre definiciones y conceptos elementales",
-                startingIndex: 1
-            },
-            "AVANZADO": {
-                name: "Nivel Avanzado PAES",
-                instruction: "APLICAR - Problemas prácticos de nivel avanzado",
-                startingIndex: 16
-            },
-            "CRITICO": {
-                name: "Nivel Crítico PAES",
-                instruction: "ANALIZAR/EVALUAR - Nivel PAES Universidad MUY DIFÍCIL",
-                startingIndex: 31
-            }
-        };
-
-        const config = levelConfig[level];
-        if (!backgroundMode && retryCount === 0) {
-            setLoadingMessage(`Generando Quiz ${level} (Carga Rápida ⚡)...`);
-        }
-
-        console.log(`[QUIZ] Iniciando generación paralela 3x5 para ${level} (Intento ${retryCount + 1})...`);
-
-        // Función helper para pedir UN lote de 5 preguntas (Total 15)
-        const fetchSubset = async (batchIndex) => {
-            const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION TÉCNICA:
-1. Genera EXACTAMENTE 5 (CINCO) preguntas de selección múltiple (JSON).
-2. Nivel: ${config.instruction}.
-3. LOTE PARCIAL ${batchIndex + 1}/3.
-4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["A",...], "correctIndex": 0, "explanation": "..."}]}.
-5. FORMATO MATH: Usa LaTeX solo para fórmulas matemáticas ($x^2$). NO encierres oraciones de texto normal en signos de pesos.
-6. NO GENERES TEORIA. SOLO JSON.]`;
-
-            try {
-                const body = {
-                    sujeto: currentSubject,
-                    accion: 'Generar Quiz de Validación', // Reutilizamos acción para mantener consistencia
-                    tema: subsetPrompt,
-                    nivel_estudiante: "1° Medio Chile",
-                    user_id: USER_ID,
-                    session: TODAYS_SESSION.session,
-                    phase: level
-                };
-
-                // Añadimos un pequeño delay aleatorio para no saturar si n8n tiene rate limits
-                // Delay incremental: 0ms, 500ms, 1000ms
-                await new Promise(r => setTimeout(r, batchIndex * 500));
-
-                const response = await fetch(activeWebhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-
-                const text = await response.text();
-                // console.log(`[QUIZ] Raw response batch ${batchIndex}:`, text.substring(0, 100) + "..."); 
-                const json = parseN8NResponse(text);
-
-                // DEBUG: Ver qué estructura exacta llega
-                console.log(`[QUIZ_DEBUG] Batch ${batchIndex} parsed JSON keys:`, Object.keys(json));
-                if (Array.isArray(json)) console.log(`[QUIZ_DEBUG] Batch ${batchIndex} is ARRAY length ${json.length}`);
-
-                // Extraer array de preguntas usando la misma lógica robusta
-                let qData = [];
-                // Deep extraction helper logic repeated or simplified here
-                if (json.questions && Array.isArray(json.questions)) {
-                    qData = json.questions;
-                } else if (json.question) {
-                    qData = [json];
-                } else if (Array.isArray(json)) {
-                    // Filter items that look like questions
-                    qData = json.filter(q => q && (q.question || q.questions));
-                    // Handle nested arrays?
-                    if (qData.length === 0 && json.length > 0 && json[0].questions) {
-                        qData = json[0].questions;
-                    }
-                }
-
-                // Validate we actually got questions
-                if (qData.length === 0) {
-                    // CASE 1: Top level output field
-                    if (json.output) {
-                        console.log(`[QUIZ_DEBUG] Batch ${batchIndex} checking 'output' field fallback...`);
-                        const sub = parseN8NResponse(json.output);
-                        if (Array.isArray(sub)) qData = sub;
-                        else if (sub.questions) qData = sub.questions;
-                    }
-                    // CASE 2: Array wrapping output field (Standard N8N behavior)
-                    else if (Array.isArray(json) && json.length > 0 && json[0].output) {
-                        console.log(`[QUIZ_DEBUG] Batch ${batchIndex} checking 'json[0].output' field fallback...`);
-                        const sub = parseN8NResponse(json[0].output);
-                        if (Array.isArray(sub)) qData = sub;
-                        else if (sub.questions) qData = sub.questions;
-                    }
-                }
-
-                console.log(`[QUIZ_DEBUG] Batch ${batchIndex} final extracted count: ${qData.length}`);
-                return qData || [];
-            } catch (e) {
-                console.error(`Error en lote ${batchIndex}:`, e);
-                return [];
-            }
-        };
-
-        try {
-            // LANZAR 3 PETICIONES EN PARALELO
-            const promises = [0, 1, 2].map(i => fetchSubset(i));
-            const results = await Promise.all(promises);
-
-            // COMBINAR RESULTADOS EN ORDEN (0 -> 1 -> 2)
-            let combinedQuestions = [...results[0], ...results[1], ...results[2]];
-
-            // Clean undefined/nulls just in case
-            combinedQuestions = combinedQuestions.filter(q => q && q.question);
-
-            console.log(`[QUIZ] Total preguntas recibidas: ${combinedQuestions.length}`);
-
-            // Fallback: Si tenemos muy pocas, reintentamos UNA VEZ
-            if (combinedQuestions.length < 5) {
-                console.warn(`[QUIZ] Pocas preguntas (${combinedQuestions.length}) recibidas. Reintentando...`);
-                return await generateQuizBatch(level, backgroundMode, retryCount + 1);
-            }
-
-            // Formatear final (Limitado a 15)
-            const formattedQuestions = combinedQuestions.slice(0, 15).map(q => {
-                let optsObj = {};
-                let correctKey = 'A';
-
-                if (Array.isArray(q.options)) {
-                    const letters = ['A', 'B', 'C', 'D'];
-                    q.options.forEach((opt, idx) => {
-                        if (idx < 4) optsObj[letters[idx]] = opt;
-                    });
-                    if (q.correctIndex !== undefined) {
-                        correctKey = letters[q.correctIndex] || 'A';
-                    }
-                } else {
-                    optsObj = q.options || {};
-                    correctKey = q.correct_answer || (q.correctIndex !== undefined ? ['A', 'B', 'C', 'D'][q.correctIndex] : 'A');
-                }
-
-                return {
-                    question: q.question,
-                    options: optsObj,
-                    correct_answer: correctKey,
-                    explanation: q.explanation || "Verificación pendiente."
-                };
-            });
-
-            return formattedQuestions;
-
-        } catch (e) {
-            console.error(`Error generando batch paralelo ${level}:`, e);
-            return [];
-        }
-    };
-
-    // GENERATE THEORY - TEORÍA LÚDICA PARA LA SESIÓN COMPLETA
-    const generateTheory = async (backgroundMode = false) => {
-        if (!backgroundMode) {
-            setLoadingMessage(`Generando Teoría Lúdica Matico: ${TODAYS_SESSION.topic}...`);
-        }
-
-        try {
-            const theoryPrompt = `[INSTRUCCIÓN TEORÍA LÚDICA]:
-Genera contenido teórico COMPLETO y EXTENSO (10+ minutos de lectura) para la sesión de hoy.
-
-Tema: ${TODAYS_SESSION.topic}
-Contexto: Preparación PAES Matemática / 1° Medio Chile.
-
-El contenido debe incluir:
-1. Explicación profunda y detallada de todos los conceptos del tema.
-2. Múltiples ejemplos prácticos, desde nivel elemental hasta el más complejo (PAES/Universidad), resueltos paso a paso.
-3. Analogías creativas y aplicaciones en la vida real.
-4. Estrategias críticas y tips para enfrentar problemas difíciles.
-5. Formato enriquecido en Markdown con títulos claros, listas, tablas si aplica, y énfasis constante.
-6. IMPORTANTE: Usa lenguaje motivador y gamificado, tipo 'Manual del Maestro'.
-
-IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
-
-            const body = {
-                sujeto: currentSubject,
-                accion: 'Generar Teoría Lúdica',
-                tema: theoryPrompt,
-                nivel_estudiante: "1° Medio Chile"
-            };
-
-            const response = await fetch(activeWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-
-            const text = await response.text();
-            const data = parseN8NResponse(text);
-
-            if (data && data.output) {
-                setAiContent(data.output);
-                setAiModalOpen(true);
-                
-                // NEW: LOG THEORY COMPLETION WITH XP
-                saveProgress('theory_completed', {
-                    subject: currentSubject,
-                    session: TODAYS_SESSION.session,
-                    topic: TODAYS_SESSION.topic,
-                    xp_reward: 25
-                });
-            }
-
-            console.log(`[THEORY] Teoría generada para Fase ${phase}`);
-            return theoryText;
-
-        } catch (e) {
-            console.error(`Error generando teoría:`, e);
-            return `# Error al generar teoría\n\nNo se pudo generar el contenido teórico. Por favor, intenta nuevamente.`;
-        }
-    };
-
-
-    // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS (SISTEMA KAIZEN - 3 NIVELES × 15 PREGUNTAS)
-    const saveQuizPhaseProgress = (phase, score) => {
-        const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
-        const existing = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
-
-        if (!existing[key]) {
-            existing[key] = {
-                completedPhases: [], // Ej: [1, 2]
-                currentPhase: 1,
-                scores: {}
-            };
-        }
-
-        // Marcar fase como completada
-        if (existing[key].completedPhases && !existing[key].completedPhases.includes(phase)) {
-            existing[key].completedPhases.push(phase);
-        }
-
-        // Guardar score
-        existing[key].scores[phase] = score;
-
-        // Avanzar fase
-        if (phase < 3) {
-            existing[key].currentPhase = phase + 1;
-        }
-
-        existing[key].lastUpdated = new Date().toISOString();
-
-        localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(existing));
-        console.log(`[PROGRESS] Fase ${phase} guardada con score ${score}`);
-    };
-
-    const getQuizProgress = () => {
-        const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
-        const progress = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
-        return progress[key] || {
-            completedPhases: [],
-            currentPhase: 1,
-            scores: {}
-        };
-    };
-
-    const clearQuizProgress = () => {
-        const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
-        const progress = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
-        delete progress[key];
-        localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(progress));
-        console.log(`[PROGRESS] Progreso limpiado para ${key}`);
-    };
-
-    // START FULL MULTI-STAGE QUIZ - SISTEMA KAIZEN (3 FASES × 15 PREGUNTAS)
-    const startFullQuiz = async () => {
-        setIsCallingN8N(true);
-        setAiModalOpen(false);
-
-        // CHECK FOR SAVED PROGRESS
-        const savedProgress = getQuizProgress();
-        const startingPhase = savedProgress.currentPhase;
-
-        console.log(`[QUIZ] Progreso detectado:`, savedProgress);
-        console.log(`[QUIZ] Iniciando desde Fase ${startingPhase} (Directo sin teoría)`);
-
-        setCurrentQuizPhase(startingPhase);
-        setBackgroundQuestionsQueue([]);
-        setQuizStats({ correct: 0, incorrect: 0, total: 0 });
-
-        try {
-            const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
-            const currentLevel = levelMap[startingPhase];
-
-            setLoadingMessage(`Preparando Quiz Kaizen: ${currentLevel}...`);
-
-            // PASO 1: GENERAR PREGUNTAS DIRECTAMENTE (Ya no hay teoría previa)
-            const questions = await generateQuizBatch(currentLevel, false);
-
-            if (questions && questions.length > 0) {
-                setQuizQuestions(questions);
-                setShowInteractiveQuiz(true);
-                setIsCallingN8N(false);
-                setLoadingMessage("");
-
-                console.log(`[QUIZ] Preguntas cargadas. Iniciando sesión interactiva.`);
-
-                // DISPARAR PRE-GENERACIÓN DE LA SIGUIENTE FASE (Si existe) - CON DELAY DE 30s
-                if (startingPhase < 3) {
-                    const nextLevel = levelMap[startingPhase + 1];
-                    console.log(`[BACK] Programando pre-generación de nivel (${nextLevel}) para dentro de 30 segundos...`);
-
-                    // Delay de 30 segundos antes de lanzar la carga en background
-                    setTimeout(() => {
-                        console.log(`[BACK] ⏳ Ejecutando carga diferida de ${nextLevel}...`);
-                        setIsLoadingNextBatch(true);
-                        backgroundTaskRef.current = generateQuizBatch(nextLevel, true).then(q => {
-                            setBackgroundQuestionsQueue(q);
-                            setIsLoadingNextBatch(false);
-                            backgroundTaskRef.current = null;
-                            return { questions: q };
-                        }).catch(() => {
-                            setIsLoadingNextBatch(false);
-                            backgroundTaskRef.current = null;
-                            return { questions: [] };
+                        const response = await fetch(activeWebhookUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body)
                         });
-                    }, 30000); // 30000 ms = 30 segundos
-                }
-            } else {
-                throw new Error("No se pudo obtener el batch de preguntas del servidor.");
-            }
 
-        } catch (e) {
-            console.error("Error iniciando quiz:", e);
-            alert("Error de conexión. Por favor intenta nuevamente.");
-            setIsCallingN8N(false);
-            setAiModalOpen(true);
-        }
-    };
+                        const text = await response.text();
+                        const json = parseN8NResponse(text);
 
-    // HANDLE "CONTINUAR AL QUIZ" BUTTON - Cerrar teoría y mostrar quiz
-    const handleContinueToQuiz = async () => {
-        console.log(`[THEORY] Usuario finalizó lectura. Verificando preguntas...`);
-        setIsCallingN8N(true);
-        setLoadingMessage("Preparando tus preguntas...");
-
-        try {
-            let questions = [];
-
-            // Esperar a que el background task de las preguntas termine (si no ha terminado ya)
-            if (backgroundTaskRef.current) {
-                console.log("[QUIZ] Esperando a que termine la generación de preguntas iniciada en background...");
-                const result = await backgroundTaskRef.current;
-                questions = result.questions || [];
-                backgroundTaskRef.current = null;
-                setIsLoadingNextBatch(false);
-            } else if (pendingQuizQuestions.length > 0) {
-                questions = pendingQuizQuestions;
-            } else {
-                // Fallback: Si por alguna razón no hay nada, generar ahora
-                const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
-                questions = await generateQuizBatch(levelMap[currentQuizPhase], false);
-            }
-
-            if (questions && questions.length > 0) {
-                // GUARDAR EN GOOGLE SHEETS que leyó la teoría
-                const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
-                const levelName = levelMap[currentQuizPhase];
-
-                saveProgress('theory_completed', {
-                    subject: currentSubject,
-                    session: TODAYS_SESSION.session,
-                    phase: currentQuizPhase,
-                    levelName: levelName,
-                    xp_reward: 5
-                });
-
-                setShowTheoryModal(false);
-                setQuizQuestions(questions);
-                setShowInteractiveQuiz(true);
-                setPendingQuizQuestions([]);
-                setIsCallingN8N(false);
-                setLoadingMessage("");
-
-                // DISPARAR PRE-GENERACIÓN DE LA SIGUIENTE FASE (Si existe)
-                if (currentQuizPhase < 3) {
-                    const nextLevel = levelMap[currentQuizPhase + 1];
-                    console.log(`[BACK] Pre-generando siguiente nivel (${nextLevel}) en background...`);
-                    setIsLoadingNextBatch(true);
-                    backgroundTaskRef.current = generateQuizBatch(nextLevel, true).then(q => {
-                        setBackgroundQuestionsQueue(q);
-                        setIsLoadingNextBatch(false);
-                        backgroundTaskRef.current = null;
-                        return { questions: q };
-                    }).catch(() => {
-                        setIsLoadingNextBatch(false);
-                        backgroundTaskRef.current = null;
-                    });
-                }
-            } else {
-                throw new Error("No se pudieron cargar las preguntas.");
-            }
-        } catch (err) {
-            console.error("Error al continuar al quiz:", err);
-            alert("Vaya... no pudimos cargar las preguntas. Reintenta en un momento.");
-            setIsCallingN8N(false);
-        }
-    };
-
-    // --- NOTIFICACIÓN DE RESULTADOS ESTILO SALÓN ---
-    const sendFinalSessionReport = async (stats, wrongAnswers = []) => {
-        console.log("[REPORT] Generando reporte final con análisis IA de", wrongAnswers.length, "errores...");
-
-        // Calcular porcentaje de éxito basado en 45 preguntas (3 fases de 15)
-        const successRate = Math.round((stats.correct / 45) * 100);
-        const mood = successRate >= 80 ? "excelente" : (successRate >= 60 ? "bueno" : "para mejorar");
-
-        const reportPrompt = `[INSTRUCCIÓN AGENTE DE REPORTES MATICO]:
-Eres el Agente de Éxito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 45 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
-
-DATOS DEL ESTUDIANTE:
-- Nombre: ${currentUser?.username || userProfile?.username || 'Estudiante'}
-- Email: ${currentUser?.email || 'N/A'}
-- Asignatura: ${currentSubject}
-- Sesión: ${TODAYS_SESSION.session} - ${TODAYS_SESSION.topic}
-- Resultado: ${stats.correct} de 45 correctas (${successRate}%)
-
-SALIDA REQUERIDA (JSON ESTRICTO):
-{
-  "email": {
-    "to": "${currentUser?.email || 'hola@matico.ai'}",
-    "subject": "¡Sesión Completada! Tus logros en ${currentSubject} - Sesión ${TODAYS_SESSION.session}",
-    "html_body": "Contenido HTML profesional con tabla de resultados y feedback personalizado", 
-    "description": "Reporte de Sesión Matico: ${TODAYS_SESSION.topic}"
-  }
-}`;
-
-        try {
-            // 1. Enviar Reporte Detallado al Alumno y Apoderado (IA)
-            // Nota: El servidor ya se encarga de enviarlo a ambos si están configurados
-            await fetch(activeWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    accion: 'send_session_report',
-                    user_id: USER_ID,
-                    email: currentUser?.email,
-                    report_prompt: reportPrompt,
-                    subject: currentSubject,
-                    session: TODAYS_SESSION.session,
-                    topic: TODAYS_SESSION.topic,
-                    stats: stats,
-                    wrong_answers: wrongAnswers
-                })
-            });
-            console.log("[REPORT] 📧 Reporte de sesión enviado");
-
-        } catch (err) {
-            console.error("[REPORT] Error en flujo de notificaciones:", err);
-        }
-    };
-
-    // HANDLE QUIZ PHASE COMPLETION - SISTEMA KAIZEN SIMPLIFICADO (3 FASES DE 15 PREGUNTAS)
-    const onQuizPhaseComplete = async (phaseScore, phaseWrongAnswers = []) => {
-        console.log(`[QUIZ] Fase ${currentQuizPhase} completada con score: `, phaseScore, `errores: `, phaseWrongAnswers.length);
-
-        // Acumular errores de esta fase
-        setAllWrongAnswers(prev => [...prev, ...phaseWrongAnswers]);
-
-        // ACTUALIZAR STATS TOTALES (Sumar el score de esta fase)
-        setQuizStats(prev => ({
-            ...prev,
-            correct: prev.correct + phaseScore,
-            total: prev.total + 15
-        }));
-
-        // GUARDAR PROGRESO (LocalStorage)
-        saveQuizPhaseProgress(currentQuizPhase, phaseScore);
-
-        // GUARDAR EN GOOGLE SHEETS
-        const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
-        const levelName = levelMap[currentQuizPhase];
-
-        await saveProgress('phase_completed', {
-            subject: currentSubject,
-            session: TODAYS_SESSION.session,
-            phase: currentQuizPhase,
-            subLevel: currentQuizPhase, // Explicitly pass subLevel to fill column G
-            levelName: levelName,
-            score: phaseScore,
-            questionsCompleted: currentQuizPhase * 15,
-            totalQuestions: 45,
-            xp_reward: 50
-        });
-
-        console.log(`[SAVE] Fase ${currentQuizPhase} guardada en Sheet`);
-
-        // TRANSICIÓN A LA SIGUIENTE FASE O FINAL
-        if (currentQuizPhase < 3) {
-            const nextPhase = currentQuizPhase + 1;
-            const nextLevel = levelMap[nextPhase];
-            console.log(`[QUIZ] Avanzando a Fase ${nextPhase} (${nextLevel})...`);
-
-            // Cambiar de fase
-            setIsCallingN8N(true);
-            setShowInteractiveQuiz(false); // Breve cierre para resetear el componente de quiz
-
-            try {
-                let nextQuestions = [];
-
-                // 1. INTENTAR USAR QUEUE O ESPERAR PROMESA PENDIENTE
-                if (backgroundQuestionsQueue.length > 0) {
-                    console.log(`[QUIZ] Usando preguntas pre - generadas para Fase ${nextPhase} `);
-                    nextQuestions = backgroundQuestionsQueue;
-                    setBackgroundQuestionsQueue([]);
-                } else if (isLoadingNextBatch && backgroundTaskRef.current) {
-                    console.log(`[BACK] Esperando pre - generación de Fase ${nextPhase}...`);
-                    setLoadingMessage(`Preparando Nivel ${nextLevel}...`);
-                    try {
-                        const result = await backgroundTaskRef.current;
-                        nextQuestions = result.questions;
-                        setBackgroundQuestionsQueue([]);
-                    } catch (e) {
-                        console.error("[BACK] Error en espera, generando manual...");
-                        nextQuestions = await generateQuizBatch(nextLevel, false);
-                    }
-                } else {
-                    console.log(`[QUIZ] Generando preguntas ${nextLevel} manualmente...`);
-                    nextQuestions = await generateQuizBatch(nextLevel, false);
-                }
-
-                if (nextQuestions.length > 0) {
-                    setCurrentQuizPhase(nextPhase);
-                    setQuizQuestions(nextQuestions);
-
-                    // Resetear el estado de carga y mostrar el quiz de nuevo
-                    setIsCallingN8N(false);
-                    setLoadingMessage("");
-                    setShowInteractiveQuiz(true);
-
-                    console.log(`[QUIZ] Fase ${nextPhase} iniciada con ${nextQuestions.length} preguntas`);
-
-                    // Disparar pre-generación para la siguiente fase si existe - CON DELAY DE 30s
-                    if (nextPhase < 3) {
-                        const followingLevel = levelMap[nextPhase + 1];
-                        console.log(`[BACK] Programando pre - generación de Fase ${nextPhase + 1} (${followingLevel}) para dentro de 30 segundos...`);
-
-                        setTimeout(() => {
-                            console.log(`[BACK] ⏳ Ejecutando carga diferida de ${followingLevel}...`);
-                            setIsLoadingNextBatch(true);
-                            backgroundTaskRef.current = generateQuizBatch(followingLevel, true).then(q => {
-                                setBackgroundQuestionsQueue(q);
-                                setIsLoadingNextBatch(false);
-                                backgroundTaskRef.current = null;
-                                return { questions: q };
-                            }).catch(() => {
-                                setIsLoadingNextBatch(false);
-                                backgroundTaskRef.current = null;
-                            });
-                        }, 30000);
-                    }
-                } else {
-                    alert("Error al cargar la siguiente fase. Por favor intenta de nuevo.");
-                    setIsCallingN8N(false);
-                }
-            } catch (err) {
-                console.error("[PHASE_TRANSITION] Error:", err);
-                alert("Error al preparar la siguiente fase.");
-                setIsCallingN8N(false);
-            }
-        } else {
-            // TODAS LAS FASES COMPLETADAS (45 PREGUNTAS TOTALES)
-            console.log("[QUIZ] ✅ TODAS LAS 3 FASES COMPLETADAS!");
-            setShowInteractiveQuiz(false); // Breve cierre para resetear el componente de quiz
-
-            // ENVIAR REPORTE FINAL Y ESPERAR A QUE TERMINE
-            const finalCorrectCount = quizStats.correct + phaseScore;
-            const finalStats = { ...quizStats, correct: finalCorrectCount, total: 45 };
-            const finalWrong = [...allWrongAnswers, ...phaseWrongAnswers];
-
-            console.log("[REPORT] Enviando reporte final con score:", finalCorrectCount, "errores:", finalWrong.length);
-            await sendFinalSessionReport(finalStats, finalWrong);
-
-            // GUARDAR SESION COMPLETA EN GOOGLE SHEETS PRIMERO (AWAIT)
-            await saveProgress('session_completed', {
-                subject: currentSubject,
-                session: TODAYS_SESSION.session,
-                topic: TODAYS_SESSION.topic,
-                total_questions: 45,
-                correct_answers: finalCorrectCount,
-                xp_reward: 300
-            });
-            console.log("[SAVE] ✅ 'session_completed' guardado en Google Sheets correctamente");
-
-            // Mostrar el alert de victoria al usuario
-            alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHaz dominado: ${TODAYS_SESSION.topic} \n\nPuntaje Final: ${finalStats.correct}/45\n\n+300 XP 🔥`);
-
-            // LIMPIAR Y MARCAR COMPLETADO AL FINAL
-            // (Esto dispara setTodayIndex y setCurrentSubject, así que debe ser LO ÚLTIMO que ocurre)
-            clearQuizProgress();
-            setCurrentQuizPhase(1); // Resetear a base para la siguiente materia
-            setQuizStats({ correct: 0, incorrect: 0, total: 0 }); // Limpiar stats
-            setAllWrongAnswers([]); // Limpiar errores
-            markSessionComplete(currentSubject, TODAYS_SESSION.session);
-        }
-    };
-
-
-    // UPDATED CALL AGENT TO HANDLE IMAGES AND CONTEXT (POST)
-    const callAgent = async (subject, action, topic, image = null, timestamp = null, displayTopic = null, questionNumberOverride = null) => {
-        setIsCallingN8N(true);
-        setCurrentSubject(subject);
-        setApiJson(null);
-        setAiContent("");
-
-        // MANAGE USER QUERY STATE FOR DISPLAY
-        if (action === 'answer_doubts') {
-            setLastUserQuery(displayTopic || topic);
-        } else {
-            setLastUserQuery("");
-        }
-
-        if (askModalOpen) setAskModalOpen(false);
-
-        if (action === 'start_route') {
-            setQuizStats({ correct: 0, incorrect: 0, total: 0 });
-            setQuizLevel(1);
-            setQuizQuestionNumber(1); // Reset question index
-            
-            // NEW: LOG THEORY STARTING EVENT
-            saveProgress('theory_started', {
-                subject: subject,
-                session: TODAYS_SESSION.session,
-                topic: TODAYS_SESSION.topic,
-                xp_reward: 5 // Small ritual XP for starting
-            });
-        }
-
-        let n8nAction = 'Generar Teoría Lúdica';
-        if (action === 'start_route') n8nAction = 'Generar Teoría Lúdica'; // Explicit
-        if (action === 'generate_quiz') n8nAction = 'Generar Quiz de Validación';
-        if (action === 'deepen_knowledge') n8nAction = 'Profundizar y Desafiar';
-        if (action === 'remedial_explanation') n8nAction = 'Explicar y Simplificar';
-        if (action === 'answer_doubts') n8nAction = 'Responder Duda';
-
-        // NEW: INJECT DIFFICULTY INSTRUCTIONS INTO TOPIC
-        let difficultyPrompt = "";
-        if (action === 'deepen_knowledge' || action === 'generate_quiz') {
-            if (quizLevel === 1) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 1 (MEMORIZAR/COMPRENDER). Enfócate en definiciones claras y conceptos básicos. Estilo directo y sencillo.]";
-            if (quizLevel === 2) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 2 (APLICAR). El estudiante debe aplicar el concepto en una situación práctica o ejemplo cotidiano. Dificultad media.]";
-            if (quizLevel >= 3) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 3 (ANALIZAR/EVALUAR). Requiere pensamiento crítico, contrastar ideas o inferir conclusiones complejas. ¡Desafía al estudiante!]";
-        }
-
-        // Fix: Don't append question number for THEORY generation
-        let questionSuffix = "";
-        if (action !== 'start_route' && n8nAction !== 'Generar Teoría Lúdica') {
-            questionSuffix = questionNumberOverride ? ` [PREGUNTA NRO ${questionNumberOverride}]` : ` [PREGUNTA NRO ${quizQuestionNumber}]`;
-        } else {
-            difficultyPrompt = " [INSTRUCCIÓN: GENERAR SOLO TEORÍA EXPLICATIVA LÚDICA. NO GENERAR PREGUNTAS.]";
-        }
-
-        const finalTopic = topic + difficultyPrompt + questionSuffix;
-
-        try {
-            // ALWAYS USE POST
-            let body = {
-                sujeto: subject,
-                accion: n8nAction,
-                tema: finalTopic, // Use modified topic
-                nivel_estudiante: "1° Medio Chile",
-                numero_pregunta: questionNumberOverride || quizQuestionNumber
-            };
-
-            if (image) {
-                body.image = image; // Base64
-            }
-            if (timestamp) {
-                body.video_timestamp = timestamp;
-                body.video_context = `Video: ${TODAYS_SESSION.videoTitle}`;
-            }
-
-            // UNIVERSAL POST STRATEGY
-            // Always send params in URL too for N8N "Query" variable compat
-            // UNIVERSAL POST STRATEGY
-            // Always send params in URL too for N8N "Query" variable compat
-            const params = new URLSearchParams({
-                sujeto: subject,
-                accion: n8nAction,
-                tema: finalTopic, // Use modified topic
-                nivel_estudiante: "1° Medio Chile"
-            });
-
-            console.log("[N8N] Calling via POST:", activeWebhookUrl);
-            console.log("[N8N] Action:", n8nAction);
-            console.log("[N8N] Body:", body);
-
-            const response = await fetch(`${activeWebhookUrl}?${params.toString()}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-
-            console.log("[N8N] Response status:", response.status, response.statusText);
-            const textResponse = await response.text();
-            console.log("[N8N] Response length:", textResponse.length);
-            console.log("[N8N] Response preview:", textResponse.substring(0, 300));
-            let content = "";
-
-            if (textResponse.trim() === "") {
-                content = "⚠️ MODO OFFLINE";
-            } else {
-                try {
-                    let jsonData = parseN8NResponse(textResponse);
-
-                    if (jsonData.refusal) {
-                        content = `⚠️ **No pudimos iniciar:**\n\n${jsonData.refusal}`;
-                        setApiJson(null);
-                    } else {
-
-                        // FIX: N8N Deeply Nested/Escaped JSON Unboxer (v7 Recursive)
-                        let rawData = jsonData;
-                        let depth = 0;
-                        const MAX_DEPTH = 6;
-
-                        // 0. Initial unwrap if keys like 'output' or 'text' hold the real payload
-                        if (rawData && typeof rawData === 'object') {
-                            if (rawData.output) rawData = rawData.output;
-                            else if (rawData.text) rawData = rawData.text;
+                        if (json.questions && Array.isArray(json.questions)) {
+                            totalQuestions.push(...json.questions);
+                        } else if (json.question) {
+                            totalQuestions.push(json);
+                        } else if (json[0] && json[0].question) { // In case it returns raw array
+                            totalQuestions.push(...json);
                         }
+                    }
 
-                        // 1. Recursive Parsing Loop
-                        while (typeof rawData === 'string' && depth < MAX_DEPTH) {
-                            depth++;
-                            let candidate = rawData.trim();
+                    if (totalQuestions.length > 0) {
+                        const formattedQuestions = totalQuestions.map(q => {
+                            // Normalize options to object if array
+                            let optsObj = {};
+                            let correctKey = 'A';
 
-                            // Remove Markdown fences if present
-                            candidate = candidate.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-
-                            try {
-                                // Try direct clean parse
-                                rawData = JSON.parse(candidate);
-                            } catch (e) {
-                                // Parse failed, try to recover from "Bad Escaping" (e.g. \" -> " )
+                            if (typeof q.options === 'string') {
                                 try {
-                                    // Heuristic: If it starts with "{" but failed parse, maybe it's double escaped
-                                    if (candidate.startsWith('"') || candidate.startsWith("'")) {
-                                        // It's a string literal representation of a string, let JSON.parse unwrap one layer of quotes
-                                        // This handles "{\"foo\":...}" -> {"foo":...}
-                                        rawData = JSON.parse(candidate);
-                                    } else {
-                                        // It's a dirty string like {\"a\":1}. Try manual regex extract
-                                        const jsonMatch = candidate.match(/({[\s\S]*})/);
-                                        if (jsonMatch) {
-                                            // Try to clean common bad escapes in the matched block
-                                            let clean = jsonMatch[0]
-                                                .replace(/\\"/g, '"')
-                                                .replace(/\\n/g, '\n')
-                                                .replace(/\\r/g, '');
-                                            rawData = JSON.parse(clean);
-                                        } else {
-                                            // No JSON-like structure found, stop recursion (it's real text)
-                                            break;
-                                        }
-                                    }
-                                } catch (e2) {
-                                    console.log(`[Unboxer] Depth ${depth} failed. Value snippet: ${candidate.substring(0, 50)}...`);
-                                    break; // Stop if we can't make sense of it
+                                    q.options = JSON.parse(q.options);
+                                } catch (e) {
+                                    console.error("Error parsing options string:", q.options);
+                                    q.options = {};
                                 }
                             }
-                        }
 
-                        // 2. Commit the unboxed data back to jsonData
-                        if (rawData && typeof rawData === 'object') {
-                            // If we found a valid object after unboxing, USE IT.
-                            // Merge carefully: simple properties overwrite, but arrays/objects replace
-                            if (rawData.questions || rawData.quiz) {
-                                jsonData = rawData; // Trust the inner payload completely for quizzes
+                            if (Array.isArray(q.options)) {
+                                const letters = ['A', 'B', 'C', 'D'];
+                                q.options.forEach((opt, idx) => {
+                                    if (idx < 4) optsObj[letters[idx]] = opt;
+                                });
+                                // correctIndex handling
+                                if (q.correctIndex !== undefined) {
+                                    correctKey = letters[q.correctIndex] || 'A';
+                                }
+                            } else if (typeof q.options === 'object' && q.options !== null) {
+                                optsObj = q.options;
+                                correctKey = q.correct_answer || 'A'; // fallback
                             } else {
-                                jsonData = { ...jsonData, ...rawData }; // Merge for other types
-                                delete jsonData.output; // partial cleanup
+                                // Fallback total
+                                optsObj = { "A": "Opción A", "B": "Opción B" };
+                                correctKey = "A";
                             }
-                        }
 
-                        let finalData = jsonData;
-                        // Shuffle if quiz
-                        if (jsonData.question && jsonData.options) {
-                            finalData = shuffleQuizData(jsonData);
-                        }
-                        // Sanitize explanation
-                        if (finalData.explanation && finalData.options) {
+                            return {
+                                question: q.question,
+                                options: optsObj,
+                                correct_answer: correctKey,
+                                explanation: q.explanation
+                            };
+                        });
+                        console.log("Quiz Generated:", formattedQuestions);
+                        setQuizQuestions(formattedQuestions);
+                        setShowInteractiveQuiz(true);
+                    } else {
+                        alert("No se pudieron generar preguntas. Intenta de nuevo.");
+                        setAiModalOpen(true); // Reopen on failure
+                    }
+
+                } catch (e) {
+                    console.error("Quiz Error", e);
+                    alert("Error de conexión durante la generación del quiz.");
+                    setAiModalOpen(true);
+                } finally {
+                    setIsCallingN8N(false);
+                    setLoadingMessage("");
+                }
+            };
+
+            // UPDATED CALL AGENT TO HANDLE IMAGES AND CONTEXT (POST)
+            const callAgent = async (subject, action, topic, image = null, timestamp = null, displayTopic = null, questionNumberOverride = null) => {
+                setIsCallingN8N(true);
+                setCurrentSubject(subject);
+                setApiJson(null);
+                setAiContent("");
+
+                // MANAGE USER QUERY STATE FOR DISPLAY
+                if (action === 'answer_doubts') {
+                    setLastUserQuery(displayTopic || topic);
+                } else {
+                    setLastUserQuery("");
+                }
+
+                if (askModalOpen) setAskModalOpen(false);
+
+                if (action === 'start_route') {
+                    setQuizStats({ correct: 0, incorrect: 0, total: 0 });
+                    setQuizLevel(1);
+                    setQuizQuestionNumber(1); // Reset question index
+                }
+
+                let n8nAction = 'Generar Teoría Lúdica';
+                if (action === 'generate_quiz') n8nAction = 'Generar Quiz de Validación';
+                if (action === 'deepen_knowledge') n8nAction = 'Profundizar y Desafiar';
+                if (action === 'remedial_explanation') n8nAction = 'Explicar y Simplificar';
+                if (action === 'answer_doubts') n8nAction = 'Responder Duda';
+
+                // NEW: INJECT DIFFICULTY INSTRUCTIONS INTO TOPIC
+                let difficultyPrompt = "";
+                if (action === 'deepen_knowledge' || action === 'generate_quiz') {
+                    if (quizLevel === 1) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 1 (MEMORIZAR/COMPRENDER). Enfócate en definiciones claras y conceptos básicos. Estilo directo y sencillo.]";
+                    if (quizLevel === 2) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 2 (APLICAR). El estudiante debe aplicar el concepto en una situación práctica o ejemplo cotidiano. Dificultad media.]";
+                    if (quizLevel >= 3) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 3 (ANALIZAR/EVALUAR). Requiere pensamiento crítico, contrastar ideas o inferir conclusiones complejas. ¡Desafía al estudiante!]";
+                }
+
+                const finalTopic = topic + difficultyPrompt + (questionNumberOverride ? ` [PREGUNTA NRO ${questionNumberOverride}]` : ` [PREGUNTA NRO ${quizQuestionNumber}]`);
+
+                try {
+                    // ALWAYS USE POST
+                    let body = {
+                        sujeto: subject,
+                        accion: n8nAction,
+                        tema: finalTopic, // Use modified topic
+                        nivel_estudiante: "1° Medio Chile",
+                        numero_pregunta: questionNumberOverride || quizQuestionNumber
+                    };
+
+                    if (image) {
+                        body.image = image; // Base64
+                    }
+                    if (timestamp) {
+                        body.video_timestamp = timestamp;
+                        body.video_context = `Video: ${TODAYS_SESSION.videoTitle}`;
+                    }
+
+                    // UNIVERSAL POST STRATEGY
+                    // Always send params in URL too for N8N "Query" variable compat
+                    // UNIVERSAL POST STRATEGY
+                    // Always send params in URL too for N8N "Query" variable compat
+                    const params = new URLSearchParams({
+                        sujeto: subject,
+                        accion: n8nAction,
+                        tema: finalTopic, // Use modified topic
+                        nivel_estudiante: "1° Medio Chile"
+                    });
+
+                    console.log("Calling N8N via POST:", activeWebhookUrl);
+
+                    const response = await fetch(`${activeWebhookUrl}?${params.toString()}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+
+                    const textResponse = await response.text();
+                    let content = "";
+
+                    if (textResponse.trim() === "") {
+                        content = "âš ï¸ MODO OFFLINE";
+                    } else {
+                        try {
+                            let jsonData;
                             try {
-                                finalData.explanation = sanitizeExplanation(finalData.explanation, finalData.options);
-                            } catch (err) { console.error(err); }
-                        }
+                                jsonData = JSON.parse(textResponse.replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\'));
+                            } catch (e) {
+                                const jsonMatch = textResponse.match(/{[\s\S]*}/);
+                                if (jsonMatch) {
+                                    jsonData = JSON.parse(jsonMatch[0].replace(/\\(?![\\/u"bfnrt\\])/g, '\\\\'));
+                                } else {
+                                    throw e;
+                                }
+                            }
 
-                        // PRESERVE QUIZ BATCH: Don't destructure if it's a multi-question quiz
-                        // (The InteractiveQuiz component expects {questions: [...]})
+                            // LOGIC FIX: Handle Refusal & Data Processing
+                            if (jsonData.refusal) {
+                                content = `âš ï¸ **No pudimos iniciar:**\n\n${jsonData.refusal}`;
+                                setApiJson(null);
+                            } else {
 
-                        setApiJson(finalData);
+                                // FIX: N8N Double-Stringified JSON Handling (Recursive) - PATCHED v5
+                                if (jsonData.output && typeof jsonData.output === 'string') {
+                                    let raw = jsonData.output;
+                                    let parsed = null;
 
-                        // QUIZ DETECTION & AUTO-LAUNCH
-                        const isBatchQuiz = finalData.questions && Array.isArray(finalData.questions) && finalData.questions.length > 0;
-                        const isSingleQuiz = finalData.question && finalData.options;
+                                    // 1. Remove Markdown Fences
+                                    raw = raw.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
 
-                        if (isBatchQuiz || isSingleQuiz) {
-                            // AUTO-LAUNCH QUIZ
-                            console.log("?? Auto-launching Quiz!");
-                            const questionsToLoad = isBatchQuiz ? finalData.questions : [finalData];
+                                    // 2. Pre-Clean: Handling Escaped Tokens (BEFORE Parse)
+                                    // This catches the case where JSON.parse succeeds but returns "messy" data (e.g. \$ -> $)
+                                    const sanitized = raw
+                                        .replace(/\\"/g, '"') // Unescape quotes if double-escaped
+                                        .replace(/[\u000A\u000D]/g, "\\n")
+                                        .replace(/\\(.)/g, (match, char) => {
+                                            if (char === '$') return '$'; // Unescape $ for LaTeX delimiter
+                                            if ('"\\/nrtu'.includes(char)) {
+                                                return match;
+                                            }
+                                            return '\\\\' + char;
+                                        });
 
-                            setQuizQuestions(questionsToLoad);
-                            setShowInteractiveQuiz(true);
-                            setAiContent(null); // Ensure text modal is closed
-                            return; // Stop execution here, quiz handles the UI
-                        }
+                                    // 3. Attempt Clean Parse
+                                    try {
+                                        parsed = JSON.parse(sanitized);
+                                    } catch (e) {
+                                        // If sanitized parse failed (unlikely if logic is safe, but maybe raw structure was weird)
+                                        // Fallback: Try RAW parse (maybe our sanitizer broke it?)
+                                        try {
+                                            parsed = JSON.parse(raw);
+                                        } catch (e2) {
+                                            console.warn("All parsing attempts failed.");
+                                        }
+                                    }
 
-                        // STANDARD CONTENT DISPLAY (If NOT a quiz)
-                        if (finalData.title && (finalData.capsule !== undefined)) {
-                            // Theory Content
-                            content = `### ${finalData.title}
+                                    if (parsed && typeof parsed === 'object') {
+                                        jsonData = { ...jsonData, ...parsed };
+                                        delete jsonData.output;
+                                    }
+                                }
+
+                                let finalData = jsonData;
+                                // Shuffle if quiz
+                                if (jsonData.question && jsonData.options) {
+                                    finalData = shuffleQuizData(jsonData);
+                                }
+                                // Sanitize explanation
+                                if (finalData.explanation && finalData.options) {
+                                    try {
+                                        finalData.explanation = sanitizeExplanation(finalData.explanation, finalData.options);
+                                    } catch (err) { console.error(err); }
+                                }
+
+                                // Normalize Quiz Data if multiple questions array
+                                if (finalData.questions && Array.isArray(finalData.questions) && finalData.questions.length > 0) {
+                                    // Pick first question for now or store all
+                                    finalData = { ...finalData, ...finalData.questions[0] };
+                                }
+
+                                setApiJson(finalData);
+
+                                // If it has a question, it's a quiz -> content acts as fallback or title
+                                if (finalData.question) {
+                                    content = finalData.title ? `### ${finalData.title}\n\n*Preparando Quiz...*` : "Iniciando Quiz...";
+                                } else if (finalData.title && (finalData.capsule !== undefined)) {
+                                    // Fix: Allow empty capsule string
+                                    content = `### ${finalData.title}
 **Unidad:** ${finalData.unit || ''} | *${finalData.oa_label || ''}*
 
 ${finalData.capsule}`;
-                        } else {
-                            // Fallback / Other
-                            if (action === 'generate_quiz') {
-                                content = "?? **Error de Formato:** La IA no envió preguntas válidas.\n\n" + JSON.stringify(finalData, null, 2);
-                            } else {
-                                content = finalData.output || finalData.text || finalData.theory || JSON.stringify(finalData, null, 2);
+                                } else {
+                                    // Fallback: Check if it looks like a quiz but missing fields
+                                    if (action === 'generate_quiz') {
+                                        content = "âš ï¸ **Error de Formato:** La IA no envió preguntas válidas.\n\n**Respuesta recibida:**\n" + JSON.stringify(finalData, null, 2);
+                                    } else {
+                                        // Check if output is a string (markdown content)
+                                        if (finalData.output && typeof finalData.output === 'string') {
+                                            content = finalData.output;
+                                        } else if (finalData.theory) {
+                                            content = finalData.theory;
+                                        } else {
+                                            content = JSON.stringify(finalData, null, 2);
+                                        }
+                                    }
+                                }
                             }
+                        } catch {
+                            content = textResponse;
                         }
-                    } // End if valid object
-                } catch (err) {
-                    console.error("JSON Process Error:", err);
-                    content = textResponse;
+                    }
+                    setAiContent(content);
+                } catch (e) {
+                    console.error(e);
+                    setAiContent("âš ï¸ Error de Conexión");
+                } finally {
+                    setIsCallingN8N(false);
+                    setAiModalOpen(true);
                 }
-            }
-            if (content) setAiContent(content);
-        } catch (e) {
-            console.error(e);
-            setAiContent("⚠️ Error de Conexión");
-        } finally {
-            setIsCallingN8N(false);
-            setAiModalOpen(true);
-        }
-    };
+            };
 
-    if (authChecking) {
-        return (
-            <div className="min-h-screen bg-[#E0E5EC] flex items-center justify-center">
-                <Loader className="w-10 h-10 animate-spin text-blue-500" />
-            </div>
-        );
-    }
+            return (
+                <div className="min-h-screen bg-[#E0E5EC] p-6 relative">
 
-    if (!currentUser) {
-        return <LoginPage onLogin={handleLogin} />;
-    }
+                    <VideoModal
+                        isOpen={videoModalOpen}
+                        onClose={() => setVideoModalOpen(false)}
+                        videoUrl={TODAYS_SUBJECT.video_link}
+                        title={TODAYS_SESSION.videoTitle}
+                        onDoubt={(context) => {
+                            setDoubtContext(context);
+                            // setVideoModalOpen(false); // Close video (DISABLED FOR CONTEXT)
+                            setAskModalOpen(true);    // Open ask modal
+                        }}
+                        onFinish={async () => {
+                            setVideoModalOpen(false);
+                            await saveProgress('video_completed', { title: TODAYS_SESSION.videoTitle, xp_reward: 50, session: TODAYS_SESSION.session });
+                            // NEW: AUTO-START THEORY AFTER VIDEO
+                            callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
+                        }}
+                    />
 
-    return (
-        <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-hidden">
-            {/* ALERTA GLOBAL CENTRADA */}
-            {missedSessionAlert && (
-                <div className="fixed inset-0 z-[999] grid place-items-center p-4 md:p-10 bg-[#2B2E4A]/40 backdrop-blur-md animate-fade-in">
-                    <div className="w-full max-w-2xl animate-clay-pop">
-                        <div className="bg-amber-50 border-4 border-amber-200 rounded-[40px] p-8 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-[0_40px_120px_rgba(0,0,0,0.4)] relative overflow-hidden group">
-                            {/* Background Decoration */}
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
-                                <Clock className="w-32 h-32 text-amber-600" />
-                            </div>
+                    <ReadingModal
+                        isOpen={readingModalOpen}
+                        onClose={() => setReadingModalOpen(false)}
+                        title={TODAYS_SESSION.readingTitle || "Lectura"}
+                        content={TODAYS_SESSION.readingContent || ""}
+                        onFinish={handleReadingFinish}
+                    />
 
-                            {/* Icon Container */}
-                            <div className="w-20 h-20 rounded-[30px] bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-lg animate-float">
-                                <RotateCcw className="w-10 h-10 text-white animate-spin-slow" />
-                            </div>
+                    <QuestionModal
+                        isOpen={askModalOpen}
+                        onClose={() => {
+                            setAskModalOpen(false);
+                            setDoubtContext(null); // Clear context on close
+                        }}
+                        onSubmit={(question, image, timestamp, context) => {
+                            setAskModalOpen(false); // Close explicitly to show loading/result over video
+                            // Combine question with context details for the 'topic' argument
+                            let fullTopic = question;
+                            if (context && context.type === 'video') {
+                                fullTopic = `[Context: Video "${context.title}"] ${question}`;
+                            }
+                            callAgent(currentSubject, 'answer_doubts', fullTopic, image, timestamp);
+                        }}
+                        isCallingN8N={isCallingN8N}
+                        initialContext={doubtContext}
+                    />
 
-                            {/* Text Content */}
-                            <div className="flex flex-col text-center md:text-left">
-                                <h3 className="text-amber-900 font-black text-2xl leading-tight uppercase tracking-tight mb-2">
-                                    ¡Ojo al piojo! Tienes algo pendiente
-                                </h3>
-                                <div className="bg-white/40 rounded-3xl p-5 mb-4 border border-amber-200/50">
-                                    <p className="text-amber-800 font-bold text-lg leading-relaxed">
-                                        Hoy es <span className="text-amber-600 font-black uppercase">{missedSessionAlert.todayName}</span> y el plan dice <span className="text-indigo-600 font-black uppercase text-xl">{missedSessionAlert.todaySubject}</span>...
-                                        <br /><br />
-                                        Pero antes de pasar a ella, debemos completar la sesión de <strong className="text-amber-900">{missedSessionAlert.subject} (Sesión {missedSessionAlert.session})</strong> que quedó atrás.
-                                    </p>
-                                </div>
-                                <p className="text-amber-600 font-black mt-1 text-sm flex items-center justify-center md:justify-start gap-2">
-                                    ¡No dejes huecos en tu camino! 🚀✨
-                                </p>
+                    {/* NEW LOADING OVERLAY */}
+                    <LoadingOverlay isOpen={isCallingN8N} message={loadingMessage} />
 
-                                <div className="flex gap-4 mt-6">
-                                    <button
-                                        onClick={() => setMissedSessionAlert(null)}
-                                        className="w-full py-5 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xl font-black rounded-2xl shadow-[0_10px_25px_rgba(217,119,6,0.3)] hover:shadow-[0_15px_40px_rgba(217,119,6,0.5)] hover:-translate-y-1 active:scale-95 transition-all uppercase tracking-wide"
-                                    >
-                                        ¡Entendido, vamos!
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                    <AIContentModal
+                        isOpen={aiModalOpen}
+                        onClose={() => setAiModalOpen(false)}
+                        content={aiContent}
+                        subject={currentSubject}
+                        callAgent={callAgent}
+                        isCallingN8N={isCallingN8N}
+                        routeTitle={TODAYS_SUBJECT.oa_title}
+                        apiJson={apiJson}
+                        quizStats={quizStats}
+                        updateQuizStats={updateQuizStats}
+                        quizLevel={quizLevel} // Pass Level
+                        setQuizLevel={setQuizLevel}
+                        quizQuestionNumber={quizQuestionNumber}
+                        setQuizQuestionNumber={setQuizQuestionNumber}
+                        userQuery={lastUserQuery}
+                        onAskDoubt={() => { setLastUserQuery(""); setAskModalOpen(true); }}
+                        onStartQuiz={startFullQuiz}
+                    />
 
-            {/* AMBIENT BACKGROUND LIGHTS & MOVEMENT (JUEGO DE SOMBRAS INTENSIFICADO) */}
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                {/* Capa 1: Pulso base de luz */}
-                <div className="absolute inset-0 bg-[#F8FAFC] animate-pulse-subtle"></div>
-
-                {/* Capa 2: Sombras de color gigantes (Depth) - Opacidad al 20% y Color Burn */}
-                <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-[#4F46E5]/20 rounded-full blur-[140px] animate-blob-giant mix-blend-color-burn"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] bg-[#0EA5E9]/20 rounded-full blur-[140px] animate-blob-giant animation-delay-4000 mix-blend-color-burn"></div>
-
-                {/* Capa 3: Luces acentuadas (Vibrancy) - Opacidad al 15% */}
-                <div className="absolute top-[20%] right-[10%] w-[50%] h-[60%] bg-[#E84393]/15 rounded-full blur-[110px] animate-blob-drift opacity-80 mix-blend-screen"></div>
-                <div className="absolute bottom-[20%] left-[10%] w-[50%] h-[60%] bg-[#7C3AED]/15 rounded-full blur-[110px] animate-blob-drift animation-delay-2000 opacity-80 mix-blend-screen"></div>
-
-                {/* Capa 4: Textura de lujo */}
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.06] mix-blend-overlay"></div>
-
-                {/* Capa 5: Marco de sombra (Vignette Profundo) */}
-                <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(43,46,74,0.15)] pointer-events-none"></div>
-            </div>
-
-            <div className="relative z-10 max-w-7xl mx-auto">
-                {/* LOADING SCREEN WHILE FETCHING PROGRESS */}
-                {loadingProgress && (
-                    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center z-50">
-                        <div className="text-center">
-                            <Loader className="w-16 h-16 animate-spin text-blue-600 mx-auto mb-6" />
-                            <h2 className="text-2xl font-black text-gray-800 mb-2">Cargando tu progreso...</h2>
-                            <p className="text-gray-600">Conectando con el servidor</p>
-                        </div>
-                    </div>
-                )}
-
-                <VideoModal
-                    isOpen={videoModalOpen}
-                    onClose={() => setVideoModalOpen(false)}
-                    videoUrl={TODAYS_SUBJECT.video_link}
-                    title={TODAYS_SESSION.videoTitle}
-                    onDoubt={(context) => {
-                        setDoubtContext(context);
-                        // setVideoModalOpen(false); // Close video (DISABLED FOR CONTEXT)
-                        setAskModalOpen(true);    // Open ask modal
-                    }}
-                    onFinish={async () => {
-                        setVideoModalOpen(false);
-                        await saveProgress('video_completed', { title: TODAYS_SESSION.videoTitle, xp_reward: 50, session: TODAYS_SESSION.session });
-                        // NEW: AUTO-START THEORY AFTER VIDEO
-                        callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
-                    }}
-                />
-
-                <ReadingModal
-                    isOpen={readingModalOpen}
-                    onClose={() => setReadingModalOpen(false)}
-                    title={TODAYS_SESSION.readingTitle || "Lectura"}
-                    content={TODAYS_SESSION.readingContent || ""}
-                    onFinish={handleReadingFinish}
-                />
-
-                {/* THEORY MODAL - Teoría Lúdica antes de cada sub-nivel */}
-                <ReadingModal
-                    isOpen={showTheoryModal}
-                    onClose={() => setShowTheoryModal(false)}
-                    title={theoryTitle}
-                    content={theoryContent}
-                    onFinish={handleContinueToQuiz}
-                    buttonText="INICIAR QUIZ COMPLETO"
-                />
-
-                <QuestionModal
-                    isOpen={askModalOpen}
-                    onClose={() => {
-                        setAskModalOpen(false);
-                        setDoubtContext(null); // Clear context on close
-                    }}
-                    onSubmit={(question, image, timestamp, context) => {
-                        setAskModalOpen(false); // Close explicitly to show loading/result over video
-                        // Combine question with context details for the 'topic' argument
-                        let fullTopic = question;
-                        if (context && context.type === 'video') {
-                            fullTopic = `[Context: Video "${context.title}"] ${question}`;
-                        }
-                        callAgent(currentSubject, 'answer_doubts', fullTopic, image, timestamp);
-                    }}
-                    isCallingN8N={isCallingN8N}
-                    initialContext={doubtContext}
-                />
-
-                {/* NEW LOADING OVERLAY */}
-                <LoadingOverlay isOpen={isCallingN8N} message={loadingMessage} />
-
-                <AIContentModal
-                    isOpen={aiModalOpen}
-                    onClose={() => setAiModalOpen(false)}
-                    content={aiContent}
-                    subject={currentSubject}
-                    callAgent={callAgent}
-                    isCallingN8N={isCallingN8N}
-                    routeTitle={TODAYS_SUBJECT.oa_title}
-                    apiJson={apiJson}
-                    quizStats={quizStats}
-                    updateQuizStats={updateQuizStats}
-                    quizLevel={quizLevel} // Pass Level
-                    setQuizLevel={setQuizLevel}
-                    quizQuestionNumber={quizQuestionNumber}
-                    setQuizQuestionNumber={setQuizQuestionNumber}
-                    userQuery={lastUserQuery}
-                    onAskDoubt={() => { setLastUserQuery(""); setAskModalOpen(true); }}
-                    onStartQuiz={startFullQuiz}
-                    quizProgress={getQuizProgress()} // NEW: Pass quiz progress for UI
-                />
-
-                <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
-                    <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">
-                        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative">
-                            {/* RADIAL GLOW BEHIND MATICO */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-[#4F46E5]/10 rounded-full blur-3xl animate-pulse"></div>
-
-                            <div className="relative">
+                    <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
+                        <div className="flex flex-col items-center text-center md:flex-row md:text-left md:justify-between gap-6 mb-2 animate-fade-in-up">
+                            <div className="flex flex-row items-center gap-4">
                                 <MaticoAvatar
                                     mood={isCallingN8N ? 'thinking' : 'excited'}
                                     size="lg"
                                     isThinking={isCallingN8N}
                                     onClick={() => setAskModalOpen(true)}
                                 />
-                            </div>
-
-                            <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2 relative z-10">
-                                <h1 className="text-4xl font-black text-[#2B2E4A] mb-1 drop-shadow-sm">
-                                    ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
-                                </h1>
-                                <p className="text-[#9094A6] font-bold text-base max-w-md leading-tight mb-6">
-                                    Sistema activo. Hoy dedicaremos la hora completa a:{' '}
-                                    <span className="text-[#2B2E4A] bg-white px-2 py-0.5 rounded-lg shadow-sm border border-white/50 font-black inline-block mt-1" style={{ color: TODAYS_SUBJECT.color }}>
-                                        {TODAYS_SUBJECT.name}
-                                    </span>
-                                </p>
-
-
-                                <button
-                                    onClick={() => setAskModalOpen(true)}
-                                    className="group relative flex items-center gap-4 px-8 py-5 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white rounded-2xl shadow-[0_10px_30px_rgba(79,70,229,0.4)] hover:shadow-[0_15px_40px_rgba(79,70,229,0.5)] hover:-translate-y-1.5 transition-all duration-300 active:scale-95 overflow-hidden animate-float"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shine" />
-                                    <div className="relative flex items-center justify-center w-10 h-10 bg-white/10 rounded-xl backdrop-blur-sm group-hover:rotate-12 transition-transform">
-                                        <MessageCircle className="w-6 h-6 text-white animate-pulse" />
+                                <div className="text-left">
+                                    <div className="inline-flex items-center gap-2 bg-[#FFD93D] text-[#2B2E4A] px-3 py-1 rounded-full font-black text-xs mb-2 shadow-sm animate-bounce-subtle">
+                                        <Star className="w-4 h-4 fill-current" />
+                                        {userProfile?.xp || 0} XP
                                     </div>
-                                    <div className="flex flex-col items-start leading-none">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">¿NECESITAS AYUDA SOBRE ALGUNA MATERIA?</span>
-                                        <span className="text-xl font-black tracking-tight">TENGO UNA DUDA</span>
-                                    </div>
-                                    <ArrowRight className="w-6 h-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* STATS & SETTINGS BACK TO THE RIGHT SIDE */}
-                        <div className="flex flex-row md:flex-col items-center md:items-end gap-4 mt-4 md:mt-2 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                            <div className="inline-flex items-center gap-2 bg-[#1E293B] text-[#FACC15] px-5 py-2.5 rounded-2xl font-black text-sm shadow-[0_10px_20px_rgba(30,41,59,0.2)] border-2 border-[#334155] animate-float">
-                                <Star className="w-5 h-5 fill-current" />
-                                {userProfile?.xp || 0} XP
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setSettingsOpen(true)} className="p-3.5 bg-white rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.05)] border-2 border-white transition-all hover:shadow-xl hover:-translate-y-1 group hover:border-indigo-100" title="Configuración">
-                                    <Settings className="w-8 h-8 text-[#64748B] group-hover:text-indigo-600 transition-transform group-hover:rotate-90" />
-                                </button>
-                                <button onClick={() => fetchProfile()} className="p-3.5 bg-white rounded-2xl shadow-[0_10px_20_rgba(0,0,0,0.05)] border-2 border-white transition-all hover:shadow-xl hover:-translate-y-1 group hover:border-blue-100" title="Actualizar Progreso">
-                                    <RotateCcw className={`w-7 h-7 text-[#64748B] group-hover:text-blue-500 ${isCallingN8N ? 'animate-spin' : ''}`} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                        {/* NEW: HORIZONTAL SUBJECT LINE (Web Format) */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-8">
-                            <button
-                                onClick={() => setCurrentSubject('MATEMATICA')}
-                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : '!bg-[#4D96FF]/10 !text-[#4D96FF] !border-[#4D96FF]/30'}`}
-                            >
-                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">📐</span> Mate
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('LENGUAJE')}
-                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF7675] !text-white !border-[#E84393] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,118,117,0.6)]' : '!bg-[#FF7675]/10 !text-[#FF7675] !border-[#FF7675]/30'}`}
-                            >
-                                <span className="text-lg mr-1 rotate-[10deg] inline-block">📚</span> Lenguaje
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('FISICA')}
-                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : '!bg-[#9D4EDD]/10 !text-[#9D4EDD] !border-[#9D4EDD]/30'}`}
-                            >
-                                <span className="text-lg mr-1 rotate-[-5deg] inline-block">🌌</span> Física
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('QUIMICA')}
-                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : '!bg-[#E84393]/10 !text-[#E84393] !border-[#E84393]/30'}`}
-                            >
-                                <span className="text-lg mr-1 rotate-[5deg] inline-block">🧪</span> Química
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('BIOLOGIA')}
-                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : '!bg-[#2ECC71]/10 !text-[#2ECC71] !border-[#2ECC71]/30'}`}
-                            >
-                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">🌿</span> Biología
-                            </button>
-                            <button
-                                onClick={() => setCurrentSubject('HISTORIA')}
-                                className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : '!bg-[#E67E22]/10 !text-[#E67E22] !border-[#E67E22]/30'}`}
-                            >
-                                <span className="text-lg mr-1 rotate-[10deg] inline-block">📜</span> Historia
-                            </button>
-                        </div>
-
-                        <div className="w-full">
-                            <AnnualRaceBar currentDay={TODAYS_SESSION.session} totalDays={43} />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-
-                        <div className="lg:col-span-2 space-y-8">
-                            <div className={`${clayCard} relative overflow-visible`}>
-                                <div className="flex justify-between items-start mb-8">
-                                    <div>
-                                        <h2 className="text-2xl font-black text-[#2B2E4A] mb-1" style={{ color: TODAYS_SUBJECT.color }}>
-                                            Ruta de {TODAYS_SUBJECT.name}: <span className="text-base font-bold text-[#9094A6] block">{TODAYS_SUBJECT.oa_title}</span>
-                                        </h2>
-                                        <p className="text-[#9094A6] font-bold text-sm">Sesión {TODAYS_SESSION.session}: {TODAYS_SESSION.topic}</p>
-
-                                        {/* INDICADOR DE PROGRESO KAIZEN */}
-                                        {(() => {
-                                            const progress = getQuizProgress();
-                                            const phaseNames = { 1: "Básico", 2: "Avanzado", 3: "Crítico" };
-                                            const phaseColors = {
-                                                1: "bg-green-100 text-green-700 border-green-300",
-                                                2: "bg-yellow-100 text-yellow-700 border-yellow-300",
-                                                3: "bg-red-100 text-red-700 border-red-300"
-                                            };
-
-                                            if (progress.currentPhase <= 3) {
-                                                const questionsCompleted = (progress.currentPhase - 1) * 15;
-                                                return (
-                                                    <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
-                                                        ⚡ Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/45 preguntas completadas
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
-                                    </div>
-                                    <div className="w-14 h-14 rounded-full bg-[#E0E5EC] flex items-center justify-center">
-                                        <TODAYS_SUBJECT.icon className="w-8 h-8 animate-float" style={{ color: TODAYS_SUBJECT.color }} />
-                                    </div>
-                                </div>
-
-                                {/* ROUTE STEPS RENDERER */}
-                                <div className="flex flex-col items-center gap-8 relative py-8 min-h-[400px]">
-                                    {/* CONNECTOR LINE WITH ENERGY GLOW */}
-                                    <div className="absolute top-0 bottom-0 w-4 bg-[#E2E8F0] rounded-full z-0 overflow-hidden shadow-inner">
-                                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/20 via-blue-500/20 to-indigo-500/20 animate-pulse"></div>
-                                        <div className="absolute top-0 w-full h-full bg-gradient-to-b from-transparent via-white/40 to-transparent animate-infinite-scroll" style={{ height: '200%' }}></div>
-                                    </div>
-
-                                    {dailyRoute.daily_route_steps.map((step, idx) => {
-                                        const IconComponent = step.icon === "Play" ? Play : (step.icon === "Brain" ? Brain : (step.icon === "MessageCircle" ? MessageCircle : Lock));
-
-                                        const handleClick = () => {
-                                            if (idx === 0) handleStartSession();
-                                            if (idx === 1) callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
-                                            if (idx === 2) callAgent(currentSubject, 'generate_quiz', TODAYS_SUBJECT.oa_title);
-                                            if (idx === 3) setAskModalOpen(true);
-                                        };
-
-                                        // STYLE LOGIC
-                                        let btnStyle = "bg-[#E5E5E5] border-[#CECECE] text-[#AFAFAF]"; // Locked/Future
-                                        let isCurrent = idx === 0; // Default current?
-                                        // Simple logic for demo: Step 0 is completed/current, others locked? 
-                                        // Better: visual variety based on index
-
-                                        if (idx === 0) btnStyle = "bg-[#58CC02] border-[#46A302] text-white animate-bounce-subtle z-20 shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(88,204,2,0.6)]"; // Active
-                                        else if (idx === 1) btnStyle = "bg-[#1CB0F6] border-[#1899D6] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(28,176,246,0.6)]"; // Next
-                                        else if (idx === 2) btnStyle = "bg-[#FFD900] border-[#E5C300] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,217,0,0.6)]"; // Quiz
-                                        else btnStyle = "bg-[#FF4B4B] border-[#D63E3E] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,75,75,0.6)]"; // Practice
-
-                                        // Alternating offset
-                                        const offsetClass = idx % 2 === 0 ? "-translate-x-12" : "translate-x-12";
-                                        const labelSide = idx % 2 === 0 ? "left-28" : "right-28 text-right";
-                                        const labelOrigin = idx % 2 === 0 ? "origin-left" : "origin-right flex-row-reverse";
-
-                                        return (
-                                            <div key={idx} className={`relative z-10 group ${offsetClass}`}>
-                                                <button
-                                                    onClick={handleClick}
-                                                    className={`w-24 h-24 rounded-full flex items-center justify-center border-b-8 transition-all duration-300 hover:scale-110 hover:-translate-y-2 hover:z-30 active:border-b-0 active:translate-y-2 shadow-sm ${btnStyle}`}
-                                                >
-                                                    <IconComponent className="w-10 h-10" fill="currentColor" />
-
-                                                    {/* CROWN/STAR for detailed polish */}
-                                                    <div className="absolute top-1 right-2 w-3 h-3 bg-white/30 rounded-full"></div>
-                                                </button>
-
-                                                {/* FLOATING LABEL */}
-                                                <div className={`absolute top-6 ${idx % 2 === 0 ? "left-28" : "right-28"} bg-white border-2 border-gray-200 px-4 py-2 rounded-2xl shadow-sm min-w-[140px] transition-transform hover:scale-105`}>
-                                                    <h3 className="font-black text-[#3C3C3C] text-sm uppercase">{step.step}</h3>
-                                                    <p className="text-[#AFAFAF] text-xs font-bold">{
-                                                        idx === 0 ? "CLASE DE HOY" :
-                                                            (idx === 1 ? "TEORÍA IA" :
-                                                                (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"))
-                                                    }</p>
-
-                                                    {/* TRIANGLE POINTER */}
-                                                    <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-b-2 border-l-2 border-gray-200 transform rotate-45 ${idx % 2 === 0 ? "-left-[7px]" : "-right-[7px] border-l-0 border-b-0 border-t-2 border-r-2"}`}></div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                <div className="mt-12">
+                                    <h1 className="text-4xl font-black text-[#2B2E4A] mb-1">¡Hola, Matico! 👋</h1>
+                                    <p className="text-[#9094A6] font-bold text-sm max-w-md">
+                                        Sistema activo. Hoy dedicaremos la hora completa a:{' '}
+                                        <span className="text-[#2B2E4A] bg-white px-2 py-1 rounded-lg shadow-sm border border-white/50 font-black" style={{ color: TODAYS_SUBJECT.color }}>
+                                            {TODAYS_SUBJECT.name}
+                                        </span>.
+                                    </p>
                                     <button
-                                        onClick={() => setVideoModalOpen(true)}
-                                        className={`${clayBtnAction} ${(localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : ''}`}
-                                        disabled={isCallingN8N}
+                                        onClick={() => setAskModalOpen(true)}
+                                        className="mt-2 text-xs font-black text-[#FF9F43] uppercase tracking-widest hover:text-[#FFD93D] flex items-center gap-1 transition-colors"
                                     >
-                                        {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESIÓN COMPLETADA (Repasar)" : "INICIAR SESIÓN " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
+                                        <MessageCircle className="w-4 h-4" /> 💁‍♀️ Tengo una Duda
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* RESPONSIVE SUBJECT TOGGLES */}
+                            <div className="w-full md:w-auto flex flex-col items-center md:items-end gap-3 mt-4 md:mt-0">
+                                {/* TEST/PROD TOGGLE SEPARATE */}
+                                <button
+                                    onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
+                                    className={`text-xs font-black px-3 py-1 rounded-full transition-all border-2 mb-1 ${activeWebhookUrl === N8N_URLS.test
+                                        ? 'bg-gray-200 text-gray-500 border-gray-300'
+                                        : 'bg-red-100 text-red-600 border-red-200 animate-pulse shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_0_10px_rgba(255,0,0,0.2)]'
+                                        }`}
+                                >
+                                    {activeWebhookUrl === N8N_URLS.test ? '🧪 TEST' : '🚨 PROD'}
+                                </button>
+
+                                {/* DEV: SIMULATE 5 DAY DELAY */}
+                                <button
+                                    onClick={() => {
+                                        const fiveDaysAgo = new Date();
+                                        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+                                        localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
+                                        localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
+                                        alert("Simulación: Inicio hace 5 días. Debes ponerte al día.");
+                                        window.location.reload();
+                                    }}
+                                    className="text-[10px] font-bold text-blue-500 underline mb-2"
+                                >
+                                    Simular Atraso (5 Días)
+                                </button>
+
+                                {/* GRID 3 COLS */}
+                                <div className="grid grid-cols-3 gap-2">
+                                    <button
+                                        onClick={() => setCurrentSubject('MATEMATICA')}
+                                        className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : ''}`}
+                                    >
+                                        🔢 Mate
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentSubject('LENGUAJE')}
+                                        className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF9F43] !text-white !border-[#E68A35] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,159,67,0.6)]' : ''}`}
+                                    >
+                                        📖 Lenguaje
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentSubject('FISICA')}
+                                        className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : ''}`}
+                                    >
+                                        ⚛️ Física
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentSubject('QUIMICA')}
+                                        className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : ''}`}
+                                    >
+                                        🧪 Química
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentSubject('BIOLOGIA')}
+                                        className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : ''}`}
+                                    >
+                                        🧬 Biología
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentSubject('HISTORIA')}
+                                        className={`${clayBtnPrimary} !w-auto !py-2 !px-4 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : ''}`}
+                                    >
+                                        📜 Historia
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div className="space-y-8">
 
-                            <PomodoroTimer />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Interactive Quiz Modal */}
-                {
-                    showInteractiveQuiz && quizQuestions && quizQuestions.length > 0 && (
-                        <InteractiveQuiz
-                            questions={quizQuestions}
-                            phase={currentQuizPhase}
-                            sessionId={todayIndex + 1}
-                            subject={currentSubject}
-                            readingContent=""
-                            onComplete={(score, wrongAnswers) => {
-                                console.log(`Quiz Fase ${currentQuizPhase} completado:`, score, 'errores:', wrongAnswers?.length);
-                                onQuizPhaseComplete(score, wrongAnswers || []);
-                            }}
-                            onClose={() => {
-                                // Allow manual emergency close
-                                setShowInteractiveQuiz(false);
-                                window.location.reload();
-                            }}
-                        />
-                    )
-                }
-                {/* SETTINGS MODAL */}
-                {settingsOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md animate-fade-in">
-                        <div className="bg-[#F4F7FF] w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border-4 border-white animate-clay-pop">
-                            {/* Modal Header */}
-                            <div className="bg-white px-6 py-4 border-b-2 border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Settings className="w-5 h-5 text-[#2B2E4A]" />
-                                    <h3 className="text-lg font-black text-[#2B2E4A]">Configuración</h3>
-                                </div>
-                                <button
-                                    onClick={() => setSettingsOpen(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                >
-                                    <X className="w-6 h-6 text-gray-400" />
-                                </button>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                            <div className="lg:col-span-3">
+                                <AnnualRaceBar currentDay={TODAYS_SESSION.session} totalDays={43} />
                             </div>
 
-                            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
-                                {/* USER PROFILE SECTION */}
-                                <div className="space-y-2">
-                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Brain className="w-3 h-3" /> Perfil de Usuario
-                                    </h4>
-                                    <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm">
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl shadow-inner border border-blue-200">
-                                                    📧
-                                                </div>
-                                                <div className="flex flex-col overflow-hidden">
-                                                    <span className="text-[10px] font-black text-gray-400 uppercase">Email</span>
-                                                    <span className="text-sm font-bold text-gray-700 truncate">{currentUser?.email}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-xl shadow-inner border border-purple-200">
-                                                    🆔
-                                                </div>
-                                                <div className="flex flex-col overflow-hidden">
-                                                    <span className="text-[10px] font-black text-gray-400 uppercase">User ID</span>
-                                                    <span className="text-[10px] font-mono text-gray-500 break-all">{currentUser?.user_id}</span>
-                                                </div>
-                                            </div>
+                            <div className="lg:col-span-2 space-y-8">
+                                <div className={`${clayCard} relative overflow-visible`}>
+                                    <div className="flex justify-between items-start mb-8">
+                                        <div>
+                                            <h2 className="text-2xl font-black text-[#2B2E4A] mb-1" style={{ color: TODAYS_SUBJECT.color }}>
+                                                Ruta de {TODAYS_SUBJECT.name}: <span className="text-base font-bold text-[#9094A6] block">{TODAYS_SUBJECT.oa_title}</span>
+                                            </h2>
+                                            <p className="text-[#9094A6] font-bold text-sm">Basado en el video: {TODAYS_SESSION.videoTitle}</p>
+                                        </div>
+                                        <div className="w-14 h-14 rounded-full bg-[#E0E5EC] flex items-center justify-center">
+                                            <TODAYS_SUBJECT.icon className="w-8 h-8 animate-float" style={{ color: TODAYS_SUBJECT.color }} />
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* NOTIFICATION PREFERENCES */}
-                                <div className="space-y-2">
-                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Lock className="w-3 h-3" /> Alertas Diario
-                                    </h4>
-                                    <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm space-y-4">
-                                        {/* LOCKED MANDATORY ALARM */}
-                                        <div className="flex items-center justify-between opacity-80 cursor-not-allowed">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
-                                                    <RotateCcw className="w-4 h-4 text-blue-500" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-gray-700">Morning Alarms</span>
-                                                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">Obligatorio</span>
-                                                </div>
-                                            </div>
-                                            <div className="relative">
-                                                <div className="block w-10 h-6 rounded-full bg-blue-500/50"></div>
-                                                <div className="absolute left-5 top-1 bg-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
-                                                    <Lock className="w-2 h-2 text-blue-500" />
-                                                </div>
-                                            </div>
-                                        </div>
+                                    {/* ROUTE STEPS RENDERER */}
+                                    <div className="flex flex-col items-center gap-8 relative py-8 min-h-[400px]">
+                                        {/* CONNECTOR LINE */}
+                                        <div className="absolute top-0 bottom-0 w-4 bg-[#E5E5E5] rounded-full z-0"></div>
 
-                                        {/* OPTIONAL DAILY PROGRESS REPORTS */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
-                                                    <TrendingUp className="w-4 h-4 text-indigo-500" />
+                                        {dailyRoute.daily_route_steps.map((step, idx) => {
+                                            const IconComponent = step.icon === "Play" ? Play : (step.icon === "Brain" ? Brain : (step.icon === "MessageCircle" ? MessageCircle : Lock));
+
+                                            const handleClick = () => {
+                                                if (idx === 0) handleStartSession();
+                                                if (idx === 1) callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
+                                                if (idx === 2) callAgent(currentSubject, 'generate_quiz', TODAYS_SUBJECT.oa_title);
+                                                if (idx === 3) setAskModalOpen(true);
+                                            };
+
+                                            // STYLE LOGIC
+                                            let btnStyle = "bg-[#E5E5E5] border-[#CECECE] text-[#AFAFAF]"; // Locked/Future
+                                            let isCurrent = idx === 0; // Default current?
+                                            // Simple logic for demo: Step 0 is completed/current, others locked? 
+                                            // Better: visual variety based on index
+
+                                            if (idx === 0) btnStyle = "bg-[#58CC02] border-[#46A302] text-white animate-bounce-subtle z-20 shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(88,204,2,0.6)]"; // Active
+                                            else if (idx === 1) btnStyle = "bg-[#1CB0F6] border-[#1899D6] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(28,176,246,0.6)]"; // Next
+                                            else if (idx === 2) btnStyle = "bg-[#FFD900] border-[#E5C300] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,217,0,0.6)]"; // Quiz
+                                            else btnStyle = "bg-[#FF4B4B] border-[#D63E3E] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,75,75,0.6)]"; // Practice
+
+                                            // Alternating offset
+                                            const offsetClass = idx % 2 === 0 ? "-translate-x-12" : "translate-x-12";
+                                            const labelSide = idx % 2 === 0 ? "left-28" : "right-28 text-right";
+                                            const labelOrigin = idx % 2 === 0 ? "origin-left" : "origin-right flex-row-reverse";
+
+                                            return (
+                                                <div key={idx} className={`relative z-10 group ${offsetClass}`}>
+                                                    <button
+                                                        onClick={handleClick}
+                                                        className={`w-24 h-24 rounded-full flex items-center justify-center border-b-8 transition-all duration-300 hover:scale-110 hover:-translate-y-2 hover:z-30 active:border-b-0 active:translate-y-2 shadow-sm ${btnStyle}`}
+                                                    >
+                                                        <IconComponent className="w-10 h-10" fill="currentColor" />
+
+                                                        {/* CROWN/STAR for detailed polish */}
+                                                        <div className="absolute top-1 right-2 w-3 h-3 bg-white/30 rounded-full"></div>
+                                                    </button>
+
+                                                    {/* FLOATING LABEL */}
+                                                    <div className={`absolute top-6 ${idx % 2 === 0 ? "left-28" : "right-28"} bg-white border-2 border-gray-200 px-4 py-2 rounded-2xl shadow-sm min-w-[140px] transition-transform hover:scale-105`}>
+                                                        <h3 className="font-black text-[#3C3C3C] text-sm uppercase">{step.step}</h3>
+                                                        <p className="text-[#AFAFAF] text-xs font-bold">{
+                                                            idx === 0 ? "CLASE DE HOY" :
+                                                                (idx === 1 ? "TEORÃA IA" :
+                                                                    (idx === 3 ? "CONSULTA" : "PRÃCTICA"))
+                                                        }</p>
+
+                                                        {/* TRIANGLE POINTER */}
+                                                        <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-b-2 border-l-2 border-gray-200 transform rotate-45 ${idx % 2 === 0 ? "-left-[7px]" : "-right-[7px] border-l-0 border-b-0 border-t-2 border-r-2"}`}></div>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-gray-700">Daily Reports</span>
-                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Reporte Nocturno</span>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    className="sr-only peer"
-                                                    checked={progressReportsEnabled}
-                                                    onChange={(e) => updateNotificationPrefs('progress_reports', e.target.checked)}
-                                                />
-                                                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500 shadow-inner"></div>
-                                            </label>
-                                        </div>
+                                            );
+                                        })}
                                     </div>
-                                </div>
 
-                                {/* SYSTEM & ENVIRONMENT */}
-                                <div className="space-y-2">
-                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Server className="w-3 h-3" /> Sistema y Entorno
-                                    </h4>
-                                    <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-bold text-gray-700">Modo de Conexión</span>
-                                            <button
-                                                onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
-                                                className={`text-[10px] font-black px-4 py-1.5 rounded-full transition-all border-2 ${activeWebhookUrl === N8N_URLS.test
-                                                    ? 'bg-gray-100 text-gray-500 border-gray-200'
-                                                    : 'bg-red-50 text-red-600 border-red-100 animate-pulse'
-                                                    }`}
-                                            >
-                                                {activeWebhookUrl === N8N_URLS.test ? '🛠️ TEST MODE' : '🚀 PRODUCTION'}
-                                            </button>
-                                        </div>
+                                    <div className="mt-12">
                                         <button
-                                            onClick={() => {
-                                                const fiveDaysAgo = new Date();
-                                                fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-                                                localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
-                                                localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
-                                                alert("Simulación: Inicio hace 5 días. Debes ponerte al día.");
-                                                window.location.reload();
-                                            }}
-                                            className="w-full text-[10px] font-black text-blue-500 uppercase tracking-widest py-2 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
+                                            onClick={() => setVideoModalOpen(true)}
+                                            className={`${clayBtnAction} ${(localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : ''}`}
+                                            disabled={isCallingN8N}
                                         >
-                                            🛠️ Simular Atraso (5 Días)
+                                            {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESIÓN COMPLETADA (Repasar)" : "INICIAR SESIÓN " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="space-y-8">
 
-                                {/* LOGOUT */}
-                                <button
-                                    onClick={() => {
-                                        handleLogout();
-                                    }}
-                                    className="w-full py-4 bg-red-50 text-red-600 font-black rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <XCircle className="w-5 h-5" />
-                                    Cerrar Sesión
-                                </button>
+                                <PomodoroTimer />
                             </div>
                         </div>
                     </div>
-                )}
-            </div>
-        </div>
-    );
-};
 
-export default App;
+                    {/* Interactive Quiz Modal */}
+                    {showInteractiveQuiz && quizQuestions && quizQuestions.length > 0 && (
+                        <InteractiveQuiz
+                            questions={quizQuestions}
+                            subject={currentSubject}
+                            topic={TODAYS_SESSION?.topic || 'Unknown'}
+                            onGenerateMiniLesson={(subject, topic, question, wrongAns, correctAns) =>
+                                generateMiniLesson(activeWebhookUrl, subject, topic, question, wrongAns, correctAns)
+                            }
+                            onGenerateRetryQuestion={(subject, topic, originalQ, originalQData) =>
+                                generateRetryQuestion(activeWebhookUrl, subject, topic, originalQ, originalQData)
+                            }
+                            onComplete={(scoreData) => {
+                                console.log("Quiz completado:", scoreData);
+
+                                // Save extended quiz results with retry information
+                                saveProgress('quiz_completed', {
+                                    subject: currentSubject,
+                                    topic: TODAYS_SESSION?.topic || 'Unknown',
+                                    score: Math.round((scoreData.correct / scoreData.totalQuestions) * 100),
+                                    correct: scoreData.correct,
+                                    incorrect: scoreData.incorrect,
+                                    total: scoreData.totalQuestions,
+                                    original_questions: quizQuestions.length,
+                                    retry_questions: scoreData.totalQuestions - quizQuestions.length,
+                                    mistakes_log: scoreData.mistakesLog,
+                                    lives_remaining: scoreData.livesRemaining
+                                });
+
+                                // NEW: MARK SESSION AS COMPLETE IN CALENDAR
+                                markSessionComplete(currentSubject, TODAYS_SESSION.session);
+                            }}
+                            onClose={() => setShowInteractiveQuiz(false)}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

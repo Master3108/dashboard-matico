@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Timer, BookOpen, Lightbulb, ChevronRight } from 'lucide-react';
+import { X, CheckCircle, Timer, BookOpen, Lightbulb, ChevronRight, Camera } from 'lucide-react';
 import MathRenderer from './MathRenderer';
+import CuadernoMission from './CuadernoMission';
 
-const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onComplete }) => {
+const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onComplete, sessionId, subject, readingContent }) => {
     const [timeLeft, setTimeLeft] = useState(30); // 30 seconds
     const [understood, setUnderstood] = useState(false);
+    const [showCuaderno, setShowCuaderno] = useState(false);
 
     // Timer countdown
     useEffect(() => {
@@ -33,6 +35,18 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
 
     const handleUnderstood = () => {
         setUnderstood(true);
+        setShowCuaderno(true);
+    };
+
+    const handleCuadernoComplete = (xpGained, tier) => {
+        setShowCuaderno(false);
+        setTimeout(() => {
+            onComplete();
+        }, 500);
+    };
+
+    const handleCuadernoSkip = () => {
+        setShowCuaderno(false);
         setTimeout(() => {
             onComplete();
         }, 500);
@@ -160,8 +174,11 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                             <div className="inline-flex items-center gap-3 bg-blue-50 px-6 py-4 rounded-2xl border-2 border-blue-200">
                                 <BookOpen className="w-6 h-6 text-blue-600 animate-pulse" />
                                 <div className="text-left">
-                                    <p className="font-black text-blue-900 text-lg">
-                                        📖 Lee la explicación completa
+                                    <p className="font-black text-blue-900 justify-center flex items-center gap-2 text-lg">
+                                        <Camera className="w-5 h-5" /> 📝 Debes fotografiar tu error en tu cuaderno
+                                    </p>
+                                    <p className="font-black text-blue-900 text-sm">
+                                        📖 Escribe por qué fallaste y la respuesta correcta.
                                     </p>
                                     <p className="text-blue-600 text-sm font-bold">
                                         Tiempo restante: {formatTime(timeLeft)}
@@ -194,6 +211,17 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                     )}
                 </div>
             </div>
+
+            {showCuaderno && (
+                <CuadernoMission
+                    sessionId={sessionId || 1}
+                    subject={subject || 'Materia'}
+                    topic="Corrección Error"
+                    readingContent={readingContent || explanation || ''}
+                    onComplete={handleCuadernoComplete}
+                    onSkip={handleCuadernoSkip}
+                />
+            )}
 
             <style jsx>{`
         @keyframes fadeIn {
