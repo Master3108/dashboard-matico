@@ -15,8 +15,11 @@ app.use(express.json({ limit: '10mb' }));
 
 const PORT = process.env.PORT || 5000;
 
-// Configuración OpenAI
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Configuración DeepSeek
+const openai = new OpenAI({ 
+    apiKey: process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY,
+    baseURL: 'https://api.deepseek.com/v1'
+});
 
 // Configuración Google Sheets
 const SPREADSHEET_ID = '1l1GLMXh8_Uo_O7XJOY7ZJxh1TER2hxrXTOsc_EcByHo';
@@ -360,7 +363,7 @@ NUNCA respondas con JSON crudo. Solo texto enriquecido en Markdown.
 Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
 
             const comp = await openai.chat.completions.create({
-                model: "gpt-4o",
+                model: "deepseek-chat",
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
             });
             return res.json({ output: comp.choices[0].message.content });
@@ -478,7 +481,7 @@ Estructura JSON:
             }
 
             const comp = await openai.chat.completions.create({
-                model: "gpt-4o",
+                model: "deepseek-chat",
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }],
                 response_format: { type: "json_object" },
                 temperature: aiTemperature
@@ -508,7 +511,7 @@ Estructura JSON:
                         if (idx > 0) await new Promise(r => setTimeout(r, 500));
 
                         const verifyComp = await openai.chat.completions.create({
-                            model: "gpt-4o",
+                            model: "deepseek-chat",
                             messages: [
                                 { role: "system", content: verifyPrompt },
                                 { role: "user", content: `Problema: ${q.question}\n\nOpciones:\n${optionsText}\n\nRevisa y dime la letra correcta.` }
@@ -541,7 +544,7 @@ Estructura JSON:
             const tema = body.tema || body.topic || body.pregunta_usuario || 'Explícame más';
             const systemMsg = "Eres Matico, mentor experto y carismático del currículum chileno de 1° Medio. Usa emojis y analogías.";
             const comp = await openai.chat.completions.create({
-                model: "gpt-4o",
+                model: "deepseek-chat",
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
             });
             return res.json({ output: comp.choices[0].message.content });
@@ -595,7 +598,7 @@ Estructura JSON:
                         ).join('\n');
 
                         const analysisComp = await openai.chat.completions.create({
-                            model: "gpt-4o-mini",
+                            model: "deepseek-chat",
                             messages: [
                                 {
                                     role: "system", content: `Eres un tutor experto en educación chilena de 1° Medio. Analiza los errores del estudiante y genera un reporte breve EN HTML (usando <p>, <ul>, <li>, <strong>). NO uses markdown. El reporte debe:
