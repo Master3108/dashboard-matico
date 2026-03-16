@@ -173,16 +173,22 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                         <div className="text-center py-8">
                             <div className="inline-flex items-center gap-3 bg-blue-50 px-6 py-4 rounded-2xl border-2 border-blue-200">
                                 <BookOpen className="w-6 h-6 text-blue-600 animate-pulse" />
-                                <div className="text-left">
-                                    <p className="font-black text-blue-900 justify-center flex items-center gap-2 text-lg">
-                                        <Camera className="w-5 h-5" /> 📝 Debes fotografiar tu error en tu cuaderno
+                                <div className="text-left w-full">
+                                    <p className="font-black text-blue-900 justify-center flex items-center gap-2 text-xl mb-4 border-b-2 border-blue-200 pb-2">
+                                        <Camera className="w-6 h-6 text-blue-600" /> MISIÓN DE CORRECCIÓN:
                                     </p>
-                                    <p className="font-black text-blue-900 text-sm">
-                                        📖 Escribe por qué fallaste y la respuesta correcta.
-                                    </p>
-                                    <p className="text-blue-600 text-sm font-bold">
-                                        Tiempo restante: {formatTime(timeLeft)}
-                                    </p>
+                                    <ol className="list-decimal list-outside ml-5 text-blue-900 font-bold text-base space-y-3 mb-6">
+                                        <li>Copia la pregunta completa en tu <strong>Cuaderno de Matico</strong>.</li>
+                                        <li>Escribe la <strong>respuesta correcta</strong> y anota por qué habías fallado.</li>
+                                        <li>Copia paso a paso la explicación para que no se te olvide.</li>
+                                        <li>Al terminar, usa la cámara en el siguiente paso para enviarme una <strong>fotografía</strong> de lo que escribiste.</li>
+                                    </ol>
+                                    <div className="flex justify-center w-full">
+                                        <div className="bg-blue-100 px-4 py-2 rounded-xl text-blue-800 font-black flex items-center gap-2">
+                                            <Timer className="w-5 h-5 animate-spin-slow" />
+                                            Lee la explicación: {formatTime(timeLeft)}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

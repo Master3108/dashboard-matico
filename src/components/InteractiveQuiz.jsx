@@ -124,6 +124,9 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
 
     // DYNAMIC TIMER BASED ON QUESTION NUMBER (PAES LEVELS)
     const getTimeLimit = (questionIndex) => {
+        // MATEMÁTICAS NUNCA TIENE TIEMPO
+        if (subject === 'MATEMATICA' || subject === 'MATEMÁTICAS') return null;
+
         // Phase-based override (New Priority)
         // If phase is explicitly passed (1, 2, 3), use strict rules
         if (phase === 2) return 60;  // Avanzado: 60s
