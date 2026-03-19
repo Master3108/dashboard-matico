@@ -2200,6 +2200,7 @@ const App = () => {
     // --- DATABASE INTEGRATION START ---
     // Use dynamic USER_ID if available, else null
     const USER_ID = currentUser ? currentUser.user_id : null;
+    const [currentSubject, setCurrentSubject] = useState("MATEMATICA");
     const ACTIVE_GRADE = '1medio';
     const [userProfile, setUserProfile] = useState({
         xp: 0,
@@ -2328,7 +2329,6 @@ const App = () => {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [aiContent, setAiContent] = useState("");
     const [apiJson, setApiJson] = useState(null);
-    const [currentSubject, setCurrentSubject] = useState("MATEMATICA");
     const [dailyRoute, setDailyRoute] = useState(DEFAULT_DAILY_ROUTE);
     const [todayIndex, setTodayIndex] = useState(0);
 
