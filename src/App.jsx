@@ -32,6 +32,7 @@ import {
     MessageCircle,
     Settings,
     Flag,
+    FileText,
     PieChart,
     Server,
     Database,
@@ -42,7 +43,7 @@ import {
     HelpCircle,
     Loader,
     Image as ImageIcon, Maximize, Minimize
-    , FlaskConical, Globe
+    , FlaskConical, Globe, Trash2, Shield
 } from 'lucide-react';
 import {
     BarChart,
@@ -1876,6 +1877,85 @@ const PrepExamResultsModal = ({ isOpen, onClose, report, onReview }) => {
     );
 };
 
+const AdminNotebookFilesModal = ({
+    isOpen,
+    onClose,
+    files,
+    isLoading,
+    onRefresh,
+    onDelete
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[195] flex items-center justify-center p-4 bg-[#2B2E4A]/65 backdrop-blur-md">
+            <div className="bg-[#F4F7FF] w-full max-w-5xl rounded-[32px] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.35)] border-4 border-white">
+                <div className="bg-white px-6 py-5 border-b-2 border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 className="text-2xl font-black text-[#2B2E4A]">Administrador de PDFs</h3>
+                        <p className="text-sm font-bold text-[#9094A6]">Ver, abrir y eliminar cuadernos guardados en el VPS</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button onClick={onRefresh} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>
+                            RECARGAR
+                        </button>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <X className="w-6 h-6 text-gray-400" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-6 max-h-[75vh] overflow-y-auto">
+                    {isLoading ? (
+                        <div className="py-16 flex flex-col items-center justify-center text-[#9094A6]">
+                            <Loader className="w-8 h-8 animate-spin mb-3" />
+                            <p className="font-bold">Cargando archivos...</p>
+                        </div>
+                    ) : files.length === 0 ? (
+                        <div className="py-16 text-center text-[#9094A6]">
+                            <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                            <p className="font-bold">No hay PDFs guardados todavía.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {files.map((file) => (
+                                <div key={file.fileName} className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <p className="font-black text-[#2B2E4A] break-all">{file.fileName}</p>
+                                            <p className="text-xs text-[#9094A6] mt-1 break-all">{file.absolutePath}</p>
+                                            <div className="flex flex-wrap gap-3 mt-3 text-xs font-bold text-[#4B5563]">
+                                                <span>{file.sizeLabel}</span>
+                                                <span>{file.updatedAtLabel}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-3">
+                                            <a
+                                                href={file.publicUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
+                                            >
+                                                ABRIR <ExternalLink className="w-4 h-4" />
+                                            </a>
+                                            <button
+                                                onClick={() => onDelete(file)}
+                                                className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#FF4B4B] !border-[#D63E3E] hover:!bg-[#D63E3E]`}
+                                            >
+                                                ELIMINAR <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const App = () => {
     const [isCallingN8N, setIsCallingN8N] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState(""); // Helper state for multi-stage loading
@@ -1920,6 +2000,8 @@ const App = () => {
     // Use dynamic USER_ID if available, else null
     const USER_ID = currentUser ? currentUser.user_id : null;
     const [userProfile, setUserProfile] = useState({ xp: 0, streak: 0, level: 1, username: 'Estudiante' });
+    const ADMIN_EMAILS = ['joseantonio.olguinr@gmail.com'];
+    const isAdminUser = ADMIN_EMAILS.includes((currentUser?.email || '').toLowerCase());
 
     // 1. Fetch Profile on Load
     const fetchProfile = async () => {
@@ -2102,6 +2184,9 @@ const App = () => {
     const [prepExamQuestions, setPrepExamQuestions] = useState([]);
     const [prepExamReport, setPrepExamReport] = useState(null);
     const [showPrepExamResults, setShowPrepExamResults] = useState(false);
+    const [showAdminFilesModal, setShowAdminFilesModal] = useState(false);
+    const [adminNotebookFiles, setAdminNotebookFiles] = useState([]);
+    const [isLoadingAdminFiles, setIsLoadingAdminFiles] = useState(false);
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
     useEffect(() => {
@@ -2475,6 +2560,68 @@ const App = () => {
         } finally {
             setLoadingMessage('');
             setIsCallingN8N(false);
+        }
+    };
+
+    const loadAdminNotebookFiles = async () => {
+        if (!isAdminUser) return;
+
+        setIsLoadingAdminFiles(true);
+        try {
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'list_notebook_files',
+                    email: currentUser?.email,
+                    user_id: USER_ID
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No se pudieron cargar los PDFs');
+            }
+
+            setAdminNotebookFiles(data.files || []);
+        } catch (error) {
+            console.error('[ADMIN_FILES] Error listando PDFs:', error);
+            alert(`No pudimos cargar los PDFs guardados. ${error.message || ''}`);
+        } finally {
+            setIsLoadingAdminFiles(false);
+        }
+    };
+
+    const openAdminFilesModal = async () => {
+        setShowAdminFilesModal(true);
+        await loadAdminNotebookFiles();
+    };
+
+    const deleteAdminNotebookFile = async (file) => {
+        if (!file?.fileName) return;
+        if (!confirm(`¿Eliminar este PDF?\n\n${file.fileName}`)) return;
+
+        try {
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'delete_notebook_file',
+                    email: currentUser?.email,
+                    user_id: USER_ID,
+                    file_name: file.fileName
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No se pudo eliminar el archivo');
+            }
+
+            setAdminNotebookFiles(prev => prev.filter(item => item.fileName !== file.fileName));
+        } catch (error) {
+            console.error('[ADMIN_FILES] Error eliminando PDF:', error);
+            alert(`No pudimos eliminar el PDF. ${error.message || ''}`);
         }
     };
 
@@ -3942,6 +4089,15 @@ ${finalData.capsule}`;
                     onReview={requestPrepExamReview}
                 />
 
+                <AdminNotebookFilesModal
+                    isOpen={showAdminFilesModal}
+                    onClose={() => setShowAdminFilesModal(false)}
+                    files={adminNotebookFiles}
+                    isLoading={isLoadingAdminFiles}
+                    onRefresh={loadAdminNotebookFiles}
+                    onDelete={deleteAdminNotebookFile}
+                />
+
                 {/* SETTINGS MODAL */}
                 {settingsOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md animate-fade-in">
@@ -4072,6 +4228,31 @@ ${finalData.capsule}`;
                                         </button>
                                     </div>
                                 </div>
+
+                                {isAdminUser && (
+                                    <div className="space-y-2">
+                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Shield className="w-3 h-3" /> Administrador
+                                        </h4>
+                                        <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center border border-amber-100">
+                                                    <FileText className="w-4 h-4 text-amber-600" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">PDFs del cuaderno</span>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Ver y borrar archivos del VPS</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={openAdminFilesModal}
+                                                className={`${clayBtnAction} !bg-[#E67E22] !border-[#D35400] hover:!bg-[#D35400]`}
+                                            >
+                                                VER PDFS DEL VPS <FileText className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* LOGOUT */}
                                 <button

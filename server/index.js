@@ -91,6 +91,48 @@ const saveBase64ToLocalFile = async (base64File, fileName, subfolder = 'general'
     };
 };
 
+const getAdminEmails = () => {
+    return [
+        'joseantonio.olguinr@gmail.com',
+        (process.env.GMAIL_USER || '').toLowerCase()
+    ].filter(Boolean);
+};
+
+const isAdminEmail = (email = '') => {
+    return getAdminEmails().includes(String(email).toLowerCase());
+};
+
+const listNotebookFiles = async () => {
+    await fs.mkdir(NOTEBOOK_UPLOADS_DIR, { recursive: true });
+    const entries = await fs.readdir(NOTEBOOK_UPLOADS_DIR, { withFileTypes: true });
+
+    const files = await Promise.all(entries
+        .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.pdf'))
+        .map(async (entry) => {
+            const absolutePath = path.join(NOTEBOOK_UPLOADS_DIR, entry.name);
+            const stats = await fs.stat(absolutePath);
+
+            return {
+                fileName: entry.name,
+                absolutePath,
+                publicUrl: `/uploads/cuadernos/${entry.name}`,
+                sizeBytes: stats.size,
+                sizeLabel: `${(stats.size / 1024).toFixed(1)} KB`,
+                updatedAt: stats.mtime.toISOString(),
+                updatedAtLabel: stats.mtime.toLocaleString('es-CL')
+            };
+        }));
+
+    return files.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+};
+
+const deleteNotebookFile = async (fileName) => {
+    const safeName = path.basename(fileName);
+    const absolutePath = path.join(NOTEBOOK_UPLOADS_DIR, safeName);
+    await fs.unlink(absolutePath);
+    return absolutePath;
+};
+
 // --- HELPER: Subir imagen a Google Drive ---
 const uploadToDrive = async (base64File, fileName, folderId, mimeType = 'image/jpeg') => {
     try {
@@ -1090,6 +1132,28 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
                 level: Math.floor(totalXP / 100) + 1,
                 subject: subjectFilter
             });
+        }
+
+        if (currentAction === 'list_notebook_files') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            const files = await listNotebookFiles();
+            return res.json({ success: true, files });
+        }
+
+        if (currentAction === 'delete_notebook_file') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            if (!body.file_name) {
+                return res.status(400).json({ success: false, error: 'Debes indicar file_name' });
+            }
+
+            await deleteNotebookFile(body.file_name);
+            return res.json({ success: true, deleted: body.file_name });
         }
 
         // 9. VERIFICAR ESCRITURA A MANO — CUADERNO DE MATICO (NVIDIA Kimi K2.5 Vision)
