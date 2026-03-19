@@ -53,12 +53,14 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const videoRef = useRef(null);
     const streamRef = useRef(null);
+    const makeScanId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const buildScanAssets = async (source) => {
+        const scanId = makeScanId();
         const canvas = document.createElement('canvas');
         let width = source.width || source.videoWidth || 0;
         let height = source.height || source.videoHeight || 0;
-        const maxSize = 1400;
+        const maxSize = 1800;
 
         if (!width || !height) {
             throw new Error('No se pudo leer el documento');
@@ -75,15 +77,18 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
         canvas.width = Math.round(width);
         canvas.height = Math.round(height);
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.filter = 'grayscale(1) contrast(1.45) brightness(1.04)';
         ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+        ctx.filter = 'none';
 
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const pixels = imageData.data;
 
-        // Scanner-style cleanup for notebook pages: grayscale + strong contrast.
+        // Scanner-style cleanup for notebook pages: preserve strokes, clean background.
         for (let i = 0; i < pixels.length; i += 4) {
             const gray = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
-            const normalized = gray > 170 ? 255 : gray < 90 ? 0 : 245;
+            const contrasted = Math.round((gray - 122) * 1.38 + 122);
+            const normalized = gray > 230 ? 255 : gray < 70 ? 0 : Math.max(0, Math.min(255, contrasted));
             pixels[i] = normalized;
             pixels[i + 1] = normalized;
             pixels[i + 2] = normalized;
@@ -91,7 +96,8 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
 
         ctx.putImageData(imageData, 0, 0);
 
-        const scanDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const scanDataUrl = canvas.toDataURL('image/jpeg', 0.96);
+        const pdfDataUrl = canvas.toDataURL('image/png');
         const imageBase64 = scanDataUrl.split(',')[1];
 
         const { jsPDF } = await import('jspdf');
@@ -99,16 +105,18 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
         const pdf = new jsPDF({
             orientation,
             unit: 'px',
-            format: [canvas.width, canvas.height]
+            format: [canvas.width, canvas.height],
+            compress: true
         });
 
-        pdf.addImage(scanDataUrl, 'JPEG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
+        pdf.addImage(pdfDataUrl, 'PNG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
 
         return {
+            scanId,
             imageBase64,
             imageMimeType: 'image/jpeg',
             pdfBase64: pdf.output('datauristring').split(',')[1],
-            pdfFileName: `cuaderno_scan_${subject || 'materia'}_S${sessionId || 0}.pdf`
+            pdfFileName: `cuaderno_scan_${subject || 'materia'}_S${sessionId || 0}_${scanId}.pdf`
         };
     };
 
@@ -195,7 +203,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
         img.src = URL.createObjectURL(file);
     };
 
-    const uploadScan = async ({ imageBase64, imageMimeType, pdfBase64, pdfFileName }) => {
+    const uploadScan = async ({ scanId, imageBase64, imageMimeType, pdfBase64, pdfFileName }) => {
         setStatus('uploading');
         try {
             const controller = new AbortController();
@@ -211,6 +219,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
                     imageMimeType,
                     pdf: pdfBase64,
                     pdfFileName,
+                    scanId,
                     sessionId,
                     subject,
                     topic,

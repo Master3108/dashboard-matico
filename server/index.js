@@ -83,9 +83,20 @@ const saveBase64ToLocalFile = async (base64File, fileName, subfolder = 'general'
 
     const cleanName = sanitizeFileSegment(path.parse(fileName).name);
     const extension = path.extname(fileName) || '.bin';
-    const finalName = `${cleanName}${extension}`;
-    const absolutePath = path.join(targetDir, finalName);
+    let finalName = `${cleanName}${extension}`;
+    let suffix = 1;
 
+    while (true) {
+        try {
+            await fs.access(path.join(targetDir, finalName));
+            finalName = `${cleanName}_${Date.now()}_${suffix}${extension}`;
+            suffix += 1;
+        } catch {
+            break;
+        }
+    }
+
+    const absolutePath = path.join(targetDir, finalName);
     await fs.writeFile(absolutePath, Buffer.from(base64File, 'base64'));
 
     return {
@@ -1572,11 +1583,13 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             
             try {
                 if (pdf) {
-                    const fileName = pdfFileName || `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${Date.now()}.pdf`;
+                    const uniqueScanId = scanId || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                    const fileName = pdfFileName || `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${uniqueScanId}.pdf`;
                     storedFile = await saveBase64ToLocalFile(pdf, fileName, 'cuadernos');
                     console.log(`[LOCAL_STORAGE] ✅ PDF escaneado guardado: ${storedFile.absolutePath}`);
                 } else {
-                    const fileName = `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${Date.now()}.jpg`;
+                    const uniqueScanId = scanId || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                    const fileName = `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${uniqueScanId}.jpg`;
                     storedFile = await saveBase64ToLocalFile(image, fileName, 'cuadernos');
                     console.log(`[LOCAL_STORAGE] ✅ Imagen guardada: ${storedFile.absolutePath}`);
                 }
@@ -1730,6 +1743,8 @@ cron.schedule('0 9 * * *', async () => {
 }, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
+
+
 
 
 
