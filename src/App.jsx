@@ -4342,37 +4342,49 @@ ${finalData.capsule}`;
                                     </div>
                                 </div>
 
-                                <div className="rounded-[28px] border-2 border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-blue-50 p-4 shadow-[0_10px_24px_rgba(77,150,255,0.08)] mb-6">
-                                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                                        <div className="flex-1">
-                                            <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#4D96FF]">Ruta adaptativa · {adaptiveGradeLabel}</p>
-                                            <p className="text-lg md:text-xl font-black text-[#2B2E4A] mt-1">{adaptiveNextAction}</p>
-                                            <p className="text-sm font-bold text-[#9094A6] mt-2">
-                                                La app recuerda qué sesiones le cuestan más a tu hijo y arma el próximo repaso desde ahí.
-                                            </p>
+                                <div className="rounded-[28px] border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-5 md:p-6 shadow-[0_12px_28px_rgba(77,150,255,0.08)] mb-6">
+                                    <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                                        <div className="space-y-3">
+                                            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#4D96FF]">
+                                                <span className="h-2 w-2 rounded-full bg-[#4D96FF]" />
+                                                Ruta adaptativa · {adaptiveGradeLabel}
+                                            </div>
+                                            <div>
+                                                <p className="text-xl md:text-2xl font-black leading-tight text-[#2B2E4A]">
+                                                    {adaptiveNextAction}
+                                                </p>
+                                                <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688] max-w-xl">
+                                                    La app recuerda qué sesiones le cuestan más a tu hijo y arma el próximo repaso desde ahí.
+                                                </p>
+                                            </div>
                                         </div>
 
-                                        <button
-                                            onClick={() => openPrepExamSetup(adaptiveWeakSessions.map(item => Number(item.session)).filter(Boolean))}
-                                            className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
-                                        >
-                                            REPASAR SESIONES DÉBILES <ArrowRight className="w-5 h-5 ml-2" />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2 mt-4">
-                                        {adaptiveWeakSessions.length > 0 ? adaptiveWeakSessions.slice(0, 4).map((item) => (
-                                            <span
-                                                key={`${item.subject || currentSubject}-${item.session}`}
-                                                className="px-3 py-1.5 rounded-full bg-white border border-indigo-100 text-xs font-black text-[#4D96FF]"
+                                        <div className="flex flex-col items-stretch gap-4">
+                                            <button
+                                                onClick={() => openPrepExamSetup(adaptiveWeakSessions.map(item => Number(item.session)).filter(Boolean))}
+                                                className={`${clayBtnAction} !w-full !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6] !min-h-[58px] !text-base`}
                                             >
-                                                Sesión {item.session}: {item.topic || 'Repaso'}
-                                            </span>
-                                        )) : (
-                                            <span className="px-3 py-1.5 rounded-full bg-white border border-emerald-100 text-xs font-black text-emerald-600">
-                                                Sin sesiones débiles marcadas todavía
-                                            </span>
-                                        )}
+                                                <span>REPASAR SESIONES DÉBILES</span>
+                                                <ArrowRight className="w-5 h-5 ml-2" />
+                                            </button>
+
+                                            <div className="flex flex-wrap gap-2">
+                                                {adaptiveWeakSessions.length > 0 ? adaptiveWeakSessions.slice(0, 4).map((item) => (
+                                                    <span
+                                                        key={`${item.subject || currentSubject}-${item.session}`}
+                                                        className="inline-flex items-center gap-1.5 rounded-full bg-white border border-indigo-100 px-3 py-1.5 text-xs font-black text-[#4D96FF] shadow-sm"
+                                                    >
+                                                        <span className="h-2 w-2 rounded-full bg-[#4D96FF]/70" />
+                                                        Sesión {item.session}
+                                                    </span>
+                                                )) : (
+                                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-600 shadow-sm">
+                                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                                        Sin sesiones débiles marcadas todavía
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
