@@ -19,6 +19,7 @@ app.use(express.json({ limit: '10mb' }));
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const LOCAL_UPLOADS_DIR = path.join(__dirname, 'uploads');
+const NOTEBOOK_UPLOADS_DIR = path.join(LOCAL_UPLOADS_DIR, 'cuadernos');
 
 app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
 
@@ -582,6 +583,39 @@ const buildPrepExamAssignments = (sessionDetails = [], totalQuestions = 45) => {
     return assignments;
 };
 
+const normalizeQuestionSignature = (questionText = '', options = {}) => {
+    const clean = (value = '') => String(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\\frac/g, 'frac')
+        .replace(/\\sqrt/g, 'sqrt')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ');
+
+    const optionText = Object.values(options || {})
+        .map(clean)
+        .sort()
+        .join(' | ');
+
+    return `${clean(questionText)} || ${optionText}`;
+};
+
+const dedupePrepExamQuestions = (questions = []) => {
+    const seen = new Set();
+    const unique = [];
+
+    for (const question of questions) {
+        const signature = normalizeQuestionSignature(question.question, question.options);
+        if (!signature || seen.has(signature)) continue;
+        seen.add(signature);
+        unique.push(question);
+    }
+
+    return { unique, seen };
+};
+
 // ========================================================================
 // ENDPOINTS
 // ========================================================================
@@ -668,7 +702,7 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
             const baseTopic = `Prueba preparatoria acumulativa de ${subject} sobre estas sesiones:\n${sessionDetails.map(item => `- Sesión ${item.session}: ${item.topic}`).join('\n')}`;
             const { systemMsg, aiTemperature } = getQuizPromptConfig(subject, baseTopic, { includeSourceMetadata: true });
 
-            const fetchPrepBatch = async (batchIndex) => {
+            const fetchPrepBatch = async (batchIndex, avoidSignatures = []) => {
                 const batchAssignments = assignmentPlan.slice(batchIndex * 5, batchIndex * 5 + 5);
                 const batchInstructions = batchAssignments.map((item, index) => `${index + 1}. Sesión ${item.session} | Tema: ${item.topic}`).join('\n');
                 const batchPrompt = `${baseTopic}
@@ -679,6 +713,10 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
 - Debes seguir ESTA distribución exacta, una pregunta por línea:
 ${batchInstructions}
 - Si una sesión se repite, crea preguntas distintas entre sí.
+- NO repitas preguntas ya usadas ni reformules la misma idea con cambios menores.
+- Evita duplicados exactos y tambi�n preguntas casi iguales.
+- Si te muestro ejemplos previos o patrones similares, crea una variante nueva.
+- Preguntas previas a evitar: ${avoidSignatures.length > 0 ? avoidSignatures.slice(0, 10).join(' || ') : 'Ninguna'}
 - "source_session" y "source_topic" deben coincidir EXACTAMENTE con cada línea asignada.
 - Mantén alternativas A/B/C/D y explicación útil para corrección.
 - Responde SOLO con JSON válido.`;
@@ -711,11 +749,40 @@ ${batchInstructions}
                 }).filter(question => question.question);
             };
 
-            const batchResults = await Promise.all(
-                Array.from({ length: totalBatches }, (_, index) => fetchPrepBatch(index))
-            );
+            const batchResults = [];
+            let seenSignatures = [];
 
-            const questions = batchResults.flat().slice(0, questionCount);
+            for (let index = 0; index < totalBatches; index++) {
+                const batchQuestions = await fetchPrepBatch(index, seenSignatures);
+                const filteredBatch = [];
+
+                for (const question of batchQuestions) {
+                    const signature = normalizeQuestionSignature(question.question, question.options);
+                    if (!signature || seenSignatures.includes(signature)) continue;
+                    seenSignatures.push(signature);
+                    filteredBatch.push(question);
+                }
+
+                batchResults.push(filteredBatch);
+            }
+
+            let questions = batchResults.flat().slice(0, questionCount);
+
+            if (questions.length < questionCount) {
+                console.log(`[PREP_EXAM] Detectados ${questionCount - questions.length} huecos tras deduplicar. Generando relleno...`);
+                let refillIndex = 0;
+                while (questions.length < questionCount && refillIndex < 4) {
+                    const refillQuestions = await fetchPrepBatch(refillIndex, seenSignatures);
+                    for (const question of refillQuestions) {
+                        const signature = normalizeQuestionSignature(question.question, question.options);
+                        if (!signature || seenSignatures.includes(signature)) continue;
+                        seenSignatures.push(signature);
+                        questions.push(question);
+                        if (questions.length >= questionCount) break;
+                    }
+                    refillIndex += 1;
+                }
+            }
 
             if (questions.length < questionCount) {
                 throw new Error(`No se lograron generar las ${questionCount} preguntas de la prueba preparatoria`);
@@ -1338,3 +1405,5 @@ cron.schedule('0 9 * * *', async () => {
 }, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
+
+
