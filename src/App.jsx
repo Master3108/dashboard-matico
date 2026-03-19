@@ -3216,9 +3216,10 @@ const App = () => {
 1. Genera EXACTAMENTE 5 (CINCO) preguntas de selección múltiple (JSON).
 2. Nivel: ${config.instruction}.
 3. LOTE PARCIAL ${batchIndex + 1}/3.
-4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["A",...], "correctIndex": 0, "explanation": "..."}]}.
-5. FORMATO MATH: Usa LaTeX solo para fórmulas matemáticas ($x^2$). NO encierres oraciones de texto normal en signos de pesos.
-6. NO GENERES TEORIA. SOLO JSON.]`;
+4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["texto completo de la alternativa 1", "texto completo de la alternativa 2", "texto completo de la alternativa 3", "texto completo de la alternativa 4"], "correctIndex": 0, "explanation": "..."}]}.
+5. LAS OPCIONES DEBEN SER TEXTO REAL DE LA RESPUESTA, NUNCA solo letras A/B/C/D ni números sueltos.
+6. FORMATO MATH: Usa LaTeX solo para fórmulas matemáticas ($x^2$). NO encierres oraciones de texto normal en signos de pesos.
+7. NO GENERES TEORIA. SOLO JSON.]`;
 
             try {
                 const body = {
@@ -3311,6 +3312,11 @@ const App = () => {
             }
 
             // Formatear final (Limitado a 15)
+            const isPlaceholderOptionText = (value = '') => {
+                const normalized = String(value || '').trim().toUpperCase();
+                return ['A', 'B', 'C', 'D', 'AA', 'BB', 'CC', 'DD'].includes(normalized);
+            };
+
             const formattedQuestions = combinedQuestions.slice(0, 15).map(q => {
                 let optsObj = {};
                 let correctKey = 'A';
@@ -3332,9 +3338,20 @@ const App = () => {
                     question: q.question,
                     options: optsObj,
                     correct_answer: correctKey,
-                    explanation: q.explanation || "Verificación pendiente."
+                    explanation: q.explanation || "Verificaci??n pendiente."
                 };
             });
+
+            const placeholderQuestionCount = formattedQuestions.reduce((count, question) => {
+                const optionValues = Object.values(question.options || {});
+                const placeholderOptions = optionValues.filter(isPlaceholderOptionText);
+                return count + (placeholderOptions.length >= 3 ? 1 : 0);
+            }, 0);
+
+            if (placeholderQuestionCount > 0 && retryCount < 2) {
+                console.warn("[QUIZ] Detectadas " + placeholderQuestionCount + " preguntas con opciones placeholder. Reintentando lote " + level + "...");
+                return await generateQuizBatch(level, backgroundMode, retryCount + 1);
+            }
 
             return formattedQuestions;
 
