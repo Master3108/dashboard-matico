@@ -37,7 +37,16 @@ const playSound = (type) => {
     }
 };
 
-const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, subject, readingContent }) => {
+const wrapInlineMath = (text = '') => {
+    if (!text) return '';
+    if (text.includes('$')) return text;
+    if (/\\(frac|sqrt|pi|times|cdot|le|ge|ne|approx|left|right|sum|int|alpha|beta|gamma|theta|lambda|mu|sigma|Delta|Omega|pi|phi|rho|tau|infty|degree)\b/.test(text)) {
+        return `$${text}$`;
+    }
+    return text;
+};
+
+const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, subject, readingContent, quizMode = 'normal', onRequestNextBatch = null }) => {
 
     // MATH SAFETY NET: Validate questions on load
     const validateMath = (q) => {
@@ -163,6 +172,14 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
 
     const question = activeQuestions[currentQuestion];
     const progress = Math.round(((currentQuestion + 1) / activeQuestions.length) * 100);
+    const isPrepExamMode = quizMode === 'prep_exam';
+    const quizTitle = isPrepExamMode ? 'Prueba Preparatoria' : 'Quiz Interactivo';
+    const quizSubtitle = isPrepExamMode ? 'Sistema Kaizen · Básico / Avanzado / Crítico' : 'Matico AI';
+    const quizBadgeLabel = isPrepExamMode ? '45 PREGUNTAS · SESIONES SELECCIONADAS' : difficultyLevel.name;
+    const quizBadgeIcon = isPrepExamMode ? '🧭' : difficultyLevel.icon;
+    const quizBadgeClass = isPrepExamMode
+        ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white px-4 py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-md'
+        : `${difficultyLevel.color} text-white px-4 py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-md`;
 
     // TIMER LOGIC - Only runs if timeLeft is not null
     useEffect(() => {
@@ -265,6 +282,30 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
             // Reset timer based on next question's difficulty
             setTimeLeft(getTimeLimit(nextQuestionIndex));
         } else {
+            if (quizMode === 'prep_exam' && typeof onRequestNextBatch === 'function') {
+                (async () => {
+                    try {
+                        setIsThinking(true);
+                        const nextBatch = await onRequestNextBatch();
+                        if (Array.isArray(nextBatch) && nextBatch.length > 0) {
+                            setActiveQuestions(prev => [...prev, ...nextBatch.map(validateMath)]);
+                            setCurrentQuestion(currentQuestion + 1);
+                            setSelectedAnswer(null);
+                            setIsAnswered(false);
+                            setShowExplanation(false);
+                            setShowMiniLesson(false);
+                            setTimeLeft(getTimeLimit(currentQuestion + 1));
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('[PREP_EXAM] Error cargando siguiente tanda:', error);
+                    } finally {
+                        setIsThinking(false);
+                    }
+                    finishQuiz();
+                })();
+                return;
+            }
             finishQuiz();
         }
     };
@@ -372,18 +413,25 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                             <Brain className="w-6 h-6" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-black text-gray-800 leading-tight">Quiz Interactivo</h2>
-                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Matico AI</p>
+                            <h2 className="text-lg font-black text-gray-800 leading-tight">{quizTitle}</h2>
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">{quizSubtitle}</p>
                         </div>
 
-                        {/* PAES LEVEL BADGE */}
-                        <div className={`${difficultyLevel.color} text-white px-4 py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-md`}>
-                            <span>{difficultyLevel.icon}</span>
-                            <span>{difficultyLevel.name}</span>
+                        {/* QUIZ BADGE */}
+                        <div className={quizBadgeClass}>
+                            <span>{quizBadgeIcon}</span>
+                            <span>{quizBadgeLabel}</span>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {isPrepExamMode && (
+                            <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-purple-200 text-purple-700 font-black text-xs shadow-sm">
+                                <Zap className="w-4 h-4" />
+                                <span>Básico · Avanzado · Crítico</span>
+                            </div>
+                        )}
+
                         {/* LIVES DISPLAY */}
                         <LivesDisplay lives={lives} maxLives={MAX_LIVES} />
 
@@ -462,7 +510,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                                                     {key}
                                                 </div>
                                                 <div className="text-gray-700 font-medium">
-                                                    <MathRenderer text={value} />
+                                                    <MathRenderer text={wrapInlineMath(value)} />
                                                 </div>
                                             </div>
 

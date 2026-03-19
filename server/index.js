@@ -721,8 +721,6 @@ ${batchInstructions}
 - MantÃ©n alternativas A/B/C/D y explicaciÃ³n Ãºtil para correcciÃ³n.
 - Responde SOLO con JSON vÃ¡lido.`;
 
-                await new Promise(r => setTimeout(r, batchIndex * 250));
-
                 const comp = await openai.chat.completions.create({
                     model: 'deepseek-chat',
                     messages: [
@@ -798,6 +796,66 @@ ${batchInstructions}
             });
         }
 
+        if (currentAction === 'generate_prep_exam_batch') {
+            const subject = (body.subject || body.sujeto || 'MATEMATICA').toUpperCase();
+            const sessions = Array.isArray(body.sessions) ? body.sessions.map(Number).filter(Boolean) : [];
+            const topics = Array.isArray(body.topics) ? body.topics : [];
+            const batchIndex = Math.max(0, Number(body.batch_index) || 0);
+            const batchSize = Math.max(1, Math.min(5, Number(body.batch_size) || 5));
+            const totalBatches = Math.max(1, Number(body.total_batches) || 9);
+
+            const sessionDetails = sessions.map((session, index) => ({
+                session,
+                topic: topics[index] || `Sesión ${session}`
+            }));
+
+            if (!sessionDetails.length) {
+                return res.status(400).json({ success: false, error: 'Debes enviar al menos una sesión para la prueba preparatoria' });
+            }
+
+            const assignmentPlan = buildPrepExamAssignments(sessionDetails, totalBatches * batchSize);
+            const batchAssignments = assignmentPlan.slice(batchIndex * batchSize, batchIndex * batchSize + batchSize);
+            const baseTopic = `Prueba preparatoria acumulativa de ${subject} sobre estas sesiones:\n${sessionDetails.map(item => `- Sesión ${item.session}: ${item.topic}`).join('\n')}`;
+            const { systemMsg, aiTemperature } = getQuizPromptConfig(subject, baseTopic, { includeSourceMetadata: true });
+            const batchInstructions = batchAssignments.map((item, index) => `${index + 1}. Sesión ${item.session} | Tema: ${item.topic}`).join('\n');
+            const batchPrompt = `${baseTopic}\n\n[MODO PRUEBA PREPARATORIA DIAGNÓSTICA]\n- Genera EXACTAMENTE ${batchAssignments.length} preguntas.\n- Esta es la tanda ${batchIndex + 1} de ${totalBatches}.\n- Debes seguir ESTA distribución exacta, una pregunta por línea:\n${batchInstructions}\n- Si una sesión se repite, crea preguntas distintas entre sí.\n- NO repitas preguntas ya usadas ni reformules la misma idea con cambios menores.\n- Evita duplicados exactos y también preguntas casi iguales.\n- \"source_session\" y \"source_topic\" deben coincidir EXACTAMENTE con cada línea asignada.\n- Mantén alternativas A/B/C/D y explicación útil para corrección.\n- Responde SOLO con JSON válido.`;
+
+            const comp = await openai.chat.completions.create({
+                model: 'deepseek-chat',
+                messages: [
+                    { role: 'system', content: systemMsg },
+                    { role: 'user', content: batchPrompt }
+                ],
+                response_format: { type: 'json_object' },
+                temperature: aiTemperature
+            });
+
+            const parsed = JSON.parse(comp.choices[0].message.content);
+            const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
+
+            const normalizedQuestions = questions.map((question, index) => {
+                const assigned = batchAssignments[index] || batchAssignments[0];
+                return {
+                    question: question.question,
+                    options: question.options || {},
+                    correct_answer: (question.correct_answer || 'A').toUpperCase(),
+                    explanation: question.explanation || 'Explicación no disponible.',
+                    source_session: Number(question.source_session) || assigned.session,
+                    source_topic: question.source_topic || assigned.topic
+                };
+            }).filter(question => question.question);
+
+            return res.json({
+                success: true,
+                mode: 'diagnostic_review',
+                subject,
+                sessions,
+                batch_index: batchIndex,
+                batch_size: batchSize,
+                total_batches: totalBatches,
+                questions: normalizedQuestions
+            });
+        }
         // 2B. GENERAR QUIZ (5 preguntas por lote) â€” MULTIASIGNATURA
         if (currentAction.toLowerCase().includes('quiz') || currentAction.toLowerCase().includes('generar') || currentAction === 'generate_quiz') {
             const tema = body.tema || body.topic || 'Conocimiento General';
@@ -1405,5 +1463,9 @@ cron.schedule('0 9 * * *', async () => {
 }, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`ðŸš€ Servidor Matico Kaizen en puerto ${PORT}`));
+
+
+
+
 
 

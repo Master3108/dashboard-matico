@@ -2184,6 +2184,10 @@ const App = () => {
     const [prepExamQuestions, setPrepExamQuestions] = useState([]);
     const [prepExamReport, setPrepExamReport] = useState(null);
     const [showPrepExamResults, setShowPrepExamResults] = useState(false);
+    const [prepExamLoadedCount, setPrepExamLoadedCount] = useState(0);
+    const prepExamBatchRef = useRef(0);
+    const prepExamNextBatchPromiseRef = useRef(null);
+    const prepExamBackgroundLoadRef = useRef(false);
     const [showAdminFilesModal, setShowAdminFilesModal] = useState(false);
     const [adminNotebookFiles, setAdminNotebookFiles] = useState([]);
     const [isLoadingAdminFiles, setIsLoadingAdminFiles] = useState(false);
@@ -2447,14 +2451,16 @@ const App = () => {
         }
 
         setIsCallingN8N(true);
-        setLoadingMessage('Armando prueba preparatoria (45 preguntas en bloques de 5)...');
+        setLoadingMessage('Armando la primera tanda de 5 preguntas...');
 
         try {
             const questionCount = 45;
+            const totalBatches = Math.ceil(questionCount / 5);
             const config = {
                 subject: currentSubject,
                 sessions: sortedSessions,
                 questionCount,
+                totalBatches,
                 topics: selectedDetails.map(item => item.topic),
                 sessionDetails: selectedDetails.map(item => ({
                     session: item.session,
@@ -2476,35 +2482,71 @@ const App = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'generate_prep_exam',
+                    action: 'generate_prep_exam_batch',
                     user_id: USER_ID,
                     subject: currentSubject,
                     sessions: sortedSessions,
                     topics: selectedDetails.map(item => item.topic),
-                    question_count: questionCount,
+                    batch_index: 0,
+                    batch_size: 5,
+                    total_batches: totalBatches,
                     mode: 'diagnostic_review'
                 })
             });
 
             const text = await response.text();
             const parsed = parseN8NResponse(text);
-            const generatedQuestions = (parsed.questions || []).map((question, index) => ({
+            const firstBatchQuestions = (parsed.questions || []).map((question, index) => ({
                 ...question,
                 source_session: Number(question.source_session) || selectedDetails[index % selectedDetails.length]?.session || sortedSessions[0],
                 source_topic: question.source_topic || selectedDetails.find(item => item.session === Number(question.source_session))?.topic || selectedDetails[index % selectedDetails.length]?.topic || ''
             }));
 
-            if (!generatedQuestions.length) {
-                throw new Error('La IA no devolvió preguntas válidas para la prueba preparatoria.');
+            if (!firstBatchQuestions.length) {
+                throw new Error('La IA no devolvió preguntas válidas para la primera tanda.');
             }
 
+            prepExamBatchRef.current = 1;
+            prepExamNextBatchPromiseRef.current = null;
+            prepExamBackgroundLoadRef.current = false;
             setPrepExamConfig(config);
-            setPrepExamQuestions(generatedQuestions);
+            setPrepExamQuestions(firstBatchQuestions);
+            setPrepExamLoadedCount(firstBatchQuestions.length);
             setPrepExamReport(null);
             setShowPrepExamSetup(false);
             setIsPrepExamMode(true);
-            setQuizQuestions(generatedQuestions);
+            setQuizQuestions(firstBatchQuestions);
             setShowInteractiveQuiz(true);
+            setLoadingMessage('');
+            setIsCallingN8N(false);
+
+            if (totalBatches > 1) {
+                prepExamBackgroundLoadRef.current = true;
+                prepExamNextBatchPromiseRef.current = fetch(activeWebhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'generate_prep_exam_batch',
+                        user_id: USER_ID,
+                        subject: currentSubject,
+                        sessions: sortedSessions,
+                        topics: selectedDetails.map(item => item.topic),
+                        batch_index: 1,
+                        batch_size: 5,
+                        total_batches: totalBatches,
+                        mode: 'diagnostic_review'
+                    })
+                })
+                    .then(async (batchResponse) => {
+                        const batchText = await batchResponse.text();
+                        return parseN8NResponse(batchText);
+                    })
+                    .catch((error) => {
+                        console.error('[PREP_EXAM] Error precargando siguiente tanda:', error);
+                        return null;
+                    });
+            }
+            return;
         } catch (error) {
             console.error('[PREP_EXAM] Error iniciando prueba:', error);
             alert(`No pudimos generar la prueba preparatoria. ${error.message || 'Intenta nuevamente.'}`);
@@ -2512,6 +2554,76 @@ const App = () => {
             setLoadingMessage('');
             setIsCallingN8N(false);
         }
+    };
+
+    const requestNextPrepExamBatch = async () => {
+        if (!prepExamConfig) return [];
+        const nextBatchIndex = prepExamBatchRef.current;
+        const totalBatches = prepExamConfig.totalBatches || Math.ceil((prepExamConfig.questionCount || 45) / 5);
+
+        if (nextBatchIndex >= totalBatches) return [];
+
+        let parsed = null;
+        if (prepExamNextBatchPromiseRef.current) {
+            parsed = await prepExamNextBatchPromiseRef.current;
+        } else {
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'generate_prep_exam_batch',
+                    user_id: USER_ID,
+                    subject: prepExamConfig.subject,
+                    sessions: prepExamConfig.sessions,
+                    topics: prepExamConfig.sessionDetails.map(item => item.topic),
+                    batch_index: nextBatchIndex,
+                    batch_size: 5,
+                    total_batches: totalBatches,
+                    mode: 'diagnostic_review'
+                })
+            });
+            const text = await response.text();
+            parsed = parseN8NResponse(text);
+        }
+
+        prepExamBatchRef.current += 1;
+        const nextQuestions = (parsed?.questions || []).map((question, index) => ({
+            ...question,
+            source_session: Number(question.source_session) || prepExamConfig.sessions[index % prepExamConfig.sessions.length],
+            source_topic: question.source_topic || prepExamConfig.sessionDetails.find(item => item.session === Number(question.source_session))?.topic || ''
+        }));
+
+        if (nextQuestions.length > 0) {
+            setPrepExamQuestions(prev => [...prev, ...nextQuestions]);
+            setPrepExamLoadedCount(prev => prev + nextQuestions.length);
+        }
+
+        if (nextBatchIndex + 1 < totalBatches) {
+            prepExamNextBatchPromiseRef.current = fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'generate_prep_exam_batch',
+                    user_id: USER_ID,
+                    subject: prepExamConfig.subject,
+                    sessions: prepExamConfig.sessions,
+                    topics: prepExamConfig.sessionDetails.map(item => item.topic),
+                    batch_index: nextBatchIndex + 1,
+                    batch_size: 5,
+                    total_batches: totalBatches,
+                    mode: 'diagnostic_review'
+                })
+            })
+                .then(async (batchResponse) => parseN8NResponse(await batchResponse.text()))
+                .catch((error) => {
+                    console.error('[PREP_EXAM] Error precargando siguiente tanda:', error);
+                    return null;
+                });
+        } else {
+            prepExamNextBatchPromiseRef.current = null;
+        }
+
+        return nextQuestions;
     };
 
     const requestPrepExamReview = async () => {
@@ -2545,6 +2657,7 @@ const App = () => {
             const reviewContent = parsed.output || parsed.review || parsed.summary || JSON.stringify(parsed, null, 2);
 
             setAiContent(reviewContent);
+            setShowPrepExamResults(false);
             setAiModalOpen(true);
 
             await saveProgress('prep_exam_reviewed', {
@@ -4032,6 +4145,8 @@ ${finalData.capsule}`;
                             sessionId={isPrepExamMode ? (prepExamConfig?.sessions || []).join(',') : todayIndex + 1}
                             subject={currentSubject}
                             readingContent=""
+                            quizMode={isPrepExamMode ? 'prep_exam' : 'normal'}
+                            onRequestNextBatch={isPrepExamMode ? requestNextPrepExamBatch : null}
                             onComplete={async (score, wrongAnswers) => {
                                 if (isPrepExamMode) {
                                     const finalWrongAnswers = wrongAnswers || [];
@@ -4060,6 +4175,10 @@ ${finalData.capsule}`;
                                 if (isPrepExamMode) {
                                     setIsPrepExamMode(false);
                                     setQuizQuestions([]);
+                                    setPrepExamLoadedCount(0);
+                                    prepExamBatchRef.current = 0;
+                                    prepExamNextBatchPromiseRef.current = null;
+                                    prepExamBackgroundLoadRef.current = false;
                                     return;
                                 }
                                 window.location.reload();
