@@ -10,6 +10,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions } from './generatedQuestionBank.js';
+import { recordAdaptiveEvent, getAdaptiveSnapshot } from './adaptiveProfileStore.js';
+import { getCurriculumContext } from './curriculumCatalog.js';
 
 dotenv.config();
 
@@ -791,6 +793,7 @@ ${batchInstructions}
                 subject,
                 source_action: 'generate_prep_exam',
                 source_mode: 'prep_exam',
+                grade: body.grade || '1medio',
                 source_topic: sessionDetails.map(item => item.topic).join(' | '),
                 metadata: {
                     sessions,
@@ -862,6 +865,7 @@ ${batchInstructions}
                 subject,
                 source_action: 'generate_prep_exam_batch',
                 source_mode: 'prep_exam',
+                grade: body.grade || '1medio',
                 source_topic: sessionDetails.map(item => item.topic).join(' | '),
                 metadata: {
                     batch_index: batchIndex,
@@ -1052,6 +1056,7 @@ Estructura JSON:
                 subject,
                 source_action: 'generate_quiz',
                 source_mode: 'quiz',
+                grade: body.grade || '1medio',
                 source_topic: tema,
                 source_session: body.session || data.session || '',
                 metadata: {
@@ -1124,6 +1129,9 @@ Entrega:
         // 4. GUARDAR PROGRESO
         if (currentAction === 'save_progress' || currentAction === 'save') {
             const eventType = data.type || 'progress_update';
+            const grade = data.grade || body.grade || '1medio';
+            const totalQuestions = data.total_questions || data.total || data.question_count || (eventType === 'prep_exam_completed' ? 45 : (eventType === 'phase_completed' ? 15 : ''));
+            const topic = data.topic || data.session_topic || data.source_topic || body.topic || '';
             console.log('[SAVE_PROGRESS_IN]', JSON.stringify({
                 currentAction,
                 user_id: user_id || '',
@@ -1141,6 +1149,20 @@ Entrega:
                 score: data.score || '',
                 xp: data.xp_reward || ''
             });
+            await recordAdaptiveEvent({
+                user_id,
+                grade,
+                subject: data.subject || '',
+                session: data.session || '',
+                topic,
+                event_type: eventType,
+                phase: data.phase || '',
+                levelName: data.levelName || '',
+                score: data.score || '',
+                total: totalQuestions,
+                xp: data.xp_reward || '',
+                metadata: data
+            }).catch((err) => console.error('[ADAPTIVE_PROFILE] Error actualizando perfil:', err.message));
             console.log('[SAVE_PROGRESS_OK]', JSON.stringify({
                 user_id: user_id || '',
                 eventType,
@@ -1152,11 +1174,13 @@ Entrega:
                 score: data.score || '',
                 xp_reward: data.xp_reward || ''
             }));
-            return res.json({ success: true, message: `Evento ${eventType} registrado` });
+            return res.json({ success: true, message: 'Evento ' + eventType + ' registrado' });
         }
 
         // 5. GET PROFILE
         if (currentAction === 'get_profile') {
+            const grade = body.grade || '1medio';
+            const subject = body.subject || '';
             const response = await sheets.spreadsheets.values.get({
                 spreadsheetId: SPREADSHEET_ID, range: 'progress_log!A:J',
             });
@@ -1168,15 +1192,21 @@ Entrega:
                 if (row[4] === 'session_completed') sessionsCompleted++;
             });
             const userData = await getUserFromSheet(sheets, user_id);
+            const adaptive = await getAdaptiveSnapshot({ user_id, grade, subject });
+            const curriculum_context = await getCurriculumContext(grade, subject);
             return res.json({
                 xp: totalXP, puntos: totalXP, streak: 0, racha: 0,
                 level: Math.floor(totalXP / 100) + 1, nivel: Math.floor(totalXP / 100) + 1,
                 username: userData?.nombre || 'Estudiante', nombre: userData?.nombre || 'Estudiante',
-                sessions_completed: sessionsCompleted
+                sessions_completed: sessionsCompleted,
+                grade,
+                subject,
+                adaptive,
+                curriculum_context
             });
         }
 
-        // 6. ENVIAR REPORTE DE SESIÓN (email al alumno + apoderado CON ANÁLISIS IA)
+        // 6. ENVIAR REPORTE DE SESI        // 6. ENVIAR REPORTE DE SESIÓN (email al alumno + apoderado CON ANÁLISIS IA)
         if (currentAction === 'send_session_report' || currentAction === 'notify_parent') {
             const userData = await getUserFromSheet(sheets, user_id);
             if (userData) {
@@ -1527,6 +1557,8 @@ cron.schedule('0 9 * * *', async () => {
 }, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
+
+
 
 
 

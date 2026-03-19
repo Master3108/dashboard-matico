@@ -2200,7 +2200,15 @@ const App = () => {
     // --- DATABASE INTEGRATION START ---
     // Use dynamic USER_ID if available, else null
     const USER_ID = currentUser ? currentUser.user_id : null;
-    const [userProfile, setUserProfile] = useState({ xp: 0, streak: 0, level: 1, username: 'Estudiante' });
+    const ACTIVE_GRADE = '1medio';
+    const [userProfile, setUserProfile] = useState({
+        xp: 0,
+        streak: 0,
+        level: 1,
+        username: 'Estudiante',
+        adaptive: null,
+        curriculum_context: null
+    });
     const ADMIN_EMAILS = ['joseantonio.olguinr@gmail.com'];
     const isAdminUser = ADMIN_EMAILS.includes((currentUser?.email || '').toLowerCase());
 
@@ -2212,7 +2220,7 @@ const App = () => {
             const response = await fetch(`${activeWebhookUrl}?accion=get_profile&user_id=${USER_ID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accion: 'get_profile', user_id: USER_ID })
+                body: JSON.stringify({ accion: 'get_profile', user_id: USER_ID, grade: ACTIVE_GRADE, subject: currentSubject })
             });
 
             const text = await response.text();
@@ -2226,7 +2234,11 @@ const App = () => {
                     xp: data.xp || data.puntos || 0,
                     streak: data.streak || data.racha || 0,
                     level: data.level || data.nivel || 1,
-                    username: data.username || data.nombre || currentUser?.username || 'Estudiante'
+                    username: data.username || data.nombre || currentUser?.username || 'Estudiante',
+                    adaptive: data.adaptive || null,
+                    curriculum_context: data.curriculum_context || null,
+                    grade: data.grade || ACTIVE_GRADE,
+                    subject: data.subject || currentSubject
                 };
                 setUserProfile(normalized);
                 console.log("[PROFILE] Updated state:", normalized);
@@ -2238,14 +2250,14 @@ const App = () => {
 
     useEffect(() => {
         if (USER_ID) fetchProfile();
-    }, [activeWebhookUrl, USER_ID]);
+    }, [activeWebhookUrl, USER_ID, currentSubject]);
 
     // 2. Save Progress Function
     const saveProgress = async (type, payload) => {
         console.log("SAVING PROGRESS:", type, payload);
 
         // Optimistic UI Update for XP
-        if (type === 'xp_gain' || type === 'theory_completed' || type === 'phase_completed') {
+        if (type === 'xp_gain' || type === 'theory_completed' || type === 'phase_completed' || type === 'prep_exam_completed' || type === 'prep_exam_reviewed') {
             const amount = payload.xp_reward || payload.amount || 0;
             setUserProfile(prev => ({ ...prev, xp: (prev.xp || 0) + amount }));
         }
@@ -2261,6 +2273,8 @@ const App = () => {
                     data: {
                         type: type,
                         subject: currentSubject,
+                        grade: ACTIVE_GRADE,
+                        topic: payload.topic || TODAYS_SESSION.topic,
                         timestamp: new Date().toISOString(),
                         ...payload
                     }
@@ -2550,10 +2564,20 @@ const App = () => {
         video_link: TODAYS_SESSION.videoLink
     };
 
-    const openPrepExamSetup = () => {
+    const adaptiveSnapshot = userProfile?.adaptive || null;
+    const adaptiveWeakSessions = Array.isArray(adaptiveSnapshot?.weakSessions) ? adaptiveSnapshot.weakSessions : [];
+    const adaptiveNextAction = adaptiveSnapshot?.nextAction || 'Sigue con la ruta de hoy para ir construyendo dominio.';
+    const adaptiveGradeLabel = userProfile?.curriculum_context?.grade_label || '1° medio';
+
+    const openPrepExamSetup = (seedSessions = []) => {
         setPrepExamReport(null);
         setShowPrepExamResults(false);
-        setSelectedPrepSessions(prev => (prev.length > 0 ? prev : [TODAYS_SESSION.session]));
+        const normalizedSeeds = [...new Set((seedSessions || []).map(Number).filter(Boolean))].sort((a, b) => a - b);
+        setSelectedPrepSessions(prev => (
+            normalizedSeeds.length > 0
+                ? normalizedSeeds
+                : (prev.length > 0 ? prev : [TODAYS_SESSION.session])
+        ));
         setShowPrepExamSetup(true);
     };
 
@@ -2675,6 +2699,7 @@ const App = () => {
 
             await saveProgress('prep_exam_started', {
                 subject: currentSubject,
+                grade: ACTIVE_GRADE,
                 session: sortedSessions.join(','),
                 selected_sessions: sortedSessions.join(','),
                 topic: selectedDetails.map(item => `S${item.session}: ${item.topic}`).join(' | '),
@@ -2689,6 +2714,7 @@ const App = () => {
                     action: 'generate_prep_exam_batch',
                     user_id: USER_ID,
                     subject: currentSubject,
+                    grade: ACTIVE_GRADE,
                     sessions: sortedSessions,
                     topics: selectedDetails.map(item => item.topic),
                     batch_index: 0,
@@ -2733,6 +2759,7 @@ const App = () => {
                         action: 'generate_prep_exam_batch',
                         user_id: USER_ID,
                         subject: currentSubject,
+                        grade: ACTIVE_GRADE,
                         sessions: sortedSessions,
                         topics: selectedDetails.map(item => item.topic),
                         batch_index: 1,
@@ -2778,6 +2805,7 @@ const App = () => {
                     action: 'generate_prep_exam_batch',
                     user_id: USER_ID,
                     subject: prepExamConfig.subject,
+                    grade: ACTIVE_GRADE,
                     sessions: prepExamConfig.sessions,
                     topics: prepExamConfig.sessionDetails.map(item => item.topic),
                     batch_index: nextBatchIndex,
@@ -2810,6 +2838,7 @@ const App = () => {
                     action: 'generate_prep_exam_batch',
                     user_id: USER_ID,
                     subject: prepExamConfig.subject,
+                    grade: ACTIVE_GRADE,
                     sessions: prepExamConfig.sessions,
                     topics: prepExamConfig.sessionDetails.map(item => item.topic),
                     batch_index: nextBatchIndex + 1,
@@ -2845,6 +2874,7 @@ const App = () => {
                     action: 'generate_prep_exam_review',
                     user_id: USER_ID,
                     subject: prepExamConfig.subject,
+                    grade: ACTIVE_GRADE,
                     sessions: prepExamConfig.sessions,
                     weak_sessions: weakSessions,
                     wrong_answers: prepExamQuestions.filter(q => weakSessions.includes(q.source_session)).slice(0, 8).map(q => ({
@@ -2864,11 +2894,12 @@ const App = () => {
             setShowPrepExamResults(false);
             setAiModalOpen(true);
 
-            await saveProgress('prep_exam_reviewed', {
-                subject: prepExamConfig.subject,
-                session: prepExamConfig.sessions.join(','),
-                selected_sessions: prepExamConfig.sessions.join(','),
-                score: prepExamReport.totalCorrect,
+                await saveProgress('prep_exam_reviewed', {
+                    subject: prepExamConfig.subject,
+                    grade: ACTIVE_GRADE,
+                    session: prepExamConfig.sessions.join(','),
+                    selected_sessions: prepExamConfig.sessions.join(','),
+                    score: prepExamReport.totalCorrect,
                 xp_reward: 25
             });
         } catch (error) {
@@ -4308,6 +4339,40 @@ ${finalData.capsule}`;
                                     </div>
                                     <div className="w-14 h-14 rounded-full bg-[#E0E5EC] flex items-center justify-center">
                                         <TODAYS_SUBJECT.icon className="w-8 h-8 animate-float" style={{ color: TODAYS_SUBJECT.color }} />
+                                    </div>
+                                </div>
+
+                                <div className="rounded-[28px] border-2 border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-blue-50 p-4 shadow-[0_10px_24px_rgba(77,150,255,0.08)] mb-6">
+                                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                        <div className="flex-1">
+                                            <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#4D96FF]">Ruta adaptativa · {adaptiveGradeLabel}</p>
+                                            <p className="text-lg md:text-xl font-black text-[#2B2E4A] mt-1">{adaptiveNextAction}</p>
+                                            <p className="text-sm font-bold text-[#9094A6] mt-2">
+                                                La app recuerda qué sesiones le cuestan más a tu hijo y arma el próximo repaso desde ahí.
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={() => openPrepExamSetup(adaptiveWeakSessions.map(item => Number(item.session)).filter(Boolean))}
+                                            className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
+                                        >
+                                            REPASAR SESIONES DÉBILES <ArrowRight className="w-5 h-5 ml-2" />
+                                        </button>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 mt-4">
+                                        {adaptiveWeakSessions.length > 0 ? adaptiveWeakSessions.slice(0, 4).map((item) => (
+                                            <span
+                                                key={`${item.subject || currentSubject}-${item.session}`}
+                                                className="px-3 py-1.5 rounded-full bg-white border border-indigo-100 text-xs font-black text-[#4D96FF]"
+                                            >
+                                                Sesión {item.session}: {item.topic || 'Repaso'}
+                                            </span>
+                                        )) : (
+                                            <span className="px-3 py-1.5 rounded-full bg-white border border-emerald-100 text-xs font-black text-emerald-600">
+                                                Sin sesiones débiles marcadas todavía
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
 
