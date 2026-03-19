@@ -345,6 +345,134 @@ const appendProgressToSheetOrThrow = async (sheets, {
         throw err;
     }
 };
+const ADAPTIVE_PROFILE_SHEET = 'adaptive_profile_log';
+
+const columnLabel = (index) => {
+    let n = Number(index) || 0;
+    let label = '';
+    while (n > 0) {
+        const rem = (n - 1) % 26;
+        label = String.fromCharCode(65 + rem) + label;
+        n = Math.floor((n - 1) / 26);
+    }
+    return label || 'A';
+};
+
+const ensureSheetTabExists = async (sheets, title, headers = []) => {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+    const exists = (meta.data.sheets || []).some((sheet) => sheet.properties?.title === title);
+    if (exists) return;
+
+    await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title } } }] }
+    });
+
+    if (headers.length > 0) {
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: SPREADSHEET_ID,
+            range: title + '!A1:' + columnLabel(headers.length) + '1',
+            valueInputOption: 'RAW',
+            requestBody: { values: [headers] }
+        });
+    }
+};
+
+const appendAdaptiveSnapshotToSheetOrThrow = async (sheets, {
+    user_id = '',
+    grade = '',
+    subject = '',
+    session = '',
+    topic = '',
+    event_type = '',
+    mastery = '',
+    totalAttempts = '',
+    totalCorrect = '',
+    totalQuestions = '',
+    nextAction = '',
+    weakSessions = [],
+    strongSessions = [],
+    sourceMode = ''
+}) => {
+    const timestamp = new Date().toISOString();
+    const headers = [
+        'timestamp',
+        'user_id',
+        'grade',
+        'subject',
+        'session',
+        'topic',
+        'event_type',
+        'mastery',
+        'total_attempts',
+        'total_correct',
+        'total_questions',
+        'next_action',
+        'weak_sessions',
+        'strong_sessions',
+        'source_mode'
+    ];
+    const values = [
+        timestamp,
+        user_id || "",
+        grade || "",
+        subject || "",
+        session || "",
+        topic || "",
+        event_type || "",
+        mastery || 0,
+        totalAttempts || 0,
+        totalCorrect || 0,
+        totalQuestions || 0,
+        nextAction || "",
+        JSON.stringify(weakSessions || []),
+        JSON.stringify(strongSessions || []),
+        sourceMode || ""
+    ];
+
+    await ensureSheetTabExists(sheets, ADAPTIVE_PROFILE_SHEET, headers);
+
+    try {
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: SPREADSHEET_ID,
+            range: ADAPTIVE_PROFILE_SHEET + '!A:O',
+            valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [values] },
+        });
+        console.log("[ADAPTIVE_SHEET_APPEND_OK]", JSON.stringify({
+            timestamp,
+            user_id,
+            grade,
+            subject,
+            session,
+            topic,
+            event_type,
+            mastery,
+            totalAttempts,
+            totalCorrect,
+            totalQuestions,
+            sourceMode
+        }));
+    } catch (err) {
+        console.error("[ADAPTIVE_SHEET_APPEND_FAIL]", JSON.stringify({
+            timestamp,
+            user_id,
+            grade,
+            subject,
+            session,
+            topic,
+            event_type,
+            mastery,
+            totalAttempts,
+            totalCorrect,
+            totalQuestions,
+            sourceMode,
+            error: err.message
+        }));
+        throw err;
+    }
+};
+
 // --- HELPER: Generar HTML bonito para correos ---
 const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAnswers = [], aiAnalysis = '') => {
     const successRate = Math.round((stats.correct / 45) * 100);
@@ -1172,7 +1300,7 @@ Entrega:
                 totalQuestions,
                 sourceMode: data.source_mode || data.mode || ''
             });
-            await recordAdaptiveEvent({
+            const adaptiveResult = await recordAdaptiveEvent({
                 user_id,
                 grade,
                 subject: data.subject || '',
@@ -1185,7 +1313,29 @@ Entrega:
                 total: totalQuestions,
                 xp: data.xp_reward || '',
                 metadata: data
-            }).catch((err) => console.error('[ADAPTIVE_PROFILE] Error actualizando perfil:', err.message));
+            }).catch((err) => {
+                console.error('[ADAPTIVE_PROFILE] Error actualizando perfil:', err.message);
+                return null;
+            });
+
+            if (adaptiveResult?.summary) {
+                await appendAdaptiveSnapshotToSheetOrThrow(sheets, {
+                    user_id,
+                    grade,
+                    subject: data.subject || '',
+                    session: data.session || '',
+                    topic,
+                    event_type: eventType,
+                    mastery: adaptiveResult.summary.mastery || 0,
+                    totalAttempts: adaptiveResult.summary.totalAttempts || 0,
+                    totalCorrect: adaptiveResult.summary.totalCorrect || 0,
+                    totalQuestions: adaptiveResult.summary.totalQuestions || totalQuestions || 0,
+                    nextAction: adaptiveResult.summary.nextAction || '',
+                    weakSessions: adaptiveResult.summary.weakSessions || [],
+                    strongSessions: adaptiveResult.summary.strongSessions || [],
+                    sourceMode: data.source_mode || data.mode || ''
+                }).catch((err) => console.error('[ADAPTIVE_SHEET] Error guardando resumen:', err.message));
+            }
             console.log('[SAVE_PROGRESS_OK]', JSON.stringify({
                 user_id: user_id || '',
                 eventType,
