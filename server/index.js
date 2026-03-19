@@ -56,7 +56,7 @@ const getSheetsClient = async () => {
 };
 
 // --- HELPER: Subir imagen a Google Drive ---
-const uploadToDrive = async (base64Image, fileName, folderId) => {
+const uploadToDrive = async (base64File, fileName, folderId, mimeType = 'image/jpeg') => {
     try {
         const auth = new google.auth.GoogleAuth({
             credentials: getGoogleCredentials(),
@@ -64,9 +64,9 @@ const uploadToDrive = async (base64Image, fileName, folderId) => {
         });
         const drive = google.drive({ version: 'v3', auth });
 
-        const buffer = Buffer.from(base64Image, 'base64');
+        const buffer = Buffer.from(base64File, 'base64');
         const media = {
-            mimeType: 'image/jpeg',
+            mimeType,
             body: Readable.from(buffer),
         };
 
@@ -809,7 +809,15 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
 
         // 9. VERIFICAR ESCRITURA A MANO — CUADERNO DE MATICO (NVIDIA Kimi K2.5 Vision)
         if (currentAction === 'verify_handwriting') {
-            const { image, sessionId, topic: cuadernoTopic, readingContent: cuadernoReading } = body;
+            const {
+                image,
+                imageMimeType,
+                pdf,
+                pdfFileName,
+                sessionId,
+                topic: cuadernoTopic,
+                readingContent: cuadernoReading
+            } = body;
             const cuadernoSubject = (body.subject || 'MATEMATICA').toUpperCase();
 
             if (!image) {
@@ -823,9 +831,15 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             const DRIVE_FOLDER_ID = '1Tia5H-gpnJLMoHu_rBMbIkFaDNVkQygs';
             
             try {
-                const fileName = `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${Date.now()}.jpg`;
-                driveFileId = await uploadToDrive(image, fileName, DRIVE_FOLDER_ID);
-                console.log(`[DRIVE] ✅ Imagen guardada: ${driveFileId}`);
+                if (pdf) {
+                    const fileName = pdfFileName || `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${Date.now()}.pdf`;
+                    driveFileId = await uploadToDrive(pdf, fileName, DRIVE_FOLDER_ID, 'application/pdf');
+                    console.log(`[DRIVE] ✅ PDF escaneado guardado: ${driveFileId}`);
+                } else {
+                    const fileName = `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${Date.now()}.jpg`;
+                    driveFileId = await uploadToDrive(image, fileName, DRIVE_FOLDER_ID, imageMimeType || 'image/jpeg');
+                    console.log(`[DRIVE] ✅ Imagen guardada: ${driveFileId}`);
+                }
             } catch (driveErr) {
                 console.error(`[DRIVE] ❌ Error subiendo: ${driveErr.message}`);
             }
@@ -834,7 +848,7 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             res.json({
                 success: true,
                 background: true,
-                message: '¡Imagen guardada! Matico la analizará mientras sigues con el quiz.',
+                message: '¡Documento escaneado guardado! Matico lo analizará mientras sigues con el quiz.',
                 drive_file_id: driveFileId
             });
 

@@ -54,6 +54,64 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
     const videoRef = useRef(null);
     const streamRef = useRef(null);
 
+    const buildScanAssets = async (source) => {
+        const canvas = document.createElement('canvas');
+        let width = source.width || source.videoWidth || 0;
+        let height = source.height || source.videoHeight || 0;
+        const maxSize = 1400;
+
+        if (!width || !height) {
+            throw new Error('No se pudo leer el documento');
+        }
+
+        if (width > height && width > maxSize) {
+            height *= maxSize / width;
+            width = maxSize;
+        } else if (height > maxSize) {
+            width *= maxSize / height;
+            height = maxSize;
+        }
+
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data;
+
+        // Scanner-style cleanup for notebook pages: grayscale + strong contrast.
+        for (let i = 0; i < pixels.length; i += 4) {
+            const gray = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+            const normalized = gray > 170 ? 255 : gray < 90 ? 0 : 245;
+            pixels[i] = normalized;
+            pixels[i + 1] = normalized;
+            pixels[i + 2] = normalized;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+
+        const scanDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const imageBase64 = scanDataUrl.split(',')[1];
+
+        const { jsPDF } = await import('jspdf');
+        const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({
+            orientation,
+            unit: 'px',
+            format: [canvas.width, canvas.height]
+        });
+
+        pdf.addImage(scanDataUrl, 'JPEG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
+
+        return {
+            imageBase64,
+            imageMimeType: 'image/jpeg',
+            pdfBase64: pdf.output('datauristring').split(',')[1],
+            pdfFileName: `cuaderno_scan_${subject || 'materia'}_S${sessionId || 0}.pdf`
+        };
+    };
+
     // Al montar, intentamos iniciar la cámara automáticamente si es posible
     useEffect(() => {
         if (status === 'idle') {
@@ -99,65 +157,36 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
         setIsCameraOpen(false);
     };
 
-    const takePhoto = () => {
+    const takePhoto = async () => {
         if (!videoRef.current) return;
-        const video = videoRef.current;
-        const canvas = document.createElement('canvas');
 
-        // Escalar la imagen a un max de 1200px para evitar payloads gigantes
-        let width = video.videoWidth;
-        let height = video.videoHeight;
-        const maxSize = 900;
-        
-        if (width > height && width > maxSize) {
-            height *= maxSize / width;
-            width = maxSize;
-        } else if (height > maxSize) {
-            width *= maxSize / height;
-            height = maxSize;
+        try {
+            const scanAssets = await buildScanAssets(videoRef.current);
+            stopCamera();
+            await uploadScan(scanAssets);
+        } catch (err) {
+            console.error('[CUADERNO] Error escaneando desde camara:', err);
+            setStatus('error');
+            setFeedback('No pudimos escanear la hoja. Intenta de nuevo con el cuaderno bien centrado y con más luz.');
         }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, width, height);
-        
-        // Comprimir mucho más en calidad para evitar timeouts
-        const base64Image = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-
-        stopCamera();
-        uploadImageBase64(base64Image);
     };
 
     const handleCapture = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Comprimir y achicar incluso archivos manuales antes de subirlos
         const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            const maxSize = 900;
-
-            if (width > height && width > maxSize) {
-                height *= maxSize / width;
-                width = maxSize;
-            } else if (height > maxSize) {
-                width *= maxSize / height;
-                height = maxSize;
+        img.onload = async () => {
+            try {
+                const scanAssets = await buildScanAssets(img);
+                await uploadScan(scanAssets);
+            } catch (err) {
+                console.error('[CUADERNO] Error escaneando archivo:', err);
+                setStatus('error');
+                setFeedback('No pudimos convertir esa imagen en un documento escaneado. Intenta con otra foto del cuaderno.');
+            } finally {
+                URL.revokeObjectURL(img.src);
             }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            // Comprimir mucho más en calidad para evitar timeouts
-            const base64Image = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-            uploadImageBase64(base64Image);
-            URL.revokeObjectURL(img.src);
         };
         img.onerror = () => {
             setStatus('error');
@@ -166,10 +195,9 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
         img.src = URL.createObjectURL(file);
     };
 
-    const uploadImageBase64 = async (base64Image) => {
+    const uploadScan = async ({ imageBase64, imageMimeType, pdfBase64, pdfFileName }) => {
         setStatus('uploading');
         try {
-            // Timeout de 180 segundos (3 min) para Kimi K2.5 Vision que es pesada
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 180000);
 
@@ -179,7 +207,10 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
                 signal: controller.signal,
                 body: JSON.stringify({
                     action: 'verify_handwriting',
-                    image: base64Image,
+                    image: imageBase64,
+                    imageMimeType,
+                    pdf: pdfBase64,
+                    pdfFileName,
                     sessionId,
                     subject,
                     topic,
@@ -198,9 +229,8 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
 
             if (data.success) {
                 if (data.background) {
-                    // Nuevo flujo: Se guardó en Drive y se procesa en el fondo
                     setTier('pendiente');
-                    setFeedback(data.message || '¡Imagen guardada! Matico la analizará mientras sigues con el quiz.');
+                    setFeedback(data.message || '¡Documento escaneado guardado! Matico lo analizará mientras sigues con el quiz.');
                     setStatus('success');
                     if (onComplete) onComplete(0, 'pendiente');
                     return;
@@ -284,6 +314,15 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
                                 </p>
                             </div>
 
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5 text-sm text-slate-700">
+                                <p className="font-semibold mb-1">Escaneo inteligente tipo PDF</p>
+                                <p>
+                                    Matico limpiará tu hoja como si fuera un escáner: fondo blanco, tinta más oscura
+                                    y documento en PDF para guardar. Después la IA revisará esa versión optimizada
+                                    para decirte si el ejercicio está bien o mal.
+                                </p>
+                            </div>
+
                             <div className="bg-slate-50 rounded-xl p-4 mb-5 text-sm text-slate-600">
                                 <p className="font-semibold text-slate-700 mb-2">🎯 Rúbrica de Matico:</p>
                                 <ul className="space-y-1">
@@ -304,7 +343,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
 
                                 <label className="flex-1 cursor-pointer bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-4 rounded-xl font-bold hover:from-orange-600 hover:to-amber-600 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.02] transform">
                                     <Camera size={20} />
-                                    Tomar Foto / Subir
+                                    Escanear Hoja
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -335,7 +374,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
                             <div className="relative w-full max-w-2xl px-4">
                                 {/* Matico Overlay instruction */}
                                 <div className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm font-bold z-10 flex items-center gap-2">
-                                    <Camera size={16} /> Enmarca tu cuaderno y asegúrate que haya luz
+                                    <Camera size={16} /> Enmarca tu cuaderno para generar un escaneo limpio en PDF
                                 </div>
                                 <video
                                     ref={videoRef}
@@ -363,10 +402,10 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
                                 <span className="absolute inset-0 flex items-center justify-center text-2xl">🐶</span>
                             </div>
                             <p className="mt-4 text-orange-600 font-semibold animate-pulse">
-                                Matico está analizando tus notas...
+                                Matico está escaneando y analizando tus notas...
                             </p>
                             <p className="mt-1 text-sm text-slate-400">
-                                Verificando escritura a mano, conceptos clave y paráfrasis
+                                Generando PDF, limpiando la hoja y verificando escritura a mano
                             </p>
                         </div>
                     )}
