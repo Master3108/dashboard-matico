@@ -1609,6 +1609,273 @@ const DEFAULT_HISTORY_ROUTE = {
     recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
 };
 
+const getSyllabusForSubject = (subject) => {
+    if (subject === 'LENGUAJE') return LANGUAGE_SYLLABUS;
+    if (subject === 'FISICA') return PHYSICS_SYLLABUS;
+    if (subject === 'QUIMICA') return CHEMISTRY_SYLLABUS;
+    if (subject === 'BIOLOGIA') return BIOLOGY_SYLLABUS;
+    if (subject === 'HISTORIA') return HISTORY_SYLLABUS;
+    return MATH_SYLLABUS;
+};
+
+const distributePrepSessions = (sessions, totalQuestions) => {
+    const validSessions = (sessions || []).filter(Boolean);
+    if (!validSessions.length) return [];
+
+    const distributed = [];
+    for (let i = 0; i < totalQuestions; i++) {
+        distributed.push(validSessions[i % validSessions.length]);
+    }
+    return distributed;
+};
+
+const PrepExamSetupModal = ({
+    isOpen,
+    onClose,
+    subject,
+    syllabus,
+    selectedSessions,
+    onToggleSession,
+    onStart,
+    isLoading
+}) => {
+    if (!isOpen) return null;
+
+    const selectedDetails = syllabus.filter(item => selectedSessions.includes(item.session));
+    const totalQuestions = 45;
+    const distribution = distributePrepSessions(selectedDetails, totalQuestions);
+    const distributionMap = distribution.reduce((acc, item) => {
+        acc[item.session] = (acc[item.session] || 0) + 1;
+        return acc;
+    }, {});
+
+    return (
+        <div className="fixed inset-0 z-[180] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md">
+            <div className="bg-[#F4F7FF] w-full max-w-4xl rounded-[32px] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.35)] border-4 border-white">
+                <div className="bg-white px-6 py-5 border-b-2 border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 className="text-2xl font-black text-[#2B2E4A]">Prueba preparatoria</h3>
+                        <p className="text-sm font-bold text-[#9094A6]">
+                            {subject} · 45 preguntas · generación rápida de 5 en 5
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <X className="w-6 h-6 text-gray-400" />
+                    </button>
+                </div>
+
+                <div className="grid md:grid-cols-[1.4fr_1fr] gap-0">
+                    <div className="p-6 border-r border-gray-100 max-h-[70vh] overflow-y-auto">
+                        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-5">
+                            <p className="text-sm text-indigo-900 leading-relaxed">
+                                Elige las sesiones que le van a tomar a tu hijo. Matico armará un ensayo
+                                acumulativo balanceado y después te dirá en qué sesiones está más débil.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-3">
+                            {syllabus.map((item) => {
+                                const selected = selectedSessions.includes(item.session);
+                                return (
+                                    <button
+                                        key={item.session}
+                                        onClick={() => onToggleSession(item.session)}
+                                        className={`text-left rounded-2xl border-2 p-4 transition-all ${selected
+                                            ? 'bg-[#4D96FF]/10 border-[#4D96FF] shadow-md'
+                                            : 'bg-white border-gray-200 hover:border-[#4D96FF]/40'
+                                            }`}
+                                    >
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div>
+                                                <p className="text-xs font-black uppercase tracking-widest text-[#9094A6]">
+                                                    Sesión {item.session} · {item.unit || 'Unidad'}
+                                                </p>
+                                                <p className="text-sm md:text-base font-black text-[#2B2E4A] mt-1">
+                                                    {item.topic}
+                                                </p>
+                                            </div>
+                                            <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected ? 'bg-[#4D96FF] border-[#4D96FF] text-white' : 'border-gray-300 text-gray-300'}`}>
+                                                <Check className="w-4 h-4" />
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="p-6 bg-white">
+                        <div className="bg-[#F8FAFF] rounded-2xl p-4 border border-[#E5ECFF]">
+                            <h4 className="text-sm font-black uppercase tracking-widest text-[#9094A6] mb-3">
+                                Resumen del ensayo
+                            </h4>
+                            <div className="space-y-2 text-sm font-bold text-[#2B2E4A]">
+                                <p>Sesiones elegidas: {selectedDetails.length}</p>
+                                <p>Preguntas totales: {totalQuestions}</p>
+                                <p>Formato: diagnóstico + repaso guiado</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-5">
+                            <h4 className="text-sm font-black uppercase tracking-widest text-[#9094A6] mb-3">
+                                Cobertura
+                            </h4>
+                            {selectedDetails.length === 0 ? (
+                                <p className="text-sm text-[#9094A6]">Selecciona al menos una sesión para ver la distribución.</p>
+                            ) : (
+                                <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
+                                    {selectedDetails.map((item) => (
+                                        <div key={item.session} className="rounded-2xl border border-gray-200 p-3">
+                                            <p className="text-sm font-black text-[#2B2E4A]">Sesión {item.session}</p>
+                                            <p className="text-xs text-[#9094A6] mt-1">{item.topic}</p>
+                                            <p className="text-xs font-black text-[#4D96FF] mt-2">
+                                                {distributionMap[item.session] || 0} preguntas asignadas
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={onStart}
+                            disabled={selectedDetails.length === 0 || isLoading}
+                            className={`${clayBtnAction} mt-6 ${selectedDetails.length === 0 || isLoading ? '!bg-gray-300 !border-gray-400 hover:!scale-100 hover:!translate-y-0 cursor-not-allowed' : ''}`}
+                        >
+                            {isLoading ? 'ARMANDO ENSAYO...' : 'INICIAR PRUEBA PREPARATORIA'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const PrepExamResultsModal = ({ isOpen, onClose, report, onReview }) => {
+    if (!isOpen || !report) return null;
+
+    return (
+        <div className="fixed inset-0 z-[190] flex items-center justify-center p-4 bg-[#2B2E4A]/65 backdrop-blur-md">
+            <div className="bg-[#F4F7FF] w-full max-w-4xl rounded-[32px] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.35)] border-4 border-white">
+                <div className="bg-white px-6 py-5 border-b-2 border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 className="text-2xl font-black text-[#2B2E4A]">Diagnóstico de la prueba</h3>
+                        <p className="text-sm font-bold text-[#9094A6]">
+                            {report.subject} · {report.totalCorrect}/{report.totalQuestions} correctas
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <X className="w-6 h-6 text-gray-400" />
+                    </button>
+                </div>
+
+                <div className="p-6 max-h-[78vh] overflow-y-auto space-y-6">
+                    <div className="grid md:grid-cols-4 gap-4">
+                        <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+                            <p className="text-xs font-black uppercase tracking-widest text-green-700">Correctas</p>
+                            <p className="text-3xl font-black text-green-600 mt-2">{report.totalCorrect}</p>
+                        </div>
+                        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                            <p className="text-xs font-black uppercase tracking-widest text-red-700">Incorrectas</p>
+                            <p className="text-3xl font-black text-red-600 mt-2">{report.totalIncorrect}</p>
+                        </div>
+                        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                            <p className="text-xs font-black uppercase tracking-widest text-blue-700">Precisión</p>
+                            <p className="text-3xl font-black text-blue-600 mt-2">{report.accuracy}%</p>
+                        </div>
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                            <p className="text-xs font-black uppercase tracking-widest text-amber-700">Sesiones débiles</p>
+                            <p className="text-3xl font-black text-amber-600 mt-2">{report.weakSessions.length}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-3xl border border-gray-100 p-5">
+                        <h4 className="text-lg font-black text-[#2B2E4A] mb-2">Lectura rápida para apoderado</h4>
+                        <p className="text-sm text-[#4B5563] leading-relaxed">{report.summary}</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-5">
+                        <div className="bg-white rounded-3xl border border-gray-100 p-5">
+                            <h4 className="text-lg font-black text-[#2B2E4A] mb-4">Desglose por sesión</h4>
+                            <div className="space-y-3">
+                                {report.breakdown.map((item) => (
+                                    <div key={item.session} className="border border-gray-100 rounded-2xl p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div>
+                                                <p className="font-black text-[#2B2E4A]">Sesión {item.session}</p>
+                                                <p className="text-xs text-[#9094A6] mt-1">{item.topic}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-[#4D96FF]">{item.correct}/{item.total}</p>
+                                                <p className="text-xs text-[#9094A6]">{item.accuracy}% acierto</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-5">
+                            <div className="bg-white rounded-3xl border border-gray-100 p-5">
+                                <h4 className="text-lg font-black text-[#2B2E4A] mb-3">Sesiones para reforzar</h4>
+                                {report.weakSessions.length === 0 ? (
+                                    <p className="text-sm text-[#4B5563]">No hay sesiones débiles marcadas. Va muy bien en este bloque.</p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {report.weakSessions.map((item) => (
+                                            <div key={item.session} className="rounded-2xl bg-amber-50 border border-amber-200 p-4">
+                                                <p className="font-black text-amber-700">Sesión {item.session}</p>
+                                                <p className="text-sm text-[#4B5563] mt-1">{item.topic}</p>
+                                                <p className="text-xs font-bold text-amber-700 mt-2">
+                                                    {item.incorrect} errores · foco: {item.focus}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-white rounded-3xl border border-gray-100 p-5">
+                                <h4 className="text-lg font-black text-[#2B2E4A] mb-3">Conceptos que conviene repasar</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {report.conceptGaps.length > 0 ? report.conceptGaps.map((concept) => (
+                                        <span key={concept} className="px-3 py-2 rounded-full bg-[#EEF4FF] text-[#4D96FF] text-xs font-black border border-[#DCE8FF]">
+                                            {concept}
+                                        </span>
+                                    )) : (
+                                        <p className="text-sm text-[#4B5563]">No se detectaron brechas repetidas.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-3xl border border-indigo-100 p-5">
+                        <h4 className="text-lg font-black text-[#2B2E4A] mb-3">Plan de repaso sugerido</h4>
+                        <div className="space-y-3">
+                            {report.reviewPlan.map((step, index) => (
+                                <div key={`${step.session}-${index}`} className="bg-white rounded-2xl border border-white/80 p-4">
+                                    <p className="font-black text-[#2B2E4A]">Sesión {step.session} · {step.topic}</p>
+                                    <p className="text-sm text-[#4B5563] mt-1">{step.action}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-3">
+                        <button onClick={onReview} className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}>
+                            GENERAR REPASO GUIADO
+                        </button>
+                        <button onClick={onClose} className={`${clayBtnAction} !bg-[#2B2E4A] !border-[#1E293B] hover:!bg-[#1E293B]`}>
+                            CERRAR DIAGNÓSTICO
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const App = () => {
     const [isCallingN8N, setIsCallingN8N] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState(""); // Helper state for multi-stage loading
@@ -1828,6 +2095,13 @@ const App = () => {
     const [theoryTitle, setTheoryTitle] = useState("");
     const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
     const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al día"
+    const [showPrepExamSetup, setShowPrepExamSetup] = useState(false);
+    const [selectedPrepSessions, setSelectedPrepSessions] = useState([]);
+    const [isPrepExamMode, setIsPrepExamMode] = useState(false);
+    const [prepExamConfig, setPrepExamConfig] = useState(null);
+    const [prepExamQuestions, setPrepExamQuestions] = useState([]);
+    const [prepExamReport, setPrepExamReport] = useState(null);
+    const [showPrepExamResults, setShowPrepExamResults] = useState(false);
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
     useEffect(() => {
@@ -1955,7 +2229,12 @@ const App = () => {
 
 
     // DYNAMIC SYLLABUS
-    const ACTIVE_SYLLABUS = currentSubject === 'LENGUAJE' ? LANGUAGE_SYLLABUS : (currentSubject === 'FISICA' ? PHYSICS_SYLLABUS : (currentSubject === 'QUIMICA' ? CHEMISTRY_SYLLABUS : (currentSubject === 'BIOLOGIA' ? BIOLOGY_SYLLABUS : (currentSubject === 'HISTORIA' ? HISTORY_SYLLABUS : MATH_SYLLABUS)))) || MATH_SYLLABUS;
+    const ACTIVE_SYLLABUS = getSyllabusForSubject(currentSubject) || MATH_SYLLABUS;
+
+    useEffect(() => {
+        const validSessions = new Set(ACTIVE_SYLLABUS.map(item => item.session));
+        setSelectedPrepSessions(prev => prev.filter(session => validSessions.has(session)));
+    }, [currentSubject]);
 
     console.log("APP RENDER:", { currentSubject, todayIndex, syllabusLen: ACTIVE_SYLLABUS?.length });
 
@@ -1976,6 +2255,227 @@ const App = () => {
         icon: currentSubject === 'LENGUAJE' ? BookOpen : (currentSubject === 'FISICA' ? Atom : (currentSubject === 'QUIMICA' ? FlaskConical : (currentSubject === 'BIOLOGIA' ? Dna : (currentSubject === 'HISTORIA' ? Globe : Brain)))),
         oa_title: `Sesión ${TODAYS_SESSION.session}: ${TODAYS_SESSION.topic}`,
         video_link: TODAYS_SESSION.videoLink
+    };
+
+    const openPrepExamSetup = () => {
+        setPrepExamReport(null);
+        setShowPrepExamResults(false);
+        setSelectedPrepSessions(prev => (prev.length > 0 ? prev : [TODAYS_SESSION.session]));
+        setShowPrepExamSetup(true);
+    };
+
+    const togglePrepSession = (sessionNumber) => {
+        setSelectedPrepSessions(prev => (
+            prev.includes(sessionNumber)
+                ? prev.filter(item => item !== sessionNumber)
+                : [...prev, sessionNumber].sort((a, b) => a - b)
+        ));
+    };
+
+    const buildPrepExamReport = (questions, wrongAnswers, config) => {
+        const wrongKeySet = new Set(
+            (wrongAnswers || []).map((item) => `${item.question}__${item.source_session || ''}`)
+        );
+
+        const grouped = new Map();
+        questions.forEach((question) => {
+            const session = question.source_session || 0;
+            const topic = question.source_topic || `Sesión ${session}`;
+            if (!grouped.has(session)) {
+                grouped.set(session, {
+                    session,
+                    topic,
+                    total: 0,
+                    incorrect: 0
+                });
+            }
+
+            const bucket = grouped.get(session);
+            bucket.total += 1;
+
+            if (wrongKeySet.has(`${question.question}__${session}`)) {
+                bucket.incorrect += 1;
+            }
+        });
+
+        const breakdown = Array.from(grouped.values())
+            .map((item) => ({
+                ...item,
+                correct: item.total - item.incorrect,
+                accuracy: item.total > 0 ? Math.round(((item.total - item.incorrect) / item.total) * 100) : 0
+            }))
+            .sort((a, b) => a.session - b.session);
+
+        const weakSessions = breakdown
+            .filter((item) => item.incorrect > 0)
+            .sort((a, b) => b.incorrect - a.incorrect || a.accuracy - b.accuracy)
+            .slice(0, 3)
+            .map((item) => ({
+                ...item,
+                focus: item.accuracy < 50 ? 'reestudiar la base' : 'repasar y practicar otra vez'
+            }));
+
+        const conceptGaps = Array.from(new Set(
+            (wrongAnswers || [])
+                .map((item) => item.source_topic)
+                .filter(Boolean)
+        )).slice(0, 6);
+
+        const totalIncorrect = wrongAnswers.length;
+        const totalCorrect = questions.length - totalIncorrect;
+        const accuracy = questions.length > 0 ? Math.round((totalCorrect / questions.length) * 100) : 0;
+
+        const summary = weakSessions.length > 0
+            ? `Las mayores dificultades quedaron concentradas en ${weakSessions.map(item => `la sesión ${item.session}`).join(', ')}. Conviene volver a esos contenidos antes de la prueba y luego repetir un mini ensayo corto.`
+            : 'El ensayo salió muy sólido. Solo conviene una pasada rápida de repaso antes de la evaluación real.';
+
+        const reviewPlan = (weakSessions.length > 0 ? weakSessions : breakdown.slice(0, 2)).map((item) => ({
+            session: item.session,
+            topic: item.topic,
+            action: item.incorrect > 0
+                ? `Volver a la sesión, releer la teoría y resolver 5 preguntas extra centradas en ${item.topic}.`
+                : `Mantener fresca esta sesión con un repaso breve de conceptos clave.`
+        }));
+
+        return {
+            subject: config.subject,
+            sessions: config.sessions,
+            totalQuestions: questions.length,
+            totalCorrect,
+            totalIncorrect,
+            accuracy,
+            breakdown,
+            weakSessions,
+            conceptGaps,
+            reviewPlan,
+            summary
+        };
+    };
+
+    const startPrepExam = async () => {
+        const sortedSessions = [...selectedPrepSessions].sort((a, b) => a - b);
+        const selectedDetails = ACTIVE_SYLLABUS.filter(item => sortedSessions.includes(item.session));
+
+        if (selectedDetails.length === 0) {
+            alert('Selecciona al menos una sesión para preparar la prueba.');
+            return;
+        }
+
+        setIsCallingN8N(true);
+        setLoadingMessage('Armando prueba preparatoria (45 preguntas en bloques de 5)...');
+
+        try {
+            const questionCount = 45;
+            const config = {
+                subject: currentSubject,
+                sessions: sortedSessions,
+                questionCount,
+                topics: selectedDetails.map(item => item.topic),
+                sessionDetails: selectedDetails.map(item => ({
+                    session: item.session,
+                    topic: item.topic,
+                    readingContent: item.readingContent || ''
+                }))
+            };
+
+            await saveProgress('prep_exam_started', {
+                subject: currentSubject,
+                session: sortedSessions.join(','),
+                selected_sessions: sortedSessions.join(','),
+                topic: selectedDetails.map(item => `S${item.session}: ${item.topic}`).join(' | '),
+                question_count: questionCount,
+                xp_reward: 0
+            });
+
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'generate_prep_exam',
+                    user_id: USER_ID,
+                    subject: currentSubject,
+                    sessions: sortedSessions,
+                    topics: selectedDetails.map(item => item.topic),
+                    question_count: questionCount,
+                    mode: 'diagnostic_review'
+                })
+            });
+
+            const text = await response.text();
+            const parsed = parseN8NResponse(text);
+            const generatedQuestions = (parsed.questions || []).map((question, index) => ({
+                ...question,
+                source_session: Number(question.source_session) || selectedDetails[index % selectedDetails.length]?.session || sortedSessions[0],
+                source_topic: question.source_topic || selectedDetails.find(item => item.session === Number(question.source_session))?.topic || selectedDetails[index % selectedDetails.length]?.topic || ''
+            }));
+
+            if (!generatedQuestions.length) {
+                throw new Error('La IA no devolvió preguntas válidas para la prueba preparatoria.');
+            }
+
+            setPrepExamConfig(config);
+            setPrepExamQuestions(generatedQuestions);
+            setPrepExamReport(null);
+            setShowPrepExamSetup(false);
+            setIsPrepExamMode(true);
+            setQuizQuestions(generatedQuestions);
+            setShowInteractiveQuiz(true);
+        } catch (error) {
+            console.error('[PREP_EXAM] Error iniciando prueba:', error);
+            alert(`No pudimos generar la prueba preparatoria. ${error.message || 'Intenta nuevamente.'}`);
+        } finally {
+            setLoadingMessage('');
+            setIsCallingN8N(false);
+        }
+    };
+
+    const requestPrepExamReview = async () => {
+        if (!prepExamReport || !prepExamConfig) return;
+
+        setIsCallingN8N(true);
+        setLoadingMessage('Generando repaso guiado de las sesiones más débiles...');
+
+        try {
+            const weakSessions = prepExamReport.weakSessions.map(item => item.session);
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'generate_prep_exam_review',
+                    user_id: USER_ID,
+                    subject: prepExamConfig.subject,
+                    sessions: prepExamConfig.sessions,
+                    weak_sessions: weakSessions,
+                    wrong_answers: prepExamQuestions.filter(q => weakSessions.includes(q.source_session)).slice(0, 8).map(q => ({
+                        session: q.source_session,
+                        topic: q.source_topic,
+                        question: q.question
+                    })),
+                    session_details: prepExamConfig.sessionDetails
+                })
+            });
+
+            const text = await response.text();
+            const parsed = parseN8NResponse(text);
+            const reviewContent = parsed.output || parsed.review || parsed.summary || JSON.stringify(parsed, null, 2);
+
+            setAiContent(reviewContent);
+            setAiModalOpen(true);
+
+            await saveProgress('prep_exam_reviewed', {
+                subject: prepExamConfig.subject,
+                session: prepExamConfig.sessions.join(','),
+                selected_sessions: prepExamConfig.sessions.join(','),
+                score: prepExamReport.totalCorrect,
+                xp_reward: 25
+            });
+        } catch (error) {
+            console.error('[PREP_EXAM] Error generando repaso:', error);
+            alert('No pudimos generar el repaso guiado. Intenta otra vez en unos segundos.');
+        } finally {
+            setLoadingMessage('');
+            setIsCallingN8N(false);
+        }
     };
 
     // --- SMART CALENDAR LOGIC (MATICO PRODUCTION PLAN) ---
@@ -3349,13 +3849,23 @@ ${finalData.capsule}`;
                                 </div>
 
                                 <div className="mt-12">
-                                    <button
-                                        onClick={() => setVideoModalOpen(true)}
-                                        className={`${clayBtnAction} ${(localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : ''}`}
-                                        disabled={isCallingN8N}
-                                    >
-                                        {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESIÓN COMPLETADA (Repasar)" : "INICIAR SESIÓN " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
-                                    </button>
+                                    <div className="flex flex-col gap-3">
+                                        <button
+                                            onClick={() => setVideoModalOpen(true)}
+                                            className={`${clayBtnAction} ${(localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : ''}`}
+                                            disabled={isCallingN8N}
+                                        >
+                                            {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESIÓN COMPLETADA (Repasar)" : "INICIAR SESIÓN " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
+                                        </button>
+
+                                        <button
+                                            onClick={openPrepExamSetup}
+                                            className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
+                                            disabled={isCallingN8N}
+                                        >
+                                            PRUEBA PREPARATORIA 45 <Flag className="w-5 h-5 ml-2" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -3371,22 +3881,67 @@ ${finalData.capsule}`;
                     showInteractiveQuiz && quizQuestions && quizQuestions.length > 0 && (
                         <InteractiveQuiz
                             questions={quizQuestions}
-                            phase={currentQuizPhase}
-                            sessionId={todayIndex + 1}
+                            phase={isPrepExamMode ? undefined : currentQuizPhase}
+                            sessionId={isPrepExamMode ? (prepExamConfig?.sessions || []).join(',') : todayIndex + 1}
                             subject={currentSubject}
                             readingContent=""
-                            onComplete={(score, wrongAnswers) => {
+                            onComplete={async (score, wrongAnswers) => {
+                                if (isPrepExamMode) {
+                                    const finalWrongAnswers = wrongAnswers || [];
+                                    const report = buildPrepExamReport(prepExamQuestions, finalWrongAnswers, prepExamConfig);
+
+                                    await saveProgress('prep_exam_completed', {
+                                        subject: prepExamConfig.subject,
+                                        session: prepExamConfig.sessions.join(','),
+                                        selected_sessions: prepExamConfig.sessions.join(','),
+                                        score: report.totalCorrect,
+                                        total_questions: report.totalQuestions,
+                                        weak_sessions: report.weakSessions.map(item => item.session).join(','),
+                                        xp_reward: 150
+                                    });
+
+                                    setPrepExamReport(report);
+                                    setShowPrepExamResults(true);
+                                    return;
+                                }
+
                                 console.log(`Quiz Fase ${currentQuizPhase} completado:`, score, 'errores:', wrongAnswers?.length);
-                                onQuizPhaseComplete(score, wrongAnswers || []);
+                                await onQuizPhaseComplete(score, wrongAnswers || []);
                             }}
                             onClose={() => {
-                                // Allow manual emergency close
                                 setShowInteractiveQuiz(false);
+                                if (isPrepExamMode) {
+                                    setIsPrepExamMode(false);
+                                    setQuizQuestions([]);
+                                    return;
+                                }
                                 window.location.reload();
                             }}
                         />
                     )
                 }
+                <PrepExamSetupModal
+                    isOpen={showPrepExamSetup}
+                    onClose={() => setShowPrepExamSetup(false)}
+                    subject={currentSubject}
+                    syllabus={ACTIVE_SYLLABUS}
+                    selectedSessions={selectedPrepSessions}
+                    onToggleSession={togglePrepSession}
+                    onStart={startPrepExam}
+                    isLoading={isCallingN8N}
+                />
+
+                <PrepExamResultsModal
+                    isOpen={showPrepExamResults}
+                    report={prepExamReport}
+                    onClose={() => {
+                        setShowPrepExamResults(false);
+                        setIsPrepExamMode(false);
+                        setPrepExamQuestions([]);
+                    }}
+                    onReview={requestPrepExamReview}
+                />
+
                 {/* SETTINGS MODAL */}
                 {settingsOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md animate-fade-in">

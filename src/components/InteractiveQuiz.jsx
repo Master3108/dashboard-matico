@@ -221,7 +221,9 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                     question: question.question,
                     user_answer: option,
                     correct_answer: question.correct_answer,
-                    explanation: question.explanation || ''
+                    explanation: question.explanation || '',
+                    source_session: question.source_session ?? null,
+                    source_topic: question.source_topic || ''
                 }]);
             }
 

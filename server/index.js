@@ -6,12 +6,21 @@ import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
 import cron from 'node-cron';
 import { Readable } from 'stream';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const LOCAL_UPLOADS_DIR = path.join(__dirname, 'uploads');
+
+app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
 
 const PORT = process.env.PORT || 5000;
 
@@ -53,6 +62,33 @@ const getSheetsClient = async () => {
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
     return google.sheets({ version: 'v4', auth });
+};
+
+const sanitizeFileSegment = (value = '') => {
+    return String(value)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_-]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 80) || 'archivo';
+};
+
+const saveBase64ToLocalFile = async (base64File, fileName, subfolder = 'general') => {
+    const targetDir = path.join(LOCAL_UPLOADS_DIR, subfolder);
+    await fs.mkdir(targetDir, { recursive: true });
+
+    const cleanName = sanitizeFileSegment(path.parse(fileName).name);
+    const extension = path.extname(fileName) || '.bin';
+    const finalName = `${cleanName}${extension}`;
+    const absolutePath = path.join(targetDir, finalName);
+
+    await fs.writeFile(absolutePath, Buffer.from(base64File, 'base64'));
+
+    return {
+        absolutePath,
+        publicUrl: `/uploads/${subfolder}/${finalName}`,
+        fileName: finalName
+    };
 };
 
 // --- HELPER: Subir imagen a Google Drive ---
@@ -383,6 +419,127 @@ const buildDailyReminderHTML = (nombre, session, topic, subject) => {
     </div>`;
 };
 
+const getQuizPromptConfig = (subject, tema, options = {}) => {
+    const { includeSourceMetadata = false } = options;
+    const sourceFields = includeSourceMetadata ? `,
+      "source_session": 12,
+      "source_topic": "Tema de origen"` : '';
+    const sourceRules = includeSourceMetadata ? `
+5. Cada pregunta DEBE indicar en "source_session" la sesión exacta de origen.
+6. Cada pregunta DEBE indicar en "source_topic" el tema exacto de origen.` : '';
+
+    let systemMsg = '';
+    let aiTemperature = 0.2;
+
+    if (subject.includes('LENGUAJE') || subject.includes('LECTURA')) {
+        aiTemperature = 0.5;
+        systemMsg = `Eres Matico, profesor experto en Lenguaje y Comunicación del currículum chileno.
+El estudiante aprenderá: ${tema}.
+
+PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
+1. Las preguntas deben evaluar comprensión lectora avanzada, pensamiento crítico e inferencia.
+2. Escribe una explicación clara del porqué esa es la opción correcta en "explanation".
+3. CREA 4 opciones, asegurándote que UNA coincide con tu explicación.
+4. Al final, escribe la Letra correcta (A, B, C, D) en "correct_answer".${sourceRules}
+
+ESTRUCTURA JSON EXACTA QUE DEBES USAR:
+{
+  "questions": [
+    {
+      "question": "texto de la pregunta de lectura o texto corto más la pregunta...",
+      "explanation": "Explica aquí por qué la opción correcta es la adecuada basados en inferencia o pistas textuales.",
+      "options": {
+        "A": "texto",
+        "B": "texto",
+        "C": "texto",
+        "D": "texto"
+      },
+      "correct_answer": "LETRA EXACTA DE TU EXPLICACION"${sourceFields}
+    }
+  ]
+}
+
+Genera SOLO JSON válido sin markdown.`;
+    } else if (subject.includes('HISTORIA')) {
+        aiTemperature = 0.4;
+        systemMsg = `Eres Matico, historiador y profesor experto en Historia y Geografía.
+Tema a evaluar: ${tema}.
+
+PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
+1. Las preguntas deben evaluar análisis histórico, comprensión de contextos y causas/consecuencias, no solo fechas memorizadas.
+2. Escribe una breve explicación histórica en "explanation" PRIMERO.
+3. CREA 4 opciones.
+4. Al final, escribe la Letra correcta en "correct_answer".${sourceRules}
+
+ESTRUCTURA JSON EXACTA QUE DEBES USAR:
+{
+  "questions": [
+    {
+      "question": "contexto histórico y la pregunta...",
+      "explanation": "EXPLICA AQUI EL Contexto Y POR QUE LAS OTRAS SON INCORRECTAS",
+      "options": {
+        "A": "valor",
+        "B": "valor",
+        "C": "valor",
+        "D": "valor"
+      },
+      "correct_answer": "LETRA EXACTA"${sourceFields}
+    }
+  ]
+}
+
+Genera SOLO JSON válido sin markdown.`;
+    } else {
+        aiTemperature = 0.2;
+        systemMsg = `Eres Matico, mentor académico experto.
+Tema: ${tema}.
+
+PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
+1. DEBES hacer el desarrollo o razonamiento en "explanation" PRIMERO.
+2. CREA 4 opciones, asegurándote que UNA coincide con tu razonamiento.
+3. Al final, escribe la Letra correcta en "correct_answer".${sourceRules}
+
+ESTRUCTURA JSON EXACTA QUE DEBES USAR:
+{
+  "questions": [
+    {
+      "question": "texto de la pregunta...",
+      "explanation": "ESCRIBE AQUI TODO TU DESARROLLO PASO A PASO PRIMERO.",
+      "options": {
+        "A": "valor",
+        "B": "valor",
+        "C": "valor",
+        "D": "valor"
+      },
+      "correct_answer": "LETRA EXACTA"${sourceFields}
+    }
+  ]
+}
+
+Genera SOLO JSON válido sin markdown.`;
+    }
+
+    return { systemMsg, aiTemperature };
+};
+
+const buildPrepExamAssignments = (sessionDetails = [], totalQuestions = 45) => {
+    const normalized = sessionDetails
+        .filter(item => item && item.session)
+        .map(item => ({
+            session: Number(item.session),
+            topic: item.topic || `Sesión ${item.session}`
+        }))
+        .sort((a, b) => a.session - b.session);
+
+    if (!normalized.length) return [];
+
+    const assignments = [];
+    for (let i = 0; i < totalQuestions; i++) {
+        assignments.push(normalized[i % normalized.length]);
+    }
+    return assignments;
+};
+
 // ========================================================================
 // ENDPOINTS
 // ========================================================================
@@ -446,6 +603,90 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
             });
             return res.json({ output: comp.choices[0].message.content });
+        }
+
+        // 2B. GENERAR PRUEBA PREPARATORIA (45 preguntas en lotes de 5)
+        if (currentAction === 'generate_prep_exam') {
+            const subject = (body.subject || body.sujeto || 'MATEMATICA').toUpperCase();
+            const sessions = Array.isArray(body.sessions) ? body.sessions.map(Number).filter(Boolean) : [];
+            const topics = Array.isArray(body.topics) ? body.topics : [];
+            const requestedCount = Number(body.question_count) || 45;
+            const questionCount = Math.max(5, Math.min(45, requestedCount));
+            const sessionDetails = sessions.map((session, index) => ({
+                session,
+                topic: topics[index] || `Sesión ${session}`
+            }));
+
+            if (!sessionDetails.length) {
+                return res.status(400).json({ success: false, error: 'Debes enviar al menos una sesión para la prueba preparatoria' });
+            }
+
+            const assignmentPlan = buildPrepExamAssignments(sessionDetails, questionCount);
+            const totalBatches = Math.ceil(assignmentPlan.length / 5);
+            const baseTopic = `Prueba preparatoria acumulativa de ${subject} sobre estas sesiones:\n${sessionDetails.map(item => `- Sesión ${item.session}: ${item.topic}`).join('\n')}`;
+            const { systemMsg, aiTemperature } = getQuizPromptConfig(subject, baseTopic, { includeSourceMetadata: true });
+
+            const fetchPrepBatch = async (batchIndex) => {
+                const batchAssignments = assignmentPlan.slice(batchIndex * 5, batchIndex * 5 + 5);
+                const batchInstructions = batchAssignments.map((item, index) => `${index + 1}. Sesión ${item.session} | Tema: ${item.topic}`).join('\n');
+                const batchPrompt = `${baseTopic}
+
+[MODO PRUEBA PREPARATORIA DIAGNÓSTICA]
+- Genera EXACTAMENTE ${batchAssignments.length} preguntas.
+- Esta es la tanda ${batchIndex + 1} de ${totalBatches}.
+- Debes seguir ESTA distribución exacta, una pregunta por línea:
+${batchInstructions}
+- Si una sesión se repite, crea preguntas distintas entre sí.
+- "source_session" y "source_topic" deben coincidir EXACTAMENTE con cada línea asignada.
+- Mantén alternativas A/B/C/D y explicación útil para corrección.
+- Responde SOLO con JSON válido.`;
+
+                await new Promise(r => setTimeout(r, batchIndex * 250));
+
+                const comp = await openai.chat.completions.create({
+                    model: 'deepseek-chat',
+                    messages: [
+                        { role: 'system', content: systemMsg },
+                        { role: 'user', content: batchPrompt }
+                    ],
+                    response_format: { type: 'json_object' },
+                    temperature: aiTemperature
+                });
+
+                const parsed = JSON.parse(comp.choices[0].message.content);
+                const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
+
+                return questions.map((question, index) => {
+                    const assigned = batchAssignments[index] || batchAssignments[0];
+                    return {
+                        question: question.question,
+                        options: question.options || {},
+                        correct_answer: (question.correct_answer || 'A').toUpperCase(),
+                        explanation: question.explanation || 'Explicación no disponible.',
+                        source_session: Number(question.source_session) || assigned.session,
+                        source_topic: question.source_topic || assigned.topic
+                    };
+                }).filter(question => question.question);
+            };
+
+            const batchResults = await Promise.all(
+                Array.from({ length: totalBatches }, (_, index) => fetchPrepBatch(index))
+            );
+
+            const questions = batchResults.flat().slice(0, questionCount);
+
+            if (questions.length < questionCount) {
+                throw new Error(`No se lograron generar las ${questionCount} preguntas de la prueba preparatoria`);
+            }
+
+            return res.json({
+                success: true,
+                mode: 'diagnostic_review',
+                subject,
+                sessions,
+                question_count: questionCount,
+                questions
+            });
         }
 
         // 2B. GENERAR QUIZ (5 preguntas por lote) — MULTIASIGNATURA
@@ -627,6 +868,50 @@ Estructura JSON:
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
             });
             return res.json({ output: comp.choices[0].message.content });
+        }
+
+        if (currentAction === 'generate_prep_exam_review') {
+            const subject = (body.subject || 'MATEMATICA').toUpperCase();
+            const weakSessions = Array.isArray(body.weak_sessions) ? body.weak_sessions : [];
+            const sessionDetails = Array.isArray(body.session_details) ? body.session_details : [];
+            const wrongAnswers = Array.isArray(body.wrong_answers) ? body.wrong_answers : [];
+
+            const weakContext = sessionDetails
+                .filter(item => weakSessions.includes(item.session))
+                .map(item => `Sesión ${item.session}: ${item.topic}\nContexto: ${(item.readingContent || '').substring(0, 1200) || 'Sin lectura asociada.'}`)
+                .join('\n\n');
+
+            const wrongContext = wrongAnswers
+                .map((item, index) => `${index + 1}. Sesión ${item.session} | ${item.topic}\nPregunta fallada: ${item.question}`)
+                .join('\n');
+
+            const comp = await openai.chat.completions.create({
+                model: 'deepseek-chat',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'Eres Matico, tutor académico de 1° medio. Redacta un repaso guiado breve, concreto y accionable para un apoderado y un estudiante. Usa Markdown simple con títulos y listas. Debe incluir qué repasar, en qué orden y cómo practicar.'
+                    },
+                    {
+                        role: 'user',
+                        content: `ASIGNATURA: ${subject}
+SESIONES DÉBILES: ${weakSessions.join(', ') || 'Sin sesiones marcadas'}
+
+CONTEXTO DE SESIONES:
+${weakContext || 'Sin contexto adicional.'}
+
+ERRORES DETECTADOS:
+${wrongContext || 'Sin errores específicos.'}
+
+Entrega:
+1. Un resumen corto del problema.
+2. Un plan de repaso por sesión.
+3. 3 recomendaciones prácticas para preparar la prueba real.`
+                    }
+                ]
+            });
+
+            return res.json({ success: true, output: comp.choices[0].message.content });
         }
 
         // 4. GUARDAR PROGRESO
@@ -826,22 +1111,21 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
 
             console.log(`[CUADERNO] Verificando escritura para ${cuadernoSubject} - Sesion ${sessionId}`);
             
-            // 1. Guardar en Drive inmediatamente
-            let driveFileId = null;
-            const DRIVE_FOLDER_ID = '1Tia5H-gpnJLMoHu_rBMbIkFaDNVkQygs';
+            // 1. Guardar en el VPS inmediatamente
+            let storedFile = null;
             
             try {
                 if (pdf) {
                     const fileName = pdfFileName || `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${Date.now()}.pdf`;
-                    driveFileId = await uploadToDrive(pdf, fileName, DRIVE_FOLDER_ID, 'application/pdf');
-                    console.log(`[DRIVE] ✅ PDF escaneado guardado: ${driveFileId}`);
+                    storedFile = await saveBase64ToLocalFile(pdf, fileName, 'cuadernos');
+                    console.log(`[LOCAL_STORAGE] ✅ PDF escaneado guardado: ${storedFile.absolutePath}`);
                 } else {
                     const fileName = `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${Date.now()}.jpg`;
-                    driveFileId = await uploadToDrive(image, fileName, DRIVE_FOLDER_ID, imageMimeType || 'image/jpeg');
-                    console.log(`[DRIVE] ✅ Imagen guardada: ${driveFileId}`);
+                    storedFile = await saveBase64ToLocalFile(image, fileName, 'cuadernos');
+                    console.log(`[LOCAL_STORAGE] ✅ Imagen guardada: ${storedFile.absolutePath}`);
                 }
-            } catch (driveErr) {
-                console.error(`[DRIVE] ❌ Error subiendo: ${driveErr.message}`);
+            } catch (storageErr) {
+                console.error(`[LOCAL_STORAGE] ❌ Error guardando archivo: ${storageErr.message}`);
             }
 
             // 2. Responder al frontend inmediatamente para que no espere
@@ -849,7 +1133,8 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
                 success: true,
                 background: true,
                 message: '¡Documento escaneado guardado! Matico lo analizará mientras sigues con el quiz.',
-                drive_file_id: driveFileId
+                stored_file_path: storedFile?.absolutePath || null,
+                stored_file_url: storedFile?.publicUrl || null
             });
 
             // 3. PROCESAMIENTO EN SEGUNDO PLANO
