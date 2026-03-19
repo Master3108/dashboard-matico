@@ -1701,7 +1701,7 @@ const App = () => {
         }
 
         try {
-            await fetch(activeWebhookUrl, {
+            const response = await fetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1715,6 +1715,13 @@ const App = () => {
                         ...payload
                     }
                 })
+            });
+            const resultText = await response.text();
+            console.log("[SAVE_PROGRESS_RESPONSE]", {
+                type,
+                ok: response.ok,
+                status: response.status,
+                body: resultText
             });
 
             // After successful save, refresh full profile from Sheet to ensure sync

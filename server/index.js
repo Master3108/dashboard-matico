@@ -24,12 +24,32 @@ const openai = new OpenAI({
 // Configuración Google Sheets
 const SPREADSHEET_ID = '1l1GLMXh8_Uo_O7XJOY7ZJxh1TER2hxrXTOsc_EcByHo';
 
+const normalizePrivateKey = (value = '') => {
+    return value
+        .trim()
+        .replace(/^"(.*)"$/s, '$1')
+        .replace(/^'(.*)'$/s, '$1')
+        .replace(/\\r/g, '')
+        .replace(/\\n/g, '\n');
+};
+
+const getGoogleCredentials = () => {
+    const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const privateKey = normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY || '');
+
+    if (!clientEmail || !privateKey) {
+        throw new Error('Google credentials are incomplete');
+    }
+
+    return {
+        client_email: clientEmail,
+        private_key: privateKey,
+    };
+};
+
 const getSheetsClient = async () => {
     const auth = new google.auth.GoogleAuth({
-        credentials: {
-            client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-            private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        },
+        credentials: getGoogleCredentials(),
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
     return google.sheets({ version: 'v4', auth });
@@ -39,10 +59,7 @@ const getSheetsClient = async () => {
 const uploadToDrive = async (base64Image, fileName, folderId) => {
     try {
         const auth = new google.auth.GoogleAuth({
-            credentials: {
-                client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-                private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-            },
+            credentials: getGoogleCredentials(),
             scopes: ['https://www.googleapis.com/auth/drive'],
         });
         const drive = google.drive({ version: 'v3', auth });
@@ -162,6 +179,68 @@ const logToSheet = async (sheets, user_id, subject, session, event_type, phase, 
         console.log(`[SHEET] ✅ ${event_type} | User: ${user_id} | Subj: ${subject} | Phase: ${phase} | XP: ${xp}`);
     } catch (err) {
         console.error("[SHEET] ❌ Error:", err.message);
+    }
+};
+
+const appendProgressToSheetOrThrow = async (sheets, {
+    user_id = '',
+    subject = '',
+    session = '',
+    event_type = '',
+    phase = '',
+    subLevel = '',
+    levelName = '',
+    score = '',
+    xp = ''
+}) => {
+    const timestamp = new Date().toISOString();
+    const values = [
+        timestamp,
+        user_id || '',
+        subject || '',
+        session || '',
+        event_type || '',
+        phase || '',
+        subLevel || '',
+        levelName || '',
+        score || '0',
+        xp || '0'
+    ];
+
+    try {
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: SPREADSHEET_ID,
+            range: 'progress_log!A:J',
+            valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [values] },
+        });
+        console.log('[SHEET_APPEND_OK]', JSON.stringify({
+            timestamp,
+            user_id,
+            subject,
+            session,
+            event_type,
+            phase,
+            subLevel,
+            levelName,
+            score: score || '0',
+            xp: xp || '0'
+        }));
+    } catch (err) {
+        console.error('[SHEET_APPEND_FAIL]', JSON.stringify({
+            timestamp,
+            user_id,
+            subject,
+            session,
+            event_type,
+            phase,
+            subLevel,
+            levelName,
+            score: score || '0',
+            xp: xp || '0',
+            error: err.message
+        }));
+        throw err;
     }
 };
 
@@ -553,8 +632,34 @@ Estructura JSON:
         // 4. GUARDAR PROGRESO
         if (currentAction === 'save_progress' || currentAction === 'save') {
             const eventType = data.type || 'progress_update';
-            await logToSheet(sheets, user_id, data.subject || '', data.session || '', eventType,
-                data.phase || '', data.subLevel || '', data.levelName || '', data.score || '', data.xp_reward || '');
+            console.log('[SAVE_PROGRESS_IN]', JSON.stringify({
+                currentAction,
+                user_id: user_id || '',
+                eventType,
+                data
+            }));
+            await appendProgressToSheetOrThrow(sheets, {
+                user_id,
+                subject: data.subject || '',
+                session: data.session || '',
+                event_type: eventType,
+                phase: data.phase || '',
+                subLevel: data.subLevel || '',
+                levelName: data.levelName || '',
+                score: data.score || '',
+                xp: data.xp_reward || ''
+            });
+            console.log('[SAVE_PROGRESS_OK]', JSON.stringify({
+                user_id: user_id || '',
+                eventType,
+                subject: data.subject || '',
+                session: data.session || '',
+                phase: data.phase || '',
+                subLevel: data.subLevel || '',
+                levelName: data.levelName || '',
+                score: data.score || '',
+                xp_reward: data.xp_reward || ''
+            }));
             return res.json({ success: true, message: `Evento ${eventType} registrado` });
         }
 

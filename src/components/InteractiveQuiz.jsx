@@ -121,6 +121,14 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
     const [isThinking, setIsThinking] = useState(false);
     const [shake, setShake] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
+    const [isSubmittingResults, setIsSubmittingResults] = useState(false);
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     // DYNAMIC TIMER BASED ON QUESTION NUMBER (PAES LEVELS)
     const getTimeLimit = (questionIndex) => {
@@ -259,16 +267,30 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
         }
     };
 
-    const finishQuiz = () => {
-        setIsFinished(true);
+    const finishQuiz = async () => {
+        if (isSubmittingResults) return;
+
+        setIsSubmittingResults(true);
         playSound('success');
         confetti({
             particleCount: 200,
             spread: 100,
             origin: { y: 0.6 }
         });
-        // Pass score AND wrong answers for AI analysis
-        onComplete && onComplete(score.correct, wrongAnswers);
+
+        try {
+            // Wait for the parent to persist progress before enabling close/reload paths.
+            if (onComplete) {
+                await onComplete(score.correct, wrongAnswers);
+            }
+        } catch (error) {
+            console.error("[QUIZ] Error saving quiz results:", error);
+        } finally {
+            if (isMountedRef.current) {
+                setIsSubmittingResults(false);
+                setIsFinished(true);
+            }
+        }
     };
 
     const getButtonClass = (option) => {
