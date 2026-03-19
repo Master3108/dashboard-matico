@@ -10,6 +10,9 @@ services:
       - ./server/.env
     environment:
       - PORT=5000
+    volumes:
+      - ./server/data:/app/data
+      - ./server/uploads:/app/uploads
 
   frontend:
     build: .
