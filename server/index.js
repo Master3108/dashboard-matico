@@ -235,32 +235,36 @@ const sendEmail = async (to, subject, htmlBody) => {
 };
 
 // --- HELPER: Guardar evento en progress_log ---
-const logToSheet = async (sheets, user_id, subject, session, event_type, phase, subLevel, levelName, score, xp) => {
+const logToSheet = async (sheets, user_id, subject, session, event_type, phase, subLevel, levelName, score, xp, grade = '', topic = '', totalQuestions = '', sourceMode = '') => {
     try {
         const timestamp = new Date().toISOString();
         const values = [
             timestamp,
-            user_id || '', 
-            subject || '', 
+            user_id || '',
+            subject || '',
             session || '',
-            event_type || '', 
-            phase || '', 
+            event_type || '',
+            phase || '',
             subLevel || '',
-            levelName || '', 
-            score || '0', 
-            xp || '0'
+            levelName || '',
+            score || '0',
+            xp || '0',
+            grade || '',
+            topic || '',
+            totalQuestions || '',
+            sourceMode || ''
         ];
 
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'progress_log!A:J',
+            range: 'progress_log!A:N',
             valueInputOption: 'USER_ENTERED',
             requestBody: { values: [values] },
         });
 
-        console.log(`[SHEET] ✅ ${event_type} | User: ${user_id} | Subj: ${subject} | Phase: ${phase} | XP: ${xp}`);
+        console.log('[SHEET] ? ' + event_type + ' | User: ' + user_id + ' | Subj: ' + subject + ' | Phase: ' + phase + ' | XP: ' + xp);
     } catch (err) {
-        console.error("[SHEET] ❌ Error:", err.message);
+        console.error('[SHEET] ? Error:', err.message);
     }
 };
 
@@ -273,7 +277,11 @@ const appendProgressToSheetOrThrow = async (sheets, {
     subLevel = '',
     levelName = '',
     score = '',
-    xp = ''
+    xp = '',
+    grade = '',
+    topic = '',
+    totalQuestions = '',
+    sourceMode = ''
 }) => {
     const timestamp = new Date().toISOString();
     const values = [
@@ -286,13 +294,17 @@ const appendProgressToSheetOrThrow = async (sheets, {
         subLevel || '',
         levelName || '',
         score || '0',
-        xp || '0'
+        xp || '0',
+        grade || '',
+        topic || '',
+        totalQuestions || '',
+        sourceMode || ''
     ];
 
     try {
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'progress_log!A:J',
+            range: 'progress_log!A:N',
             valueInputOption: 'USER_ENTERED',
             requestBody: { values: [values] },
         });
@@ -306,7 +318,11 @@ const appendProgressToSheetOrThrow = async (sheets, {
             subLevel,
             levelName,
             score: score || '0',
-            xp: xp || '0'
+            xp: xp || '0',
+            grade,
+            topic,
+            totalQuestions,
+            sourceMode
         }));
     } catch (err) {
         console.error('[SHEET_APPEND_FAIL]', JSON.stringify({
@@ -320,12 +336,15 @@ const appendProgressToSheetOrThrow = async (sheets, {
             levelName,
             score: score || '0',
             xp: xp || '0',
+            grade,
+            topic,
+            totalQuestions,
+            sourceMode,
             error: err.message
         }));
         throw err;
     }
 };
-
 // --- HELPER: Generar HTML bonito para correos ---
 const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAnswers = [], aiAnalysis = '') => {
     const successRate = Math.round((stats.correct / 45) * 100);
@@ -1147,7 +1166,11 @@ Entrega:
                 subLevel: data.subLevel || '',
                 levelName: data.levelName || '',
                 score: data.score || '',
-                xp: data.xp_reward || ''
+                xp: data.xp_reward || '',
+                grade,
+                topic,
+                totalQuestions,
+                sourceMode: data.source_mode || data.mode || ''
             });
             await recordAdaptiveEvent({
                 user_id,
@@ -1491,7 +1514,7 @@ RESPONDE SOLO CON JSON VALIDO:
                         console.log(`[CUADERNO-BG] Resultado: ${result.tier?.toUpperCase()}`);
                         const xpGained = result.tier === 'oro' ? 50 : (result.tier === 'plata' ? 30 : 0);
                         if (xpGained > 0) {
-                            await logToSheet(sheets, user_id, cuadernoSubject, sessionId || '', 'cuaderno_completed', '', '', result.tier, '', xpGained);
+                            await logToSheet(sheets, user_id, cuadernoSubject, sessionId || '', 'cuaderno_completed', '', '', result.tier, '', xpGained, body.grade || '1medio', cuadernoTopic || '', '', 'cuaderno');
                             console.log(`[CUADERNO-BG] XP Registrado: ${xpGained} (${result.tier})`);
                         }
                     }
@@ -1511,7 +1534,7 @@ RESPONDE SOLO CON JSON VALIDO:
 
         // FALLBACK
         console.log(`[MATICO] Acción no mapeada: "${currentAction}". Registrando...`);
-        await logToSheet(sheets, user_id, data.subject, data.session, currentAction, data.phase, data.subLevel, data.levelName, data.score, data.xp_reward);
+        await logToSheet(sheets, user_id, data.subject, data.session, currentAction, data.phase, data.subLevel, data.levelName, data.score, data.xp_reward, data.grade || '1medio', data.topic || data.source_topic || '', data.total_questions || data.total || '', data.source_mode || data.mode || '');
         res.json({ success: true, message: `Acción "${currentAction}" registrada` });
 
     } catch (error) {
