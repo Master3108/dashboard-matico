@@ -526,12 +526,12 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
     // Generar tabla de errores
     let errorsHTML = '';
     if (wrongCount > 0) {
-        const errorRows = wrongAnswers.slice(0, 10).map((w, i) => {
+        const errorRows = wrongAnswers.map((w, i) => {
             const cleanQ = cleanLatex(w.question || '');
             const shortQ = cleanQ.substring(0, 80) + (cleanQ.length > 80 ? '...' : '');
             return `
             <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 10px; font-size: 13px; color: #475569;">${i + 1}. ${shortQ}</td>
+                <td style="padding: 10px; font-size: 13px; color: #475569; vertical-align: top; word-break: break-word;">${i + 1}. ${shortQ}</td>
                 <td style="padding: 10px; text-align: center; color: #ef4444; font-weight: bold;">${w.user_answer}</td>
                 <td style="padding: 10px; text-align: center; color: #22c55e; font-weight: bold;">${w.correct_answer}</td>
             </tr>`;
