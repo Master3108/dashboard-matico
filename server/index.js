@@ -9,6 +9,7 @@ import { Readable } from 'stream';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions } from './generatedQuestionBank.js';
 
 dotenv.config();
 
@@ -786,6 +787,18 @@ ${batchInstructions}
                 throw new Error(`No se lograron generar las ${questionCount} preguntas de la prueba preparatoria`);
             }
 
+            await recordGeneratedQuestions(questions, {
+                subject,
+                source_action: 'generate_prep_exam',
+                source_mode: 'prep_exam',
+                source_topic: sessionDetails.map(item => item.topic).join(' | '),
+                metadata: {
+                    sessions,
+                    question_count: questionCount,
+                    total_batches: totalBatches
+                }
+            }).catch((err) => console.error('[QUESTION_BANK] Error guardando prueba preparatoria completa:', err.message));
+
             return res.json({
                 success: true,
                 mode: 'diagnostic_review',
@@ -844,6 +857,19 @@ ${batchInstructions}
                     source_topic: question.source_topic || assigned.topic
                 };
             }).filter(question => question.question);
+
+            await recordGeneratedQuestions(normalizedQuestions, {
+                subject,
+                source_action: 'generate_prep_exam_batch',
+                source_mode: 'prep_exam',
+                source_topic: sessionDetails.map(item => item.topic).join(' | '),
+                metadata: {
+                    batch_index: batchIndex,
+                    batch_size: batchSize,
+                    total_batches: totalBatches,
+                    sessions
+                }
+            }).catch((err) => console.error('[QUESTION_BANK] Error guardando batch de prueba preparatoria:', err.message));
 
             return res.json({
                 success: true,
@@ -1021,6 +1047,20 @@ Estructura JSON:
                 }
                 console.log(`[VERIFY] ✅ Verificación completa. Corregidas: ${corrected}/${questions.length}`);
             }
+
+            await recordGeneratedQuestions(questions, {
+                subject,
+                source_action: 'generate_quiz',
+                source_mode: 'quiz',
+                source_topic: tema,
+                source_session: body.session || data.session || '',
+                metadata: {
+                    currentAction,
+                    level: body.level || body.nivel || data.level || '',
+                    topic: tema,
+                    user_id: user_id || ''
+                }
+            }).catch((err) => console.error('[QUESTION_BANK] Error guardando quiz generado:', err.message));
 
             return res.json({ questions });
         }
@@ -1281,6 +1321,30 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             return res.json({ success: true, deleted: body.file_name });
         }
 
+        if (currentAction === 'list_generated_questions') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            const items = await listGeneratedQuestions({
+                subject: body.subject || '',
+                source_action: body.source_action || ''
+            });
+            return res.json({ success: true, items, count: items.length });
+        }
+
+        if (currentAction === 'delete_generated_question') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            if (!body.question_id) {
+                return res.status(400).json({ success: false, error: 'Debes indicar question_id' });
+            }
+
+            const result = await deleteGeneratedQuestion(body.question_id);
+            return res.json({ success: true, ...result });
+        }
         // 9. VERIFICAR ESCRITURA A MANO — CUADERNO DE MATICO (NVIDIA Kimi K2.5 Vision)
         if (currentAction === 'verify_handwriting') {
             const {
@@ -1463,6 +1527,8 @@ cron.schedule('0 9 * * *', async () => {
 }, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
+
+
 
 
 

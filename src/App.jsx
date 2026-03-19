@@ -42,7 +42,7 @@ import {
     ExternalLink,
     HelpCircle,
     Loader,
-    Image as ImageIcon, Maximize, Minimize
+    Image as ImageIcon, Maximize, Minimize, Download
     , FlaskConical, Globe, Trash2, Shield
 } from 'lucide-react';
 import {
@@ -97,6 +97,65 @@ const parseMarkdown = (text) => {
 
         return processText(part);
     }).join('');
+};
+
+const downloadTextFile = (fileName, content, mimeType = 'application/json') => {
+    const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+};
+
+const escapeCsvCell = (value = '') => {
+    const text = String(value ?? '').replace(/"/g, '""');
+    return `"${text}"`;
+};
+
+const buildGeneratedQuestionsCsv = (items = []) => {
+    const headers = [
+        'id',
+        'subject',
+        'source_action',
+        'source_mode',
+        'source_session',
+        'source_topic',
+        'occurrences',
+        'question',
+        'A',
+        'B',
+        'C',
+        'D',
+        'correct_answer',
+        'explanation',
+        'created_at',
+        'updated_at'
+    ];
+
+    const rows = items.map((item) => ([
+        item.id || '',
+        item.subject || '',
+        item.source_action || '',
+        item.source_mode || '',
+        item.source_session || '',
+        item.source_topic || '',
+        item.occurrences || 1,
+        item.question || '',
+        item.options?.A || '',
+        item.options?.B || '',
+        item.options?.C || '',
+        item.options?.D || '',
+        item.correct_answer || '',
+        item.explanation || '',
+        item.created_at || '',
+        item.updated_at || ''
+    ]).map(escapeCsvCell).join(','));
+
+    return [headers.map(escapeCsvCell).join(','), ...rows].join('\n');
 };
 
 // MathRenderer moved to ./components/MathRenderer.jsx
@@ -915,7 +974,7 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
                         className={`${clayBtnAction} w-full`}
                         disabled={isCallingN8N || (!question.trim() && !pastedImage)}
                     >
-                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '? Confirmar y Analizar Imagen' : 'Preguntar a Matico ??')}
+                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '🖼️ Confirmar y Analizar Imagen' : 'Preguntar a Matico ✨')}
                     </button>
                 </form>
             </div >
@@ -931,7 +990,7 @@ const LoadingOverlay = ({ isOpen, message }) => {
             <div className={`${clayCard} !bg-[#FFC300] flex flex-col items-center p-8 animate-bounce max-w-sm`}>
                 <Brain className="w-16 h-16 text-[#2B2E4A] animate-spin mb-4" />
                 <h2 className="text-2xl font-black text-[#2B2E4A] text-center uppercase tracking-widest whitespace-pre-line">
-                    {message || "? ESPÉRATE...\nESTOY PENSANDO ??"}
+                    {message || "⏳ ESPÉRATE...\nESTOY PENSANDO 🤖"}
                 </h2>
             </div>
         </div >
@@ -1269,7 +1328,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                     {apiJson && apiJson.question && (
                         <div className="mt-8 pt-6 border-t border-gray-300/50">
                             <h5 className="font-black text-[#2B2E4A] mb-4 flex items-center gap-2">
-                                <span className="text-xl">?? </span>? Desafío Rápido:
+                                <span className="text-xl">⚡</span> Desafío Rápido:
                             </h5>
                             <div className="font-bold text-[#2B2E4A] mb-4">
                                 <MathRenderer text={apiJson.question} />
@@ -1319,7 +1378,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             onClick={onAskDoubt}
                                             className="px-4 py-2 bg-white/50 text-[#FF9F43] font-bold rounded-xl text-xs flex items-center gap-1 hover:bg-white transition-colors"
                                         >
-                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? ??
+                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? 💬
                                         </button>
 
                                         <button
@@ -1327,7 +1386,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             className={`${clayBtnAction} w-auto px-6 py-2 text-xs`}
                                             disabled={isCallingN8N}
                                         >
-                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! ??' : 'Refuerzo ?ï¸')}
+                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! 🚀' : 'Refuerzo 🔁')}
                                         </button>
                                     </div>
                                 </div>
@@ -1887,6 +1946,14 @@ const AdminNotebookFilesModal = ({
 }) => {
     if (!isOpen) return null;
 
+    const resolvePublicUrl = (value) => {
+        try {
+            return new URL(value, window.location.origin).toString();
+        } catch {
+            return value;
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[195] flex items-center justify-center p-4 bg-[#2B2E4A]/65 backdrop-blur-md">
             <div className="bg-[#F4F7FF] w-full max-w-5xl rounded-[32px] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.35)] border-4 border-white">
@@ -1931,7 +1998,7 @@ const AdminNotebookFilesModal = ({
                                         </div>
                                         <div className="flex flex-wrap gap-3">
                                             <a
-                                                href={file.publicUrl}
+                                                href={resolvePublicUrl(file.publicUrl)}
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
@@ -1944,6 +2011,140 @@ const AdminNotebookFilesModal = ({
                                             >
                                                 ELIMINAR <Trash2 className="w-4 h-4" />
                                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const AdminGeneratedQuestionsModal = ({
+    isOpen,
+    onClose,
+    items,
+    isLoading,
+    onRefresh,
+    onDelete
+}) => {
+    if (!isOpen) return null;
+
+    const exportAllJson = () => {
+        const fileName = `matico_preguntas_${new Date().toISOString().slice(0, 10)}.json`;
+        const payload = {
+            exportedAt: new Date().toISOString(),
+            count: items.length,
+            items
+        };
+        downloadTextFile(fileName, JSON.stringify(payload, null, 2));
+    };
+
+    const exportAllCsv = () => {
+        const fileName = `matico_preguntas_${new Date().toISOString().slice(0, 10)}.csv`;
+        downloadTextFile(fileName, buildGeneratedQuestionsCsv(items), 'text/csv');
+    };
+
+    const exportSingleJson = (item) => {
+        const safeName = (item?.id || item?.source_action || 'pregunta')
+            .toString()
+            .replace(/[^a-zA-Z0-9_-]+/g, '_');
+        downloadTextFile(`matico_${safeName}.json`, JSON.stringify(item, null, 2));
+    };
+
+    return (
+        <div className="fixed inset-0 z-[196] flex items-center justify-center p-4 bg-[#2B2E4A]/65 backdrop-blur-md">
+            <div className="bg-[#F4F7FF] w-full max-w-6xl rounded-[32px] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.35)] border-4 border-white">
+                <div className="bg-white px-6 py-5 border-b-2 border-gray-100 flex items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-2xl font-black text-[#2B2E4A]">Banco de preguntas IA</h3>
+                        <p className="text-sm font-bold text-[#9094A6]">Descarga o elimina solo las preguntas creadas por Matico</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button onClick={exportAllJson} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}>
+                            JSON <Download className="w-4 h-4" />
+                        </button>
+                        <button onClick={exportAllCsv} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#2ECC71] !border-[#27AE60] hover:!bg-[#27AE60]`}>
+                            CSV <Download className="w-4 h-4" />
+                        </button>
+                        <button onClick={onRefresh} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>
+                            RECARGAR
+                        </button>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <X className="w-6 h-6 text-gray-400" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-6 max-h-[75vh] overflow-y-auto">
+                    {isLoading ? (
+                        <div className="py-16 flex flex-col items-center justify-center text-[#9094A6]">
+                            <Loader className="w-8 h-8 animate-spin mb-3" />
+                            <p className="font-bold">Cargando banco de preguntas...</p>
+                        </div>
+                    ) : items.length === 0 ? (
+                        <div className="py-16 text-center text-[#9094A6]">
+                            <Database className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                            <p className="font-bold">No hay preguntas generadas todavía.</p>
+                            <p className="text-sm mt-2">Cuando Matico cree quizzes o pruebas, aparecerán aquí para descargarlas o borrarlas.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {items.map((item) => (
+                                <div key={item.id || item.signature} className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                                                        {item.subject || 'SIN ASIGNATURA'}
+                                                    </span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100">
+                                                        {item.source_action || 'generated'}
+                                                    </span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full bg-gray-50 text-gray-500 border border-gray-100">
+                                                        Sesión {item.source_session || 'N/A'}
+                                                    </span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                                        {item.occurrences || 1} veces
+                                                    </span>
+                                                </div>
+                                                <p className="font-black text-[#2B2E4A] text-lg leading-snug whitespace-pre-wrap">{item.question}</p>
+                                                <p className="text-xs text-[#9094A6] mt-2 break-all">{item.source_topic || 'Sin tema'}</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    onClick={() => exportSingleJson(item)}
+                                                    className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
+                                                >
+                                                    JSON <Download className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => onDelete(item)}
+                                                    className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#FF4B4B] !border-[#D63E3E] hover:!bg-[#D63E3E]`}
+                                                >
+                                                    ELIMINAR <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {['A', 'B', 'C', 'D'].map((letter) => (
+                                                <div key={letter} className={`rounded-2xl border px-4 py-3 ${item.correct_answer === letter ? 'border-green-200 bg-green-50' : 'border-gray-100 bg-gray-50'}`}>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{letter}</p>
+                                                    <p className="text-sm font-bold text-[#2B2E4A] whitespace-pre-wrap">{item.options?.[letter] || 'Sin texto'}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="rounded-2xl bg-[#F8FAFF] border border-[#E2E8F0] p-4">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Respuesta correcta</p>
+                                            <p className="text-sm font-bold text-[#2B2E4A]">{item.correct_answer || 'A'}</p>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-3 mb-1">Explicación</p>
+                                            <p className="text-sm text-[#4B5563] whitespace-pre-wrap">{item.explanation || 'Sin explicación.'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -2191,6 +2392,9 @@ const App = () => {
     const [showAdminFilesModal, setShowAdminFilesModal] = useState(false);
     const [adminNotebookFiles, setAdminNotebookFiles] = useState([]);
     const [isLoadingAdminFiles, setIsLoadingAdminFiles] = useState(false);
+    const [showAdminGeneratedQuestionsModal, setShowAdminGeneratedQuestionsModal] = useState(false);
+    const [adminGeneratedQuestions, setAdminGeneratedQuestions] = useState([]);
+    const [isLoadingAdminGeneratedQuestions, setIsLoadingAdminGeneratedQuestions] = useState(false);
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
     useEffect(() => {
@@ -2735,6 +2939,68 @@ const App = () => {
         } catch (error) {
             console.error('[ADMIN_FILES] Error eliminando PDF:', error);
             alert(`No pudimos eliminar el PDF. ${error.message || ''}`);
+        }
+    };
+
+    const loadAdminGeneratedQuestions = async () => {
+        if (!isAdminUser) return;
+
+        setIsLoadingAdminGeneratedQuestions(true);
+        try {
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'list_generated_questions',
+                    email: currentUser?.email,
+                    user_id: USER_ID
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No se pudieron cargar las preguntas');
+            }
+
+            setAdminGeneratedQuestions(data.items || []);
+        } catch (error) {
+            console.error('[ADMIN_QUESTIONS] Error listando preguntas generadas:', error);
+            alert(`No pudimos cargar las preguntas guardadas. ${error.message || ''}`);
+        } finally {
+            setIsLoadingAdminGeneratedQuestions(false);
+        }
+    };
+
+    const openAdminGeneratedQuestionsModal = async () => {
+        setShowAdminGeneratedQuestionsModal(true);
+        await loadAdminGeneratedQuestions();
+    };
+
+    const deleteAdminGeneratedQuestion = async (item) => {
+        if (!item?.id) return;
+        if (!confirm(`¿Eliminar esta pregunta generada?\n\n${item.question?.slice(0, 180) || item.id}`)) return;
+
+        try {
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'delete_generated_question',
+                    email: currentUser?.email,
+                    user_id: USER_ID,
+                    question_id: item.id
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No se pudo eliminar la pregunta');
+            }
+
+            setAdminGeneratedQuestions(prev => prev.filter(entry => entry.id !== item.id));
+        } catch (error) {
+            console.error('[ADMIN_QUESTIONS] Error eliminando pregunta generada:', error);
+            alert(`No pudimos eliminar la pregunta. ${error.message || ''}`);
         }
     };
 
@@ -3691,7 +3957,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
                         if (isBatchQuiz || isSingleQuiz) {
                             // AUTO-LAUNCH QUIZ
-                            console.log("?? Auto-launching Quiz!");
+                            console.log("🚀 Auto-launching Quiz!");
                             const questionsToLoad = isBatchQuiz ? finalData.questions : [finalData];
 
                             setQuizQuestions(questionsToLoad);
@@ -3710,7 +3976,7 @@ ${finalData.capsule}`;
                         } else {
                             // Fallback / Other
                             if (action === 'generate_quiz') {
-                                content = "?? **Error de Formato:** La IA no envió preguntas válidas.\n\n" + JSON.stringify(finalData, null, 2);
+                                content = "⚠️ **Error de Formato:** La IA no envió preguntas válidas.\n\n" + JSON.stringify(finalData, null, 2);
                             } else {
                                 content = finalData.output || finalData.text || finalData.theory || JSON.stringify(finalData, null, 2);
                             }
@@ -4217,6 +4483,15 @@ ${finalData.capsule}`;
                     onDelete={deleteAdminNotebookFile}
                 />
 
+                <AdminGeneratedQuestionsModal
+                    isOpen={showAdminGeneratedQuestionsModal}
+                    onClose={() => setShowAdminGeneratedQuestionsModal(false)}
+                    items={adminGeneratedQuestions}
+                    isLoading={isLoadingAdminGeneratedQuestions}
+                    onRefresh={loadAdminGeneratedQuestions}
+                    onDelete={deleteAdminGeneratedQuestion}
+                />
+
                 {/* SETTINGS MODAL */}
                 {settingsOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md animate-fade-in">
@@ -4368,6 +4643,24 @@ ${finalData.capsule}`;
                                                 className={`${clayBtnAction} !bg-[#E67E22] !border-[#D35400] hover:!bg-[#D35400]`}
                                             >
                                                 VER PDFS DEL VPS <FileText className="w-5 h-5" />
+                                            </button>
+
+                                            <div className="h-px bg-gray-100" />
+
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
+                                                    <Database className="w-4 h-4 text-blue-600" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">Banco de preguntas IA</span>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Descargar o eliminar preguntas generadas</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={openAdminGeneratedQuestionsModal}
+                                                className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
+                                            >
+                                                VER BANCO IA <Database className="w-5 h-5" />
                                             </button>
                                         </div>
                                     </div>
