@@ -165,7 +165,7 @@ const N8N_URLS = {
     test: "/webhook-test/MATICO"
 };
 
-// --- PRODUCCIÓN: CALENDARIO MATICO ---
+// --- PRODUCCI�N: CALENDARIO MATICO ---
 const COURSE_START_DATE = new Date('2026-01-26T00:00:00'); // Lunes 26 de Enero
 const WEEKLY_PLAN = [
     { day: 1, subject: 'MATEMATICA' },
@@ -203,7 +203,7 @@ El centro del universo de Roberto era una casa de remolienda, un burdel que func
 
 Durante su primera infancia, el mundo de Roberto se limitaba a los límites del callejón y al vasto "pajonal", un terreno baldío donde la naturaleza salvaje se mezclaba con los desperdicios de la ciudad. Allí, junto a otros niños de rodillas costrosas y mirada despierta, Roberto descubría los secretos de la vida a través del juego. En el pajonal, los niños eran reyes de reinos invisibles, pero también eran receptores de los miedos colectivos que los adultos sembraban para controlarlos. Historias sobre el "Viejo del Saco" o el "Culebrón" poblaban sus pesadillas nocturnas, dándole una forma fantástica a los peligros reales que acechaban en la oscuridad. Sin embargo, a medida que Roberto dejaba de ser un niño pequeño, empezó a notar que los hombres que llegaban a la casa de su tía eran más aterradores que cualquier monstruo de cuento; eran hombres consumidos por el alcohol, por el trabajo agotador en las minas o en el campo, que buscaban un momento de olvido en los brazos de mujeres que, al igual que ellos, solo intentaban sobrevivir un día más.
 
-El gran quiebre en la vida de Roberto, el momento en que su horizonte dejó de ser una pared de madera podrida, fue su entrada en la escuela pública. Al principio, la escuela representaba un lugar extraño, con sus reglas rígidas y su atmósfera de orden que contrastaba violentamente con el caos del callejón. Pero fue allí donde Roberto se encontró con el poder transformador de las letras. Su profesor, un hombre que supo detectar la inteligencia vivaz que se escondía tras la apariencia humilde del niño, se convirtió en su mentor silencioso. Roberto descubrió que las palabras eran herramientas, llaves capaces de abrir celdas invisibles. Cada libro que caía en sus manos desde cuentos de aventuras hasta poemas de grandes autores era una invitación a un mundo donde la justicia no era un concepto abstracto y donde la belleza no estaba prohibida para los pobres. La lectura despertó en él una sensibilidad que lo alejaba de sus pares; mientras otros niños aceptaban su destino como obreros o delincuentes en potencia, Roberto empezaba a soñar con ser escritor, con tener una voz que pudiera narrar el dolor de su gente.
+El gran quiebre en la vida de Roberto, el momento en que su horizonte dejó de ser una pared de madera podrida, fue su entrada en la escuela pública. Al principio, la escuela representaba un lugar extraño, con sus reglas rígidas y su atmósfera de orden que contrastaba violentamente con el caos del callejón. Pero fue allí donde Roberto se encontró con el poder transformador de las letras. Su profesor, un hombre que supo detectar la inteligencia vivaz que se escondía tras la apariencia humilde del niño, se convirtió en su mentor silencioso. Roberto descubrió que las palabras eran herramientas, llaves capaces de abrir celdas invisibles. Cada libro que caía en sus manos �desde cuentos de aventuras hasta poemas de grandes autores� era una invitación a un mundo donde la justicia no era un concepto abstracto y donde la belleza no estaba prohibida para los pobres. La lectura despertó en él una sensibilidad que lo alejaba de sus pares; mientras otros niños aceptaban su destino como obreros o delincuentes en potencia, Roberto empezaba a soñar con ser escritor, con tener una voz que pudiera narrar el dolor de su gente.
 
 Sin embargo, este despertar intelectual trajo consigo el veneno de la conciencia de clase. Al salir de su barrio para ir a la escuela o al centro de Rancagua, Roberto comenzó a percibir las miradas de los "otros". Notaba cómo las personas de las casas sólidas y jardines cuidados se apartaban al paso de alguien que venía del callejón, cómo la policía trataba con sospecha a cualquiera que tuviera el rastro del barro en su vestimenta. Surgió entonces una contradicción dolorosa en su pecho: el amor profundo y la gratitud que sentía por su madre y su tía se mezclaban con una vergüenza punzante por el origen de su sustento. Se sentía un traidor al avergonzarse de la casa donde recibía alimento, pero no podía evitar el asco moral que le producía el negocio de la prostitución y la degradación humana que veía a diario. Esta lucha interna marcó su paso de la niñez a la adolescencia, convirtiéndolo en un observador melancólico de su propia realidad.
 
@@ -369,7 +369,7 @@ El clímax ocurre fuera de escena, pero su impacto es devastador. Leonardo y el 
         readingTitle: 'El curioso incidente del perro a medianoche (Resumen y Análisis)',
         readingContent: `La historia comienza en una calle tranquila de Swindon, Inglaterra, durante una medianoche que cambiaría para siempre la percepción del mundo de Christopher John Francis Boone. Christopher es un joven de quince años con una mente prodigiosa para las matemáticas y la lógica, pero que experimenta el mundo de una manera radicalmente distinta a la mayoría de las personas debido a un trastorno del espectro autista, probablemente síndrome de Asperger, aunque nunca se menciona explícitamente en el texto. Para Christopher, el mundo es un caos de estímulos sensoriales que debe ser ordenado meticulosamente a través de reglas, números primos y hechos comprobables. Esa noche, Christopher descubre el cadáver de Wellington, el caniche de su vecina la señora Shears, atravesado por una horca de jardín en medio del césped. Este evento, que para otros podría ser un incidente lamentable pero menor, se convierte para Christopher en el punto de partida de un enigma que debe resolver, decidiendo escribir un libro sobre su investigación, al estilo de sus admiradas historias de Sherlock Holmes.
 
-La vida de Christopher está regida por una estructura rígida diseñada para protegerlo del abrumador ruido del mundo exterior. No soporta que lo toquen, no comprende las metáforas porque las considera mentiras y juzga la calidad de su día basándose en el color de los coches que ve desde el autobús escolar: cuatro coches rojos seguidos significan un "Buen Día", mientras que cuatro coches amarillos presagian un "Día Negro" en el que no hablará con nadie. Su principal apoyo es Siobhan, su tutora en la escuela, quien le enseña a descifrar las complejas emociones humanas a través de dibujos de caras y le anima a seguir escribiendo su crónica detectivesca. Sin embargo, su padre, Ed Boone, reacciona con una furia desproporcionada y angustiante cuando descubre que su hijo está haciendo preguntas sobre la muerte del perro, prohibiéndole terminantemente continuar con su investigación y exigiéndole que deje de meter las narices en los asuntos de los vecinos.
+La vida de Christopher está regida por una estructura rígida diseñada para protegerlo del abrumador ruido del mundo exterior. No soporta que lo toquen, no comprende las metáforas �porque las considera mentiras� y juzga la calidad de su día basándose en el color de los coches que ve desde el autobús escolar: cuatro coches rojos seguidos significan un "Buen Día", mientras que cuatro coches amarillos presagian un "Día Negro" en el que no hablará con nadie. Su principal apoyo es Siobhan, su tutora en la escuela, quien le enseña a descifrar las complejas emociones humanas a través de dibujos de caras y le anima a seguir escribiendo su crónica detectivesca. Sin embargo, su padre, Ed Boone, reacciona con una furia desproporcionada y angustiante cuando descubre que su hijo está haciendo preguntas sobre la muerte del perro, prohibiéndole terminantemente continuar con su investigación y exigiéndole que deje de meter las narices en los asuntos de los vecinos.
 
 A pesar de la prohibición de su padre, la curiosidad lógica de Christopher lo lleva a desobedecer. Durante sus pesquisas, descubre verdades que los adultos a su alrededor han intentado ocultar bajo capas de silencio y engaño. La más devastadora de estas verdades se revela cuando Christopher, buscando su libro de notas que su padre le había confiscado, encuentra una caja con cartas escondidas en el armario de Ed. Al leerlas, su mundo lógico se colapsa: las cartas están escritas por su madre, Judy, y tienen fechas posteriores al momento en que su padre le dijo que ella había muerto de un ataque al corazón en el hospital. Christopher descubre que su madre no está muerta, sino que vive en Londres con el señor Shears, el exmarido de su vecina. La revelación de que su padre le ha mentido durante años sobre el hecho más fundamental de su vida rompe el único vínculo de confianza que Christopher poseía, llevándolo a un estado de pánico y parálisis emocional.
 
@@ -506,7 +506,7 @@ const MATH_SYLLABUS = [
     { session: 8, unit: 'Números', topic: 'Raíces Enésimas', videoTitle: 'Prueba de Transición-Raíces', videoLink: 'https://www.youtube.com/watch?v=xMYFzXcFYns' },
     { session: 9, unit: 'Números', topic: 'Operatoria con Raíces', videoTitle: 'Capsule-Roots', videoLink: 'https://www.youtube.com/watch?v=HwxfKSq0lh8' },
     { session: 10, unit: 'Números', topic: 'Porcentajes', videoTitle: 'PAES M1-Porcentaje', videoLink: 'https://www.youtube.com/watch?v=YJ9l1Ew_rns' },
-    { session: 11, unit: 'ílgebra', topic: 'Lenguaje Algebraico', videoTitle: 'EXPRESIONES ALGEBRAICAS Clase NíâÃº3', videoLink: 'https://www.youtube.com/watch?v=lojCGXH4Odk' },
+    { session: 11, unit: 'ílgebra', topic: 'Lenguaje Algebraico', videoTitle: 'EXPRESIONES ALGEBRAICAS Clase Níâ¬�aÒ�º3', videoLink: 'https://www.youtube.com/watch?v=lojCGXH4Odk' },
     { session: 12, unit: 'ílgebra', topic: 'Cuadrado de Binomio', videoTitle: 'Cuadrado de binomio', videoLink: 'https://www.youtube.com/watch?v=IjL5zOyxs20' },
     { session: 13, unit: 'ílgebra', topic: 'Suma por Diferencia', videoTitle: 'Suma por diferencia', videoLink: 'https://www.youtube.com/watch?v=-w_lg-r7pDg' },
     { session: 14, unit: 'ílgebra', topic: 'Binomio con Término Común', videoTitle: 'Clase 6: ílgebra y funciones', videoLink: 'https://www.youtube.com/watch?v=CvgRtkMJ7ao' },
@@ -516,12 +516,12 @@ const MATH_SYLLABUS = [
     { session: 18, unit: 'ílgebra', topic: 'Sistemas Ecuaciones (Intro)', videoTitle: 'Sistemas de ecuaciones (Casos)', videoLink: 'https://www.youtube.com/watch?v=AFKpBTCc6oU' },
     { session: 19, unit: 'ílgebra', topic: 'Método de Sustitución', videoTitle: 'Sistemas de ecuaciones-Sustitución', videoLink: 'https://www.youtube.com/watch?v=aBmuYyKeWaE' },
     { session: 20, unit: 'ílgebra', topic: 'Método de Reducción', videoTitle: 'INTENSIVO SISTEMAS DE ECUACIONES', videoLink: 'https://www.youtube.com/watch?v=J2dRZ2iM3sY' },
-    { session: 21, unit: 'ílgebra', topic: 'Método de Igualación', videoTitle: 'METODO DE IGUALACIÓN', videoLink: 'https://www.youtube.com/watch?v=tr78m4H9BIw' },
+    { session: 21, unit: 'ílgebra', topic: 'Método de Igualación', videoTitle: 'METODO DE IGUALACI�N', videoLink: 'https://www.youtube.com/watch?v=tr78m4H9BIw' },
     { session: 22, unit: 'ílgebra', topic: 'Problemas de Planteo', videoTitle: 'PLANTEO DE PROBLEMAS', videoLink: 'https://www.youtube.com/watch?v=780RStmengs' },
-    { session: 23, unit: 'ílgebra', topic: 'Función Lineal', videoTitle: 'FUNCIÓN LINEAL Y AFíN', videoLink: 'https://www.youtube.com/watch?v=XC6VLf8pOVg' },
+    { session: 23, unit: 'ílgebra', topic: 'Función Lineal', videoTitle: 'FUNCI�N LINEAL Y AFíN', videoLink: 'https://www.youtube.com/watch?v=XC6VLf8pOVg' },
     { session: 24, unit: 'ílgebra', topic: 'Función Afín', videoTitle: 'Función lineal y afín (Parte 2)', videoLink: 'https://www.youtube.com/watch?v=TU0NMpLS88U' },
     { session: 25, unit: 'Geometría', topic: 'Vectores', videoTitle: 'Vectores en el plano cartesiano', videoLink: 'https://www.youtube.com/watch?v=fjKr9TnAKYs' },
-    { session: 26, unit: 'Geometría', topic: 'Transformaciones Isométricas', videoTitle: 'TRANSFORMACIONES ISOMíÆÃ¢â¬°TRICAS', videoLink: 'https://www.youtube.com/watch?v=_tIaG3tmVgI' },
+    { session: 26, unit: 'Geometría', topic: 'Transformaciones Isométricas', videoTitle: 'TRANSFORMACIONES ISOMí� �Ò¢â�¬°TRICAS', videoLink: 'https://www.youtube.com/watch?v=_tIaG3tmVgI' },
     { session: 27, unit: 'Geometría', topic: 'Homotecia: Concepto', videoTitle: 'Homotecia', videoLink: 'https://www.youtube.com/watch?v=_rJoKG8MLg8' },
     { session: 28, unit: 'Geometría', topic: 'Homotecia: Propiedades', videoTitle: 'Homotecia de figuras planas', videoLink: 'https://www.youtube.com/watch?v=OTGPT5AG2ww' },
     { session: 29, unit: 'Geometría', topic: 'Congruencia de Triángulos', videoTitle: 'Congruencia de triángulos', videoLink: 'https://www.youtube.com/watch?v=PX9FjNz7yR8' },
@@ -538,7 +538,7 @@ const MATH_SYLLABUS = [
     { session: 40, unit: 'Datos', topic: 'Probabilidad (Laplace)', videoTitle: 'Regla de Laplace', videoLink: 'https://www.youtube.com/watch?v=bazKrpT91kY' },
     { session: 41, unit: 'Datos', topic: 'Regla Aditiva', videoTitle: 'Probabilidades (Unión)', videoLink: 'https://www.youtube.com/watch?v=zI6Aly68P0Q' },
     { session: 42, unit: 'Datos', topic: 'Regla Multiplicativa', videoTitle: 'Probabilidad condicional', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
-    { session: 43, unit: 'Datos', topic: 'Técnicas de Conteo', videoTitle: 'TíÆÃ¢â¬°CNICAS DE CONTEO', videoLink: 'https://www.youtube.com/watch?v=klUzWXgLBRM' },
+    { session: 43, unit: 'Datos', topic: 'Técnicas de Conteo', videoTitle: 'Tí� �Ò¢â�¬°CNICAS DE CONTEO', videoLink: 'https://www.youtube.com/watch?v=klUzWXgLBRM' },
     { session: 44, unit: 'Datos', topic: 'Probabilidad Condicional', videoTitle: 'Probabilidad Condicional Intro', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
     { session: 45, unit: 'Datos', topic: 'Proyecto Estadística', videoTitle: 'Estadística en la Vida Real', videoLink: 'https://www.youtube.com/watch?v=GBNpyyApgdA' },
     { session: 46, unit: 'Cierre', topic: 'Gran Desafío Final', videoTitle: 'Ensayo General Matemática', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' }
@@ -557,7 +557,7 @@ const DEFAULT_DAILY_ROUTE = {
         { step: '2. Teoría Lúdica IA', action: 'start_route', icon: 'Brain', isComplete: false },
         { step: '3. Quiz de 45 Preguntas Kaizen', action: 'quiz', icon: 'Lock', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR ANÁLISIS HIST�RICO"
 };
 
 const DEFAULT_LANG_ROUTE = {
@@ -571,7 +571,7 @@ const DEFAULT_LANG_ROUTE = {
         { step: '2. Crítica Literaria IA', action: 'start_route', icon: 'BookOpen', isComplete: false },
         { step: '3. Redacción/Quiz', action: 'quiz', icon: 'Star', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR ANÁLISIS HIST�RICO"
 };
 
 
@@ -584,7 +584,7 @@ const CHEMISTRY_SYLLABUS = [
     { session: 5, unit: 'Reacciones', topic: 'La Ecuación Química', videoTitle: 'Anatomía de la Ecuación', videoLink: 'https://www.youtube.com/watch?v=G4kiAaLiigI' },
     { session: 6, unit: 'Reacciones', topic: 'Síntesis y Descomposición', videoTitle: 'Tipos de Reacción I', videoLink: 'https://www.youtube.com/shorts/hsWclMOU6Hs' },
     { session: 7, unit: 'Reacciones', topic: 'Sustitución y Desplazamiento', videoTitle: 'Tipos de Reacción II', videoLink: 'https://www.youtube.com/watch?v=Qz0ipe5qc8I' },
-    { session: 8, unit: 'Reacciones', topic: 'Neutralización Ãcido-Base', videoTitle: 'Neutralización', videoLink: 'https://www.youtube.com/watch?v=mHJsc1tnAnk' },
+    { session: 8, unit: 'Reacciones', topic: 'Neutralización Òcido-Base', videoTitle: 'Neutralización', videoLink: 'https://www.youtube.com/watch?v=mHJsc1tnAnk' },
     { session: 9, unit: 'Reacciones', topic: 'Exotérmicas y Endotérmicas', videoTitle: 'Termodinámica Básica', videoLink: 'https://www.youtube.com/watch?v=G7TFOnQoU8w' },
     { session: 10, unit: 'Reacciones', topic: 'Taller de Clasificación', videoTitle: 'Ejercicios Tipos de Reacción', videoLink: 'https://www.youtube.com/watch?v=rTzSYDg2NU4' },
 
@@ -598,7 +598,7 @@ const CHEMISTRY_SYLLABUS = [
     { session: 17, unit: 'Balanceo', topic: 'Método Algebraico Intro', videoTitle: 'Intro Algebraico', videoLink: 'https://www.youtube.com/watch?v=VxgyhjojvGI' },
     { session: 18, unit: 'Balanceo', topic: 'Sistemas de Ecuaciones Químicas', videoTitle: 'Resolución Algebraica', videoLink: 'https://www.youtube.com/watch?v=ZYUMX1DO4tY' },
     { session: 19, unit: 'Balanceo', topic: 'Balanceo Complejo', videoTitle: 'Algebraico Avanzado', videoLink: 'https://www.youtube.com/watch?v=MCEc0e-bDt4' },
-    { session: 20, unit: 'Nomenclatura', topic: 'Óxidos Básicos y Ãcidos', videoTitle: 'Nomenclatura Óxidos', videoLink: 'https://www.youtube.com/watch?v=pH9acFVTlM8' },
+    { session: 20, unit: 'Nomenclatura', topic: '�xidos Básicos y Òcidos', videoTitle: 'Nomenclatura �xidos', videoLink: 'https://www.youtube.com/watch?v=pH9acFVTlM8' },
     { session: 21, unit: 'Nomenclatura', topic: 'Hidruros y Sales Binarias', videoTitle: 'Binarios', videoLink: 'https://www.youtube.com/watch?v=OUvUaQE8G8Q' },
     { session: 22, unit: 'Nomenclatura', topic: 'Compuestos Ternarios', videoTitle: 'Hidróxidos y Oxácidos', videoLink: 'https://www.youtube.com/watch?v=-L-g5vR1gV0' },
 
@@ -608,7 +608,7 @@ const CHEMISTRY_SYLLABUS = [
     { session: 25, unit: 'Estequiometría', topic: 'Masa Atómica', videoTitle: 'Tabla Periódica y Masa', videoLink: 'https://www.youtube.com/watch?v=A8qq0U9LkTE' },
     { session: 26, unit: 'Estequiometría', topic: 'Masa Molar Compuestos', videoTitle: 'Cálculo Masa Molar', videoLink: 'https://www.youtube.com/watch?v=kBXSRIm8uBc' },
     { session: 27, unit: 'Estequiometría', topic: 'Conversión Gramos a Moles', videoTitle: 'Conversiones Básicas', videoLink: 'https://www.youtube.com/watch?v=TwRQUj8cEBw' },
-    { session: 28, unit: 'Estequiometría', topic: 'Conversión Masa-Mol-Ãtomos', videoTitle: 'Conversiones Avanzadas', videoLink: 'https://www.youtube.com/watch?v=7bxHKDtW5tQ' },
+    { session: 28, unit: 'Estequiometría', topic: 'Conversión Masa-Mol-Òtomos', videoTitle: 'Conversiones Avanzadas', videoLink: 'https://www.youtube.com/watch?v=7bxHKDtW5tQ' },
     { session: 29, unit: 'Estequiometría', topic: 'Compuestos Hidratados', videoTitle: 'Masa Molar Compleja', videoLink: 'https://www.youtube.com/watch?v=3pamhajW65s' },
     { session: 30, unit: 'Estequiometría', topic: 'Composición Porcentual', videoTitle: 'Porcentaje en Masa', videoLink: 'https://www.youtube.com/watch?v=ni4KlRkBoVg' },
     { session: 31, unit: 'Estequiometría', topic: 'Fórmula Empírica y Molecular', videoTitle: 'Deducción de Fórmulas', videoLink: 'https://www.youtube.com/watch?v=MnafInl0GQw' },
@@ -616,7 +616,7 @@ const CHEMISTRY_SYLLABUS = [
     { session: 33, unit: 'Estequiometría', topic: 'Cálculo Masa-Masa', videoTitle: 'Estequiometría Masa-Masa', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
     { session: 34, unit: 'Estequiometría', topic: 'Taller Estequiometría', videoTitle: 'Ejercicios Mixtos', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
 
-    // UNIDAD 4: SOLUCIONES Y CINÃTICA (Sesiones 35-46)
+    // UNIDAD 4: SOLUCIONES Y CINÒ�0TICA (Sesiones 35-46)
     { session: 35, unit: 'Estequiometría Real', topic: 'Reactivo Limitante Concepto', videoTitle: 'Intro Reactivo Limitante', videoLink: 'https://www.youtube.com/watch?v=_rts32wOiv0' },
     { session: 36, unit: 'Estequiometría Real', topic: 'Cálculo Reactivo Limitante', videoTitle: 'Cálculo RL', videoLink: 'https://www.youtube.com/watch?v=bOrVhbELagw' },
     { session: 37, unit: 'Estequiometría Real', topic: 'Rendimiento de Reacción', videoTitle: 'Porcentaje de Rendimiento', videoLink: 'https://www.youtube.com/watch?v=iAATyWldpqs' },
@@ -627,7 +627,7 @@ const CHEMISTRY_SYLLABUS = [
     { session: 42, unit: 'Cinética', topic: 'Factores de Velocidad I', videoTitle: 'Temp y Superficie', videoLink: 'https://www.youtube.com/watch?v=HROvz_OQnx8' },
     { session: 43, unit: 'Cinética', topic: 'Factores de Velocidad II', videoTitle: 'Catalizadores', videoLink: 'https://www.youtube.com/watch?v=vJ7bk49kA9g' },
     { session: 44, unit: 'Cinética', topic: 'Exp. Virtual Cinética', videoTitle: 'Laboratorio Virtual', videoLink: 'https://www.youtube.com/watch?v=TuA_8006jCM' },
-    { session: 45, unit: 'Integración', topic: 'Lluvia Ãcida', videoTitle: 'Química Ambiental', videoLink: 'https://www.youtube.com/watch?v=YsEqU2TuvaI' },
+    { session: 45, unit: 'Integración', topic: 'Lluvia Òcida', videoTitle: 'Química Ambiental', videoLink: 'https://www.youtube.com/watch?v=YsEqU2TuvaI' },
     { session: 46, unit: 'Cierre', topic: 'Síntesis Final', videoTitle: 'Resumen PAES', videoLink: 'https://www.youtube.com/watch?v=Zz0xuNCpAQc' }
 ];
 
@@ -642,7 +642,7 @@ const DEFAULT_CHEM_ROUTE = {
         { step: '2. Laboratorio Virtual', action: 'start_route', icon: 'FlaskConical', isComplete: false },
         { step: '3. Quiz de Reacciones', action: 'quiz', icon: 'Atom', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR ANÁLISIS HIST�RICO"
 };
 
 
@@ -974,7 +974,7 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
                         className={`${clayBtnAction} w-full`}
                         disabled={isCallingN8N || (!question.trim() && !pastedImage)}
                     >
-                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '🖼️ Confirmar y Analizar Imagen' : 'Preguntar a Matico ✨')}
+                        {isCallingN8N ? 'Pensando...' : (pastedImage ? '�x�️ Confirmar y Analizar Imagen' : 'Preguntar a Matico �S�')}
                     </button>
                 </form>
             </div >
@@ -990,7 +990,7 @@ const LoadingOverlay = ({ isOpen, message }) => {
             <div className={`${clayCard} !bg-[#FFC300] flex flex-col items-center p-8 animate-bounce max-w-sm`}>
                 <Brain className="w-16 h-16 text-[#2B2E4A] animate-spin mb-4" />
                 <h2 className="text-2xl font-black text-[#2B2E4A] text-center uppercase tracking-widest whitespace-pre-line">
-                    {message || "⏳ ESPÉRATE...\nESTOY PENSANDO 🤖"}
+                    {message || "⏳ ESP�0RATE...\nESTOY PENSANDO �x�"}
                 </h2>
             </div>
         </div >
@@ -1207,7 +1207,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
 
     if (!isOpen) return null;
 
-    const isQuiz = (content || '').includes('QUIZ DE VALIDACIÓN');
+    const isQuiz = (content || '').includes('QUIZ DE VALIDACI�N');
     const isReview = (content || '').includes('Módulo de Refuerzo');
     const isActiveQuiz = apiJson && apiJson.question;
     // NEW: DETECT VIDEO CONTEXT FROM QUERY
@@ -1238,7 +1238,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
         actionHandler = onStartQuiz ? onStartQuiz : () => callAgent(subject, 'generate_quiz', routeTitle);
     }
 
-    const contentTitle = isTheory ? `Teoría Lúdica por Matico (${routeTitle}):` : (isActiveQuiz ? '¡Quiz en Progreso!' : (isQuiz ? '✅ ¡Quiz Generado!' : 'Plan de Refuerzo:'));
+    const contentTitle = isTheory ? `Teoría Lúdica por Matico (${routeTitle}):` : (isActiveQuiz ? '¡Quiz en Progreso!' : (isQuiz ? '�S& ¡Quiz Generado!' : 'Plan de Refuerzo:'));
 
     const handleOptionClick = (index) => {
         if (showExplanation) return;
@@ -1328,7 +1328,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                     {apiJson && apiJson.question && (
                         <div className="mt-8 pt-6 border-t border-gray-300/50">
                             <h5 className="font-black text-[#2B2E4A] mb-4 flex items-center gap-2">
-                                <span className="text-xl">⚡</span> Desafío Rápido:
+                                <span className="text-xl">�a�</span> Desafío Rápido:
                             </h5>
                             <div className="font-bold text-[#2B2E4A] mb-4">
                                 <MathRenderer text={apiJson.question} />
@@ -1378,7 +1378,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             onClick={onAskDoubt}
                                             className="px-4 py-2 bg-white/50 text-[#FF9F43] font-bold rounded-xl text-xs flex items-center gap-1 hover:bg-white transition-colors"
                                         >
-                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? 💬
+                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? �x�
                                         </button>
 
                                         <button
@@ -1386,7 +1386,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             className={`${clayBtnAction} w-auto px-6 py-2 text-xs`}
                                             disabled={isCallingN8N}
                                         >
-                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! 🚀' : 'Refuerzo 🔁')}
+                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! �xa�' : 'Refuerzo �x�')}
                                         </button>
                                     </div>
                                 </div>
@@ -1461,18 +1461,18 @@ const PHYSICS_SYLLABUS = [
     { session: 13, unit: 'Ondas y Sonido', topic: 'Evaluación Fase 1: Ondas', videoLink: 'https://www.youtube.com/watch?v=P-kbPkWC8CI' },
 
     // FASE 2: LUZ Y OPTICA
-    { session: 14, unit: 'Luz y Óptica', topic: 'Dualidad Onda-Partícula y Espectro', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 15, unit: 'Luz y Óptica', topic: 'Propagación y Velocidad de la Luz', videoLink: 'https://www.youtube.com/shorts/tvIQhjn6nm8' },
-    { session: 16, unit: 'Luz y Óptica', topic: 'Reflexión en Espejos Planos', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
-    { session: 17, unit: 'Luz y Óptica', topic: 'Espejos Cóncavos (Foco Real)', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
-    { session: 18, unit: 'Luz y Óptica', topic: 'Espejos Convexos (Foco Virtual)', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
-    { session: 19, unit: 'Luz y Óptica', topic: 'Refracción y Ley de Snell', videoLink: 'https://www.youtube.com/watch?v=JfDw0jRjllo' },
-    { session: 20, unit: 'Luz y Óptica', topic: 'Reflexión Total Interna', videoLink: 'https://www.youtube.com/watch?v=uKfGqD-2rAs' },
-    { session: 21, unit: 'Luz y Óptica', topic: 'Lentes Convergentes y el Ojo', videoLink: 'https://www.youtube.com/watch?v=5hTXt8SsgBw' },
-    { session: 22, unit: 'Luz y Óptica', topic: 'Lentes Divergentes y Miopía', videoLink: 'https://www.youtube.com/watch?v=5hTXt8SsgBw' },
-    { session: 23, unit: 'Luz y Óptica', topic: 'El Ojo Humano y Defectos', videoLink: 'https://www.youtube.com/watch?v=Z6GsrLQ6H3M' },
-    { session: 24, unit: 'Luz y Óptica', topic: 'Dispersión Cromática (Prisma)', videoLink: 'https://www.youtube.com/watch?v=JZt8EJH146k' },
-    { session: 25, unit: 'Luz y Óptica', topic: 'Evaluación Fase 2: Luz', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 14, unit: 'Luz y �ptica', topic: 'Dualidad Onda-Partícula y Espectro', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 15, unit: 'Luz y �ptica', topic: 'Propagación y Velocidad de la Luz', videoLink: 'https://www.youtube.com/shorts/tvIQhjn6nm8' },
+    { session: 16, unit: 'Luz y �ptica', topic: 'Reflexión en Espejos Planos', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
+    { session: 17, unit: 'Luz y �ptica', topic: 'Espejos Cóncavos (Foco Real)', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
+    { session: 18, unit: 'Luz y �ptica', topic: 'Espejos Convexos (Foco Virtual)', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
+    { session: 19, unit: 'Luz y �ptica', topic: 'Refracción y Ley de Snell', videoLink: 'https://www.youtube.com/watch?v=JfDw0jRjllo' },
+    { session: 20, unit: 'Luz y �ptica', topic: 'Reflexión Total Interna', videoLink: 'https://www.youtube.com/watch?v=uKfGqD-2rAs' },
+    { session: 21, unit: 'Luz y �ptica', topic: 'Lentes Convergentes y el Ojo', videoLink: 'https://www.youtube.com/watch?v=5hTXt8SsgBw' },
+    { session: 22, unit: 'Luz y �ptica', topic: 'Lentes Divergentes y Miopía', videoLink: 'https://www.youtube.com/watch?v=5hTXt8SsgBw' },
+    { session: 23, unit: 'Luz y �ptica', topic: 'El Ojo Humano y Defectos', videoLink: 'https://www.youtube.com/watch?v=Z6GsrLQ6H3M' },
+    { session: 24, unit: 'Luz y �ptica', topic: 'Dispersión Cromática (Prisma)', videoLink: 'https://www.youtube.com/watch?v=JZt8EJH146k' },
+    { session: 25, unit: 'Luz y �ptica', topic: 'Evaluación Fase 2: Luz', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
 
     // FASE 3: SISMOS
     { session: 26, unit: 'Dinámica Terrestre', topic: 'Estructura Interna de la Tierra', videoLink: 'https://www.youtube.com/watch?v=IaZfi4RitGU' },
@@ -1491,9 +1491,9 @@ const PHYSICS_SYLLABUS = [
     { session: 37, unit: 'El Universo', topic: 'Leyes de Kepler (I y II)', videoLink: 'https://www.youtube.com/watch?v=a3-gU4tpjWc' },
     { session: 38, unit: 'El Universo', topic: '3ra Ley de Kepler y Gravitación', videoLink: 'https://www.youtube.com/watch?v=a3-gU4tpjWc' },
     { session: 39, unit: 'Repaso Integral', topic: 'Repaso Ondas y Sonido', videoLink: 'https://www.youtube.com/watch?v=fbY_p2MoykA' },
-    { session: 40, unit: 'Repaso Integral', topic: 'Repaso Óptica Geométrica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 40, unit: 'Repaso Integral', topic: 'Repaso �ptica Geométrica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
     { session: 41, unit: 'Repaso Integral', topic: 'Repaso Sismos y Universo', videoLink: 'https://www.youtube.com/watch?v=jalVd4_I3jM' },
-    { session: 42, unit: 'Cierre', topic: 'ENSAYO FINAL SIMULACIÓN', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 42, unit: 'Cierre', topic: 'ENSAYO FINAL SIMULACI�N', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
     { session: 43, unit: 'Cierre', topic: 'Análisis de Errores y Cierre', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
     { session: 44, unit: 'Cierre', topic: 'Física Moderna', videoTitle: 'Introducción a Física Cuántica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
     { session: 45, unit: 'Cierre', topic: 'Física y Tecnología', videoTitle: 'Aplicaciones de la Física', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
@@ -1502,7 +1502,7 @@ const PHYSICS_SYLLABUS = [
 
 
 const BIOLOGY_SYLLABUS = [
-    // UNIDAD 1: EVOLUCIÓN Y BIODIVERSIDAD
+    // UNIDAD 1: EVOLUCI�N Y BIODIVERSIDAD
     { session: 1, unit: 'Evolución', topic: 'Teorías Pre-Darwinianas', videoLink: 'https://www.youtube.com/watch?v=c1oJKMtVLYQ' },
     { session: 2, unit: 'Evolución', topic: 'Darwin y Wallace', videoLink: 'https://www.youtube.com/watch?v=J7fsT_85Ld0' },
     { session: 3, unit: 'Evolución', topic: 'Teoría Sintética', videoLink: 'https://www.youtube.com/watch?v=6QfDA44028s' },
@@ -1559,7 +1559,7 @@ const BIOLOGY_SYLLABUS = [
 
 
 const HISTORY_SYLLABUS = [
-    // UNIDAD 1: LA CONSTRUCCIÓN DEL ESTADO NACIÓN (Sesiones 1-12)
+    // UNIDAD 1: LA CONSTRUCCI�N DEL ESTADO NACI�N (Sesiones 1-12)
     {
         session: 1,
         unit: 'Construcción Estado Nación',
@@ -1589,7 +1589,7 @@ const HISTORY_SYLLABUS = [
     { session: 11, unit: 'Construcción Estado Nación', topic: 'La Guerra contra España', videoTitle: 'Guerra contra España 1865', videoLink: 'https://www.youtube.com/watch?v=bU9WmMmwVgg' },
     { session: 12, unit: 'Construcción Estado Nación', topic: 'Educación y Cultura Siglo XIX', videoTitle: 'Desarrollo educación y cultura Chile siglo XIX', videoLink: 'https://www.youtube.com/watch?v=Wpu4giF84Yg' },
 
-    // UNIDAD 2: PROGRESO, INDUSTRIALIZACIÓN Y CRISIS (Sesiones 13-23)
+    // UNIDAD 2: PROGRESO, INDUSTRIALIZACI�N Y CRISIS (Sesiones 13-23)
     {
         session: 13,
         unit: 'Progreso y Crisis',
@@ -1610,7 +1610,7 @@ const HISTORY_SYLLABUS = [
     { session: 22, unit: 'Progreso y Crisis', topic: 'Cuestión Social: Pampa y Ciudad', videoTitle: 'Ciclo del salitre y cuestión social', videoLink: 'https://www.youtube.com/watch?v=vp9D91ZcP7A' },
     { session: 23, unit: 'Progreso y Crisis', topic: 'Movilización Obrera y Represión', videoTitle: 'Matanza de Santa María de Iquique', videoLink: 'https://www.youtube.com/watch?v=K5n5VhyzYcc' },
 
-    // UNIDAD 3: CONFORMACIÓN DEL TERRITORIO CHILENO (Sesiones 24-34)
+    // UNIDAD 3: CONFORMACI�N DEL TERRITORIO CHILENO (Sesiones 24-34)
     {
         session: 24,
         unit: 'Territorio Nacional',
@@ -1666,7 +1666,7 @@ const DEFAULT_HISTORY_ROUTE = {
         { step: '3. Quiz Ciudadano', action: 'quiz', icon: 'Brain', isComplete: false },
         { step: '4. Debate', action: 'doubt', icon: 'MessageCircle', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
+    recommended_action_text: "INICIAR ANÁLISIS HIST�RICO"
 };
 
 const getSyllabusForSubject = (subject) => {
@@ -1927,7 +1927,7 @@ const PrepExamResultsModal = ({ isOpen, onClose, report, onReview }) => {
                             GENERAR REPASO GUIADO
                         </button>
                         <button onClick={onClose} className={`${clayBtnAction} !bg-[#2B2E4A] !border-[#1E293B] hover:!bg-[#1E293B]`}>
-                            CERRAR DIAGNÓSTICO
+                            CERRAR DIAGN�STICO
                         </button>
                     </div>
                 </div>
@@ -2399,15 +2399,21 @@ const App = () => {
     const [showInteractiveQuiz, setShowInteractiveQuiz] = useState(false);
     const [quizQuestions, setQuizQuestions] = useState([]);
 
-    // PROGRESSIVE QUIZ STATE - SISTEMA JAPONÉS/KAIZEN (3 FASES × 15 PREGUNTAS = 45 TOTAL)
+    // PROGRESSIVE QUIZ STATE - SISTEMA JAPON�0S/KAIZEN (3 FASES � 15 PREGUNTAS = 45 TOTAL)
     const [currentQuizPhase, setCurrentQuizPhase] = useState(1); // 1, 2, or 3 (Fase actual)
     const [backgroundQuestionsQueue, setBackgroundQuestionsQueue] = useState([]);
     const [backgroundTheoryQueue, setBackgroundTheoryQueue] = useState("");
     const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false);
     const backgroundTaskRef = useRef(null);
+    const normalQuizBatchRef = useRef({
+        level: '',
+        nextBatchIndex: 0,
+        totalBatches: 3,
+        nextPromise: null
+    });
     const [allWrongAnswers, setAllWrongAnswers] = useState([]); // Acumula errores de las 3 fases
 
-    // THEORY STATE - TEORÍA LÚDICA ANTES DE CADA SUB-NIVEL
+    // THEORY STATE - TEORÍA L�aDICA ANTES DE CADA SUB-NIVEL
     const [showTheoryModal, setShowTheoryModal] = useState(false);
     const [theoryContent, setTheoryContent] = useState("");
     const [theoryTitle, setTheoryTitle] = useState("");
@@ -2512,7 +2518,7 @@ const App = () => {
                         };
 
                         localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(existing));
-                        console.log(`[SYNC] 🔄 Progreso restaurado desde servidor: ${key} → Fase ${phase} completada, siguiente: ${phase + 1}`);
+                        console.log(`[SYNC] �x Progreso restaurado desde servidor: ${key} �  Fase ${phase} completada, siguiente: ${phase + 1}`);
                     }
                 }
 
@@ -2545,7 +2551,7 @@ const App = () => {
 
                     if (changed) {
                         localStorage.setItem(completedKey, JSON.stringify(completed));
-                        console.log(`[SYNC] 🔄 Sesiones completadas sincronizadas:`, completed);
+                        console.log(`[SYNC] �x Sesiones completadas sincronizadas:`, completed);
                     }
                 }
             } catch (error) {
@@ -3223,11 +3229,230 @@ const App = () => {
         }
     };
 
+    const primeNormalQuizBatchLoading = (level, firstBatchQuestions = []) => {
+        const totalBatches = 3;
+        normalQuizBatchRef.current = {
+            level,
+            nextBatchIndex: 1,
+            totalBatches,
+            nextPromise: null
+        };
+
+        if ((firstBatchQuestions || []).length > 0 && totalBatches > 1) {
+            normalQuizBatchRef.current.nextPromise = generateQuizSubset(level, 1, true);
+        }
+    };
+
+    const requestNextNormalQuizBatch = async () => {
+        const batchState = normalQuizBatchRef.current;
+        if (!batchState.level) return [];
+        if (batchState.nextBatchIndex >= batchState.totalBatches) return [];
+
+        let nextQuestions = [];
+        if (batchState.nextPromise) {
+            nextQuestions = await batchState.nextPromise;
+        } else {
+            nextQuestions = await generateQuizSubset(batchState.level, batchState.nextBatchIndex, true);
+        }
+
+        if (!Array.isArray(nextQuestions) || nextQuestions.length === 0) {
+            console.warn(`[QUIZ] Lote ${batchState.nextBatchIndex + 1} vacío. Reintentando fetch directo...`);
+            nextQuestions = await generateQuizSubset(batchState.level, batchState.nextBatchIndex, false);
+        }
+
+        batchState.nextBatchIndex += 1;
+
+        if (batchState.nextBatchIndex < batchState.totalBatches) {
+            batchState.nextPromise = generateQuizSubset(batchState.level, batchState.nextBatchIndex, true);
+        } else {
+            batchState.nextPromise = null;
+        }
+
+        return nextQuestions;
+    };
+
+    const resetNormalQuizBatchLoading = () => {
+        normalQuizBatchRef.current = {
+            level: '',
+            nextBatchIndex: 0,
+            totalBatches: 3,
+            nextPromise: null
+        };
+    };
+
+    const buildFormattedQuizQuestions = (rawQuestions = []) => {
+        const isPlaceholderOptionText = (value = '') => {
+            const normalized = String(value || '').trim().toUpperCase();
+            return ['A', 'B', 'C', 'D', 'AA', 'BB', 'CC', 'DD'].includes(normalized);
+        };
+
+        const formattedQuestions = rawQuestions.slice(0, 5).map(q => {
+            let optsObj = {};
+            let correctKey = 'A';
+
+            if (Array.isArray(q.options)) {
+                const letters = ['A', 'B', 'C', 'D'];
+                q.options.forEach((opt, idx) => {
+                    if (idx < 4) optsObj[letters[idx]] = opt;
+                });
+                if (q.correctIndex !== undefined) {
+                    correctKey = letters[q.correctIndex] || 'A';
+                }
+            } else {
+                optsObj = q.options || {};
+                correctKey = q.correct_answer || (q.correctIndex !== undefined ? ['A', 'B', 'C', 'D'][q.correctIndex] : 'A');
+            }
+
+            return {
+                question: q.question,
+                options: optsObj,
+                correct_answer: correctKey,
+                explanation: q.explanation || 'Verificacion pendiente.'
+            };
+        });
+
+        const placeholderQuestionCount = formattedQuestions.reduce((count, question) => {
+            const optionValues = Object.values(question.options || {});
+            const placeholderOptions = optionValues.filter(isPlaceholderOptionText);
+            return count + (placeholderOptions.length >= 3 ? 1 : 0);
+        }, 0);
+
+        return {
+            formattedQuestions,
+            hasPlaceholderQuestions: placeholderQuestionCount > 0
+        };
+    };
+
+    const generateQuizSubset = async (level, batchIndex = 0, backgroundMode = false, retryCount = 0) => {
+        if (retryCount > 1) {
+            console.error(`[QUIZ] Max retries reached for subset ${level} batch ${batchIndex}.`);
+            return [];
+        }
+
+        const levelConfig = {
+            "BASICO": {
+                instruction: "RECORDAR/COMPRENDER - Preguntas directas sobre definiciones y conceptos elementales"
+            },
+            "AVANZADO": {
+                instruction: "APLICAR - Problemas practicos de nivel avanzado"
+            },
+            "CRITICO": {
+                instruction: "ANALIZAR/EVALUAR - Nivel PAES Universidad MUY DIFICIL"
+            }
+        };
+
+        const config = levelConfig[level];
+        if (!config) return [];
+
+        if (!backgroundMode && retryCount === 0 && batchIndex === 0) {
+            setLoadingMessage(`Preparando Quiz ${level}: primeras 5 preguntas...`);
+        }
+
+        const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION TECNICA:
+1. Genera EXACTAMENTE 5 (CINCO) preguntas de seleccion multiple (JSON).
+2. Nivel: ${config.instruction}.
+3. LOTE PARCIAL ${batchIndex + 1}/3.
+4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["texto completo de la alternativa 1", "texto completo de la alternativa 2", "texto completo de la alternativa 3", "texto completo de la alternativa 4"], "correctIndex": 0, "explanation": "..."}]}.
+5. LAS OPCIONES DEBEN SER TEXTO REAL DE LA RESPUESTA, NUNCA solo letras A/B/C/D ni numeros sueltos.
+6. FORMATO MATH: Usa LaTeX solo para formulas matematicas ($x^2$). NO encierres oraciones de texto normal en signos de pesos.
+7. NO GENERES TEORIA. SOLO JSON.]`;
+
+        try {
+            const body = {
+                sujeto: currentSubject,
+                accion: 'Generar Quiz de Validacion',
+                tema: subsetPrompt,
+                nivel_estudiante: '1° Medio Chile',
+                user_id: USER_ID,
+                session: TODAYS_SESSION.session,
+                phase: level
+            };
+
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const text = await response.text();
+            const json = parseN8NResponse(text);
+
+            let qData = [];
+            if (json.questions && Array.isArray(json.questions)) {
+                qData = json.questions;
+            } else if (json.question) {
+                qData = [json];
+            } else if (Array.isArray(json)) {
+                qData = json.filter(q => q && (q.question || q.questions));
+                if (qData.length === 0 && json.length > 0 && json[0].questions) {
+                    qData = json[0].questions;
+                }
+            }
+
+            if (qData.length === 0) {
+                if (json.output) {
+                    const sub = parseN8NResponse(json.output);
+                    if (Array.isArray(sub)) qData = sub;
+                    else if (sub.questions) qData = sub.questions;
+                } else if (Array.isArray(json) && json.length > 0 && json[0].output) {
+                    const sub = parseN8NResponse(json[0].output);
+                    if (Array.isArray(sub)) qData = sub;
+                    else if (sub.questions) qData = sub.questions;
+                }
+            }
+
+            const { formattedQuestions, hasPlaceholderQuestions } = buildFormattedQuizQuestions(qData || []);
+
+            if (formattedQuestions.length < 5 || hasPlaceholderQuestions) {
+                return await generateQuizSubset(level, batchIndex, backgroundMode, retryCount + 1);
+            }
+
+            return formattedQuestions;
+        } catch (e) {
+            console.error(`Error generando subset ${level} lote ${batchIndex}:`, e);
+            return [];
+        }
+    };
+
+    const prefetchNextPhaseBatch = (phaseNumber) => {
+        const levelMap = { 1: 'BASICO', 2: 'AVANZADO', 3: 'CRITICO' };
+        if (phaseNumber >= 3) {
+            setBackgroundQuestionsQueue([]);
+            setIsLoadingNextBatch(false);
+            backgroundTaskRef.current = null;
+            return;
+        }
+
+        const nextLevel = levelMap[phaseNumber + 1];
+        setIsLoadingNextBatch(true);
+        backgroundTaskRef.current = generateQuizSubset(nextLevel, 0, true).then(q => {
+            setBackgroundQuestionsQueue(Array.isArray(q) ? q : []);
+            setIsLoadingNextBatch(false);
+            backgroundTaskRef.current = null;
+            return { questions: Array.isArray(q) ? q : [] };
+        }).catch(error => {
+            console.error(`[BACK] Error pre-cargando fase ${phaseNumber + 1}:`, error);
+            setBackgroundQuestionsQueue([]);
+            setIsLoadingNextBatch(false);
+            backgroundTaskRef.current = null;
+            return { questions: [] };
+        });
+    };
+
     // GENERATE QUIZ BATCH - SISTEMA KAIZEN (3 FASES)
     // Genera un batch de 15 preguntas para un nivel específico
     // GENERATE QUIZ BATCH - OPTIMIZADO: PARALELO 3x5 (Total 15)
     // Genera 3 lotes de 5 preguntas simultáneamente para evitar timeouts de 50s+
     const generateQuizBatch = async (level, backgroundMode = false, retryCount = 0) => {
+        if (!backgroundMode && retryCount === 0) {
+            setLoadingMessage(`Preparando Quiz ${level}: primeras 5 preguntas...`);
+        }
+
+        const first = await generateQuizSubset(level, 0, backgroundMode, retryCount);
+        const second = await generateQuizSubset(level, 1, true, retryCount);
+        const third = await generateQuizSubset(level, 2, true, retryCount);
+        return [...first, ...second, ...third].slice(0, 15);
+
         // SAFETY LIMIT: Stop after 1 retry to prevent infinite loops
         if (retryCount > 1) {
             console.error("[QUIZ] Max retries reached. Aborting generation to accept partial results or failure.");
@@ -3254,14 +3479,14 @@ const App = () => {
 
         const config = levelConfig[level];
         if (!backgroundMode && retryCount === 0) {
-            setLoadingMessage(`Generando Quiz ${level} (Carga Rápida ⚡)...`);
+            setLoadingMessage(`Generando Quiz ${level} (Carga Rápida �a�)...`);
         }
 
         console.log(`[QUIZ] Iniciando generación paralela 3x5 para ${level} (Intento ${retryCount + 1})...`);
 
         // Función helper para pedir UN lote de 5 preguntas (Total 15)
         const fetchSubset = async (batchIndex) => {
-            const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION TÉCNICA:
+            const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION T�0CNICA:
 1. Genera EXACTAMENTE 5 (CINCO) preguntas de selección múltiple (JSON).
 2. Nivel: ${config.instruction}.
 3. LOTE PARCIAL ${batchIndex + 1}/3.
@@ -3410,14 +3635,14 @@ const App = () => {
         }
     };
 
-    // GENERATE THEORY - TEORÍA LÚDICA PARA LA SESIÓN COMPLETA
+    // GENERATE THEORY - TEORÍA L�aDICA PARA LA SESI�N COMPLETA
     const generateTheory = async (backgroundMode = false) => {
         if (!backgroundMode) {
             setLoadingMessage(`Generando Teoría Lúdica Matico: ${TODAYS_SESSION.topic}...`);
         }
 
         try {
-            const theoryPrompt = `[INSTRUCCIÓN TEORÍA LÚDICA]:
+            const theoryPrompt = `[INSTRUCCI�N TEORÍA L�aDICA]:
 Genera contenido teórico COMPLETO y EXTENSO (10+ minutos de lectura) para la sesión de hoy.
 
 Tema: ${TODAYS_SESSION.topic}
@@ -3472,7 +3697,7 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
     };
 
 
-    // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS (SISTEMA KAIZEN - 3 NIVELES × 15 PREGUNTAS)
+    // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS (SISTEMA KAIZEN - 3 NIVELES � 15 PREGUNTAS)
     const saveQuizPhaseProgress = (phase, score) => {
         const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
         const existing = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
@@ -3522,21 +3747,21 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
         console.log(`[PROGRESS] Progreso limpiado para ${key}`);
     };
 
-    // START FULL MULTI-STAGE QUIZ - SISTEMA KAIZEN (3 FASES × 15 PREGUNTAS)
+    // START FULL MULTI-STAGE QUIZ - SISTEMA KAIZEN (3 FASES � 15 PREGUNTAS)
     const startFullQuiz = async () => {
         setIsCallingN8N(true);
         setAiModalOpen(false);
 
-        // CHECK FOR SAVED PROGRESS
         const savedProgress = getQuizProgress();
         const startingPhase = savedProgress.currentPhase;
 
         console.log(`[QUIZ] Progreso detectado:`, savedProgress);
-        console.log(`[QUIZ] Iniciando desde Fase ${startingPhase} (Directo sin teoría)`);
+        console.log(`[QUIZ] Iniciando desde Fase ${startingPhase} (Carga progresiva 5 en 5)`);
 
         setCurrentQuizPhase(startingPhase);
         setBackgroundQuestionsQueue([]);
         setQuizStats({ correct: 0, incorrect: 0, total: 0 });
+        resetNormalQuizBatchLoading();
 
         try {
             const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
@@ -3544,45 +3769,24 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
 
             setLoadingMessage(`Preparando Quiz Kaizen: ${currentLevel}...`);
 
-            // PASO 1: GENERAR PREGUNTAS DIRECTAMENTE (Ya no hay teoría previa)
-            const questions = await generateQuizBatch(currentLevel, false);
+            const questions = await generateQuizSubset(currentLevel, 0, false);
 
             if (questions && questions.length > 0) {
                 setQuizQuestions(questions);
+                primeNormalQuizBatchLoading(currentLevel, questions);
                 setShowInteractiveQuiz(true);
                 setIsCallingN8N(false);
                 setLoadingMessage("");
 
-                console.log(`[QUIZ] Preguntas cargadas. Iniciando sesión interactiva.`);
-
-                // DISPARAR PRE-GENERACIÓN DE LA SIGUIENTE FASE (Si existe) - CON DELAY DE 30s
-                if (startingPhase < 3) {
-                    const nextLevel = levelMap[startingPhase + 1];
-                    console.log(`[BACK] Programando pre-generación de nivel (${nextLevel}) para dentro de 30 segundos...`);
-
-                    // Delay de 30 segundos antes de lanzar la carga en background
-                    setTimeout(() => {
-                        console.log(`[BACK] ⏳ Ejecutando carga diferida de ${nextLevel}...`);
-                        setIsLoadingNextBatch(true);
-                        backgroundTaskRef.current = generateQuizBatch(nextLevel, true).then(q => {
-                            setBackgroundQuestionsQueue(q);
-                            setIsLoadingNextBatch(false);
-                            backgroundTaskRef.current = null;
-                            return { questions: q };
-                        }).catch(() => {
-                            setIsLoadingNextBatch(false);
-                            backgroundTaskRef.current = null;
-                            return { questions: [] };
-                        });
-                    }, 30000); // 30000 ms = 30 segundos
-                }
+                console.log(`[QUIZ] Preguntas iniciales cargadas. Iniciando sesi�n interactiva.`);
+                prefetchNextPhaseBatch(startingPhase);
             } else {
-                throw new Error("No se pudo obtener el batch de preguntas del servidor.");
+                throw new Error("No se pudo obtener la primera tanda del quiz.");
             }
 
         } catch (e) {
             console.error("Error iniciando quiz:", e);
-            alert("Error de conexión. Por favor intenta nuevamente.");
+            alert("Error de conexi�n. Por favor intenta nuevamente.");
             setIsCallingN8N(false);
             setAiModalOpen(true);
         }
@@ -3590,74 +3794,47 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
 
     // HANDLE "CONTINUAR AL QUIZ" BUTTON - Cerrar teoría y mostrar quiz
     const handleContinueToQuiz = async () => {
-        console.log(`[THEORY] Usuario finalizó lectura. Verificando preguntas...`);
+        console.log('[THEORY] Usuario finaliz� lectura. Preparando quiz progresivo...');
         setIsCallingN8N(true);
-        setLoadingMessage("Preparando tus preguntas...");
+        setLoadingMessage('Preparando primeras 5 preguntas...');
 
         try {
-            let questions = [];
+            const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
+            const currentLevel = levelMap[currentQuizPhase];
+            let questions = pendingQuizQuestions;
 
-            // Esperar a que el background task de las preguntas termine (si no ha terminado ya)
-            if (backgroundTaskRef.current) {
-                console.log("[QUIZ] Esperando a que termine la generación de preguntas iniciada en background...");
-                const result = await backgroundTaskRef.current;
-                questions = result.questions || [];
-                backgroundTaskRef.current = null;
-                setIsLoadingNextBatch(false);
-            } else if (pendingQuizQuestions.length > 0) {
-                questions = pendingQuizQuestions;
-            } else {
-                // Fallback: Si por alguna razón no hay nada, generar ahora
-                const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
-                questions = await generateQuizBatch(levelMap[currentQuizPhase], false);
+            if (!Array.isArray(questions) || questions.length === 0) {
+                questions = await generateQuizSubset(currentLevel, 0, false);
             }
 
             if (questions && questions.length > 0) {
-                // GUARDAR EN GOOGLE SHEETS que leyó la teoría
-                const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
-                const levelName = levelMap[currentQuizPhase];
-
                 saveProgress('theory_completed', {
                     subject: currentSubject,
                     session: TODAYS_SESSION.session,
                     phase: currentQuizPhase,
-                    levelName: levelName,
+                    levelName: currentLevel,
                     xp_reward: 5
                 });
 
                 setShowTheoryModal(false);
                 setQuizQuestions(questions);
+                primeNormalQuizBatchLoading(currentLevel, questions);
                 setShowInteractiveQuiz(true);
                 setPendingQuizQuestions([]);
                 setIsCallingN8N(false);
                 setLoadingMessage("");
-
-                // DISPARAR PRE-GENERACIÓN DE LA SIGUIENTE FASE (Si existe)
-                if (currentQuizPhase < 3) {
-                    const nextLevel = levelMap[currentQuizPhase + 1];
-                    console.log(`[BACK] Pre-generando siguiente nivel (${nextLevel}) en background...`);
-                    setIsLoadingNextBatch(true);
-                    backgroundTaskRef.current = generateQuizBatch(nextLevel, true).then(q => {
-                        setBackgroundQuestionsQueue(q);
-                        setIsLoadingNextBatch(false);
-                        backgroundTaskRef.current = null;
-                        return { questions: q };
-                    }).catch(() => {
-                        setIsLoadingNextBatch(false);
-                        backgroundTaskRef.current = null;
-                    });
-                }
+                prefetchNextPhaseBatch(currentQuizPhase);
             } else {
-                throw new Error("No se pudieron cargar las preguntas.");
+                throw new Error('No se pudieron cargar las preguntas.');
             }
         } catch (err) {
-            console.error("Error al continuar al quiz:", err);
-            alert("Vaya... no pudimos cargar las preguntas. Reintenta en un momento.");
+            console.error('Error al continuar al quiz:', err);
+            alert('Vaya... no pudimos cargar las preguntas. Reintenta en un momento.');
             setIsCallingN8N(false);
         }
     };
 
-    // --- NOTIFICACIÓN DE RESULTADOS ESTILO SALÓN ---
+    // --- NOTIFICACI�N DE RESULTADOS ESTILO SAL�N ---
     const sendFinalSessionReport = async (stats, wrongAnswers = []) => {
         console.log("[REPORT] Generando reporte final con análisis IA de", wrongAnswers.length, "errores...");
 
@@ -3665,8 +3842,8 @@ IMPORTANTE: NO generes preguntas de quiz. Solo teoría explicativa exhaustiva.`;
         const successRate = Math.round((stats.correct / 45) * 100);
         const mood = successRate >= 80 ? "excelente" : (successRate >= 60 ? "bueno" : "para mejorar");
 
-        const reportPrompt = `[INSTRUCCIÓN AGENTE DE REPORTES MATICO]:
-Eres el Agente de Éxito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 45 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
+        const reportPrompt = `[INSTRUCCI�N AGENTE DE REPORTES MATICO]:
+Eres el Agente de �0xito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 45 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
 
 DATOS DEL ESTUDIANTE:
 - Nombre: ${currentUser?.username || userProfile?.username || 'Estudiante'}
@@ -3703,7 +3880,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                     wrong_answers: wrongAnswers
                 })
             });
-            console.log("[REPORT] 📧 Reporte de sesión enviado");
+            console.log("[REPORT] �x� Reporte de sesión enviado");
 
         } catch (err) {
             console.error("[REPORT] Error en flujo de notificaciones:", err);
@@ -3712,22 +3889,17 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
     // HANDLE QUIZ PHASE COMPLETION - SISTEMA KAIZEN SIMPLIFICADO (3 FASES DE 15 PREGUNTAS)
     const onQuizPhaseComplete = async (phaseScore, phaseWrongAnswers = []) => {
-        console.log(`[QUIZ] Fase ${currentQuizPhase} completada con score: `, phaseScore, `errores: `, phaseWrongAnswers.length);
+        console.log('[QUIZ] Fase ' + currentQuizPhase + ' completada con score:', phaseScore, 'errores:', phaseWrongAnswers.length);
 
-        // Acumular errores de esta fase
         setAllWrongAnswers(prev => [...prev, ...phaseWrongAnswers]);
-
-        // ACTUALIZAR STATS TOTALES (Sumar el score de esta fase)
         setQuizStats(prev => ({
             ...prev,
             correct: prev.correct + phaseScore,
             total: prev.total + 15
         }));
 
-        // GUARDAR PROGRESO (LocalStorage)
         saveQuizPhaseProgress(currentQuizPhase, phaseScore);
 
-        // GUARDAR EN GOOGLE SHEETS
         const levelMap = { 1: "BASICO", 2: "AVANZADO", 3: "CRITICO" };
         const levelName = levelMap[currentQuizPhase];
 
@@ -3735,7 +3907,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             subject: currentSubject,
             session: TODAYS_SESSION.session,
             phase: currentQuizPhase,
-            subLevel: currentQuizPhase, // Explicitly pass subLevel to fill column G
+            subLevel: currentQuizPhase,
             levelName: levelName,
             score: phaseScore,
             questionsCompleted: currentQuizPhase * 15,
@@ -3743,95 +3915,68 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             xp_reward: 50
         });
 
-        console.log(`[SAVE] Fase ${currentQuizPhase} guardada en Sheet`);
+        console.log('[SAVE] Fase ' + currentQuizPhase + ' guardada en Sheet');
 
-        // TRANSICIÓN A LA SIGUIENTE FASE O FINAL
         if (currentQuizPhase < 3) {
             const nextPhase = currentQuizPhase + 1;
             const nextLevel = levelMap[nextPhase];
-            console.log(`[QUIZ] Avanzando a Fase ${nextPhase} (${nextLevel})...`);
+            console.log('[QUIZ] Avanzando a Fase ' + nextPhase + ' (' + nextLevel + ')...');
 
-            // Cambiar de fase
             setIsCallingN8N(true);
-            setShowInteractiveQuiz(false); // Breve cierre para resetear el componente de quiz
+            setShowInteractiveQuiz(false);
+            resetNormalQuizBatchLoading();
 
             try {
                 let nextQuestions = [];
 
-                // 1. INTENTAR USAR QUEUE O ESPERAR PROMESA PENDIENTE
                 if (backgroundQuestionsQueue.length > 0) {
-                    console.log(`[QUIZ] Usando preguntas pre - generadas para Fase ${nextPhase} `);
+                    console.log('[QUIZ] Usando primera tanda pre-cargada para Fase ' + nextPhase);
                     nextQuestions = backgroundQuestionsQueue;
                     setBackgroundQuestionsQueue([]);
                 } else if (isLoadingNextBatch && backgroundTaskRef.current) {
-                    console.log(`[BACK] Esperando pre - generación de Fase ${nextPhase}...`);
-                    setLoadingMessage(`Preparando Nivel ${nextLevel}...`);
-                    try {
-                        const result = await backgroundTaskRef.current;
-                        nextQuestions = result.questions;
-                        setBackgroundQuestionsQueue([]);
-                    } catch (e) {
-                        console.error("[BACK] Error en espera, generando manual...");
-                        nextQuestions = await generateQuizBatch(nextLevel, false);
-                    }
+                    console.log('[BACK] Esperando primera tanda de Fase ' + nextPhase + '...');
+                    setLoadingMessage('Preparando Nivel ' + nextLevel + ': primeras 5 preguntas...');
+                    const result = await backgroundTaskRef.current;
+                    nextQuestions = result.questions || [];
+                    setBackgroundQuestionsQueue([]);
                 } else {
-                    console.log(`[QUIZ] Generando preguntas ${nextLevel} manualmente...`);
-                    nextQuestions = await generateQuizBatch(nextLevel, false);
+                    console.log('[QUIZ] Generando primera tanda manual de ' + nextLevel + '...');
+                    nextQuestions = await generateQuizSubset(nextLevel, 0, false);
                 }
 
                 if (nextQuestions.length > 0) {
                     setCurrentQuizPhase(nextPhase);
                     setQuizQuestions(nextQuestions);
-
-                    // Resetear el estado de carga y mostrar el quiz de nuevo
+                    primeNormalQuizBatchLoading(nextLevel, nextQuestions);
                     setIsCallingN8N(false);
                     setLoadingMessage("");
                     setShowInteractiveQuiz(true);
-
-                    console.log(`[QUIZ] Fase ${nextPhase} iniciada con ${nextQuestions.length} preguntas`);
-
-                    // Disparar pre-generación para la siguiente fase si existe - CON DELAY DE 30s
-                    if (nextPhase < 3) {
-                        const followingLevel = levelMap[nextPhase + 1];
-                        console.log(`[BACK] Programando pre - generación de Fase ${nextPhase + 1} (${followingLevel}) para dentro de 30 segundos...`);
-
-                        setTimeout(() => {
-                            console.log(`[BACK] ⏳ Ejecutando carga diferida de ${followingLevel}...`);
-                            setIsLoadingNextBatch(true);
-                            backgroundTaskRef.current = generateQuizBatch(followingLevel, true).then(q => {
-                                setBackgroundQuestionsQueue(q);
-                                setIsLoadingNextBatch(false);
-                                backgroundTaskRef.current = null;
-                                return { questions: q };
-                            }).catch(() => {
-                                setIsLoadingNextBatch(false);
-                                backgroundTaskRef.current = null;
-                            });
-                        }, 30000);
-                    }
+                    prefetchNextPhaseBatch(nextPhase);
+                    console.log('[QUIZ] Fase ' + nextPhase + ' iniciada con ' + nextQuestions.length + ' preguntas iniciales');
                 } else {
-                    alert("Error al cargar la siguiente fase. Por favor intenta de nuevo.");
+                    alert('Error al cargar la siguiente fase. Por favor intenta de nuevo.');
                     setIsCallingN8N(false);
                 }
             } catch (err) {
-                console.error("[PHASE_TRANSITION] Error:", err);
-                alert("Error al preparar la siguiente fase.");
+                console.error('[PHASE_TRANSITION] Error:', err);
+                alert('Error al preparar la siguiente fase.');
                 setIsCallingN8N(false);
             }
         } else {
-            // TODAS LAS FASES COMPLETADAS (45 PREGUNTAS TOTALES)
-            console.log("[QUIZ] ✅ TODAS LAS 3 FASES COMPLETADAS!");
-            setShowInteractiveQuiz(false); // Breve cierre para resetear el componente de quiz
+            console.log('[QUIZ] Todas las 3 fases completadas');
+            setShowInteractiveQuiz(false);
+            resetNormalQuizBatchLoading();
+            setBackgroundQuestionsQueue([]);
+            backgroundTaskRef.current = null;
+            setIsLoadingNextBatch(false);
 
-            // ENVIAR REPORTE FINAL Y ESPERAR A QUE TERMINE
             const finalCorrectCount = quizStats.correct + phaseScore;
             const finalStats = { ...quizStats, correct: finalCorrectCount, total: 45 };
             const finalWrong = [...allWrongAnswers, ...phaseWrongAnswers];
 
-            console.log("[REPORT] Enviando reporte final con score:", finalCorrectCount, "errores:", finalWrong.length);
+            console.log('[REPORT] Enviando reporte final con score:', finalCorrectCount, 'errores:', finalWrong.length);
             await sendFinalSessionReport(finalStats, finalWrong);
 
-            // GUARDAR SESION COMPLETA EN GOOGLE SHEETS PRIMERO (AWAIT)
             await saveProgress('session_completed', {
                 subject: currentSubject,
                 session: TODAYS_SESSION.session,
@@ -3840,21 +3985,17 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 correct_answers: finalCorrectCount,
                 xp_reward: 300
             });
-            console.log("[SAVE] ✅ 'session_completed' guardado en Google Sheets correctamente");
+            console.log("[SAVE] 'session_completed' guardado en Google Sheets correctamente");
 
-            // Mostrar el alert de victoria al usuario
-            alert(`🎉🎉🎉 ¡SESIÓN COMPLETA!\n\nHaz dominado: ${TODAYS_SESSION.topic} \n\nPuntaje Final: ${finalStats.correct}/45\n\n+300 XP 🔥`);
+            alert('SESI�N COMPLETA\\n\\nHaz dominado: ' + TODAYS_SESSION.topic + '\\n\\nPuntaje Final: ' + finalStats.correct + '/45\\n\\n+300 XP');
 
-            // LIMPIAR Y MARCAR COMPLETADO AL FINAL
-            // (Esto dispara setTodayIndex y setCurrentSubject, así que debe ser LO ÚLTIMO que ocurre)
             clearQuizProgress();
-            setCurrentQuizPhase(1); // Resetear a base para la siguiente materia
-            setQuizStats({ correct: 0, incorrect: 0, total: 0 }); // Limpiar stats
-            setAllWrongAnswers([]); // Limpiar errores
+            setCurrentQuizPhase(1);
+            setQuizStats({ correct: 0, incorrect: 0, total: 0 });
+            setAllWrongAnswers([]);
             markSessionComplete(currentSubject, TODAYS_SESSION.session);
         }
     };
-
 
     // UPDATED CALL AGENT TO HANDLE IMAGES AND CONTEXT (POST)
     const callAgent = async (subject, action, topic, image = null, timestamp = null, displayTopic = null, questionNumberOverride = null) => {
@@ -3896,9 +4037,9 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         // NEW: INJECT DIFFICULTY INSTRUCTIONS INTO TOPIC
         let difficultyPrompt = "";
         if (action === 'deepen_knowledge' || action === 'generate_quiz') {
-            if (quizLevel === 1) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 1 (MEMORIZAR/COMPRENDER). Enfócate en definiciones claras y conceptos básicos. Estilo directo y sencillo.]";
-            if (quizLevel === 2) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 2 (APLICAR). El estudiante debe aplicar el concepto en una situación práctica o ejemplo cotidiano. Dificultad media.]";
-            if (quizLevel >= 3) difficultyPrompt = " [INSTRUCCIÓN: Genera una pregunta de nivel 3 (ANALIZAR/EVALUAR). Requiere pensamiento crítico, contrastar ideas o inferir conclusiones complejas. ¡Desafía al estudiante!]";
+            if (quizLevel === 1) difficultyPrompt = " [INSTRUCCI�N: Genera una pregunta de nivel 1 (MEMORIZAR/COMPRENDER). Enfócate en definiciones claras y conceptos básicos. Estilo directo y sencillo.]";
+            if (quizLevel === 2) difficultyPrompt = " [INSTRUCCI�N: Genera una pregunta de nivel 2 (APLICAR). El estudiante debe aplicar el concepto en una situación práctica o ejemplo cotidiano. Dificultad media.]";
+            if (quizLevel >= 3) difficultyPrompt = " [INSTRUCCI�N: Genera una pregunta de nivel 3 (ANALIZAR/EVALUAR). Requiere pensamiento crítico, contrastar ideas o inferir conclusiones complejas. ¡Desafía al estudiante!]";
         }
 
         // Fix: Don't append question number for THEORY generation
@@ -3906,7 +4047,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         if (action !== 'start_route' && n8nAction !== 'Generar Teoría Lúdica') {
             questionSuffix = questionNumberOverride ? ` [PREGUNTA NRO ${questionNumberOverride}]` : ` [PREGUNTA NRO ${quizQuestionNumber}]`;
         } else {
-            difficultyPrompt = " [INSTRUCCIÓN: GENERAR SOLO TEORÍA EXPLICATIVA LÚDICA. NO GENERAR PREGUNTAS.]";
+            difficultyPrompt = " [INSTRUCCI�N: GENERAR SOLO TEORÍA EXPLICATIVA L�aDICA. NO GENERAR PREGUNTAS.]";
         }
 
         const finalTopic = topic + difficultyPrompt + questionSuffix;
@@ -3957,13 +4098,13 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             let content = "";
 
             if (textResponse.trim() === "") {
-                content = "⚠️ MODO OFFLINE";
+                content = "�a�️ MODO OFFLINE";
             } else {
                 try {
                     let jsonData = parseN8NResponse(textResponse);
 
                     if (jsonData.refusal) {
-                        content = `⚠️ **No pudimos iniciar:**\n\n${jsonData.refusal}`;
+                        content = `�a�️ **No pudimos iniciar:**\n\n${jsonData.refusal}`;
                         setApiJson(null);
                     } else {
 
@@ -4054,7 +4195,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
                         if (isBatchQuiz || isSingleQuiz) {
                             // AUTO-LAUNCH QUIZ
-                            console.log("🚀 Auto-launching Quiz!");
+                            console.log("�xa� Auto-launching Quiz!");
                             const questionsToLoad = isBatchQuiz ? finalData.questions : [finalData];
 
                             setQuizQuestions(questionsToLoad);
@@ -4073,7 +4214,7 @@ ${finalData.capsule}`;
                         } else {
                             // Fallback / Other
                             if (action === 'generate_quiz') {
-                                content = "⚠️ **Error de Formato:** La IA no envió preguntas válidas.\n\n" + JSON.stringify(finalData, null, 2);
+                                content = "�a�️ **Error de Formato:** La IA no envió preguntas válidas.\n\n" + JSON.stringify(finalData, null, 2);
                             } else {
                                 content = finalData.output || finalData.text || finalData.theory || JSON.stringify(finalData, null, 2);
                             }
@@ -4087,7 +4228,7 @@ ${finalData.capsule}`;
             if (content) setAiContent(content);
         } catch (e) {
             console.error(e);
-            setAiContent("⚠️ Error de Conexión");
+            setAiContent("�a�️ Error de Conexión");
         } finally {
             setIsCallingN8N(false);
             setAiModalOpen(true);
@@ -4136,7 +4277,7 @@ ${finalData.capsule}`;
                                     </p>
                                 </div>
                                 <p className="text-amber-600 font-black mt-1 text-sm flex items-center justify-center md:justify-start gap-2">
-                                    ¡No dejes huecos en tu camino! 🚀✨
+                                    ¡No dejes huecos en tu camino! �xa��S�
                                 </p>
 
                                 <div className="flex gap-4 mt-6">
@@ -4281,7 +4422,7 @@ ${finalData.capsule}`;
 
                             <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2 relative z-10">
                                 <h1 className="text-4xl font-black text-[#2B2E4A] mb-1 drop-shadow-sm">
-                                    ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! 👋
+                                    ¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! �x9
                                 </h1>
                                 <p className="text-[#9094A6] font-bold text-base max-w-md leading-tight mb-6">
                                     Sistema activo. Hoy dedicaremos la hora completa a:{' '}
@@ -4332,37 +4473,37 @@ ${finalData.capsule}`;
                                 onClick={() => setCurrentSubject('MATEMATICA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : '!bg-[#4D96FF]/10 !text-[#4D96FF] !border-[#4D96FF]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">📐</span> Mate
+                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">�x�</span> Mate
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('LENGUAJE')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF7675] !text-white !border-[#E84393] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,118,117,0.6)]' : '!bg-[#FF7675]/10 !text-[#FF7675] !border-[#FF7675]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[10deg] inline-block">📚</span> Lenguaje
+                                <span className="text-lg mr-1 rotate-[10deg] inline-block">�xa</span> Lenguaje
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('FISICA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : '!bg-[#9D4EDD]/10 !text-[#9D4EDD] !border-[#9D4EDD]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[-5deg] inline-block">🌌</span> Física
+                                <span className="text-lg mr-1 rotate-[-5deg] inline-block">�xRR</span> Física
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('QUIMICA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : '!bg-[#E84393]/10 !text-[#E84393] !border-[#E84393]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[5deg] inline-block">🧪</span> Química
+                                <span className="text-lg mr-1 rotate-[5deg] inline-block">�x��</span> Química
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('BIOLOGIA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : '!bg-[#2ECC71]/10 !text-[#2ECC71] !border-[#2ECC71]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">🌿</span> Biología
+                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">�xR�</span> Biología
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('HISTORIA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : '!bg-[#E67E22]/10 !text-[#E67E22] !border-[#E67E22]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[10deg] inline-block">📜</span> Historia
+                                <span className="text-lg mr-1 rotate-[10deg] inline-block">�xS</span> Historia
                             </button>
                         </div>
 
@@ -4396,7 +4537,7 @@ ${finalData.capsule}`;
                                                 const questionsCompleted = (progress.currentPhase - 1) * 15;
                                                 return (
                                                     <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
-                                                        ⚡ Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/45 preguntas completadas
+                                                        �a� Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/45 preguntas completadas
                                                     </div>
                                                 );
                                             }
@@ -4430,7 +4571,7 @@ ${finalData.capsule}`;
                                                 onClick={() => openPrepExamSetup(adaptiveWeakSessions.map(item => Number(item.session)).filter(Boolean))}
                                                 className={`${clayBtnAction} !w-full !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6] !min-h-[58px] !text-base`}
                                             >
-                                                <span>REPASAR SESIONES DÉBILES</span>
+                                                <span>REPASAR SESIONES D�0BILES</span>
                                                 <ArrowRight className="w-5 h-5 ml-2" />
                                             </button>
 
@@ -4524,7 +4665,7 @@ ${finalData.capsule}`;
                                             className={`${clayBtnAction} ${(localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : ''}`}
                                             disabled={isCallingN8N}
                                         >
-                                            {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESIÓN COMPLETADA (Repasar)" : "INICIAR SESIÓN " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
+                                            {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESI�N COMPLETADA (Repasar)" : "INICIAR SESI�N " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
                                         </button>
 
                                         <button
@@ -4555,7 +4696,7 @@ ${finalData.capsule}`;
                             subject={currentSubject}
                             readingContent=""
                             quizMode={isPrepExamMode ? 'prep_exam' : 'normal'}
-                            onRequestNextBatch={isPrepExamMode ? requestNextPrepExamBatch : null}
+                            onRequestNextBatch={isPrepExamMode ? requestNextPrepExamBatch : requestNextNormalQuizBatch}
                             userEmail={currentUser?.email}
                             userId={USER_ID}
                             onComplete={async (score, wrongAnswers) => {
@@ -4583,6 +4724,10 @@ ${finalData.capsule}`;
                             }}
                             onClose={() => {
                                 setShowInteractiveQuiz(false);
+                                resetNormalQuizBatchLoading();
+                                setBackgroundQuestionsQueue([]);
+                                setIsLoadingNextBatch(false);
+                                backgroundTaskRef.current = null;
                                 if (isPrepExamMode) {
                                     setIsPrepExamMode(false);
                                     setQuizQuestions([]);
@@ -4665,7 +4810,7 @@ ${finalData.capsule}`;
                                         <div className="flex flex-col gap-3">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl shadow-inner border border-blue-200">
-                                                    📧
+                                                    �x�
                                                 </div>
                                                 <div className="flex flex-col overflow-hidden">
                                                     <span className="text-[10px] font-black text-gray-400 uppercase">Email</span>
@@ -4674,7 +4819,7 @@ ${finalData.capsule}`;
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-xl shadow-inner border border-purple-200">
-                                                    🆔
+                                                    �x 
                                                 </div>
                                                 <div className="flex flex-col overflow-hidden">
                                                     <span className="text-[10px] font-black text-gray-400 uppercase">User ID</span>
@@ -4749,7 +4894,7 @@ ${finalData.capsule}`;
                                                     : 'bg-red-50 text-red-600 border-red-100 animate-pulse'
                                                     }`}
                                             >
-                                                {activeWebhookUrl === N8N_URLS.test ? '🛠️ TEST MODE' : '🚀 PRODUCTION'}
+                                                {activeWebhookUrl === N8N_URLS.test ? '�x:�️ TEST MODE' : '�xa� PRODUCTION'}
                                             </button>
                                         </div>
                                         <button
@@ -4763,7 +4908,7 @@ ${finalData.capsule}`;
                                             }}
                                             className="w-full text-[10px] font-black text-blue-500 uppercase tracking-widest py-2 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
                                         >
-                                            🛠️ Simular Atraso (5 Días)
+                                            �x:�️ Simular Atraso (5 Días)
                                         </button>
                                     </div>
                                 </div>
@@ -4831,3 +4976,4 @@ ${finalData.capsule}`;
 };
 
 export default App;
+

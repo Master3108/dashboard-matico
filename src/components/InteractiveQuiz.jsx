@@ -171,8 +171,10 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
     const difficultyLevel = getDifficultyLevel(currentQuestion);
 
     const question = activeQuestions[currentQuestion];
-    const progress = Math.round(((currentQuestion + 1) / activeQuestions.length) * 100);
     const isPrepExamMode = quizMode === 'prep_exam';
+    const displayedQuestionTotal = isPrepExamMode ? 45 : 15;
+    const progressBase = Math.max(displayedQuestionTotal, activeQuestions.length || 1);
+    const progress = Math.round(((currentQuestion + 1) / progressBase) * 100);
     const quizTitle = isPrepExamMode ? 'Prueba Preparatoria' : 'Quiz Interactivo';
     const quizSubtitle = isPrepExamMode ? 'Sistema Kaizen · Básico / Avanzado / Crítico' : 'Matico AI';
     const quizBadgeLabel = isPrepExamMode ? '45 PREGUNTAS · SESIONES SELECCIONADAS' : difficultyLevel.name;
@@ -282,7 +284,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
             // Reset timer based on next question's difficulty
             setTimeLeft(getTimeLimit(nextQuestionIndex));
         } else {
-            if (quizMode === 'prep_exam' && typeof onRequestNextBatch === 'function') {
+            if (typeof onRequestNextBatch === 'function') {
                 (async () => {
                     try {
                         setIsThinking(true);
@@ -298,7 +300,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                             return;
                         }
                     } catch (error) {
-                        console.error('[PREP_EXAM] Error cargando siguiente tanda:', error);
+                        console.error('[QUIZ] Error cargando siguiente tanda:', error);
                     } finally {
                         setIsThinking(false);
                     }
@@ -465,7 +467,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                         <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border-2 border-gray-100 mb-8 relative">
                             <div className="absolute -left-3 top-8 w-6 h-12 bg-[#4D96FF] rounded-r-lg"></div>
                             <div className="mb-2 text-[#4D96FF] font-black text-sm uppercase tracking-wider">
-                                {question.isRetry ? '🔁 REPASO DE REITERACIÓN' : `Pregunta ${currentQuestion + 1} de ${activeQuestions.length}`}
+                                {question.isRetry ? '🔁 REPASO DE REITERACIÓN' : `Pregunta ${currentQuestion + 1} de ${displayedQuestionTotal}`}
                             </div>
                             <div className="text-xl md:text-2xl font-bold text-gray-800 leading-relaxed">
                                 <MathRenderer text={question.question} />

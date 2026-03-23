@@ -144,7 +144,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
         const canvas = document.createElement('canvas');
         let width = source.width || source.videoWidth || 0;
         let height = source.height || source.videoHeight || 0;
-        const maxSize = 2400; // Aumentado para mejor calidad tipo Adobe Scan
+        const maxSize = 1600; // Mejor equilibrio entre legibilidad y peso del archivo
 
         if (!width || !height) {
             throw new Error('No se pudo leer el documento - dimensiones inválidas');
@@ -170,7 +170,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
         processImageLikeAdobeScan(canvas, ctx);
         
         // Generar URLs
-        const processedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        const processedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
         
         // Generar PDF
         let pdfBase64, pdfFileName;
@@ -205,7 +205,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
             const x = (pdfWidth - imgWidth) / 2;
             const y = (pdfHeight - imgHeight) / 2;
 
-            pdf.addImage(processedDataUrl, 'JPEG', x, y, imgWidth, imgHeight, undefined, 'MEDIUM');
+            pdf.addImage(processedDataUrl, 'JPEG', x, y, imgWidth, imgHeight, undefined, 'FAST');
             
             pdfBase64 = pdf.output('datauristring').split(',')[1];
             pdfFileName = `matico_scan_${subject || 'materia'}_S${sessionId || 0}_${scanId}.pdf`;
@@ -444,8 +444,6 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
                     action: 'verify_handwriting',
                     image: scanAssets.imageBase64,
                     imageMimeType: scanAssets.imageMimeType,
-                    pdf: scanAssets.pdfBase64,
-                    pdfFileName: scanAssets.pdfFileName,
                     scanId: scanAssets.scanId,
                     sessionId,
                     subject,
@@ -499,6 +497,8 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
             setStatus('error');
             if (err.name === 'AbortError') {
                 setFeedback('Matico se demoró mucho analizando tu foto 🐶. Intenta con una foto más pequeña o con mejor luz.');
+            } else if (err.message?.includes('HTTP 413')) {
+                setFeedback('La hoja escaneada salió demasiado pesada para enviarla. Ya reduje su tamaño, pero intenta también con mejor luz y enfocando solo la hoja.');
             } else if (err.message?.includes('HTTP')) {
                 setFeedback(`El servidor respondió con error: ${err.message}. Intenta de nuevo en unos segundos.`);
             } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {

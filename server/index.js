@@ -17,7 +17,8 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -148,6 +149,40 @@ const deleteNotebookFile = async (fileName) => {
     return absolutePath;
 };
 
+app.post('/api/save-notebook', async (req, res) => {
+    try {
+        const {
+            pdf_base64,
+            file_name,
+            subject,
+            session_id,
+            user_id,
+            scan_id
+        } = req.body || {};
+
+        if (!pdf_base64) {
+            return res.status(400).json({ success: false, error: 'Falta pdf_base64' });
+        }
+
+        const safeScanId = scan_id || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const extension = path.extname(file_name || '') || '.pdf';
+        const baseName = file_name
+            ? path.basename(file_name, path.extname(file_name))
+            : `cuaderno_${user_id || 'anon'}_${(subject || 'MATERIA').toUpperCase()}_S${session_id || '0'}_${safeScanId}`;
+        const finalFileName = `${baseName}${extension}`;
+
+        const storedFile = await saveBase64ToLocalFile(pdf_base64, finalFileName, 'cuadernos');
+        return res.json({
+            success: true,
+            file_path: storedFile.absolutePath,
+            file_url: storedFile.publicUrl,
+            file_name: storedFile.fileName
+        });
+    } catch (error) {
+        console.error('[LOCAL_STORAGE] Error en /api/save-notebook:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo guardar el PDF' });
+    }
+});
 // --- HELPER: Subir imagen a Google Drive ---
 const uploadToDrive = async (base64File, fileName, folderId, mimeType = 'image/jpeg') => {
     try {
@@ -1837,6 +1872,9 @@ cron.schedule('0 9 * * *', async () => {
 }, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
+
+
+
 
 
 
