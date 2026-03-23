@@ -2457,7 +2457,7 @@ const App = () => {
             
             // TIMEOUT: Abortar si tarda más de 4 segundos
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
             
             try {
                 setLoadingProgress(true);
@@ -2483,7 +2483,7 @@ const App = () => {
 
                 // Update todayIndex based on server's next_session
                 if (data && data.next_session) {
-                    const newIndex = data.next_session - 1; // Convert to 0-indexed
+                    const newIndex = Math.max(0, data.next_session - 1); // Convert to 0-indexed
                     console.log(`[MATICO] Setting session index to ${newIndex} (Session ${data.next_session})`);
                     setTodayIndex(newIndex);
                 }
@@ -2554,9 +2554,11 @@ const App = () => {
                 } else {
                     console.error('[MATICO] Error fetching progress:', error);
                 }
-                // Fallback to Matico Plan logic
-                const { index } = resolveMaticoPlan();
-                setTodayIndex(index);
+                // Fallback to Matico Plan logic only if no server progress was loaded
+                if (!serverProgress?.next_session) {
+                    const { index } = resolveMaticoPlan();
+                    setTodayIndex(index);
+                }
             } finally {
                 setLoadingProgress(false);
             }
@@ -3176,12 +3178,28 @@ const App = () => {
             setDailyRoute(DEFAULT_DAILY_ROUTE);
         }
 
-        // NEW: Load the smart session index instead of resetting to 0
+        const serverSubject = serverProgress?.subject || currentSubject;
+        const hasServerProgressForSubject =
+            serverProgress &&
+            serverSubject === currentSubject &&
+            Number(serverProgress.next_session || 0) > 0;
+
+        if (loadingProgress) {
+            return;
+        }
+
+        if (hasServerProgressForSubject) {
+            const serverIndex = Math.max(0, Number(serverProgress.next_session || 1) - 1);
+            console.log(`Subject Change: ${currentSubject} -> Using server session index: ${serverIndex}`);
+            setTodayIndex(serverIndex);
+            return;
+        }
+
         const smartIndex = getSmartSessionIndex(currentSubject);
         console.log(`Subject Change: ${currentSubject} -> Loaded Smart Session Index: ${smartIndex}`);
         setTodayIndex(smartIndex);
 
-    }, [currentSubject]);
+    }, [currentSubject, loadingProgress, serverProgress?.subject, serverProgress?.next_session]);
 
     const updateQuizStats = (isCorrect) => {
         setQuizStats(prev => ({
