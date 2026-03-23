@@ -1469,19 +1469,37 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
                 (subjectFilter ? row[2] === subjectFilter : true)
             );
 
-            // Encontrar la sesión más alta completada
+            // También buscar fases completadas (por si está a mitad de sesión o el histórico no grabó session_completed)
+            const phaseRows = userRows.filter(row =>
+                row[4] === 'phase_completed' &&
+                (subjectFilter ? row[2] === subjectFilter : true)
+            );
+
+            const phaseMap = new Map();
+            phaseRows.forEach(row => {
+                const sessionNum = parseInt(row[3]) || 0;
+                const phase = parseInt(row[5]) || 0;
+                if (!sessionNum || !phase) return;
+                if (!phaseMap.has(sessionNum)) {
+                    phaseMap.set(sessionNum, new Set());
+                }
+                phaseMap.get(sessionNum).add(phase);
+            });
+
+            // Encontrar la sesión más alta completada:
+            // 1) por session_completed explícito
+            // 2) o por tener las 3 fases completas (1,2,3)
             let maxSession = 0;
-            let lastPhase = 0;
             completedSessions.forEach(row => {
                 const sessionNum = parseInt(row[3]) || 0;
                 if (sessionNum > maxSession) maxSession = sessionNum;
             });
 
-            // También buscar fases completadas (por si está a mitad de sesión)
-            const phaseRows = userRows.filter(row =>
-                row[4] === 'phase_completed' &&
-                (subjectFilter ? row[2] === subjectFilter : true)
-            );
+            phaseMap.forEach((phases, sessionNum) => {
+                if (phases.has(1) && phases.has(2) && phases.has(3) && sessionNum > maxSession) {
+                    maxSession = sessionNum;
+                }
+            });
 
             let currentSessionInProgress = 0;
             let currentPhase = 0;
@@ -1749,6 +1767,7 @@ cron.schedule('0 9 * * *', async () => {
 }, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
+
 
 
 
