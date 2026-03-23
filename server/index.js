@@ -10,7 +10,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions } from './generatedQuestionBank.js';
-import { recordAdaptiveEvent, getAdaptiveSnapshot } from './adaptiveProfileStore.js';
+import { recordAdaptiveEvent, getAdaptiveSnapshot, backfillAdaptiveProfileFromProgressRows } from './adaptiveProfileStore.js';
 import { getCurriculumContext } from './curriculumCatalog.js';
 
 dotenv.config();
@@ -1376,6 +1376,12 @@ Entrega:
                 if (row[4] === 'session_completed') sessionsCompleted++;
             });
             const userData = await getUserFromSheet(sheets, user_id);
+            await backfillAdaptiveProfileFromProgressRows({
+                user_id,
+                grade,
+                subject,
+                rows: userRows
+            }).catch((err) => console.error('[ADAPTIVE_PROFILE] Error reconstruyendo desde Sheet:', err.message));
             const adaptive = await getAdaptiveSnapshot({ user_id, grade, subject });
             const curriculum_context = await getCurriculumContext(grade, subject);
             return res.json({
@@ -1743,6 +1749,7 @@ cron.schedule('0 9 * * *', async () => {
 }, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
+
 
 
 

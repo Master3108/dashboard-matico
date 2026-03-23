@@ -101,6 +101,19 @@ const ensureSubjectNode = (gradeNode, subject) => {
     return gradeNode.subjects[subjectKey];
 };
 
+const createEmptySubjectNode = (subject) => ({
+    subject: toKey(subject),
+    sessions: {},
+    mastery: 0,
+    totalAttempts: 0,
+    totalCorrect: 0,
+    totalQuestions: 0,
+    weakSessions: [],
+    strongSessions: [],
+    nextAction: 'Comienza con una sesión guiada para construir base.',
+    updatedAt: new Date().toISOString()
+});
+
 const estimateTotalQuestions = (eventType, data = {}) => {
     const explicit = safeNumber(data.total_questions || data.total || data.questions_total || 0, 0);
     if (explicit > 0) return explicit;
@@ -184,7 +197,12 @@ const mergeEventIntoSession = (sessionNode, eventType, data, now) => {
     sessionNode.totalQuestions = safeNumber(sessionNode.totalQuestions, 0) + totalQuestions;
     sessionNode.correct = safeNumber(sessionNode.correct, 0) + score;
 
-    if (eventType === 'theory_started') {
+    if (eventType === 'session_completed') {
+        sessionNode.completed = true;
+        sessionNode.completedAt = now;
+        sessionNode.mastery = clamp(Math.max(safeNumber(sessionNode.mastery, 0), 85), 0, 100);
+        sessionNode.lastAccuracy = Math.max(safeNumber(sessionNode.lastAccuracy, 0), 85);
+    } else if (eventType === 'theory_started') {
         sessionNode.exposures = safeNumber(sessionNode.exposures, 0) + 1;
         sessionNode.mastery = clamp(Math.round(safeNumber(sessionNode.mastery, 0) * 0.9 + 4), 0, 100);
     } else if (eventType === 'theory_completed') {
@@ -201,6 +219,19 @@ const mergeEventIntoSession = (sessionNode, eventType, data, now) => {
     sessionNode.recommendation = buildSessionRecommendation(sessionNode);
     sessionNode.lastUpdatedAt = now;
     return sessionNode;
+};
+
+const isRelevantAdaptiveEvent = (eventType = '') => {
+    return [
+        'phase_completed',
+        'session_completed',
+        'theory_started',
+        'theory_completed',
+        'cuaderno_completed',
+        'prep_exam_completed',
+        'prep_exam_reviewed',
+        'quiz_completed'
+    ].includes(String(eventType || '').trim());
 };
 
 export const recordAdaptiveEvent = async ({ user_id, grade = '1medio', subject = '', session = '', topic = '', event_type = '', phase = '', levelName = '', score = '', total = '', xp = '', metadata = {} }) => {
@@ -250,6 +281,95 @@ export const recordAdaptiveEvent = async ({ user_id, grade = '1medio', subject =
         subjectNode.sessions[sessionKey] = sessionNode;
 
         recalcSubjectSummary(subjectNode);
+        await persistStore(store);
+
+        return {
+            user_id,
+            grade: gradeNode.grade,
+            subject: subjectNode.subject,
+            summary: buildSubjectSummary(subjectNode)
+        };
+    });
+};
+
+export const backfillAdaptiveProfileFromProgressRows = async ({ user_id, grade = '1medio', subject = '', rows = [] }) => {
+    if (!user_id || !subject) return null;
+
+    return withLock(async () => {
+        const store = await ensureStore();
+        const now = new Date().toISOString();
+        const userNode = ensureUserNode(store, user_id);
+        const gradeNode = ensureGradeNode(userNode, grade);
+        const subjectKey = toKey(subject);
+        const orderedRows = (Array.isArray(rows) ? rows : [])
+            .filter((row) => Array.isArray(row) && toKey(row[2] || '') === subjectKey && isRelevantAdaptiveEvent(row[4] || ''))
+            .slice()
+            .sort((a, b) => String(a[0] || '').localeCompare(String(b[0] || '')));
+
+        gradeNode.subjects[subjectKey] = createEmptySubjectNode(subjectKey);
+        const subjectNode = gradeNode.subjects[subjectKey];
+
+        for (const row of orderedRows) {
+            const eventType = String(row[4] || '').trim();
+            const sessionValue = row[3] || row[5] || '0';
+            const sessionKey = String(sessionValue || '0');
+            const eventTopic = row[11] || '';
+            const eventGrade = row[10] || grade || '1medio';
+            const levelName = row[7] || '';
+            const score = row[8] || '';
+            const totalQuestions = row[12] || '';
+            const eventTimestamp = row[0] || now;
+
+            if (!subjectNode.sessions[sessionKey]) {
+                subjectNode.sessions[sessionKey] = {
+                    session: safeNumber(sessionValue, 0),
+                    topic: eventTopic || '',
+                    grade: eventGrade,
+                    subject: subjectKey,
+                    mastery: 0,
+                    attempts: 0,
+                    correct: 0,
+                    totalQuestions: 0,
+                    weak: true,
+                    recommendation: 'Comienza con una sesión guiada para construir base.',
+                    createdAt: eventTimestamp,
+                    lastUpdatedAt: eventTimestamp,
+                    lastEventAt: eventTimestamp,
+                    lastEventType: eventType || 'progress_update',
+                    lastScore: safeNumber(score, 0),
+                    lastTotalQuestions: safeNumber(totalQuestions, 0),
+                    lastAccuracy: 0,
+                    levelName: levelName || '',
+                    metadata: {
+                        source_mode: row[13] || '',
+                        rebuilt_from_sheet: true
+                    }
+                };
+            }
+
+            const sessionNode = subjectNode.sessions[sessionKey];
+            if (eventTopic) sessionNode.topic = eventTopic;
+            if (levelName) sessionNode.levelName = levelName;
+            sessionNode.metadata = {
+                ...(sessionNode.metadata || {}),
+                source_mode: row[13] || sessionNode.metadata?.source_mode || '',
+                rebuilt_from_sheet: true
+            };
+
+            mergeEventIntoSession(sessionNode, eventType, {
+                grade: eventGrade,
+                subject: subjectKey,
+                session: sessionValue,
+                topic: eventTopic,
+                levelName,
+                score,
+                total: totalQuestions
+            }, eventTimestamp);
+        }
+
+        recalcSubjectSummary(subjectNode);
+        userNode.updatedAt = now;
+        gradeNode.updatedAt = now;
         await persistStore(store);
 
         return {
@@ -353,4 +473,3 @@ export const getAdaptiveSnapshot = async ({ user_id, grade = '1medio', subject =
             : 0
     };
 };
-
