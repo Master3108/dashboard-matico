@@ -4507,6 +4507,8 @@ ${finalData.capsule}`;
                             readingContent=""
                             quizMode={isPrepExamMode ? 'prep_exam' : 'normal'}
                             onRequestNextBatch={isPrepExamMode ? requestNextPrepExamBatch : null}
+                            userEmail={currentUser?.email}
+                            userId={USER_ID}
                             onComplete={async (score, wrongAnswers) => {
                                 if (isPrepExamMode) {
                                     const finalWrongAnswers = wrongAnswers || [];

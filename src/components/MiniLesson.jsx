@@ -3,7 +3,7 @@ import { X, CheckCircle, Timer, BookOpen, Lightbulb, ChevronRight, Camera } from
 import MathRenderer from './MathRenderer';
 import CuadernoMission from './CuadernoMission';
 
-const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onComplete, sessionId, subject, readingContent }) => {
+const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onComplete, sessionId, subject, readingContent, userEmail, userId }) => {
     const [timeLeft, setTimeLeft] = useState(30); // 30 seconds
     const [understood, setUnderstood] = useState(false);
     const [showCuaderno, setShowCuaderno] = useState(false);
@@ -226,6 +226,8 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                     readingContent={readingContent || explanation || ''}
                     onComplete={handleCuadernoComplete}
                     onSkip={handleCuadernoSkip}
+                    userEmail={userEmail}
+                    userId={userId}
                 />
             )}
 

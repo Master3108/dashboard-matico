@@ -46,7 +46,7 @@ const wrapInlineMath = (text = '') => {
     return text;
 };
 
-const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, subject, readingContent, quizMode = 'normal', onRequestNextBatch = null }) => {
+const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, subject, readingContent, quizMode = 'normal', onRequestNextBatch = null, userEmail, userId }) => {
 
     // MATH SAFETY NET: Validate questions on load
     const validateMath = (q) => {
@@ -643,6 +643,8 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                     sessionId={sessionId}
                     subject={subject}
                     readingContent={readingContent}
+                    userEmail={userEmail}
+                    userId={userId}
                 />
             )}
         </div>
