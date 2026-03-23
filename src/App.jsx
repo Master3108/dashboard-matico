@@ -493,6 +493,26 @@ Los aÃ±os siguientes no trajeron paz al pueblo. Los gemelos Vicario fueron abs
 const clayCard = 'bg-white rounded-[32px] border-2 border-white/50 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.02)] transition-transform duration-500 hover:-translate-y-2';
 const clayBtnPrimary = 'bg-[#4F46E5] text-white font-black rounded-2xl border-b-4 border-[#3730A3] hover:bg-[#4338CA] active:border-b-0 active:translate-y-1 transition-all duration-200 w-full py-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),0_4px_10px_rgba(79,70,229,0.3)] hover:scale-105 hover:-translate-y-1 active:scale-95';
 const clayBtnAction = 'bg-[#58CC02] text-white font-black rounded-2xl border-b-4 border-[#46A302] hover:bg-[#46A302] active:border-b-0 active:translate-y-1 transition-all duration-100 w-full py-4 flex items-center justify-center gap-2 uppercase tracking-widest text-sm shadow-[inset_0_4px_4px_rgba(255,255,255,0.4),0_10px_20px_rgba(88,204,2,0.3)] hover:scale-[1.05] hover:-translate-y-1 active:scale-95';
+
+const repairText = (value = '') => {
+    if (value === null || value === undefined) return '';
+    let text = String(value);
+
+    try {
+        if (/[ÃÂ]/.test(text)) {
+            text = decodeURIComponent(escape(text));
+        }
+    } catch (error) {
+        // Keep original text if decoding fails.
+    }
+
+    return text
+        .replace(/ï¿½x[^\s]*/g, '')
+        .replace(/ï¿½/g, '')
+        .replace(/Â/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+};
 const clayInset = 'bg-[#F7F7F7] rounded-2xl border-transparent shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]';
 
 const MATH_SYLLABUS = [
@@ -4450,7 +4470,7 @@ ${finalData.capsule}`;
 
                             <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2 relative z-10">
                                 <h1 className="text-4xl font-black text-[#2B2E4A] mb-1 drop-shadow-sm">
-                                    Â¡Hola, {currentUser?.username || userProfile?.username || 'Estudiante'}! ï¿½x9
+                                    Hola, {repairText(currentUser?.username || userProfile?.username || 'Estudiante')}!
                                 </h1>
                                 <p className="text-[#9094A6] font-bold text-base max-w-md leading-tight mb-6">
                                     Sistema activo. Hoy dedicaremos la hora completa a:{' '}
@@ -4469,7 +4489,7 @@ ${finalData.capsule}`;
                                         <MessageCircle className="w-6 h-6 text-white animate-pulse" />
                                     </div>
                                     <div className="flex flex-col items-start leading-none">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Â¿NECESITAS AYUDA SOBRE ALGUNA MATERIA?</span>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">NECESITAS AYUDA SOBRE ALGUNA MATERIA?</span>
                                         <span className="text-xl font-black tracking-tight">TENGO UNA DUDA</span>
                                     </div>
                                     <ArrowRight className="w-6 h-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
@@ -4484,7 +4504,7 @@ ${finalData.capsule}`;
                                 {userProfile?.xp || 0} XP
                             </div>
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setSettingsOpen(true)} className="p-3.5 bg-white rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.05)] border-2 border-white transition-all hover:shadow-xl hover:-translate-y-1 group hover:border-indigo-100" title="ConfiguraciÃ³n">
+                                <button onClick={() => setSettingsOpen(true)} className="p-3.5 bg-white rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.05)] border-2 border-white transition-all hover:shadow-xl hover:-translate-y-1 group hover:border-indigo-100" title="Configuracion">
                                     <Settings className="w-8 h-8 text-[#64748B] group-hover:text-indigo-600 transition-transform group-hover:rotate-90" />
                                 </button>
                                 <button onClick={() => fetchProfile()} className="p-3.5 bg-white rounded-2xl shadow-[0_10px_20_rgba(0,0,0,0.05)] border-2 border-white transition-all hover:shadow-xl hover:-translate-y-1 group hover:border-blue-100" title="Actualizar Progreso">
@@ -4501,37 +4521,37 @@ ${finalData.capsule}`;
                                 onClick={() => setCurrentSubject('MATEMATICA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'MATEMATICA' ? 'hover:brightness-110 !bg-[#4D96FF] !text-white !border-[#3B80E6] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(77,150,255,0.6)]' : '!bg-[#4D96FF]/10 !text-[#4D96FF] !border-[#4D96FF]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">ï¿½xï¿½</span> Mate
+                                Mate
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('LENGUAJE')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'LENGUAJE' ? 'hover:brightness-110 !bg-[#FF7675] !text-white !border-[#E84393] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,118,117,0.6)]' : '!bg-[#FF7675]/10 !text-[#FF7675] !border-[#FF7675]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[10deg] inline-block">ï¿½xa</span> Lenguaje
+                                Lenguaje
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('FISICA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'FISICA' ? 'hover:brightness-110 !bg-[#9D4EDD] !text-white !border-[#8A3CC2] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(157,78,221,0.6)]' : '!bg-[#9D4EDD]/10 !text-[#9D4EDD] !border-[#9D4EDD]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[-5deg] inline-block">ï¿½xRR</span> FÃ­sica
+                                Fisica
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('QUIMICA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'QUIMICA' ? 'hover:brightness-110 !bg-[#E84393] !text-white !border-[#C23678] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(232,67,147,0.6)]' : '!bg-[#E84393]/10 !text-[#E84393] !border-[#E84393]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[5deg] inline-block">ï¿½xï¿½ï¿½</span> QuÃ­mica
+                                Quimica
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('BIOLOGIA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'BIOLOGIA' ? 'hover:brightness-110 !bg-[#2ECC71] !text-white !border-[#27AE60] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(46,204,113,0.6)]' : '!bg-[#2ECC71]/10 !text-[#2ECC71] !border-[#2ECC71]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[-10deg] inline-block">ï¿½xRï¿½</span> BiologÃ­a
+                                Biologia
                             </button>
                             <button
                                 onClick={() => setCurrentSubject('HISTORIA')}
                                 className={`${clayBtnPrimary} !w-full !py-3 !px-1 ${currentSubject === 'HISTORIA' ? 'hover:brightness-110 !bg-[#E67E22] !text-white !border-[#D35400] shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(230,126,34,0.6)]' : '!bg-[#E67E22]/10 !text-[#E67E22] !border-[#E67E22]/30'}`}
                             >
-                                <span className="text-lg mr-1 rotate-[10deg] inline-block">ï¿½xS</span> Historia
+                                Historia
                             </button>
                         </div>
 
@@ -4547,9 +4567,9 @@ ${finalData.capsule}`;
                                 <div className="flex justify-between items-start mb-8">
                                     <div>
                                         <h2 className="text-2xl font-black text-[#2B2E4A] mb-1" style={{ color: TODAYS_SUBJECT.color }}>
-                                            Ruta de {TODAYS_SUBJECT.name}: <span className="text-base font-bold text-[#9094A6] block">{TODAYS_SUBJECT.oa_title}</span>
+                                            Ruta de {repairText(TODAYS_SUBJECT.name)}: <span className="text-base font-bold text-[#9094A6] block">{repairText(TODAYS_SUBJECT.oa_title)}</span>
                                         </h2>
-                                        <p className="text-[#9094A6] font-bold text-sm">Sesion {TODAYS_SESSION.session}: {TODAYS_SESSION.topic}</p>
+                                        <p className="text-[#9094A6] font-bold text-sm">Sesion {TODAYS_SESSION.session}: {repairText(TODAYS_SESSION.topic)}</p>
 
                                         {/* INDICADOR DE PROGRESO KAIZEN */}
                                         {(() => {
@@ -4582,14 +4602,14 @@ ${finalData.capsule}`;
                                         <div className="space-y-3">
                                             <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#4D96FF]">
                                                 <span className="h-2 w-2 rounded-full bg-[#4D96FF]" />
-                                                Ruta adaptativa Â· {adaptiveGradeLabel}
+                                                Ruta adaptativa - {repairText(adaptiveGradeLabel)}
                                             </div>
                                             <div>
                                                 <p className="text-xl md:text-2xl font-black leading-tight text-[#2B2E4A]">
-                                                    {adaptiveNextAction}
+                                                    {repairText(adaptiveNextAction)}
                                                 </p>
                                                 <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688] max-w-xl">
-                                                    La app recuerda quÃ© sesiones le cuestan mÃ¡s a tu hijo y arma el prÃ³ximo repaso desde ahÃ­.
+                                                    La app recuerda que sesiones le cuestan mas a tu hijo y arma el proximo repaso desde ahi.
                                                 </p>
                                             </div>
                                         </div>
@@ -4599,7 +4619,7 @@ ${finalData.capsule}`;
                                                 onClick={() => openPrepExamSetup(adaptiveWeakSessions.map(item => Number(item.session)).filter(Boolean))}
                                                 className={`${clayBtnAction} !w-full !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6] !min-h-[58px] !text-base`}
                                             >
-                                                <span>REPASAR SESIONES Dï¿½0BILES</span>
+                                                <span>REPASAR SESIONES DEBILES</span>
                                                 <ArrowRight className="w-5 h-5 ml-2" />
                                             </button>
 
@@ -4610,12 +4630,12 @@ ${finalData.capsule}`;
                                                         className="inline-flex items-center gap-1.5 rounded-full bg-white border border-indigo-100 px-3 py-1.5 text-xs font-black text-[#4D96FF] shadow-sm"
                                                     >
                                                         <span className="h-2 w-2 rounded-full bg-[#4D96FF]/70" />
-                                                        SesiÃ³n {item.session}
+                                                        Sesion {item.session}
                                                     </span>
                                                 )) : (
                                                     <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-600 shadow-sm">
                                                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                                        Sin sesiones dÃ©biles marcadas todavÃ­a
+                                                        Sin sesiones debiles marcadas todavia
                                                     </span>
                                                 )}
                                             </div>
