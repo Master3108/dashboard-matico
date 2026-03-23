@@ -2522,14 +2522,13 @@ const App = () => {
                     const stored = localStorage.getItem(completedKey);
                     let completed = [];
 
+                    // Fallback para datos corruptos
                     try {
                         completed = stored ? JSON.parse(stored) : [];
-                        // Fallback if it was a string instead of array (from legacy code)
                         if (!Array.isArray(completed) && typeof stored === 'string') {
                             completed = stored.split(',').filter(s => s.trim() !== '');
                         }
                     } catch (e) {
-                        // Fallback for corrupt data
                         if (typeof stored === 'string') {
                             completed = stored.split(',').filter(s => s.trim() !== '');
                         }
@@ -2548,18 +2547,19 @@ const App = () => {
                         localStorage.setItem(completedKey, JSON.stringify(completed));
                         console.log(`[SYNC] 🔄 Sesiones completadas sincronizadas:`, completed);
                     }
-                } catch (error) {
-                    if (error.name === 'AbortError') {
-                        console.log('[MATICO] Timeout cargando progreso - usando localStorage');
-                    } else {
-                        console.error('[MATICO] Error fetching progress:', error);
-                    }
-                    // Fallback to Matico Plan logic
-                    const { index } = resolveMaticoPlan();
-                    setTodayIndex(index);
-                } finally {
-                    setLoadingProgress(false);
                 }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('[MATICO] Timeout cargando progreso - usando localStorage');
+                } else {
+                    console.error('[MATICO] Error fetching progress:', error);
+                }
+                // Fallback to Matico Plan logic
+                const { index } = resolveMaticoPlan();
+                setTodayIndex(index);
+            } finally {
+                setLoadingProgress(false);
+            }
         };
 
         if (USER_ID) fetchProgress();
