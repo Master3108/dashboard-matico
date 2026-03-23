@@ -2216,14 +2216,21 @@ const App = () => {
     // 1. Fetch Profile on Load
     const fetchProfile = async () => {
         if (!USER_ID) return;
+        
+        // TIMEOUT: Abortar si tarda más de 3 segundos
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
         try {
             console.log("[PROFILE] Fetching latest profile for:", USER_ID);
             const response = await fetch(`${activeWebhookUrl}?accion=get_profile&user_id=${USER_ID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({ accion: 'get_profile', user_id: USER_ID, grade: ACTIVE_GRADE, subject: currentSubject })
             });
 
+            clearTimeout(timeoutId);
             const text = await response.text();
             const data = parseN8NResponse(text);
 
@@ -2245,7 +2252,21 @@ const App = () => {
                 console.log("[PROFILE] Updated state:", normalized);
             }
         } catch (e) {
-            console.error("Error fetching profile:", e);
+            if (e.name === 'AbortError') {
+                console.log("[PROFILE] Timeout - usando datos locales");
+            } else {
+                console.error("Error fetching profile:", e);
+            }
+            // Fallback: usar datos del usuario local si existe
+            if (currentUser?.username) {
+                setUserProfile(prev => ({
+                    ...prev,
+                    username: currentUser.username,
+                    xp: prev.xp || 0,
+                    streak: prev.streak || 0,
+                    level: prev.level || 1
+                }));
+            }
         }
     };
 
@@ -2433,6 +2454,11 @@ const App = () => {
     useEffect(() => {
         const fetchProgress = async () => {
             if (!USER_ID) return;
+            
+            // TIMEOUT: Abortar si tarda más de 4 segundos
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            
             try {
                 setLoadingProgress(true);
                 console.log('[MATICO] Fetching progress from server...');
@@ -2442,6 +2468,7 @@ const App = () => {
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    signal: controller.signal,
                     body: JSON.stringify({
                         action: 'get_progress',
                         user_id: USER_ID,
@@ -2449,8 +2476,9 @@ const App = () => {
                     })
                 });
 
+                clearTimeout(timeoutId);
                 const data = await response.json();
-                console.log('[MATICO] ? Server progress loaded:', data);
+                console.log('[MATICO] Server progress loaded:', data);
                 setServerProgress(data);
 
                 // Update todayIndex based on server's next_session
@@ -2520,15 +2548,18 @@ const App = () => {
                         localStorage.setItem(completedKey, JSON.stringify(completed));
                         console.log(`[SYNC] 🔄 Sesiones completadas sincronizadas:`, completed);
                     }
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        console.log('[MATICO] Timeout cargando progreso - usando localStorage');
+                    } else {
+                        console.error('[MATICO] Error fetching progress:', error);
+                    }
+                    // Fallback to Matico Plan logic
+                    const { index } = resolveMaticoPlan();
+                    setTodayIndex(index);
+                } finally {
+                    setLoadingProgress(false);
                 }
-            } catch (error) {
-                console.error('[MATICO] ? Error fetching progress:', error);
-                // Fallback to Matico Plan logic
-                const { index } = resolveMaticoPlan();
-                setTodayIndex(index);
-            } finally {
-                setLoadingProgress(false);
-            }
         };
 
         if (USER_ID) fetchProgress();
