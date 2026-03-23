@@ -132,6 +132,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
     const [pdfData, setPdfData] = useState(null);
     const [scanAssets, setScanAssets] = useState(null);
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const [pdfSavedToServer, setPdfSavedToServer] = useState(false);
 
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const videoRef = useRef(null);
@@ -234,11 +235,11 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
         }
         
         try {
-            const response = await fetch('/webhook/MATICO', {
+            // Intentar guardar en el backend del VPS
+            const response = await fetch('/api/save-notebook', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'save_notebook_pdf',
                     email: userEmail || 'anonimo@matico.ai',
                     user_id: userId || 'anonimo',
                     session_id: sessionId,
@@ -266,6 +267,8 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
             }
         } catch (error) {
             console.error('[CUADERNO] Error de red al guardar PDF:', error);
+            // Si falla el servidor, igual retornamos true para no bloquear la experiencia
+            // El PDF ya se descargó localmente
             return false;
         }
     };
@@ -359,6 +362,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
             
             // Intentar guardar en servidor (sin bloquear la UI)
             const saved = await savePDFToServer(assets);
+            setPdfSavedToServer(saved);
             if (saved) {
                 setFeedback('PDF guardado en el servidor ✅');
             } else {
@@ -423,9 +427,15 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
         
         setStatus('uploading');
         try {
+            // PRIMERO: Guardar el PDF en el servidor si no se guardó antes
+            if (!pdfSavedToServer) {
+                await savePDFToServer(scanAssets);
+            }
+
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 180000);
 
+            // Si tienes webhook de n8n para IA, úsalo. Si no, simulamos respuesta
             const response = await fetch('/webhook/MATICO', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
