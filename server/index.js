@@ -389,6 +389,56 @@ const ensureSheetTabExists = async (sheets, title, headers = []) => {
     }
 };
 
+const autoAppendMissingSessionCompleted = async (sheets, rows = [], userId = '', subject = '', grade = '1medio') => {
+    const normalizedSubject = String(subject || '').trim().toUpperCase();
+    if (!userId || !normalizedSubject) return [];
+
+    const subjectRows = (rows || []).filter((row) => row[1] === userId && String(row[2] || '').trim().toUpperCase() === normalizedSubject);
+    const completedSessions = new Set(
+        subjectRows
+            .filter((row) => row[4] === 'session_completed')
+            .map((row) => parseInt(row[3]) || 0)
+            .filter(Boolean)
+    );
+
+    const phaseMap = new Map();
+    subjectRows
+        .filter((row) => row[4] === 'phase_completed')
+        .forEach((row) => {
+            const sessionNum = parseInt(row[3]) || 0;
+            const phase = parseInt(row[5]) || 0;
+            if (!sessionNum || !phase) return;
+            if (!phaseMap.has(sessionNum)) {
+                phaseMap.set(sessionNum, new Set());
+            }
+            phaseMap.get(sessionNum).add(phase);
+        });
+
+    const appendedSessions = [];
+    for (const [sessionNum, phases] of phaseMap.entries()) {
+        if (completedSessions.has(sessionNum)) continue;
+        if (!(phases.has(1) && phases.has(2) && phases.has(3))) continue;
+
+        await appendProgressToSheetOrThrow(sheets, {
+            user_id: userId,
+            subject: normalizedSubject,
+            session: sessionNum,
+            event_type: 'session_completed',
+            xp: 300,
+            grade,
+            sourceMode: 'autofix_phases'
+        });
+
+        completedSessions.add(sessionNum);
+        appendedSessions.push(sessionNum);
+    }
+
+    if (appendedSessions.length > 0) {
+        console.log('[SESSION_AUTOFIX_OK]', JSON.stringify({ user_id: userId, subject: normalizedSubject, sessions: appendedSessions }));
+    }
+
+    return appendedSessions;
+};
 const appendAdaptiveSnapshotToSheetOrThrow = async (sheets, {
     user_id = '',
     grade = '',
@@ -1311,6 +1361,16 @@ Entrega:
                 totalQuestions,
                 sourceMode: data.source_mode || data.mode || ''
             });
+            
+            if ((data.subject || '') && (data.session || '') && (eventType === 'phase_completed' || eventType === 'session_completed')) {
+                const progressRowsResponse = await sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'progress_log!A:N',
+                });
+                const progressRows = progressRowsResponse.data.values || [];
+                await autoAppendMissingSessionCompleted(sheets, progressRows, user_id, data.subject || '', grade)
+                    .catch((err) => console.error('[SESSION_AUTOFIX] Error autocorrigiendo sesiones:', err.message));
+            }
             const adaptiveResult = await recordAdaptiveEvent({
                 user_id,
                 grade,
@@ -1462,15 +1522,25 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             // Filtrar por user_id
             const userRows = rows.filter(row => row[1] === user_id);
 
+            await autoAppendMissingSessionCompleted(sheets, rows, user_id, subjectFilter || '', '1medio')
+                .catch((err) => console.error('[SESSION_AUTOFIX] Error reconstruyendo sesiones completas:', err.message));
+
+            const refreshedResponse = await sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: 'progress_log!A:J',
+            });
+            const refreshedRows = refreshedResponse.data.values || [];
+            const userRowsRefreshed = refreshedRows.filter(row => row[1] === user_id);
+
             // Filtrar sesiones completadas de esta materia
             // Columnas: A=timestamp, B=user_id, C=subject, D=session, E=event_type
-            const completedSessions = userRows.filter(row =>
+            const completedSessions = userRowsRefreshed.filter(row =>
                 row[4] === 'session_completed' &&
                 (subjectFilter ? row[2] === subjectFilter : true)
             );
 
             // También buscar fases completadas (por si está a mitad de sesión o el histórico no grabó session_completed)
-            const phaseRows = userRows.filter(row =>
+            const phaseRows = userRowsRefreshed.filter(row =>
                 row[4] === 'phase_completed' &&
                 (subjectFilter ? row[2] === subjectFilter : true)
             );
@@ -1515,7 +1585,7 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
 
             // Calcular XP total
             let totalXP = 0;
-            userRows.forEach(row => {
+            userRowsRefreshed.forEach(row => {
                 totalXP += parseInt(row[9]) || 0;
             });
 
@@ -1767,6 +1837,10 @@ cron.schedule('0 9 * * *', async () => {
 }, { timezone: 'America/Santiago' });
 
 app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
+
+
+
+
 
 
 
