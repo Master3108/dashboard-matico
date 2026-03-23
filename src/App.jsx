@@ -1227,8 +1227,9 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
 
     if (!isOpen) return null;
 
-    const isQuiz = (content || '').includes('QUIZ DE VALIDACIï¿½N');
-    const isReview = (content || '').includes('MÃ³dulo de Refuerzo');
+    const safeRouteTitle = repairText(routeTitle);
+    const isQuiz = (content || '').includes('QUIZ DE VALIDACION');
+    const isReview = (content || '').includes('Modulo de Refuerzo');
     const isActiveQuiz = apiJson && apiJson.question;
     // NEW: DETECT VIDEO CONTEXT FROM QUERY
     const isVideoContext = userQuery && userQuery.includes('[Context: Video');
@@ -1250,7 +1251,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
         actionText = 'SIGUIENTE PREGUNTA ? ';
         actionColor = clayBtnAction;
         actionHandler = () => {
-            callAgent(subject, 'deepen_knowledge', `${routeTitle}-ContinuaciÃ³n`);
+            callAgent(subject, 'deepen_knowledge', `${safeRouteTitle}-Continuacion`);
         };
     } else if (isQuiz) {
         actionText = 'COMENZAR QUIZ';
@@ -1258,7 +1259,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
         actionHandler = onStartQuiz ? onStartQuiz : () => callAgent(subject, 'generate_quiz', routeTitle);
     }
 
-    const contentTitle = isTheory ? `TeorÃ­a LÃºdica por Matico (${routeTitle}):` : (isActiveQuiz ? 'Â¡Quiz en Progreso!' : (isQuiz ? 'ï¿½S& Â¡Quiz Generado!' : 'Plan de Refuerzo:'));
+    const contentTitle = isTheory ? `Teoria Ludica por Matico (${safeRouteTitle}):` : (isActiveQuiz ? 'Quiz en Progreso' : (isQuiz ? 'Quiz Generado' : 'Plan de Refuerzo:'));
 
     const handleOptionClick = (index) => {
         if (showExplanation) return;
@@ -1281,10 +1282,10 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
             setQuizLevel(prev => prev + 1);
             const nextQ = (quizQuestionNumber || 1) + 1;
             if (setQuizQuestionNumber) setQuizQuestionNumber(nextQ);
-            callAgent(subject, 'deepen_knowledge', `${routeTitle}-Nivel Avanzado`, null, null, null, nextQ);
+            callAgent(subject, 'deepen_knowledge', `${safeRouteTitle}-Nivel Avanzado`, null, null, null, nextQ);
         } else {
             // OPTIONAL: KEEP LEVEL OR DECREASE? FOR NOW KEEP TO REINFORCE
-            callAgent(subject, 'remedial_explanation', `${routeTitle}-Refuerzo Concepto`);
+            callAgent(subject, 'remedial_explanation', `${safeRouteTitle}-Refuerzo Concepto`);
         }
     };
 
@@ -1301,8 +1302,8 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                             <Brain className="w-6 h-6 text-[#4D96FF] animate-wiggle" />
                         </div>
                         <div>
-                            <h3 className="font-black text-[#2B2E4A] text-lg">Agente de {subject}</h3>
-                            <p className="text-[#9094A6] text-xs font-bold uppercase">Contenido Generado por IA</p>
+                            <h3 className="font-black text-[#2B2E4A] text-lg">Agente de {repairText(subject)}</h3>
+                            <p className="text-[#9094A6] text-xs font-bold uppercase">Contenido generado por IA</p>
                         </div>
                     </div>
 
@@ -4439,7 +4440,7 @@ ${finalData.capsule}`;
                     subject={currentSubject}
                     callAgent={callAgent}
                     isCallingN8N={isCallingN8N}
-                    routeTitle={TODAYS_SUBJECT.oa_title}
+                routeTitle={repairText(TODAYS_SUBJECT.oa_title)}
                     apiJson={apiJson}
                     quizStats={quizStats}
                     updateQuizStats={updateQuizStats}
@@ -4475,7 +4476,7 @@ ${finalData.capsule}`;
                                 <p className="text-[#9094A6] font-bold text-base max-w-md leading-tight mb-6">
                                     Sistema activo. Hoy dedicaremos la hora completa a:{' '}
                                     <span className="text-[#2B2E4A] bg-white px-2 py-0.5 rounded-lg shadow-sm border border-white/50 font-black inline-block mt-1" style={{ color: TODAYS_SUBJECT.color }}>
-                                        {TODAYS_SUBJECT.name}
+                                        {repairText(TODAYS_SUBJECT.name)}
                                     </span>
                                 </p>
 
