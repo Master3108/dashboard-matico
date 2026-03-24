@@ -108,6 +108,46 @@ const normalizeSheetRows = (value) => {
     return [];
 };
 
+const normalizeHeader = (value = '') => (
+    String(value)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+);
+
+const buildSheetObjects = (rows = []) => {
+    const normalizedRows = normalizeSheetRows(rows).filter(Array.isArray);
+    if (!normalizedRows.length) return [];
+
+    const headerRow = normalizedRows[0].map(normalizeHeader);
+    const hasHeader =
+        headerRow.includes('email') ||
+        headerRow.includes('correo') ||
+        headerRow.includes('password') ||
+        headerRow.includes('contrasena') ||
+        headerRow.includes('user_id');
+
+    if (!hasHeader) return [];
+
+    return normalizedRows.slice(1).map((row) => {
+        const entry = {};
+        headerRow.forEach((header, index) => {
+            if (!header) return;
+            entry[header] = row[index];
+        });
+        return entry;
+    });
+};
+
+const firstDefined = (...values) => values.find((value) => value !== undefined && value !== null && value !== '');
+
+const toInt = (value, fallback = 0) => {
+    const parsed = parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 // Helper: Escribir en Google Sheets
 async function writeSheet(range, values) {
     if (!sheets) {
@@ -172,6 +212,135 @@ const saveProgress = (progress) => fs.writeFileSync(PROGRESS_FILE, JSON.stringif
 const getNotebooks = () => JSON.parse(fs.readFileSync(NOTEBOOKS_FILE, 'utf8'));
 const saveNotebooks = (notebooks) => fs.writeFileSync(NOTEBOOKS_FILE, JSON.stringify(notebooks, null, 2));
 
+const findLocalUser = ({ email, userId }) => {
+    const users = getUsers();
+
+    if (email && users[email]) {
+        return users[email];
+    }
+
+    if (!userId) return null;
+
+    return Object.values(users).find((user) => user?.user_id === userId) || null;
+};
+
+const findSheetUser = async ({ email, password, userId }) => {
+    const rows = normalizeSheetRows(await readSheet('users'));
+    if (!rows.length) return null;
+
+    const objects = buildSheetObjects(rows);
+
+    if (objects.length) {
+        const match = objects.find((row) => {
+            const rowEmail = firstDefined(row.email, row.correo, row.mail);
+            const rowPassword = firstDefined(row.password, row.contrasena, row.pass);
+            const rowUserId = firstDefined(row.user_id, row.userid, row.id_usuario, row.id);
+
+            if (userId && rowUserId === userId) return true;
+            if (email && rowEmail && String(rowEmail).toLowerCase() === String(email).toLowerCase()) {
+                return password ? rowPassword === password : true;
+            }
+            return false;
+        });
+
+        if (match) {
+            const resolvedEmail = firstDefined(match.email, match.correo, match.mail, email);
+            return {
+                user_id: firstDefined(match.user_id, match.userid, match.id_usuario, match.id, userId, uuidv4()),
+                email: resolvedEmail,
+                name: firstDefined(match.name, match.nombre, match.username, match.usuario, resolvedEmail?.split('@')[0]),
+                password: firstDefined(match.password, match.contrasena, match.pass),
+                xp: toInt(firstDefined(match.xp, match.puntos), 0),
+                level: toInt(firstDefined(match.level, match.nivel), 1),
+                streak: toInt(firstDefined(match.streak, match.racha), 0)
+            };
+        }
+    }
+
+    const positionalMatch = rows.find((row) => {
+        if (!Array.isArray(row) || !row.length) return false;
+        const rowEmail = row[0];
+        const rowPassword = row[1];
+        const rowUserId = row[2];
+
+        if (userId && rowUserId === userId) return true;
+        if (email && String(rowEmail).toLowerCase() === String(email).toLowerCase()) {
+            return password ? rowPassword === password : true;
+        }
+        return false;
+    });
+
+    if (!positionalMatch) return null;
+
+    return {
+        user_id: positionalMatch[2] || userId || uuidv4(),
+        email: positionalMatch[0] || email,
+        password: positionalMatch[1],
+        name: positionalMatch[3] || (positionalMatch[0] || email || '').split('@')[0],
+        xp: toInt(positionalMatch[4], 0),
+        level: toInt(positionalMatch[5], 1),
+        streak: toInt(positionalMatch[6], 0)
+    };
+};
+
+const findSheetProgress = async ({ email, userId, subject }) => {
+    const rows = normalizeSheetRows(await readSheet('progress'));
+    if (!rows.length) return null;
+
+    const objects = buildSheetObjects(rows);
+
+    if (objects.length) {
+        const match = objects.find((row) => {
+            const rowEmail = firstDefined(row.email, row.correo, row.mail);
+            const rowUserId = firstDefined(row.user_id, row.userid, row.id_usuario, row.id);
+            const rowSubject = firstDefined(row.subject, row.materia);
+
+            const sameUser =
+                (email && rowEmail && String(rowEmail).toLowerCase() === String(email).toLowerCase()) ||
+                (userId && rowUserId === userId);
+
+            return sameUser && (!subject || rowSubject === subject);
+        });
+
+        if (match) {
+            return {
+                next_session: toInt(firstDefined(match.next_session, match.proxima_sesion), 1),
+                last_completed_session: toInt(firstDefined(match.last_completed_session, match.ultima_sesion_completada), 0),
+                current_session_in_progress: toInt(firstDefined(match.current_session_in_progress, match.sesion_actual_en_progreso), 1),
+                current_phase: toInt(firstDefined(match.current_phase, match.fase_actual), 1),
+                total_score: toInt(firstDefined(match.total_score, match.puntaje_total), 0),
+                total_xp: toInt(firstDefined(match.total_xp, match.xp_total), 0),
+                subject: firstDefined(match.subject, match.materia, subject),
+                email: firstDefined(match.email, match.correo, email),
+                user_id: firstDefined(match.user_id, match.userid, userId)
+            };
+        }
+    }
+
+    const positionalMatch = rows.find((row) => {
+        if (!Array.isArray(row) || !row.length) return false;
+        const rowEmail = row[0];
+        const rowSubject = row[1];
+        return email &&
+            String(rowEmail).toLowerCase() === String(email).toLowerCase() &&
+            (!subject || rowSubject === subject);
+    });
+
+    if (!positionalMatch) return null;
+
+    return {
+        next_session: toInt(positionalMatch[2], 1),
+        last_completed_session: toInt(positionalMatch[3], 0),
+        current_session_in_progress: toInt(positionalMatch[4], 1),
+        current_phase: toInt(positionalMatch[5], 1),
+        total_score: toInt(positionalMatch[6], 0),
+        total_xp: toInt(positionalMatch[7], 0),
+        subject: positionalMatch[1] || subject,
+        email: positionalMatch[0] || email,
+        user_id: userId
+    };
+};
+
 // ============================================
 // ENDPOINTS API
 // ============================================
@@ -203,23 +372,7 @@ app.post('/api/auth/login', async (req, res) => {
         }
         
         // Intentar leer de Google Sheets primero
-        let userData = null;
-        const sheetData = normalizeSheetRows(await readSheet('users'));
-        
-        if (sheetData.length > 0) {
-            // Buscar usuario en sheet
-            const userRow = sheetData.find(row => row[0] === email && row[1] === password);
-            if (userRow) {
-                userData = {
-                    user_id: userRow[2] || uuidv4(),
-                    email: userRow[0],
-                    name: userRow[3] || email.split('@')[0],
-                    xp: parseInt(userRow[4]) || 0,
-                    level: parseInt(userRow[5]) || 1,
-                    streak: parseInt(userRow[6]) || 0
-                };
-            }
-        }
+        let userData = await findSheetUser({ email, password });
         
         // Fallback a datos locales
         if (!userData) {
@@ -324,11 +477,11 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // Obtener perfil
-app.get('/api/auth/profile', async (req, res) => {
+app.all('/api/auth/profile', async (req, res) => {
     try {
-        const { email } = req.query;
-        const users = getUsers();
-        const user = users[email];
+        const email = req.body?.email || req.query?.email;
+        const userId = req.body?.user_id || req.query?.user_id;
+        const user = (await findSheetUser({ email, userId })) || findLocalUser({ email, userId });
         
         if (!user) {
             return res.status(404).json({ 
@@ -360,30 +513,16 @@ app.get('/api/auth/profile', async (req, res) => {
 app.post('/api/progress/get', async (req, res) => {
     try {
         const { user_id, email, subject } = req.body;
+        const resolvedUser = (await findSheetUser({ email, userId: user_id })) || findLocalUser({ email, userId: user_id });
+        const resolvedEmail = email || resolvedUser?.email;
         
         // Intentar leer de Sheets
-        const sheetData = await readSheet('progress');
-        let userProgress = null;
-        
-        if (sheetData) {
-            const progressRow = sheetData.find(row => 
-                row[0] === email && row[1] === subject
-            );
-            if (progressRow) {
-                userProgress = {
-                    next_session: parseInt(progressRow[2]) || 1,
-                    last_completed_session: parseInt(progressRow[3]) || 0,
-                    current_session_in_progress: parseInt(progressRow[4]) || 1,
-                    current_phase: parseInt(progressRow[5]) || 1,
-                    total_score: parseInt(progressRow[6]) || 0
-                };
-            }
-        }
+        let userProgress = await findSheetProgress({ email: resolvedEmail, userId: user_id, subject });
         
         // Fallback local
         if (!userProgress) {
             const progress = getProgress();
-            const key = `${email}_${subject}`;
+            const key = `${resolvedEmail}_${subject}`;
             const localProgress = progress[key] || {};
             
             const completedSessions = Object.keys(localProgress.sessions || {})
@@ -405,6 +544,9 @@ app.post('/api/progress/get', async (req, res) => {
         
         res.json({
             success: true,
+            email: resolvedEmail,
+            user_id,
+            subject,
             ...userProgress
         });
         
@@ -418,35 +560,56 @@ app.post('/api/progress/get', async (req, res) => {
 app.post('/api/progress/save', async (req, res) => {
     try {
         const { user_id, email, subject, type, data } = req.body;
+        const payload = data || {};
+        const progressType = type || payload.type;
+        const resolvedSubject = subject || payload.subject;
+        const resolvedEmail = email || ((await findSheetUser({ userId: user_id }))?.email) || findLocalUser({ userId: user_id })?.email;
+        const sessionNumber = toInt(firstDefined(payload.session, payload.session_id), 0);
+        const phaseNumber = toInt(firstDefined(payload.phase, payload.current_phase), 0);
         
         // Guardar en datos locales
         const progress = getProgress();
-        const key = `${email}_${subject}`;
+        const key = `${resolvedEmail}_${resolvedSubject}`;
         
         if (!progress[key]) {
             progress[key] = {
                 user_id,
-                email,
-                subject,
+                email: resolvedEmail,
+                subject: resolvedSubject,
                 sessions: {},
+                last_completed_session: 0,
+                current_session_in_progress: 1,
+                current_phase: 1,
                 lastUpdated: new Date().toISOString()
             };
         }
         
         // Actualizar según el tipo
-        if (type === 'session_completed' && data.session) {
-            progress[key].sessions[data.session] = {
+        if (progressType === 'session_completed' && sessionNumber) {
+            progress[key].sessions[sessionNumber] = {
                 completed: true,
-                score: data.score || 0,
-                xp_earned: data.xp_reward || 0,
+                score: payload.score || 0,
+                xp_earned: payload.xp_reward || 0,
                 completedAt: new Date().toISOString()
+            };
+            progress[key].last_completed_session = Math.max(progress[key].last_completed_session || 0, sessionNumber);
+            progress[key].current_session_in_progress = sessionNumber + 1;
+            progress[key].current_phase = 1;
+        } else if (progressType === 'phase_completed' && sessionNumber) {
+            progress[key].current_session_in_progress = sessionNumber;
+            progress[key].current_phase = Math.min(Math.max(phaseNumber + 1, 1), 3);
+            progress[key].sessions[sessionNumber] = {
+                ...(progress[key].sessions[sessionNumber] || {}),
+                lastPhaseCompleted: phaseNumber,
+                lastPhaseScore: payload.score || 0,
+                updatedAt: new Date().toISOString()
             };
         }
         
         // Calcular totales
         const sessions = Object.values(progress[key].sessions);
         progress[key].totalSessions = sessions.length;
-        progress[key].totalScore = sessions.reduce((acc, s) => acc + (s.score || 0), 0);
+        progress[key].totalScore = sessions.reduce((acc, s) => acc + (s.score || s.lastPhaseScore || 0), 0);
         progress[key].totalXP = sessions.reduce((acc, s) => acc + (s.xp_earned || 0), 0);
         progress[key].lastUpdated = new Date().toISOString();
         
@@ -454,16 +617,16 @@ app.post('/api/progress/save', async (req, res) => {
         
         // Actualizar XP del usuario
         const users = getUsers();
-        if (users[email] && data.xp_reward) {
-            users[email].xp = (users[email].xp || 0) + data.xp_reward;
+        if (resolvedEmail && users[resolvedEmail] && payload.xp_reward) {
+            users[resolvedEmail].xp = (users[resolvedEmail].xp || 0) + payload.xp_reward;
             saveUsers(users);
         }
         
         // También guardar en Sheets
         if (sheets) {
             await writeSheet('progress', [[
-                email,
-                subject,
+                resolvedEmail,
+                resolvedSubject,
                 (progress[key].last_completed_session || 0) + 1, // next_session
                 progress[key].last_completed_session || 0,
                 progress[key].current_session_in_progress || 1,
@@ -781,8 +944,14 @@ app.post('/webhook/MATICO', async (req, res) => {
             return app._router.handle(req, res);
             
         case 'get_progress':
+            req.body = { ...req.body, ...data };
+            req.url = '/api/progress/get';
+            return app._router.handle(req, res);
+
         case 'get_profile':
-            return res.redirect(307, `/api/progress/get?email=${data.email || data.user_id}&subject=${data.subject}`);
+            req.body = { ...req.body, ...data };
+            req.url = '/api/auth/profile';
+            return app._router.handle(req, res);
             
         case 'save_progress':
             req.url = '/api/progress/save';
