@@ -11,6 +11,8 @@ const PORT = process.env.PORT || 3001;
 
 // Configuración Google Sheets
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID || '1l1GLMXh8_Uo_O7XJOY7ZJxh1TER2hxrXTOsc_EcByHo';
+const USERS_SHEET_RANGE = process.env.GOOGLE_USERS_SHEET_RANGE || 'Usuarios!A:Z';
+const PROGRESS_SHEET_RANGE = process.env.GOOGLE_PROGRESS_SHEET_RANGE || 'session_progress!A:Z';
 const SHEETS_API_KEY = process.env.GOOGLE_API_KEY || ''; // Opcional: usar API key para lectura pública
 
 // Middleware
@@ -265,7 +267,7 @@ const findLocalUser = ({ email, userId }) => {
 };
 
 const findSheetUser = async ({ email, password, userId }) => {
-    const rows = normalizeSheetRows(await readSheet('users'));
+    const rows = normalizeSheetRows(await readSheet(USERS_SHEET_RANGE));
     if (!rows.length) return null;
 
     const objects = buildSheetObjects(rows);
@@ -324,7 +326,7 @@ const findSheetUser = async ({ email, password, userId }) => {
 };
 
 const findSheetProgress = async ({ email, userId, subject }) => {
-    const rows = normalizeSheetRows(await readSheet('progress'));
+    const rows = normalizeSheetRows(await readSheet(PROGRESS_SHEET_RANGE));
     if (!rows.length) return null;
 
     const objects = buildSheetObjects(rows);
@@ -486,7 +488,7 @@ app.post('/api/auth/register', async (req, res) => {
         
         // También guardar en Sheets si está disponible
         if (sheets) {
-            await writeSheet('users', [[
+            await writeSheet('Usuarios', [[
                 email, 
                 password, 
                 userId, 
@@ -664,7 +666,7 @@ app.post('/api/progress/save', async (req, res) => {
         
         // También guardar en Sheets
         if (sheets) {
-            await writeSheet('progress', [[
+            await writeSheet('session_progress', [[
                 resolvedEmail,
                 resolvedSubject,
                 (progress[key].last_completed_session || 0) + 1, // next_session
