@@ -469,10 +469,44 @@ const repairText = (value = '') => {
         // Keep original text if decoding fails.
     }
 
+    try {
+        if (/[ÃÂ�]/.test(text) && typeof TextDecoder !== 'undefined') {
+            const bytes = Uint8Array.from(text, (char) => char.charCodeAt(0) & 0xff);
+            const decoded = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+            if (decoded && decoded.replace(/\u0000/g, '').trim()) {
+                text = decoded;
+            }
+        }
+    } catch (error) {
+        // Keep current text if second-pass decoding fails.
+    }
+
     return text
+        .replace(/A¡/g, 'á')
+        .replace(/A©/g, 'é')
+        .replace(/Aí/g, 'í')
+        .replace(/A³/g, 'ó')
+        .replace(/Aº/g, 'ú')
+        .replace(/A±/g, 'ñ')
+        .replace(/A‰/g, 'É')
+        .replace(/A/g, 'Á')
+        .replace(/Ã¡/g, 'á')
+        .replace(/Ã©/g, 'é')
+        .replace(/Ã­/g, 'í')
+        .replace(/Ã³/g, 'ó')
+        .replace(/Ãº/g, 'ú')
+        .replace(/Ã±/g, 'ñ')
+        .replace(/Ã/g, 'Á')
+        .replace(/Â°/g, '°')
+        .replace(/Â/g, '')
+        .replace(/�/g, '')
         .replace(/óx[^\s]*/g, '')
         .replace(/ó/g, '')
-        .replace(/Â/g, '')
+        .replace(/Ludica/g, 'Lúdica')
+        .replace(/Teoria/g, 'Teoría')
+        .replace(/Sesion/g, 'Sesión')
+        .replace(/Multiplicacion/g, 'Multiplicación')
+        .replace(/Division/g, 'División')
         .replace(/\s{2,}/g, ' ')
         .trim();
 };
