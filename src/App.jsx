@@ -2330,7 +2330,7 @@ const App = () => {
 
     // SERVER PROGRESS STATE
     const [serverProgress, setServerProgress] = useState(null);
-    const [loadingProgress, setLoadingProgress] = useState(false);
+    const [loadingProgress, setLoadingProgress] = useState(() => !!USER_ID);
 
     // NOTIFICATION PREFERENCES
     const [_remindersEnabled, setRemindersEnabled] = useState(true);
@@ -2416,7 +2416,9 @@ const App = () => {
         const { subject, index, isMissed, missedSubject } = resolveMaticoPlan();
         console.log(`[MATICO] Startup Plan: ${subject} Session ${index + 1} | Missed: ${isMissed}`);
         setCurrentSubject(subject);
-        setTodayIndex(index);
+        if (!USER_ID) {
+            setTodayIndex(index);
+        }
 
         if (isMissed) {
             const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
