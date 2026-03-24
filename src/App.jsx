@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MathRenderer from './components/MathRenderer';
 import InteractiveQuiz from './components/InteractiveQuiz';
 import LoginPage from './components/LoginPage';
@@ -2640,6 +2640,16 @@ const App = () => {
         return baseLabel;
     })();
 
+    const adaptiveWeakTopicsDescription = (() => {
+        if (adaptiveWeakSessions.length === 0) return 'Todas las sesiones están al día. ¡Sigue así!';
+        const topics = adaptiveWeakSessions.slice(0, 3).map(item => {
+            const topic = getAdaptiveWeakSessionTopic(item);
+            return topic || `Sesión ${item?.session || '?'}`;
+        }).filter(Boolean);
+        if (topics.length === 0) return 'La app recuerda qué sesiones le cuestan más y arma el próximo repaso desde ahí.';
+        return `Debes repasar: ${topics.join(', ')}. Completa estas sesiones para avanzar sin huecos.`;
+    })();
+
     const openPrepExamSetup = (seedSessions = []) => {
         setPrepExamReport(null);
         setShowPrepExamResults(false);
@@ -4362,7 +4372,7 @@ ${finalData.capsule}`;
                                                     {adaptiveNextActionLabel}
                                                 </p>
                                                 <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688] max-w-xl">
-                                                    La app recuerda que sesiones le cuestan mas a tu hijo y arma el proximo repaso desde ahi.
+                                                    {adaptiveWeakTopicsDescription}
                                                 </p>
                                             </div>
                                         </div>
