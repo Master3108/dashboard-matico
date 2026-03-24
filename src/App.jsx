@@ -4015,7 +4015,7 @@ ${finalData.capsule}`;
                         } else {
                             // Fallback / Other
                             if (action === 'generate_quiz') {
-                                content = "óaóï¸ **Error de Formato:** La IA no envió preguntas válidas.\n\n" + JSON.stringify(finalData, null, 2);
+                                content = "Error de formato: la IA no envio preguntas validas.\n\n" + JSON.stringify(finalData, null, 2);
                             } else {
                                 content = finalData.output || finalData.text || finalData.theory || JSON.stringify(finalData, null, 2);
                             }
@@ -4029,7 +4029,7 @@ ${finalData.capsule}`;
             if (content) setAiContent(content);
         } catch (e) {
             console.error(e);
-            setAiContent("óaóï¸ Error de Conexión");
+            setAiContent("Error de conexion");
         } finally {
             setIsCallingN8N(false);
             setAiModalOpen(true);
@@ -4072,9 +4072,9 @@ ${finalData.capsule}`;
                                 </h3>
                                 <div className="bg-white/40 rounded-3xl p-5 mb-4 border border-amber-200/50">
                                     <p className="text-amber-800 font-bold text-lg leading-relaxed">
-                                        Hoy es <span className="text-amber-600 font-black uppercase">{missedSessionAlert.todayName}</span> y el plan dice <span className="text-indigo-600 font-black uppercase text-xl">{missedSessionAlert.todaySubject}</span>...
+                                        Hoy es <span className="text-amber-600 font-black uppercase">{repairText(missedSessionAlert.todayName)}</span> y el plan dice <span className="text-indigo-600 font-black uppercase text-xl">{repairText(missedSessionAlert.todaySubject)}</span>...
                                         <br /><br />
-                                        Pero antes de pasar a ella, debemos completar la sesion de <strong className="text-amber-900">{missedSessionAlert.subject} (Sesion {missedSessionAlert.session})</strong> que quedo atras.
+                                        Pero antes de pasar a ella, debemos completar la sesion de <strong className="text-amber-900">{repairText(missedSessionAlert.subject)} (Sesion {missedSessionAlert.session})</strong> que quedo atras.
                                     </p>
                                 </div>
                                 <p className="text-amber-600 font-black mt-1 text-sm flex items-center justify-center md:justify-start gap-2">
