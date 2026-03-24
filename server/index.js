@@ -925,7 +925,7 @@ app.post('/webhook/MATICO', async (req, res) => {
         }
 
         // 2A. GENERAR TEORÃƒÂA LÃƒÅ¡DICA
-        if (currentAction.toLowerCase().includes('teorÃƒÂ­a') || currentAction.toLowerCase().includes('teoria')) {
+        if (currentAction === 'start_route' || currentAction.toLowerCase().includes('teoria') || currentAction.toLowerCase().includes('teor')) {
             const tema = body.tema || body.topic || 'MatemÃƒÂ¡ticas General';
             const systemMsg = `Eres Matico Ã°Å¸ÂÂ¶, un mentor carismÃƒÂ¡tico y experto en el currÃƒÂ­culum chileno de 1Ã‚Â° Medio.
 Responde SIEMPRE en Markdown legible y amigable para un estudiante joven.
