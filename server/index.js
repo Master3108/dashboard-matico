@@ -1365,7 +1365,7 @@ Estructura JSON:
             questions = [...seededQuestions, ...freshQuestions].slice(0, requestedCount);
 
             // PASO 2: VERIFICACIÃƒâ€œN INDEPENDIENTE Ã¢â‚¬â€ Segunda IA revisa cada pregunta
-            if (questions.length > 0 && verifyPrompt && subject.includes('MATEMAT')) {
+            if (false && questions.length > 0 && verifyPrompt && subject.includes('MATEMAT')) {
                 console.log(`[VERIFY] Ã°Å¸â€Â Verificando ${questions.length} preguntas de ${subject}...`);
                 let corrected = 0;
 
