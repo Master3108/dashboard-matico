@@ -2162,6 +2162,8 @@ const App = () => {
 
     const handleLogin = (userData) => {
         console.log("Logged in:", userData);
+        localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
+        localStorage.removeItem('MATICO_QUIZ_PROGRESS');
         setCurrentUser(userData);
         localStorage.setItem('MATICO_USER', JSON.stringify(userData));
     };
@@ -2169,12 +2171,16 @@ const App = () => {
     const handleLogout = () => {
         setCurrentUser(null);
         localStorage.removeItem('MATICO_USER');
+        localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
+        localStorage.removeItem('MATICO_QUIZ_PROGRESS');
         window.location.reload(); // Clean state reset
     };
 
     // --- DATABASE INTEGRATION START ---
     // Use dynamic USER_ID if available, else null
     const USER_ID = currentUser ? currentUser.user_id : null;
+    const completedSessionsStorageKey = USER_ID ? `MATICO_COMPLETED_SESSIONS_${USER_ID}` : 'MATICO_COMPLETED_SESSIONS_ANON';
+    const quizProgressStorageKey = USER_ID ? `MATICO_QUIZ_PROGRESS_${USER_ID}` : 'MATICO_QUIZ_PROGRESS_ANON';
     const [currentSubject, setCurrentSubject] = useState("MATEMATICA");
     const ACTIVE_GRADE = '1medio';
     const [userProfile, setUserProfile] = useState({
@@ -2478,7 +2484,7 @@ const App = () => {
                     const subj = currentSubject;
                     const key = `${subj}_session_${sessionNum}`;
 
-                    const existing = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
+                    const existing = JSON.parse(localStorage.getItem(quizProgressStorageKey) || '{}');
 
                     // Solo restaurar si localStorage no tiene datos para esta sesión
                     if (!existing[key] || !existing[key].completedPhases || existing[key].completedPhases.length < phase) {
@@ -2493,14 +2499,14 @@ const App = () => {
                             lastUpdated: new Date().toISOString()
                         };
 
-                        localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(existing));
+                        localStorage.setItem(quizProgressStorageKey, JSON.stringify(existing));
                         console.log(`[SYNC] óx Progreso restaurado desde servidor: ${key} ó  Fase ${phase} completada, siguiente: ${phase + 1}`);
                     }
                 }
 
                 // SYNC: Marcar sesiones completadas en localStorage
                 if (data && data.last_completed_session > 0) {
-                    const completedKey = 'MATICO_COMPLETED_SESSIONS';
+                    const completedKey = completedSessionsStorageKey;
                     const stored = localStorage.getItem(completedKey);
                     let completed = [];
 
@@ -3075,7 +3081,7 @@ const App = () => {
 
             if (diffDays < 0) return { subject: 'MATEMATICA', index: 0 };
 
-            const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
+            const completedStr = localStorage.getItem(completedSessionsStorageKey);
             const completed = completedStr ? JSON.parse(completedStr) : [];
 
             console.log("[CALENDAR] Resolving plan for today. Completed:", completed);
@@ -3127,14 +3133,14 @@ const App = () => {
 
     const markSessionComplete = (subject, sessionId) => {
         const key = `${subject}_${sessionId}`;
-        const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
+        const completedStr = localStorage.getItem(completedSessionsStorageKey);
         const completed = completedStr ? JSON.parse(completedStr) : [];
 
         console.log(`[MATICO] markSessionComplete called:`, { subject, sessionId, key });
 
         if (!(completed || []).includes(key)) {
             const newCompleted = [...(completed || []), key];
-            localStorage.setItem('MATICO_COMPLETED_SESSIONS', JSON.stringify(newCompleted));
+            localStorage.setItem(completedSessionsStorageKey, JSON.stringify(newCompleted));
             console.log(`[MATICO] Marked ${key} as complete!`);
 
             // Re-calcular inmediatamente para saltar a la siguiente materia/sesión
@@ -3148,7 +3154,7 @@ const App = () => {
     // Helper to find the first incomplete session for a specific subject
     const getSmartSessionIndex = (subject) => {
         try {
-            const completedStr = localStorage.getItem('MATICO_COMPLETED_SESSIONS');
+            const completedStr = localStorage.getItem(completedSessionsStorageKey);
             const completed = completedStr ? JSON.parse(completedStr) : [];
 
             // Search through weeks (indices)
@@ -3462,7 +3468,7 @@ const App = () => {
     // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS (SISTEMA KAIZEN - 3 NIVELES ó 15 PREGUNTAS)
     const saveQuizPhaseProgress = (phase, score) => {
         const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
-        const existing = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
+        const existing = JSON.parse(localStorage.getItem(quizProgressStorageKey) || '{}');
 
         if (!existing[key]) {
             existing[key] = {
@@ -3487,13 +3493,13 @@ const App = () => {
 
         existing[key].lastUpdated = new Date().toISOString();
 
-        localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(existing));
+        localStorage.setItem(quizProgressStorageKey, JSON.stringify(existing));
         console.log(`[PROGRESS] Fase ${phase} guardada con score ${score}`);
     };
 
     const getQuizProgress = () => {
         const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
-        const progress = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
+        const progress = JSON.parse(localStorage.getItem(quizProgressStorageKey) || '{}');
         return progress[key] || {
             completedPhases: [],
             currentPhase: 1,
@@ -3503,9 +3509,9 @@ const App = () => {
 
     const clearQuizProgress = () => {
         const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
-        const progress = JSON.parse(localStorage.getItem('MATICO_QUIZ_PROGRESS') || '{}');
+        const progress = JSON.parse(localStorage.getItem(quizProgressStorageKey) || '{}');
         delete progress[key];
-        localStorage.setItem('MATICO_QUIZ_PROGRESS', JSON.stringify(progress));
+        localStorage.setItem(quizProgressStorageKey, JSON.stringify(progress));
         console.log(`[PROGRESS] Progreso limpiado para ${key}`);
     };
 
@@ -4421,10 +4427,28 @@ ${finalData.capsule}`;
                                     <div className="flex flex-col gap-3">
                                         <button
                                             onClick={() => setVideoModalOpen(true)}
-                                            className={`${clayBtnAction} ${(localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : ''}`}
+                                            className={`${clayBtnAction} ${(() => {
+                                                const storedCompleted = localStorage.getItem(completedSessionsStorageKey);
+                                                let completed = [];
+                                                try {
+                                                    completed = storedCompleted ? JSON.parse(storedCompleted) : [];
+                                                } catch (error) {
+                                                    completed = [];
+                                                }
+                                                return completed.includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : '';
+                                            })()}`}
                                             disabled={isCallingN8N}
                                         >
-                                            {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESION COMPLETADA (Repasar)" : "INICIAR SESION " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
+                                            {isCallingN8N ? 'CARGANDO...' : ((() => {
+                                                const storedCompleted = localStorage.getItem(completedSessionsStorageKey);
+                                                let completed = [];
+                                                try {
+                                                    completed = storedCompleted ? JSON.parse(storedCompleted) : [];
+                                                } catch (error) {
+                                                    completed = [];
+                                                }
+                                                return completed.includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESION COMPLETADA (Repasar)" : "INICIAR SESION " + TODAYS_SESSION.session;
+                                            })())} <Play className="w-5 h-5 ml-2" fill="currentColor" />
                                         </button>
 
                                         <button
@@ -4661,7 +4685,8 @@ ${finalData.capsule}`;
                                                 const fiveDaysAgo = new Date();
                                                 fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
                                                 localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
-                                                localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
+                                                localStorage.removeItem(completedSessionsStorageKey);
+                                                localStorage.removeItem(quizProgressStorageKey);
                                                 alert("Simulacion: inicio hace 5 dias. Debes ponerte al dia.");
                                                 window.location.reload();
                                             }}
