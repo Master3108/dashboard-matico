@@ -68,7 +68,7 @@ const MathRenderer = ({ text, content }) => {
                 });
 
                 // Process inline math ($...$)
-                processed = processed.replace(/\$([^\$\n]+?)\$/g, (match, latex) => {
+                processed = processed.replace(/\$([^$\n]+?)\$/g, (match, latex) => {
                     try {
                         const cleanLatex = latex.trim();
                         const html = katex.renderToString(cleanLatex, {

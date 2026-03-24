@@ -9,7 +9,7 @@ import { Readable } from 'stream';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions } from './generatedQuestionBank.js';
+import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions, sampleGeneratedQuestions } from './generatedQuestionBank.js';
 import { recordAdaptiveEvent, getAdaptiveSnapshot, backfillAdaptiveProfileFromProgressRows } from './adaptiveProfileStore.js';
 import { getCurriculumContext } from './curriculumCatalog.js';
 
@@ -29,13 +29,27 @@ app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
 
 const PORT = process.env.PORT || 5000;
 
-// Configuración DeepSeek
-const openai = new OpenAI({ 
-    apiKey: process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY,
-    baseURL: 'https://api.deepseek.com/v1'
+// ConfiguraciÃƒÂ³n DeepSeek
+const AI_PROVIDER = (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi' : 'deepseek';
+const AI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
+const AI_BASE_URL = AI_PROVIDER === 'kimi'
+    ? (process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1')
+    : 'https://api.deepseek.com/v1';
+const AI_MODELS = {
+    fast: AI_PROVIDER === 'kimi'
+        ? (process.env.KIMI_FAST_MODEL || 'kimi-k2-turbo-preview')
+        : 'deepseek-chat',
+    thinking: AI_PROVIDER === 'kimi'
+        ? (process.env.KIMI_THINKING_MODEL || 'kimi-k2-thinking-preview')
+        : 'deepseek-chat'
+};
+
+const openai = new OpenAI({
+    apiKey: AI_API_KEY,
+    baseURL: AI_BASE_URL
 });
 
-// Configuración Google Sheets
+// ConfiguraciÃƒÂ³n Google Sheets
 const SPREADSHEET_ID = '1l1GLMXh8_Uo_O7XJOY7ZJxh1TER2hxrXTOsc_EcByHo';
 
 const normalizePrivateKey = (value = '') => {
@@ -216,7 +230,7 @@ const uploadToDrive = async (base64File, fileName, folderId, mimeType = 'image/j
     }
 };
 
-// --- Configuración Nodemailer (Gmail) ---
+// --- ConfiguraciÃƒÂ³n Nodemailer (Gmail) ---
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -264,19 +278,19 @@ const getAllUsersFromSheet = async (sheets) => {
 // --- HELPER: Enviar correo ---
 const sendEmail = async (to, subject, htmlBody) => {
     if (!to || !process.env.GMAIL_USER) {
-        console.log(`[EMAIL] ⚠️ No se envió: destinatario=${to}, gmail_user=${process.env.GMAIL_USER}`);
+        console.log(`[EMAIL] Ã¢Å¡Â Ã¯Â¸Â No se enviÃƒÂ³: destinatario=${to}, gmail_user=${process.env.GMAIL_USER}`);
         return;
     }
     try {
         await transporter.sendMail({
-            from: `"Matico 🐶" <${process.env.GMAIL_USER}>`,
+            from: `"Matico Ã°Å¸ÂÂ¶" <${process.env.GMAIL_USER}>`,
             to: to,
             subject: subject,
             html: htmlBody,
         });
-        console.log(`[EMAIL] ✅ Enviado a ${to}: "${subject}"`);
+        console.log(`[EMAIL] Ã¢Å“â€¦ Enviado a ${to}: "${subject}"`);
     } catch (err) {
-        console.error(`[EMAIL] ❌ Error enviando a ${to}:`, err.message);
+        console.error(`[EMAIL] Ã¢ÂÅ’ Error enviando a ${to}:`, err.message);
     }
 };
 
@@ -572,7 +586,7 @@ const appendAdaptiveSnapshotToSheetOrThrow = async (sheets, {
 // --- HELPER: Generar HTML bonito para correos ---
 const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAnswers = [], aiAnalysis = '') => {
     const successRate = Math.round((stats.correct / 45) * 100);
-    const emoji = successRate >= 80 ? '🏆' : (successRate >= 60 ? '👍' : '💪');
+    const emoji = successRate >= 80 ? 'Ã°Å¸Ââ€ ' : (successRate >= 60 ? 'Ã°Å¸â€˜Â' : 'Ã°Å¸â€™Âª');
     const color = successRate >= 80 ? '#22c55e' : (successRate >= 60 ? '#eab308' : '#ef4444');
     const wrongCount = wrongAnswers.length;
 
@@ -581,30 +595,30 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
         if (!text) return '';
         return text
             .replace(/\$([^$]+)\$/g, '$1')           // Quitar delimitadores $...$
-            .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')  // \frac{a}{b} → a/b
-            .replace(/\\left\(/g, '(')                // \left( → (
-            .replace(/\\right\)/g, ')')               // \right) → )
+            .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')  // \frac{a}{b} Ã¢â€ â€™ a/b
+            .replace(/\\left\(/g, '(')                // \left( Ã¢â€ â€™ (
+            .replace(/\\right\)/g, ')')               // \right) Ã¢â€ â€™ )
             .replace(/\\left\[/g, '[')
             .replace(/\\right\]/g, ']')
-            .replace(/\\times/g, '×')                 // \times → ×
-            .replace(/\\div/g, '÷')                   // \div → ÷
-            .replace(/\\cdot/g, '·')                  // \cdot → ·
-            .replace(/\\pm/g, '±')                    // \pm → ±
-            .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')   // \sqrt{x} → √(x)
-            .replace(/\^(\{[^}]+\})/g, (_, exp) => {  // ^{2} → ²
-                const superscripts = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', 'n': 'ⁿ' };
+            .replace(/\\times/g, 'Ãƒâ€”')                 // \times Ã¢â€ â€™ Ãƒâ€”
+            .replace(/\\div/g, 'ÃƒÂ·')                   // \div Ã¢â€ â€™ ÃƒÂ·
+            .replace(/\\cdot/g, 'Ã‚Â·')                  // \cdot Ã¢â€ â€™ Ã‚Â·
+            .replace(/\\pm/g, 'Ã‚Â±')                    // \pm Ã¢â€ â€™ Ã‚Â±
+            .replace(/\\sqrt\{([^}]+)\}/g, 'Ã¢Ë†Å¡($1)')   // \sqrt{x} Ã¢â€ â€™ Ã¢Ë†Å¡(x)
+            .replace(/\^(\{[^}]+\})/g, (_, exp) => {  // ^{2} Ã¢â€ â€™ Ã‚Â²
+                const superscripts = { '0': 'Ã¢ÂÂ°', '1': 'Ã‚Â¹', '2': 'Ã‚Â²', '3': 'Ã‚Â³', '4': 'Ã¢ÂÂ´', '5': 'Ã¢ÂÂµ', '6': 'Ã¢ÂÂ¶', '7': 'Ã¢ÂÂ·', '8': 'Ã¢ÂÂ¸', '9': 'Ã¢ÂÂ¹', 'n': 'Ã¢ÂÂ¿' };
                 const inner = exp.replace(/[{}]/g, '');
                 return inner.split('').map(c => superscripts[c] || `^${c}`).join('');
             })
-            .replace(/\^(\d)/g, (_, d) => {           // ^2 → ²
-                const sup = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+            .replace(/\^(\d)/g, (_, d) => {           // ^2 Ã¢â€ â€™ Ã‚Â²
+                const sup = { '0': 'Ã¢ÂÂ°', '1': 'Ã‚Â¹', '2': 'Ã‚Â²', '3': 'Ã‚Â³', '4': 'Ã¢ÂÂ´', '5': 'Ã¢ÂÂµ', '6': 'Ã¢ÂÂ¶', '7': 'Ã¢ÂÂ·', '8': 'Ã¢ÂÂ¸', '9': 'Ã¢ÂÂ¹' };
                 return sup[d] || `^${d}`;
             })
-            .replace(/_(\{[^}]+\})/g, (_, sub) => sub.replace(/[{}]/g, ''))  // _{n} → n
-            .replace(/_(\d)/g, '$1')                   // _1 → 1
-            .replace(/\\text\{([^}]+)\}/g, '$1')       // \text{...} → ...
+            .replace(/_(\{[^}]+\})/g, (_, sub) => sub.replace(/[{}]/g, ''))  // _{n} Ã¢â€ â€™ n
+            .replace(/_(\d)/g, '$1')                   // _1 Ã¢â€ â€™ 1
+            .replace(/\\text\{([^}]+)\}/g, '$1')       // \text{...} Ã¢â€ â€™ ...
             .replace(/\\\\/g, '')                      // Backslashes sueltos
-            .replace(/\s+/g, ' ')                      // Espacios múltiples
+            .replace(/\s+/g, ' ')                      // Espacios mÃƒÂºltiples
             .trim();
     };
 
@@ -624,7 +638,7 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
 
         errorsHTML = `
             <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #fecaca; margin: 16px 0;">
-                <h3 style="margin-top: 0; color: #dc2626;">❌ Preguntas Incorrectas (${wrongCount})</h3>
+                <h3 style="margin-top: 0; color: #dc2626;">Ã¢ÂÅ’ Preguntas Incorrectas (${wrongCount})</h3>
                 <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                     <thead>
                         <tr style="background: #fef2f2;">
@@ -635,16 +649,16 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
                     </thead>
                     <tbody>${errorRows}</tbody>
                 </table>
-                ${wrongCount > 10 ? `<p style="color: #94a3b8; font-size: 12px; margin-top: 8px;">... y ${wrongCount - 10} más</p>` : ''}
+                ${wrongCount > 10 ? `<p style="color: #94a3b8; font-size: 12px; margin-top: 8px;">... y ${wrongCount - 10} mÃƒÂ¡s</p>` : ''}
             </div>`;
     }
 
-    // Sección de análisis IA
+    // SecciÃƒÂ³n de anÃƒÂ¡lisis IA
     let analysisHTML = '';
     if (aiAnalysis) {
         analysisHTML = `
             <div style="background: linear-gradient(135deg, #eff6ff, #f0fdf4); border-radius: 12px; padding: 20px; border: 2px solid #6366f1; margin: 16px 0;">
-                <h3 style="margin-top: 0; color: #4f46e5;">🧠 Análisis Inteligente de Matico</h3>
+                <h3 style="margin-top: 0; color: #4f46e5;">Ã°Å¸Â§Â  AnÃƒÂ¡lisis Inteligente de Matico</h3>
                 <div style="color: #334155; font-size: 14px; line-height: 1.7;">
                     ${aiAnalysis}
                 </div>
@@ -654,15 +668,15 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
     return `
     <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; text-align: center; color: white;">
-            <h1 style="margin: 0; font-size: 28px;">🐶 Reporte Matico</h1>
-            <p style="margin: 8px 0 0; opacity: 0.9;">Sesión de Estudio Completada</p>
+            <h1 style="margin: 0; font-size: 28px;">Ã°Å¸ÂÂ¶ Reporte Matico</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9;">SesiÃƒÂ³n de Estudio Completada</p>
         </div>
         <div style="padding: 30px;">
-            <h2 style="color: #1e293b;">¡Hola! Aquí está el reporte de <strong>${nombre}</strong></h2>
+            <h2 style="color: #1e293b;">Ã‚Â¡Hola! AquÃƒÂ­ estÃƒÂ¡ el reporte de <strong>${nombre}</strong></h2>
             <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin: 16px 0;">
-                <p><strong>📚 Asignatura:</strong> ${subject}</p>
-                <p><strong>📖 Sesión ${session}:</strong> ${topic}</p>
-                <p><strong>📅 Fecha:</strong> ${new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p><strong>Ã°Å¸â€œÅ¡ Asignatura:</strong> ${subject}</p>
+                <p><strong>Ã°Å¸â€œâ€“ SesiÃƒÂ³n ${session}:</strong> ${topic}</p>
+                <p><strong>Ã°Å¸â€œâ€¦ Fecha:</strong> ${new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
             <div style="text-align: center; margin: 24px 0;">
                 <div style="display: inline-block; background: ${color}; color: white; border-radius: 50%; width: 100px; height: 100px; line-height: 100px; font-size: 32px; font-weight: bold;">
@@ -671,15 +685,15 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
                 <p style="font-size: 20px; margin-top: 12px;">${emoji} ${stats.correct} de 45 correctas</p>
             </div>
             <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0;">
-                <h3 style="margin-top: 0;">📊 Desglose por Nivel</h3>
-                <p>🟢 <strong>Básico (15 preguntas):</strong> Completado</p>
-                <p>🟡 <strong>Avanzado (15 preguntas):</strong> Completado</p>
-                <p>🔴 <strong>Crítico (15 preguntas):</strong> Completado</p>
+                <h3 style="margin-top: 0;">Ã°Å¸â€œÅ  Desglose por Nivel</h3>
+                <p>Ã°Å¸Å¸Â¢ <strong>BÃƒÂ¡sico (15 preguntas):</strong> Completado</p>
+                <p>Ã°Å¸Å¸Â¡ <strong>Avanzado (15 preguntas):</strong> Completado</p>
+                <p>Ã°Å¸â€Â´ <strong>CrÃƒÂ­tico (15 preguntas):</strong> Completado</p>
             </div>
             ${errorsHTML}
             ${analysisHTML}
             <p style="color: #64748b; font-size: 13px; text-align: center; margin-top: 24px;">
-                Este correo fue enviado automáticamente por Matico 🐶
+                Este correo fue enviado automÃƒÂ¡ticamente por Matico Ã°Å¸ÂÂ¶
             </p>
         </div>
     </div>`;
@@ -689,20 +703,20 @@ const buildDailyReminderHTML = (nombre, session, topic, subject) => {
     return `
     <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #f59e0b, #f97316); padding: 30px; text-align: center; color: white;">
-            <h1 style="margin: 0; font-size: 28px;">☀️ ¡Buenos Días!</h1>
-            <p style="margin: 8px 0 0; opacity: 0.9;">Tu sesión de hoy te espera</p>
+            <h1 style="margin: 0; font-size: 28px;">Ã¢Ëœâ‚¬Ã¯Â¸Â Ã‚Â¡Buenos DÃƒÂ­as!</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9;">Tu sesiÃƒÂ³n de hoy te espera</p>
         </div>
         <div style="padding: 30px;">
-            <h2 style="color: #1e293b;">¡Hola <strong>${nombre}</strong>! 👋</h2>
-            <p style="color: #475569; font-size: 16px;">Hoy es un gran día para aprender. Tu sesión de estudio ya está lista:</p>
+            <h2 style="color: #1e293b;">Ã‚Â¡Hola <strong>${nombre}</strong>! Ã°Å¸â€˜â€¹</h2>
+            <p style="color: #475569; font-size: 16px;">Hoy es un gran dÃƒÂ­a para aprender. Tu sesiÃƒÂ³n de estudio ya estÃƒÂ¡ lista:</p>
             <div style="background: white; border-radius: 12px; padding: 24px; border: 2px solid #6366f1; margin: 20px 0; text-align: center;">
-                <p style="font-size: 14px; color: #6366f1; font-weight: bold; margin: 0;">📚 ${subject}</p>
-                <h3 style="font-size: 22px; color: #1e293b; margin: 8px 0;">Sesión ${session}: ${topic}</h3>
-                <p style="color: #64748b;">45 preguntas en 3 niveles: Básico → Avanzado → Crítico</p>
+                <p style="font-size: 14px; color: #6366f1; font-weight: bold; margin: 0;">Ã°Å¸â€œÅ¡ ${subject}</p>
+                <h3 style="font-size: 22px; color: #1e293b; margin: 8px 0;">SesiÃƒÂ³n ${session}: ${topic}</h3>
+                <p style="color: #64748b;">45 preguntas en 3 niveles: BÃƒÂ¡sico Ã¢â€ â€™ Avanzado Ã¢â€ â€™ CrÃƒÂ­tico</p>
             </div>
-            <p style="color: #475569;">¡Recuerda que cada sesión completada te acerca más a tu meta! 🏆</p>
+            <p style="color: #475569;">Ã‚Â¡Recuerda que cada sesiÃƒÂ³n completada te acerca mÃƒÂ¡s a tu meta! Ã°Å¸Ââ€ </p>
             <p style="color: #64748b; font-size: 13px; text-align: center; margin-top: 24px;">
-                Matico 🐶 — Tu compañero de estudio
+                Matico Ã°Å¸ÂÂ¶ Ã¢â‚¬â€ Tu compaÃƒÂ±ero de estudio
             </p>
         </div>
     </div>`;
@@ -714,7 +728,7 @@ const getQuizPromptConfig = (subject, tema, options = {}) => {
       "source_session": 12,
       "source_topic": "Tema de origen"` : '';
     const sourceRules = includeSourceMetadata ? `
-5. Cada pregunta DEBE indicar en "source_session" la sesión exacta de origen.
+5. Cada pregunta DEBE indicar en "source_session" la sesiÃƒÂ³n exacta de origen.
 6. Cada pregunta DEBE indicar en "source_topic" el tema exacto de origen.` : '';
 
     let systemMsg = '';
@@ -722,21 +736,21 @@ const getQuizPromptConfig = (subject, tema, options = {}) => {
 
     if (subject.includes('LENGUAJE') || subject.includes('LECTURA')) {
         aiTemperature = 0.5;
-        systemMsg = `Eres Matico, profesor experto en Lenguaje y Comunicación del currículum chileno.
-El estudiante aprenderá: ${tema}.
+        systemMsg = `Eres Matico, profesor experto en Lenguaje y ComunicaciÃƒÂ³n del currÃƒÂ­culum chileno.
+El estudiante aprenderÃƒÂ¡: ${tema}.
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. Las preguntas deben evaluar comprensión lectora avanzada, pensamiento crítico e inferencia.
-2. Escribe una explicación clara del porqué esa es la opción correcta en "explanation".
-3. CREA 4 opciones, asegurándote que UNA coincide con tu explicación.
+1. Las preguntas deben evaluar comprensiÃƒÂ³n lectora avanzada, pensamiento crÃƒÂ­tico e inferencia.
+2. Escribe una explicaciÃƒÂ³n clara del porquÃƒÂ© esa es la opciÃƒÂ³n correcta en "explanation".
+3. CREA 4 opciones, asegurÃƒÂ¡ndote que UNA coincide con tu explicaciÃƒÂ³n.
 4. Al final, escribe la Letra correcta (A, B, C, D) en "correct_answer".${sourceRules}
 
 ESTRUCTURA JSON EXACTA QUE DEBES USAR:
 {
   "questions": [
     {
-      "question": "texto de la pregunta de lectura o texto corto más la pregunta...",
-      "explanation": "Explica aquí por qué la opción correcta es la adecuada basados en inferencia o pistas textuales.",
+      "question": "texto de la pregunta de lectura o texto corto mÃƒÂ¡s la pregunta...",
+      "explanation": "Explica aquÃƒÂ­ por quÃƒÂ© la opciÃƒÂ³n correcta es la adecuada basados en inferencia o pistas textuales.",
       "options": {
         "A": "texto",
         "B": "texto",
@@ -748,15 +762,15 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
   ]
 }
 
-Genera SOLO JSON válido sin markdown.`;
+Genera SOLO JSON vÃƒÂ¡lido sin markdown.`;
     } else if (subject.includes('HISTORIA')) {
         aiTemperature = 0.4;
-        systemMsg = `Eres Matico, historiador y profesor experto en Historia y Geografía.
+        systemMsg = `Eres Matico, historiador y profesor experto en Historia y GeografÃƒÂ­a.
 Tema a evaluar: ${tema}.
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. Las preguntas deben evaluar análisis histórico, comprensión de contextos y causas/consecuencias, no solo fechas memorizadas.
-2. Escribe una breve explicación histórica en "explanation" PRIMERO.
+1. Las preguntas deben evaluar anÃƒÂ¡lisis histÃƒÂ³rico, comprensiÃƒÂ³n de contextos y causas/consecuencias, no solo fechas memorizadas.
+2. Escribe una breve explicaciÃƒÂ³n histÃƒÂ³rica en "explanation" PRIMERO.
 3. CREA 4 opciones.
 4. Al final, escribe la Letra correcta en "correct_answer".${sourceRules}
 
@@ -764,7 +778,7 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
 {
   "questions": [
     {
-      "question": "contexto histórico y la pregunta...",
+      "question": "contexto histÃƒÂ³rico y la pregunta...",
       "explanation": "EXPLICA AQUI EL Contexto Y POR QUE LAS OTRAS SON INCORRECTAS",
       "options": {
         "A": "valor",
@@ -777,15 +791,15 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
   ]
 }
 
-Genera SOLO JSON válido sin markdown.`;
+Genera SOLO JSON vÃƒÂ¡lido sin markdown.`;
     } else {
         aiTemperature = 0.2;
-        systemMsg = `Eres Matico, mentor académico experto.
+        systemMsg = `Eres Matico, mentor acadÃƒÂ©mico experto.
 Tema: ${tema}.
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
 1. DEBES hacer el desarrollo o razonamiento en "explanation" PRIMERO.
-2. CREA 4 opciones, asegurándote que UNA coincide con tu razonamiento.
+2. CREA 4 opciones, asegurÃƒÂ¡ndote que UNA coincide con tu razonamiento.
 3. Al final, escribe la Letra correcta en "correct_answer".${sourceRules}
 
 ESTRUCTURA JSON EXACTA QUE DEBES USAR:
@@ -805,7 +819,7 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
   ]
 }
 
-Genera SOLO JSON válido sin markdown.`;
+Genera SOLO JSON vÃƒÂ¡lido sin markdown.`;
     }
 
     return { systemMsg, aiTemperature };
@@ -816,7 +830,7 @@ const buildPrepExamAssignments = (sessionDetails = [], totalQuestions = 45) => {
         .filter(item => item && item.session)
         .map(item => ({
             session: Number(item.session),
-            topic: item.topic || `Sesión ${item.session}`
+            topic: item.topic || `SesiÃƒÂ³n ${item.session}`
         }))
         .sort((a, b) => a.session - b.session);
 
@@ -892,7 +906,7 @@ app.post('/webhook/MATICO', async (req, res) => {
                 if (user && user[1] === password) {
                     return res.json({ success: true, user_id: user[0], name: user[4] || 'Estudiante' });
                 }
-                return res.status(401).json({ success: false, message: "Credenciales inválidas" });
+                return res.status(401).json({ success: false, message: "Credenciales invÃƒÂ¡lidas" });
             }
 
             if (currentAction === 'register') {
@@ -910,18 +924,18 @@ app.post('/webhook/MATICO', async (req, res) => {
             }
         }
 
-        // 2A. GENERAR TEORÍA LÚDICA
-        if (currentAction.toLowerCase().includes('teoría') || currentAction.toLowerCase().includes('teoria')) {
-            const tema = body.tema || body.topic || 'Matemáticas General';
-            const systemMsg = `Eres Matico 🐶, un mentor carismático y experto en el currículum chileno de 1° Medio.
+        // 2A. GENERAR TEORÃƒÂA LÃƒÅ¡DICA
+        if (currentAction.toLowerCase().includes('teorÃƒÂ­a') || currentAction.toLowerCase().includes('teoria')) {
+            const tema = body.tema || body.topic || 'MatemÃƒÂ¡ticas General';
+            const systemMsg = `Eres Matico Ã°Å¸ÂÂ¶, un mentor carismÃƒÂ¡tico y experto en el currÃƒÂ­culum chileno de 1Ã‚Â° Medio.
 Responde SIEMPRE en Markdown legible y amigable para un estudiante joven.
 Usa emojis frecuentemente para hacer la lectura divertida y motivadora.
-Estructura tu respuesta con títulos (##), subtítulos (###), listas, **negritas** y ejemplos claros.
+Estructura tu respuesta con tÃƒÂ­tulos (##), subtÃƒÂ­tulos (###), listas, **negritas** y ejemplos claros.
 NUNCA respondas con JSON crudo. Solo texto enriquecido en Markdown.
-Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
+Tu tono es cercano, motivador y lleno de energÃƒÂ­a, como un tutor favorito.`;
 
             const comp = await openai.chat.completions.create({
-                model: "deepseek-chat",
+                model: AI_MODELS.fast,
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
             });
             return res.json({ output: comp.choices[0].message.content });
@@ -936,39 +950,39 @@ Tu tono es cercano, motivador y lleno de energía, como un tutor favorito.`;
             const questionCount = Math.max(5, Math.min(45, requestedCount));
             const sessionDetails = sessions.map((session, index) => ({
                 session,
-                topic: topics[index] || `Sesión ${session}`
+                topic: topics[index] || `SesiÃƒÂ³n ${session}`
             }));
 
             if (!sessionDetails.length) {
-                return res.status(400).json({ success: false, error: 'Debes enviar al menos una sesión para la prueba preparatoria' });
+                return res.status(400).json({ success: false, error: 'Debes enviar al menos una sesiÃƒÂ³n para la prueba preparatoria' });
             }
 
             const assignmentPlan = buildPrepExamAssignments(sessionDetails, questionCount);
             const totalBatches = Math.ceil(assignmentPlan.length / 5);
-            const baseTopic = `Prueba preparatoria acumulativa de ${subject} sobre estas sesiones:\n${sessionDetails.map(item => `- Sesión ${item.session}: ${item.topic}`).join('\n')}`;
+            const baseTopic = `Prueba preparatoria acumulativa de ${subject} sobre estas sesiones:\n${sessionDetails.map(item => `- SesiÃƒÂ³n ${item.session}: ${item.topic}`).join('\n')}`;
             const { systemMsg, aiTemperature } = getQuizPromptConfig(subject, baseTopic, { includeSourceMetadata: true });
 
             const fetchPrepBatch = async (batchIndex, avoidSignatures = []) => {
                 const batchAssignments = assignmentPlan.slice(batchIndex * 5, batchIndex * 5 + 5);
-                const batchInstructions = batchAssignments.map((item, index) => `${index + 1}. Sesión ${item.session} | Tema: ${item.topic}`).join('\n');
+                const batchInstructions = batchAssignments.map((item, index) => `${index + 1}. SesiÃƒÂ³n ${item.session} | Tema: ${item.topic}`).join('\n');
                 const batchPrompt = `${baseTopic}
 
-[MODO PRUEBA PREPARATORIA DIAGNÓSTICA]
+[MODO PRUEBA PREPARATORIA DIAGNÃƒâ€œSTICA]
 - Genera EXACTAMENTE ${batchAssignments.length} preguntas.
 - Esta es la tanda ${batchIndex + 1} de ${totalBatches}.
-- Debes seguir ESTA distribución exacta, una pregunta por línea:
+- Debes seguir ESTA distribuciÃƒÂ³n exacta, una pregunta por lÃƒÂ­nea:
 ${batchInstructions}
-- Si una sesión se repite, crea preguntas distintas entre sí.
+- Si una sesiÃƒÂ³n se repite, crea preguntas distintas entre sÃƒÂ­.
 - NO repitas preguntas ya usadas ni reformules la misma idea con cambios menores.
-- Evita duplicados exactos y tambi�n preguntas casi iguales.
+- Evita duplicados exactos y tambiÃ©n preguntas casi iguales.
 - Si te muestro ejemplos previos o patrones similares, crea una variante nueva.
 - Preguntas previas a evitar: ${avoidSignatures.length > 0 ? avoidSignatures.slice(0, 10).join(' || ') : 'Ninguna'}
-- "source_session" y "source_topic" deben coincidir EXACTAMENTE con cada línea asignada.
-- Mantén alternativas A/B/C/D y explicación útil para corrección.
-- Responde SOLO con JSON válido.`;
+- "source_session" y "source_topic" deben coincidir EXACTAMENTE con cada lÃƒÂ­nea asignada.
+- MantÃƒÂ©n alternativas A/B/C/D y explicaciÃƒÂ³n ÃƒÂºtil para correcciÃƒÂ³n.
+- Responde SOLO con JSON vÃƒÂ¡lido.`;
 
                 const comp = await openai.chat.completions.create({
-                    model: 'deepseek-chat',
+                    model: AI_MODELS.fast,
                     messages: [
                         { role: 'system', content: systemMsg },
                         { role: 'user', content: batchPrompt }
@@ -986,7 +1000,7 @@ ${batchInstructions}
                         question: question.question,
                         options: question.options || {},
                         correct_answer: (question.correct_answer || 'A').toUpperCase(),
-                        explanation: question.explanation || 'Explicación no disponible.',
+                        explanation: question.explanation || 'ExplicaciÃƒÂ³n no disponible.',
                         source_session: Number(question.source_session) || assigned.session,
                         source_topic: question.source_topic || assigned.topic
                     };
@@ -1065,22 +1079,22 @@ ${batchInstructions}
 
             const sessionDetails = sessions.map((session, index) => ({
                 session,
-                topic: topics[index] || `Sesi�n ${session}`
+                topic: topics[index] || `SesiÃ³n ${session}`
             }));
 
             if (!sessionDetails.length) {
-                return res.status(400).json({ success: false, error: 'Debes enviar al menos una sesi�n para la prueba preparatoria' });
+                return res.status(400).json({ success: false, error: 'Debes enviar al menos una sesiÃ³n para la prueba preparatoria' });
             }
 
             const assignmentPlan = buildPrepExamAssignments(sessionDetails, totalBatches * batchSize);
             const batchAssignments = assignmentPlan.slice(batchIndex * batchSize, batchIndex * batchSize + batchSize);
-            const baseTopic = `Prueba preparatoria acumulativa de ${subject} sobre estas sesiones:\n${sessionDetails.map(item => `- Sesi�n ${item.session}: ${item.topic}`).join('\n')}`;
+            const baseTopic = `Prueba preparatoria acumulativa de ${subject} sobre estas sesiones:\n${sessionDetails.map(item => `- SesiÃ³n ${item.session}: ${item.topic}`).join('\n')}`;
             const { systemMsg, aiTemperature } = getQuizPromptConfig(subject, baseTopic, { includeSourceMetadata: true });
-            const batchInstructions = batchAssignments.map((item, index) => `${index + 1}. Sesi�n ${item.session} | Tema: ${item.topic}`).join('\n');
-            const batchPrompt = `${baseTopic}\n\n[MODO PRUEBA PREPARATORIA DIAGN�STICA]\n- Genera EXACTAMENTE ${batchAssignments.length} preguntas.\n- Esta es la tanda ${batchIndex + 1} de ${totalBatches}.\n- Debes seguir ESTA distribuci�n exacta, una pregunta por l�nea:\n${batchInstructions}\n- Si una sesi�n se repite, crea preguntas distintas entre s�.\n- NO repitas preguntas ya usadas ni reformules la misma idea con cambios menores.\n- Evita duplicados exactos y tambi�n preguntas casi iguales.\n- \"source_session\" y \"source_topic\" deben coincidir EXACTAMENTE con cada l�nea asignada.\n- Mant�n alternativas A/B/C/D y explicaci�n �til para correcci�n.\n- Responde SOLO con JSON v�lido.`;
+            const batchInstructions = batchAssignments.map((item, index) => `${index + 1}. SesiÃ³n ${item.session} | Tema: ${item.topic}`).join('\n');
+            const batchPrompt = `${baseTopic}\n\n[MODO PRUEBA PREPARATORIA DIAGNÃ“STICA]\n- Genera EXACTAMENTE ${batchAssignments.length} preguntas.\n- Esta es la tanda ${batchIndex + 1} de ${totalBatches}.\n- Debes seguir ESTA distribuciÃ³n exacta, una pregunta por lÃ­nea:\n${batchInstructions}\n- Si una sesiÃ³n se repite, crea preguntas distintas entre sÃ­.\n- NO repitas preguntas ya usadas ni reformules la misma idea con cambios menores.\n- Evita duplicados exactos y tambiÃ©n preguntas casi iguales.\n- \"source_session\" y \"source_topic\" deben coincidir EXACTAMENTE con cada lÃ­nea asignada.\n- MantÃ©n alternativas A/B/C/D y explicaciÃ³n Ãºtil para correcciÃ³n.\n- Responde SOLO con JSON vÃ¡lido.`;
 
             const comp = await openai.chat.completions.create({
-                model: 'deepseek-chat',
+                model: AI_MODELS.fast,
                 messages: [
                     { role: 'system', content: systemMsg },
                     { role: 'user', content: batchPrompt }
@@ -1098,7 +1112,7 @@ ${batchInstructions}
                     question: question.question,
                     options: question.options || {},
                     correct_answer: (question.correct_answer || 'A').toUpperCase(),
-                    explanation: question.explanation || 'Explicaci�n no disponible.',
+                    explanation: question.explanation || 'ExplicaciÃ³n no disponible.',
                     source_session: Number(question.source_session) || assigned.session,
                     source_topic: question.source_topic || assigned.topic
                 };
@@ -1129,33 +1143,37 @@ ${batchInstructions}
                 questions: normalizedQuestions
             });
         }
-        // 2B. GENERAR QUIZ (5 preguntas por lote) — MULTIASIGNATURA
+        // 2B. GENERAR QUIZ (5 preguntas por lote) Ã¢â‚¬â€ MULTIASIGNATURA
         if (currentAction.toLowerCase().includes('quiz') || currentAction.toLowerCase().includes('generar') || currentAction === 'generate_quiz') {
             const tema = body.tema || body.topic || 'Conocimiento General';
             const subject = (body.subject || body.sujeto || body.materia || data?.subject || 'MATEMATICA').toUpperCase();
+            const requestedCount = Math.max(1, Math.min(5, Number(body.batch_size) || 5));
+            const sourceSession = Number(body.session || data.session || 0) || 0;
+            const levelName = String(body.phase || body.level || body.nivel || data.level || '').trim().toUpperCase();
+            const excludeSignatures = Array.isArray(body.exclude_signatures) ? body.exclude_signatures : [];
 
             let systemMsg = "";
             let verifyPrompt = "";
-            let aiTemperature = 0.2; // Por defecto baja para matemáticas
+            let aiTemperature = 0.2; // Por defecto baja para matemÃƒÂ¡ticas
 
             if (subject.includes('LENGUAJE') || subject.includes('LECTURA')) {
-                // PROMPT PARA LENGUAJE / COMPRENSIÓN LECTORA
-                aiTemperature = 0.5; // Un poco más creativo para redactar textos
-                systemMsg = `Eres Matico, profesor experto en Lenguaje y Comunicación del currículum chileno.
-El estudiante aprenderá: ${tema}.
+                // PROMPT PARA LENGUAJE / COMPRENSIÃƒâ€œN LECTORA
+                aiTemperature = 0.5; // Un poco mÃƒÂ¡s creativo para redactar textos
+                systemMsg = `Eres Matico, profesor experto en Lenguaje y ComunicaciÃƒÂ³n del currÃƒÂ­culum chileno.
+El estudiante aprenderÃƒÂ¡: ${tema}.
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. Las preguntas deben evaluar comprensión lectora avanzada, pensamiento crítico e inferencia.
-2. Escribe una explicación clara del porqué esa es la opción correcta en "explanation".
-3. CREA 4 opciones, asegurándote que UNA coincide con tu explicación.
+1. Las preguntas deben evaluar comprensiÃƒÂ³n lectora avanzada, pensamiento crÃƒÂ­tico e inferencia.
+2. Escribe una explicaciÃƒÂ³n clara del porquÃƒÂ© esa es la opciÃƒÂ³n correcta en "explanation".
+3. CREA 4 opciones, asegurÃƒÂ¡ndote que UNA coincide con tu explicaciÃƒÂ³n.
 4. Al final, escribe la Letra correcta (A, B, C, D) en "correct_answer".
 
 ESTRUCTURA JSON EXACTA QUE DEBES USAR:
 {
   "questions": [
     {
-      "question": "texto de la pregunta de lectura o texto corto más la pregunta...",
-      "explanation": "Explica aquí por qué la opción correcta es la adecuada basados en inferencia o pistas textuales.",
+      "question": "texto de la pregunta de lectura o texto corto mÃƒÂ¡s la pregunta...",
+      "explanation": "Explica aquÃƒÂ­ por quÃƒÂ© la opciÃƒÂ³n correcta es la adecuada basados en inferencia o pistas textuales.",
       "options": {
         "A": "texto",
         "B": "texto",
@@ -1167,20 +1185,18 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
   ]
 }
 
-Genera SOLO JSON válido sin markdown.`;
-                verifyPrompt = `Lee la pregunta de comprensión crítica cuidadosamente. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta basándote en la inferencia lógica.
-Estructura JSON:
-{"my_calculation": "tu razonamiento aquí", "correct_letter": "LETRA FINAL"}`;
+Genera SOLO JSON vÃƒÂ¡lido sin markdown.`;
+                verifyPrompt = '';
 
             } else if (subject.includes('HISTORIA')) {
                 // PROMPT PARA HISTORIA
                 aiTemperature = 0.4;
-                systemMsg = `Eres Matico, historiador y profesor experto en Historia y Geografía.
+                systemMsg = `Eres Matico, historiador y profesor experto en Historia y GeografÃƒÂ­a.
 Tema a evaluar: ${tema}.
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. Las preguntas deben evaluar análisis histórico, comprensión de contextos y causas/consecuencias, no solo fechas memorizadas.
-2. Escribe una breve explicación histórica en "explanation" PRIMERO.
+1. Las preguntas deben evaluar anÃƒÂ¡lisis histÃƒÂ³rico, comprensiÃƒÂ³n de contextos y causas/consecuencias, no solo fechas memorizadas.
+2. Escribe una breve explicaciÃƒÂ³n histÃƒÂ³rica en "explanation" PRIMERO.
 3. CREA 4 opciones.
 4. Al final, escribe la Letra correcta en "correct_answer".
 
@@ -1188,7 +1204,7 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
 {
   "questions": [
     {
-      "question": "contexto histórico y la pregunta...",
+      "question": "contexto histÃƒÂ³rico y la pregunta...",
       "explanation": "EXPLICA AQUI EL Contexto Y POR QUE LAS OTRAS SON INCORRECTAS",
       "options": {
         "A": "valor",
@@ -1201,20 +1217,49 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
   ]
 }
 
-Genera SOLO JSON válido sin markdown.`;
-                verifyPrompt = `Analiza el hecho histórico. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta.
-Estructura JSON:
-{"my_calculation": "tu razonamiento histórico aquí", "correct_letter": "LETRA FINAL"}`;
+Genera SOLO JSON vÃƒÂ¡lido sin markdown.`;
+                verifyPrompt = '';
+
+            } else if (subject.includes('BIOLOGIA') || subject.includes('QUIMICA') || subject.includes('FISICA')) {
+                aiTemperature = 0.3;
+                systemMsg = `Eres Matico, profesor experto en ciencias del curriculum chileno de 1 medio.
+Tema a evaluar: ${tema}.
+
+PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
+1. Las preguntas deben evaluar comprension cientifica, razonamiento, vocabulario disciplinar y aplicacion conceptual.
+2. Usa distractores plausibles y evita convertirlas en ejercicios matematicos puros si la asignatura no lo requiere.
+3. CREA 4 opciones con texto real.
+4. Al final, escribe la letra correcta en "correct_answer".
+
+ESTRUCTURA JSON EXACTA QUE DEBES USAR:
+{
+  "questions": [
+    {
+      "question": "texto de la pregunta...",
+      "explanation": "explicacion breve y clara",
+      "options": {
+        "A": "texto",
+        "B": "texto",
+        "C": "texto",
+        "D": "texto"
+      },
+      "correct_answer": "LETRA EXACTA"
+    }
+  ]
+}
+
+Genera SOLO JSON valido sin markdown.`;
+                verifyPrompt = '';
 
             } else {
-                // PROMPT POR DEFECTO: MATEMÁTICAS (Protocolo anti-errores original)
+                // PROMPT POR DEFECTO: MATEMÃƒÂTICAS (Protocolo anti-errores original)
                 aiTemperature = 0.2;
-                systemMsg = `Eres Matico, mentor matemático experto.
+                systemMsg = `Eres Matico, mentor matemÃƒÂ¡tico experto.
 Tema: ${tema}.
 
 PROTOCOLO OBLIGATORIO PARA CADA PREGUNTA:
-1. DEBES hacer el cálculo matemático en "explanation" PRIMERO.
-2. CREA 4 opciones, asegurándote que UNA coincide con tu cálculo.
+1. DEBES hacer el cÃƒÂ¡lculo matemÃƒÂ¡tico en "explanation" PRIMERO.
+2. CREA 4 opciones, asegurÃƒÂ¡ndote que UNA coincide con tu cÃƒÂ¡lculo.
 3. Al final, escribe la Letra correcta en "correct_answer".
 
 ESTRUCTURA JSON EXACTA QUE DEBES USAR:
@@ -1234,14 +1279,33 @@ ESTRUCTURA JSON EXACTA QUE DEBES USAR:
   ]
 }
 
-Genera SOLO JSON válido sin markdown.`;
-                verifyPrompt = `Resuelve el problema matemático paso a paso. LUEGO, di cuál letra (A, B, C o D) tiene la respuesta correcta.
+Genera SOLO JSON vÃƒÂ¡lido sin markdown.`;
+                verifyPrompt = `Resuelve el problema matemÃƒÂ¡tico paso a paso. LUEGO, di cuÃƒÂ¡l letra (A, B, C o D) tiene la respuesta correcta.
 Estructura JSON:
-{"my_calculation": "tu desarrollo paso a paso aquí primero", "correct_letter": "LETRA FINAL"}`;
+{"my_calculation": "tu desarrollo paso a paso aquÃƒÂ­ primero", "correct_letter": "LETRA FINAL"}`;
             }
 
+            const seenSignatures = new Set(
+                excludeSignatures
+                    .map((item) => String(item || '').trim())
+                    .filter(Boolean)
+            );
+
+            const bankSeed = await sampleGeneratedQuestions({
+                subject,
+                source_mode: 'quiz',
+                source_session: sourceSession,
+                source_topic: tema,
+                levelName,
+                limit: Math.min(3, requestedCount),
+                exclude_signatures: Array.from(seenSignatures)
+            }).catch((err) => {
+                console.error('[QUESTION_BANK] Error leyendo banco IA:', err.message);
+                return [];
+            });
+
             const comp = await openai.chat.completions.create({
-                model: "deepseek-chat",
+                model: AI_MODELS.fast,
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }],
                 response_format: { type: "json_object" },
                 temperature: aiTemperature
@@ -1256,9 +1320,53 @@ Estructura JSON:
                 return res.json({ output: content });
             }
 
-            // PASO 2: VERIFICACIÓN INDEPENDIENTE — Segunda IA revisa cada pregunta
-            if (questions.length > 0) {
-                console.log(`[VERIFY] 🔍 Verificando ${questions.length} preguntas de ${subject}...`);
+            const normalizeOptionsObject = (options = {}) => {
+                if (Array.isArray(options)) {
+                    const letters = ['A', 'B', 'C', 'D'];
+                    return options.slice(0, 4).reduce((acc, option, index) => {
+                        acc[letters[index]] = String(option || '').trim();
+                        return acc;
+                    }, {});
+                }
+                return ['A', 'B', 'C', 'D'].reduce((acc, letter) => {
+                    if (options?.[letter] !== undefined) {
+                        acc[letter] = String(options[letter] || '').trim();
+                    }
+                    return acc;
+                }, {});
+            };
+
+            const sanitizeQuestions = (items = []) => items.map((item) => ({
+                question: String(item.question || '').trim(),
+                options: normalizeOptionsObject(item.options || {}),
+                correct_answer: String(item.correct_answer || 'A').trim().toUpperCase().slice(0, 1) || 'A',
+                explanation: String(item.explanation || 'Explicacion no disponible.').trim(),
+                source_session: Number(item.source_session || sourceSession || 0) || 0,
+                source_topic: String(item.source_topic || tema).trim()
+            })).filter((item) => {
+                const optionValues = Object.values(item.options || {}).map((value) => String(value || '').trim());
+                const placeholderCount = optionValues.filter((value) => ['A', 'B', 'C', 'D', 'AA', 'BB', 'CC', 'DD'].includes(value.toUpperCase())).length;
+                return item.question && optionValues.length === 4 && placeholderCount < 3;
+            });
+
+            const dedupeQuestions = (items = []) => {
+                const accepted = [];
+                for (const item of items) {
+                    const signature = normalizeQuestionSignature(item.question, item.options);
+                    if (!signature || seenSignatures.has(signature)) continue;
+                    seenSignatures.add(signature);
+                    accepted.push(item);
+                }
+                return accepted;
+            };
+
+            const seededQuestions = dedupeQuestions(sanitizeQuestions(bankSeed));
+            const freshQuestions = dedupeQuestions(sanitizeQuestions(questions));
+            questions = [...seededQuestions, ...freshQuestions].slice(0, requestedCount);
+
+            // PASO 2: VERIFICACIÃƒâ€œN INDEPENDIENTE Ã¢â‚¬â€ Segunda IA revisa cada pregunta
+            if (questions.length > 0 && verifyPrompt && subject.includes('MATEMAT')) {
+                console.log(`[VERIFY] Ã°Å¸â€Â Verificando ${questions.length} preguntas de ${subject}...`);
                 let corrected = 0;
 
                 for (let idx = 0; idx < questions.length; idx++) {
@@ -1271,7 +1379,7 @@ Estructura JSON:
                         if (idx > 0) await new Promise(r => setTimeout(r, 500));
 
                         const verifyComp = await openai.chat.completions.create({
-                            model: "deepseek-chat",
+                            model: AI_MODELS.thinking,
                             messages: [
                                 { role: "system", content: verifyPrompt },
                                 { role: "user", content: `Problema: ${q.question}\n\nOpciones:\n${optionsText}\n\nRevisa y dime la letra correcta.` }
@@ -1284,7 +1392,7 @@ Estructura JSON:
                         const verifiedLetter = verifyResult.correct_letter?.toUpperCase();
 
                         if (verifiedLetter && verifiedLetter !== q.correct_answer) {
-                            console.log(`[VERIFY] ⚠️ Q${idx + 1} CORREGIDA: "${q.question.substring(0, 50)}..." | AI dijo: ${q.correct_answer} → Verificador: ${verifiedLetter}`);
+                            console.log(`[VERIFY] Ã¢Å¡Â Ã¯Â¸Â Q${idx + 1} CORREGIDA: "${q.question.substring(0, 50)}..." | AI dijo: ${q.correct_answer} Ã¢â€ â€™ Verificador: ${verifiedLetter}`);
                             q.correct_answer = verifiedLetter;
                             corrected++;
                         }
@@ -1292,7 +1400,7 @@ Estructura JSON:
                         console.log(`[VERIFY] Error en Q${idx + 1}:`, err.message);
                     }
                 }
-                console.log(`[VERIFY] ✅ Verificación completa. Corregidas: ${corrected}/${questions.length}`);
+                console.log(`[VERIFY] Ã¢Å“â€¦ VerificaciÃƒÂ³n completa. Corregidas: ${corrected}/${questions.length}`);
             }
 
             await recordGeneratedQuestions(questions, {
@@ -1316,10 +1424,10 @@ Estructura JSON:
         // 3. RESPONDER DUDAS / REMEDIAL / PROFUNDIZAR
         if (['answer_doubts', 'deepen_knowledge', 'generate_remedial_lesson', 'remedial_explanation',
             'Responder Duda', 'Profundizar y Desafiar', 'Explicar y Simplificar'].includes(currentAction)) {
-            const tema = body.tema || body.topic || body.pregunta_usuario || 'Explícame más';
-            const systemMsg = "Eres Matico, mentor experto y carismático del currículum chileno de 1° Medio. Usa emojis y analogías.";
+            const tema = body.tema || body.topic || body.pregunta_usuario || 'ExplÃƒÂ­came mÃƒÂ¡s';
+            const systemMsg = "Eres Matico, mentor experto y carismÃƒÂ¡tico del currÃƒÂ­culum chileno de 1Ã‚Â° Medio. Usa emojis y analogÃƒÂ­as.";
             const comp = await openai.chat.completions.create({
-                model: "deepseek-chat",
+                model: AI_MODELS.fast,
                 messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
             });
             return res.json({ output: comp.choices[0].message.content });
@@ -1333,35 +1441,35 @@ Estructura JSON:
 
             const weakContext = sessionDetails
                 .filter(item => weakSessions.includes(item.session))
-                .map(item => `Sesión ${item.session}: ${item.topic}\nContexto: ${(item.readingContent || '').substring(0, 1200) || 'Sin lectura asociada.'}`)
+                .map(item => `SesiÃƒÂ³n ${item.session}: ${item.topic}\nContexto: ${(item.readingContent || '').substring(0, 1200) || 'Sin lectura asociada.'}`)
                 .join('\n\n');
 
             const wrongContext = wrongAnswers
-                .map((item, index) => `${index + 1}. Sesión ${item.session} | ${item.topic}\nPregunta fallada: ${item.question}`)
+                .map((item, index) => `${index + 1}. SesiÃƒÂ³n ${item.session} | ${item.topic}\nPregunta fallada: ${item.question}`)
                 .join('\n');
 
             const comp = await openai.chat.completions.create({
-                model: 'deepseek-chat',
+                model: AI_MODELS.fast,
                 messages: [
                     {
                         role: 'system',
-                        content: 'Eres Matico, tutor académico de 1° medio. Redacta un repaso guiado breve, concreto y accionable para un apoderado y un estudiante. Usa Markdown simple con títulos y listas. Debe incluir qué repasar, en qué orden y cómo practicar.'
+                        content: 'Eres Matico, tutor acadÃƒÂ©mico de 1Ã‚Â° medio. Redacta un repaso guiado breve, concreto y accionable para un apoderado y un estudiante. Usa Markdown simple con tÃƒÂ­tulos y listas. Debe incluir quÃƒÂ© repasar, en quÃƒÂ© orden y cÃƒÂ³mo practicar.'
                     },
                     {
                         role: 'user',
                         content: `ASIGNATURA: ${subject}
-SESIONES DÉBILES: ${weakSessions.join(', ') || 'Sin sesiones marcadas'}
+SESIONES DÃƒâ€°BILES: ${weakSessions.join(', ') || 'Sin sesiones marcadas'}
 
 CONTEXTO DE SESIONES:
 ${weakContext || 'Sin contexto adicional.'}
 
 ERRORES DETECTADOS:
-${wrongContext || 'Sin errores específicos.'}
+${wrongContext || 'Sin errores especÃƒÂ­ficos.'}
 
 Entrega:
 1. Un resumen corto del problema.
-2. Un plan de repaso por sesión.
-3. 3 recomendaciones prácticas para preparar la prueba real.`
+2. Un plan de repaso por sesiÃƒÂ³n.
+3. 3 recomendaciones prÃƒÂ¡cticas para preparar la prueba real.`
                     }
                 ]
             });
@@ -1491,7 +1599,7 @@ Entrega:
             });
         }
 
-        // 6. ENVIAR REPORTE DE SESI        // 6. ENVIAR REPORTE DE SESIÓN (email al alumno + apoderado CON ANÁLISIS IA)
+        // 6. ENVIAR REPORTE DE SESI        // 6. ENVIAR REPORTE DE SESIÃƒâ€œN (email al alumno + apoderado CON ANÃƒÂLISIS IA)
         if (currentAction === 'send_session_report' || currentAction === 'notify_parent') {
             const userData = await getUserFromSheet(sheets, user_id);
             if (userData) {
@@ -1501,36 +1609,36 @@ Entrega:
                 const topic = body.topic || body.tema || '';
                 const wrongAnswers = body.wrong_answers || [];
 
-                // GENERAR ANÁLISIS IA DE LOS ERRORES
+                // GENERAR ANÃƒÂLISIS IA DE LOS ERRORES
                 let aiAnalysis = '';
                 if (wrongAnswers.length > 0) {
                     try {
                         const errorSummary = wrongAnswers.slice(0, 15).map((w, i) =>
-                            `${i + 1}. Pregunta: "${w.question}" | Respondió: ${w.user_answer} | Correcta: ${w.correct_answer}`
+                            `${i + 1}. Pregunta: "${w.question}" | RespondiÃƒÂ³: ${w.user_answer} | Correcta: ${w.correct_answer}`
                         ).join('\n');
 
                         const analysisComp = await openai.chat.completions.create({
-                            model: "deepseek-chat",
+                            model: AI_MODELS.fast,
                             messages: [
                                 {
-                                    role: "system", content: `Eres un tutor experto en educación chilena de 1° Medio. Analiza los errores del estudiante y genera un reporte breve EN HTML (usando <p>, <ul>, <li>, <strong>). NO uses markdown. El reporte debe:
+                                    role: "system", content: `Eres un tutor experto en educaciÃƒÂ³n chilena de 1Ã‚Â° Medio. Analiza los errores del estudiante y genera un reporte breve EN HTML (usando <p>, <ul>, <li>, <strong>). NO uses markdown. El reporte debe:
 1. Identificar PATRONES en los errores (ej: "confunde fracciones con decimales")
-2. Señalar las ÁREAS DÉBILES específicas
+2. SeÃƒÂ±alar las ÃƒÂREAS DÃƒâ€°BILES especÃƒÂ­ficas
 3. Dar 3 SUGERENCIAS CONCRETAS para mejorar
 4. Un mensaje MOTIVADOR al final
-Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
+SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
                                 { role: "user", content: `Estudiante: ${userData.nombre}\nAsignatura: ${subject}\nTema: ${topic}\nResultado: ${stats.correct}/45\n\nPREGUNTAS INCORRECTAS:\n${errorSummary}` }
                             ]
                         });
                         aiAnalysis = analysisComp.choices[0].message.content;
-                        console.log('[AI] ✅ Análisis de errores generado');
+                        console.log('[AI] Ã¢Å“â€¦ AnÃƒÂ¡lisis de errores generado');
                     } catch (err) {
-                        console.error('[AI] Error generando análisis:', err.message);
+                        console.error('[AI] Error generando anÃƒÂ¡lisis:', err.message);
                     }
                 }
 
                 const html = buildSessionReportHTML(userData.nombre, subject, session, topic, stats, wrongAnswers, aiAnalysis);
-                const emailSubject = `📊 Reporte Matico: ${userData.nombre} completó ${subject} - Sesión ${session}`;
+                const emailSubject = `Ã°Å¸â€œÅ  Reporte Matico: ${userData.nombre} completÃƒÂ³ ${subject} - SesiÃƒÂ³n ${session}`;
 
                 // Enviar al alumno
                 if (userData.email) {
@@ -1538,10 +1646,10 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
                 }
                 // Enviar al apoderado
                 if (userData.correo_apoderado) {
-                    await sendEmail(userData.correo_apoderado, `👨‍👩‍👧 ${emailSubject}`, html);
+                    await sendEmail(userData.correo_apoderado, `Ã°Å¸â€˜Â¨Ã¢â‚¬ÂÃ°Å¸â€˜Â©Ã¢â‚¬ÂÃ°Å¸â€˜Â§ ${emailSubject}`, html);
                 }
             }
-            return res.json({ success: true, message: "Reportes enviados con análisis IA" });
+            return res.json({ success: true, message: "Reportes enviados con anÃƒÂ¡lisis IA" });
         }
 
         // 7. GET PROGRESS (Leer progreso real desde progress_log por materia)
@@ -1574,7 +1682,7 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
                 (subjectFilter ? row[2] === subjectFilter : true)
             );
 
-            // También buscar fases completadas (por si está a mitad de sesión o el histórico no grabó session_completed)
+            // TambiÃƒÂ©n buscar fases completadas (por si estÃƒÂ¡ a mitad de sesiÃƒÂ³n o el histÃƒÂ³rico no grabÃƒÂ³ session_completed)
             const phaseRows = userRowsRefreshed.filter(row =>
                 row[4] === 'phase_completed' &&
                 (subjectFilter ? row[2] === subjectFilter : true)
@@ -1591,8 +1699,8 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
                 phaseMap.get(sessionNum).add(phase);
             });
 
-            // Encontrar la sesión más alta completada:
-            // 1) por session_completed explícito
+            // Encontrar la sesiÃƒÂ³n mÃƒÂ¡s alta completada:
+            // 1) por session_completed explÃƒÂ­cito
             // 2) o por tener las 3 fases completas (1,2,3)
             let maxSession = 0;
             completedSessions.forEach(row => {
@@ -1688,13 +1796,14 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             const result = await deleteGeneratedQuestion(body.question_id);
             return res.json({ success: true, ...result });
         }
-        // 9. VERIFICAR ESCRITURA A MANO — CUADERNO DE MATICO (NVIDIA Kimi K2.5 Vision)
+        // 9. VERIFICAR ESCRITURA A MANO Ã¢â‚¬â€ CUADERNO DE MATICO (NVIDIA Kimi K2.5 Vision)
         if (currentAction === 'verify_handwriting') {
             const {
                 image,
                 imageMimeType,
                 pdf,
                 pdfFileName,
+                scanId,
                 sessionId,
                 topic: cuadernoTopic,
                 readingContent: cuadernoReading
@@ -1702,7 +1811,7 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             const cuadernoSubject = (body.subject || 'MATEMATICA').toUpperCase();
 
             if (!image) {
-                return res.status(400).json({ success: false, error: 'No se recibió imagen' });
+                return res.status(400).json({ success: false, error: 'No se recibiÃƒÂ³ imagen' });
             }
 
             console.log(`[CUADERNO] Verificando escritura para ${cuadernoSubject} - Sesion ${sessionId}`);
@@ -1715,22 +1824,22 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
                     const uniqueScanId = scanId || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
                     const fileName = pdfFileName || `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${uniqueScanId}.pdf`;
                     storedFile = await saveBase64ToLocalFile(pdf, fileName, 'cuadernos');
-                    console.log(`[LOCAL_STORAGE] ✅ PDF escaneado guardado: ${storedFile.absolutePath}`);
+                    console.log(`[LOCAL_STORAGE] Ã¢Å“â€¦ PDF escaneado guardado: ${storedFile.absolutePath}`);
                 } else {
                     const uniqueScanId = scanId || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
                     const fileName = `cuaderno_${user_id || 'anon'}_${cuadernoSubject}_S${sessionId || '0'}_${uniqueScanId}.jpg`;
                     storedFile = await saveBase64ToLocalFile(image, fileName, 'cuadernos');
-                    console.log(`[LOCAL_STORAGE] ✅ Imagen guardada: ${storedFile.absolutePath}`);
+                    console.log(`[LOCAL_STORAGE] Ã¢Å“â€¦ Imagen guardada: ${storedFile.absolutePath}`);
                 }
             } catch (storageErr) {
-                console.error(`[LOCAL_STORAGE] ❌ Error guardando archivo: ${storageErr.message}`);
+                console.error(`[LOCAL_STORAGE] Ã¢ÂÅ’ Error guardando archivo: ${storageErr.message}`);
             }
 
             // 2. Responder al frontend inmediatamente para que no espere
             res.json({
                 success: true,
                 background: true,
-                message: '¡Documento escaneado guardado! Matico lo analizará mientras sigues con el quiz.',
+                message: 'Ã‚Â¡Documento escaneado guardado! Matico lo analizarÃƒÂ¡ mientras sigues con el quiz.',
                 stored_file_path: storedFile?.absolutePath || null,
                 stored_file_url: storedFile?.publicUrl || null
             });
@@ -1738,7 +1847,7 @@ Sé conciso (máximo 200 palabras). Usa lenguaje cercano.` },
             // 3. PROCESAMIENTO EN SEGUNDO PLANO
             (async () => {
                 try {
-                    console.log('[CUADERNO-BG] Iniciando análisis AI en segundo plano...');
+                    console.log('[CUADERNO-BG] Iniciando anÃƒÂ¡lisis AI en segundo plano...');
                     const readingExcerpt = (cuadernoReading || '').substring(0, 2000);
                     const cuadernoPrompt = `Analiza esta foto de cuaderno manuscrito de un estudiante de 1ro Medio Chile.
 TEMA: ${cuadernoTopic || 'Sesion de estudio'}
@@ -1811,7 +1920,7 @@ RESPONDE SOLO CON JSON VALIDO:
                         }
                     }
                 } catch (bgError) {
-                    console.error('[CUADERNO-BG] Error en análisis diferido:', bgError.message);
+                    console.error('[CUADERNO-BG] Error en anÃƒÂ¡lisis diferido:', bgError.message);
                 }
             })();
 
@@ -1825,9 +1934,9 @@ RESPONDE SOLO CON JSON VALIDO:
         }
 
         // FALLBACK
-        console.log(`[MATICO] Acción no mapeada: "${currentAction}". Registrando...`);
+        console.log(`[MATICO] AcciÃƒÂ³n no mapeada: "${currentAction}". Registrando...`);
         await logToSheet(sheets, user_id, data.subject, data.session, currentAction, data.phase, data.subLevel, data.levelName, data.score, data.xp_reward, data.grade || '1medio', data.topic || data.source_topic || '', data.total_questions || data.total || '', data.source_mode || data.mode || '');
-        res.json({ success: true, message: `Acción "${currentAction}" registrada` });
+        res.json({ success: true, message: `AcciÃƒÂ³n "${currentAction}" registrada` });
 
     } catch (error) {
         console.error("Error Core:", error);
@@ -1839,22 +1948,22 @@ RESPONDE SOLO CON JSON VALIDO:
 // CRON: Recordatorio Diario a las 09:00 AM (Chile)
 // ========================================================================
 cron.schedule('0 9 * * *', async () => {
-    console.log('[CRON] ⏰ Ejecutando recordatorio matutino...');
+    console.log('[CRON] Ã¢ÂÂ° Ejecutando recordatorio matutino...');
     try {
         const sheets = await getSheetsClient();
         const users = await getAllUsersFromSheet(sheets);
 
-        // Calcular qué sesión toca hoy (simplificado: día desde inicio)
+        // Calcular quÃƒÂ© sesiÃƒÂ³n toca hoy (simplificado: dÃƒÂ­a desde inicio)
         const startDate = new Date('2026-01-15'); // Fecha de inicio del curso
         const today = new Date();
         const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
         const sessionNumber = (daysDiff % 43) + 1; // Ciclo de 43 sesiones
-        const topic = `Sesión ${sessionNumber} del día`;
-        const subject = 'MATEMATICA'; // Se podría alternar por día
+        const topic = `SesiÃƒÂ³n ${sessionNumber} del dÃƒÂ­a`;
+        const subject = 'MATEMATICA'; // Se podrÃƒÂ­a alternar por dÃƒÂ­a
 
         for (const user of users) {
             const html = buildDailyReminderHTML(user.nombre, sessionNumber, topic, subject);
-            const emailSubject = `☀️ ¡Buenos Días ${user.nombre}! Tu sesión de ${subject} te espera`;
+            const emailSubject = `Ã¢Ëœâ‚¬Ã¯Â¸Â Ã‚Â¡Buenos DÃƒÂ­as ${user.nombre}! Tu sesiÃƒÂ³n de ${subject} te espera`;
 
             // Al alumno
             if (user.email) {
@@ -1862,16 +1971,16 @@ cron.schedule('0 9 * * *', async () => {
             }
             // Al apoderado
             if (user.correo_apoderado) {
-                await sendEmail(user.correo_apoderado, `📋 Recordatorio: ${user.nombre} tiene sesión hoy`, html);
+                await sendEmail(user.correo_apoderado, `Ã°Å¸â€œâ€¹ Recordatorio: ${user.nombre} tiene sesiÃƒÂ³n hoy`, html);
             }
         }
-        console.log(`[CRON] ✅ Recordatorios enviados a ${users.length} usuarios`);
+        console.log(`[CRON] Ã¢Å“â€¦ Recordatorios enviados a ${users.length} usuarios`);
     } catch (err) {
         console.error('[CRON] Error:', err.message);
     }
 }, { timezone: 'America/Santiago' });
 
-app.listen(PORT, () => console.log(`🚀 Servidor Matico Kaizen en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Ã°Å¸Å¡â‚¬ Servidor Matico Kaizen en puerto ${PORT}`));
 
 
 

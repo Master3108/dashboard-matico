@@ -38,7 +38,7 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
         setShowCuaderno(true);
     };
 
-    const handleCuadernoComplete = (xpGained, tier) => {
+    const handleCuadernoComplete = () => {
         setShowCuaderno(false);
         setTimeout(() => {
             onComplete();

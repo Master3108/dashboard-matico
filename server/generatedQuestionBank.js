@@ -144,6 +144,61 @@ export const listGeneratedQuestions = async (filters = {}) => {
         .sort((a, b) => new Date(b.last_generated_at || b.updated_at || b.created_at) - new Date(a.last_generated_at || a.updated_at || a.created_at));
 };
 
+export const sampleGeneratedQuestions = async (filters = {}) => {
+    const store = await ensureStore();
+    const subjectFilter = normalizeText(filters.subject || '').toUpperCase();
+    const sourceModeFilter = normalizeText(filters.source_mode || '');
+    const sourceActionFilter = normalizeText(filters.source_action || '');
+    const sourceTopicFilter = normalizeText(filters.source_topic || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    const levelFilter = normalizeText(filters.levelName || filters.level || '').toUpperCase();
+    const sessionFilter = Number(filters.source_session || 0) || 0;
+    const limit = Math.max(0, Number(filters.limit || 5) || 5);
+    const excludeSignatures = new Set(
+        Array.isArray(filters.exclude_signatures)
+            ? filters.exclude_signatures.map((item) => normalizeText(item))
+            : []
+    );
+
+    const normalizedTopic = (value = '') => normalizeText(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const matches = store.items.filter((item) => {
+        if (excludeSignatures.has(normalizeText(item.signature))) return false;
+        if (subjectFilter && item.subject !== subjectFilter) return false;
+        if (sourceModeFilter && item.source_mode !== sourceModeFilter) return false;
+        if (sourceActionFilter && item.source_action !== sourceActionFilter) return false;
+        if (sessionFilter && Number(item.source_session || 0) !== sessionFilter) return false;
+        if (levelFilter) {
+            const storedLevel = normalizeText(item.levelName || item.metadata?.level || '').toUpperCase();
+            if (storedLevel !== levelFilter) return false;
+        }
+        if (sourceTopicFilter) {
+            const itemTopic = normalizedTopic(item.source_topic || item.metadata?.prompt_topic || '');
+            if (itemTopic && !itemTopic.includes(sourceTopicFilter) && !sourceTopicFilter.includes(itemTopic)) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    const shuffled = matches
+        .slice()
+        .sort(() => Math.random() - 0.5)
+        .slice(0, limit)
+        .map((item) => ({
+            ...item,
+            options: { ...(item.options || {}) },
+            metadata: { ...(item.metadata || {}) }
+        }));
+
+    return shuffled;
+};
+
 export const recordGeneratedQuestions = async (questions = [], meta = {}) => {
     if (!Array.isArray(questions) || questions.length === 0) {
         return { inserted: 0, updated: 0, skipped: 0, total: 0 };
@@ -232,4 +287,3 @@ export const deleteGeneratedQuestion = async (questionId) => {
         };
     });
 };
-

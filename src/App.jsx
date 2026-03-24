@@ -62,43 +62,6 @@ const KaTeXCSS = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
 const KaTeXJS = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
 const KaTeXAutoRender = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js';
 
-const parseMarkdown = (text) => {
-    if (!text) return '';
-
-    // Helper to process markdown on TEXT sections only
-    const processText = (t) => {
-        return t
-            .replace(/\\n/g, '<br />')
-            .replace(/\n/g, '<br />')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/####\s*(.*?)(<br \/>|$)/g, '<h4 class="font-bold text-lg text-[#2B2E4A] mt-4 mb-2">$1</h4>')
-            .replace(/###\s*(.*?)(<br \/>|$)/g, '<h3 class="font-black text-xl text-[#2B2E4A] mt-6 mb-3">$1</h3>');
-    };
-
-    // Split by Math delimiters: $$, \[, \(, and SINGLE $
-    // Order matters: match double dollar first to avoid incorrect split
-    // Regex: (Double Dollar | Display Bracket | Inline Bracket | Single Dollar)
-    const parts = text.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$[\s\S]*?\$)/g);
-
-    return parts.map(part => {
-        // Identify if part is math. Steps:
-        // 1. Starts with $$
-        // 2. Starts with \[
-        // 3. Starts with \(
-        // 4. Starts with $ (and ends with $, length > 1)
-
-        if (part.startsWith('$$') || part.startsWith('\\[') || part.startsWith('\\(')) {
-            return part;
-        }
-        if (part.startsWith('$') && part.endsWith('$') && part.length > 1) {
-            return part;
-        }
-
-        return processText(part);
-    }).join('');
-};
-
 const downloadTextFile = (fileName, content, mimeType = 'application/json') => {
     const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
     const url = URL.createObjectURL(blob);
@@ -672,7 +635,7 @@ const VideoModal = ({ isOpen, onClose, videoUrl, title, onDoubt, onFinish }) => 
     if (!isOpen || !videoUrl) return null;
 
     const getVideoId = (url) => {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
         const match = url.match(regExp);
         return (match && match[2].length === 11) ? match[2] : null;
     };
@@ -1102,15 +1065,6 @@ const PomodoroTimer = () => {
 };
 
 
-const cleanLatex = (text) => {
-    if (typeof text !== 'string') return text;
-    // Fix double-escaped dollars: \$ -> $
-    let clean = text.replace(/\\\$\$/g, '$$');
-    // Fix double-escaped inline dollars: \$ -> $
-    clean = clean.replace(/\\$/g, '$');
-    return clean;
-};
-
 // HELPER FOR ROBUST N8N JSON PARSING
 const parseN8NResponse = (textResponse) => {
     if (!textResponse || typeof textResponse !== 'string') return {};
@@ -1122,7 +1076,7 @@ const parseN8NResponse = (textResponse) => {
         // We protect double-backslashes and valid JSON escapes like \" or \/
         // but we double-escape collisions with LaTeX like \f, \t, \n, \r, \b
         // and any invalid single backslashes like \d.
-        return str.replace(/(\\\\)|(\\["\/])|(\\u[0-9a-fA-F]{4})|(\\[bfnrt])|(\\)/g, (match, dbl, validStr, uni, collidable, single) => {
+        return str.replace(/(\\\\)|(\\["/])|(\\u[0-9a-fA-F]{4})|(\\[bfnrt])|(\\)/g, (match, dbl, validStr, uni, collidable, single) => {
             if (dbl) return dbl; // Keep \\ (already escaped)
             if (validStr) return validStr; // Keep \" and \/
             if (uni) return uni; // Keep \uXXXX
@@ -1130,7 +1084,7 @@ const parseN8NResponse = (textResponse) => {
             if (single) return '\\\\'; // Turn \s into \\s
             return match;
         })
-            .replace(/[\u0000-\u001F]+/g, (match) => (match === '\n' || match === '\r' || match === '\t') ? match : '') // Stop control char injection
+            .replace(/[\0-\x08\x0B\x0C\x0E-\x1F]+/g, '') // Stop control char injection while preserving \t, \n and \r
             .trim();
     };
 
@@ -2379,9 +2333,9 @@ const App = () => {
     const [loadingProgress, setLoadingProgress] = useState(false);
 
     // NOTIFICATION PREFERENCES
-    const [remindersEnabled, setRemindersEnabled] = useState(true);
+    const [_remindersEnabled, setRemindersEnabled] = useState(true);
     const [progressReportsEnabled, setProgressReportsEnabled] = useState(true);
-    const [isUpdatingPrefs, setIsUpdatingPrefs] = useState(false);
+    const [_isUpdatingPrefs, setIsUpdatingPrefs] = useState(false);
 
     const updateNotificationPrefs = async (type, val) => {
         setIsUpdatingPrefs(true);
@@ -2423,7 +2377,6 @@ const App = () => {
     // PROGRESSIVE QUIZ STATE - SISTEMA JAPONï¿½0S/KAIZEN (3 FASES ï¿½ 15 PREGUNTAS = 45 TOTAL)
     const [currentQuizPhase, setCurrentQuizPhase] = useState(1); // 1, 2, or 3 (Fase actual)
     const [backgroundQuestionsQueue, setBackgroundQuestionsQueue] = useState([]);
-    const [backgroundTheoryQueue, setBackgroundTheoryQueue] = useState("");
     const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false);
     const backgroundTaskRef = useRef(null);
     const normalQuizBatchRef = useRef({
@@ -2436,8 +2389,8 @@ const App = () => {
 
     // THEORY STATE - TEORÃA Lï¿½aDICA ANTES DE CADA SUB-NIVEL
     const [showTheoryModal, setShowTheoryModal] = useState(false);
-    const [theoryContent, setTheoryContent] = useState("");
-    const [theoryTitle, setTheoryTitle] = useState("");
+    const [theoryContent, _setTheoryContent] = useState("");
+    const [theoryTitle, _setTheoryTitle] = useState("");
     const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando despuÃ©s de la teorÃ­a
     const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al dÃ­a"
     const [showPrepExamSetup, setShowPrepExamSetup] = useState(false);
@@ -2447,7 +2400,7 @@ const App = () => {
     const [prepExamQuestions, setPrepExamQuestions] = useState([]);
     const [prepExamReport, setPrepExamReport] = useState(null);
     const [showPrepExamResults, setShowPrepExamResults] = useState(false);
-    const [prepExamLoadedCount, setPrepExamLoadedCount] = useState(0);
+    const [_prepExamLoadedCount, setPrepExamLoadedCount] = useState(0);
     const prepExamBatchRef = useRef(0);
     const prepExamNextBatchPromiseRef = useRef(null);
     const prepExamBackgroundLoadRef = useRef(false);
@@ -2628,6 +2581,22 @@ const App = () => {
     const adaptiveWeakSessions = Array.isArray(adaptiveSnapshot?.weakSessions) ? adaptiveSnapshot.weakSessions : [];
     const adaptiveNextAction = adaptiveSnapshot?.nextAction || 'Sigue con la ruta de hoy para ir construyendo dominio.';
     const adaptiveGradeLabel = userProfile?.curriculum_context?.grade_label || '1Â° medio';
+    const getAdaptiveWeakSessionTopic = (item) => {
+        const topic = repairText(item?.topic || item?.source_topic || '');
+        return topic || `Sesion ${item?.session || ''}`;
+    };
+    const primaryAdaptiveWeakSession = adaptiveWeakSessions.find((item) => getAdaptiveWeakSessionTopic(item) && item?.session);
+    const adaptiveNextActionLabel = (() => {
+        const baseLabel = repairText(adaptiveNextAction);
+        const primaryTopic = primaryAdaptiveWeakSession ? getAdaptiveWeakSessionTopic(primaryAdaptiveWeakSession) : '';
+
+        if (!primaryTopic) return baseLabel;
+        if (baseLabel.toLowerCase().includes(primaryTopic.toLowerCase())) return baseLabel;
+        if (/^reforzar sesi[oó]n\s+\d+:?$/i.test(baseLabel)) {
+            return `${baseLabel.replace(/:?$/, ':')} ${primaryTopic}`;
+        }
+        return baseLabel;
+    })();
 
     const openPrepExamSetup = (seedSessions = []) => {
         setPrepExamReport(null);
@@ -3488,264 +3457,6 @@ const App = () => {
         });
     };
 
-    // GENERATE QUIZ BATCH - SISTEMA KAIZEN (3 FASES)
-    // Genera un batch de 15 preguntas para un nivel especÃ­fico
-    // GENERATE QUIZ BATCH - OPTIMIZADO: PARALELO 3x5 (Total 15)
-    // Genera 3 lotes de 5 preguntas simultÃ¡neamente para evitar timeouts de 50s+
-    const generateQuizBatch = async (level, backgroundMode = false, retryCount = 0) => {
-        if (!backgroundMode && retryCount === 0) {
-            setLoadingMessage(`Preparando Quiz ${level}: primeras 5 preguntas...`);
-        }
-
-        const first = await generateQuizSubset(level, 0, backgroundMode, retryCount);
-        const second = await generateQuizSubset(level, 1, true, retryCount);
-        const third = await generateQuizSubset(level, 2, true, retryCount);
-        return [...first, ...second, ...third].slice(0, 15);
-
-        // SAFETY LIMIT: Stop after 1 retry to prevent infinite loops
-        if (retryCount > 1) {
-            console.error("[QUIZ] Max retries reached. Aborting generation to accept partial results or failure.");
-            return []; // Or return null to handle upstream
-        }
-
-        const levelConfig = {
-            "Basico": {
-                name: "Nivel BÃ¡sico PAES",
-                instruction: "RECORDAR/COMPRENDER - Preguntas directas sobre definiciones y conceptos elementales",
-                startingIndex: 1
-            },
-            "AVANZADO": {
-                name: "Nivel Avanzado PAES",
-                instruction: "APLICAR - Problemas prÃ¡cticos de nivel avanzado",
-                startingIndex: 16
-            },
-            "Critico": {
-                name: "Nivel CrÃ­tico PAES",
-                instruction: "ANALIZAR/EVALUAR - Nivel PAES Universidad MUY DIFÃCIL",
-                startingIndex: 31
-            }
-        };
-
-        const config = levelConfig[level];
-        if (!backgroundMode && retryCount === 0) {
-            setLoadingMessage(`Generando Quiz ${level} (Carga RÃ¡pida ï¿½aï¿½)...`);
-        }
-
-        console.log(`[QUIZ] Iniciando generaciÃ³n paralela 3x5 para ${level} (Intento ${retryCount + 1})...`);
-
-        // FunciÃ³n helper para pedir UN lote de 5 preguntas (Total 15)
-        const fetchSubset = async (batchIndex) => {
-            const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION Tï¿½0CNICA:
-1. Genera EXACTAMENTE 5 (CINCO) preguntas de selecciÃ³n mÃºltiple (JSON).
-2. Nivel: ${config.instruction}.
-3. LOTE PARCIAL ${batchIndex + 1}/3.
-4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["texto completo de la alternativa 1", "texto completo de la alternativa 2", "texto completo de la alternativa 3", "texto completo de la alternativa 4"], "correctIndex": 0, "explanation": "..."}]}.
-5. LAS OPCIONES DEBEN SER TEXTO REAL DE LA RESPUESTA, NUNCA solo letras A/B/C/D ni nÃºmeros sueltos.
-6. FORMATO MATH: Usa LaTeX solo para fÃ³rmulas matemÃ¡ticas ($x^2$). NO encierres oraciones de texto normal en signos de pesos.
-7. NO GENERES TEORIA. SOLO JSON.]`;
-
-            try {
-                const body = {
-                    sujeto: currentSubject,
-                    accion: 'Generar Quiz de ValidaciÃ³n', // Reutilizamos acciÃ³n para mantener consistencia
-                    tema: subsetPrompt,
-                    nivel_estudiante: "1Â° Medio Chile",
-                    user_id: USER_ID,
-                    session: TODAYS_SESSION.session,
-                    phase: level
-                };
-
-                // AÃ±adimos un pequeÃ±o delay aleatorio para no saturar si n8n tiene rate limits
-                // Delay incremental: 0ms, 500ms, 1000ms
-                await new Promise(r => setTimeout(r, batchIndex * 500));
-
-                const response = await fetch(activeWebhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-
-                const text = await response.text();
-                // console.log(`[QUIZ] Raw response batch ${batchIndex}:`, text.substring(0, 100) + "..."); 
-                const json = parseN8NResponse(text);
-
-                // DEBUG: Ver quÃ© estructura exacta llega
-                console.log(`[QUIZ_DEBUG] Batch ${batchIndex} parsed JSON keys:`, Object.keys(json));
-                if (Array.isArray(json)) console.log(`[QUIZ_DEBUG] Batch ${batchIndex} is ARRAY length ${json.length}`);
-
-                // Extraer array de preguntas usando la misma lÃ³gica robusta
-                let qData = [];
-                // Deep extraction helper logic repeated or simplified here
-                if (json.questions && Array.isArray(json.questions)) {
-                    qData = json.questions;
-                } else if (json.question) {
-                    qData = [json];
-                } else if (Array.isArray(json)) {
-                    // Filter items that look like questions
-                    qData = json.filter(q => q && (q.question || q.questions));
-                    // Handle nested arrays?
-                    if (qData.length === 0 && json.length > 0 && json[0].questions) {
-                        qData = json[0].questions;
-                    }
-                }
-
-                // Validate we actually got questions
-                if (qData.length === 0) {
-                    // CASE 1: Top level output field
-                    if (json.output) {
-                        console.log(`[QUIZ_DEBUG] Batch ${batchIndex} checking 'output' field fallback...`);
-                        const sub = parseN8NResponse(json.output);
-                        if (Array.isArray(sub)) qData = sub;
-                        else if (sub.questions) qData = sub.questions;
-                    }
-                    // CASE 2: Array wrapping output field (Standard N8N behavior)
-                    else if (Array.isArray(json) && json.length > 0 && json[0].output) {
-                        console.log(`[QUIZ_DEBUG] Batch ${batchIndex} checking 'json[0].output' field fallback...`);
-                        const sub = parseN8NResponse(json[0].output);
-                        if (Array.isArray(sub)) qData = sub;
-                        else if (sub.questions) qData = sub.questions;
-                    }
-                }
-
-                console.log(`[QUIZ_DEBUG] Batch ${batchIndex} final extracted count: ${qData.length}`);
-                return qData || [];
-            } catch (e) {
-                console.error(`Error en lote ${batchIndex}:`, e);
-                return [];
-            }
-        };
-
-        try {
-            // LANZAR 3 PETICIONES EN PARALELO
-            const promises = [0, 1, 2].map(i => fetchSubset(i));
-            const results = await Promise.all(promises);
-
-            // COMBINAR RESULTADOS EN ORDEN (0 -> 1 -> 2)
-            let combinedQuestions = [...results[0], ...results[1], ...results[2]];
-
-            // Clean undefined/nulls just in case
-            combinedQuestions = combinedQuestions.filter(q => q && q.question);
-
-            console.log(`[QUIZ] Total preguntas recibidas: ${combinedQuestions.length}`);
-
-            // Fallback: Si tenemos muy pocas, reintentamos UNA VEZ
-            if (combinedQuestions.length < 5) {
-                console.warn(`[QUIZ] Pocas preguntas (${combinedQuestions.length}) recibidas. Reintentando...`);
-                return await generateQuizBatch(level, backgroundMode, retryCount + 1);
-            }
-
-            // Formatear final (Limitado a 15)
-            const isPlaceholderOptionText = (value = '') => {
-                const normalized = String(value || '').trim().toUpperCase();
-                return ['A', 'B', 'C', 'D', 'AA', 'BB', 'CC', 'DD'].includes(normalized);
-            };
-
-            const formattedQuestions = combinedQuestions.slice(0, 15).map(q => {
-                let optsObj = {};
-                let correctKey = 'A';
-
-                if (Array.isArray(q.options)) {
-                    const letters = ['A', 'B', 'C', 'D'];
-                    q.options.forEach((opt, idx) => {
-                        if (idx < 4) optsObj[letters[idx]] = opt;
-                    });
-                    if (q.correctIndex !== undefined) {
-                        correctKey = letters[q.correctIndex] || 'A';
-                    }
-                } else {
-                    optsObj = q.options || {};
-                    correctKey = q.correct_answer || (q.correctIndex !== undefined ? ['A', 'B', 'C', 'D'][q.correctIndex] : 'A');
-                }
-
-                return {
-                    question: q.question,
-                    options: optsObj,
-                    correct_answer: correctKey,
-                    explanation: q.explanation || "Verificaci??n pendiente."
-                };
-            });
-
-            const placeholderQuestionCount = formattedQuestions.reduce((count, question) => {
-                const optionValues = Object.values(question.options || {});
-                const placeholderOptions = optionValues.filter(isPlaceholderOptionText);
-                return count + (placeholderOptions.length >= 3 ? 1 : 0);
-            }, 0);
-
-            if (placeholderQuestionCount > 0 && retryCount < 2) {
-                console.warn("[QUIZ] Detectadas " + placeholderQuestionCount + " preguntas con opciones placeholder. Reintentando lote " + level + "...");
-                return await generateQuizBatch(level, backgroundMode, retryCount + 1);
-            }
-
-            return formattedQuestions;
-
-        } catch (e) {
-            console.error(`Error generando batch paralelo ${level}:`, e);
-            return [];
-        }
-    };
-
-    // GENERATE THEORY - TEORÃA Lï¿½aDICA PARA LA SESIï¿½N COMPLETA
-    const generateTheory = async (backgroundMode = false) => {
-        if (!backgroundMode) {
-            setLoadingMessage(`Generando Teoria Ludica Matico: ${TODAYS_SESSION.topic}...`);
-        }
-
-        try {
-            const theoryPrompt = `[INSTRUCCION TEORIA LUDICA]:
-Genera contenido teorico completo y extenso para la sesion de hoy.
-
-Tema: ${TODAYS_SESSION.topic}
-Contexto: Preparacion PAES Matematica / 1 medio Chile.
-
-El contenido debe incluir:
-1. Explicacion profunda y detallada de los conceptos del tema.
-2. Multiples ejemplos practicos, desde nivel elemental hasta el mas complejo, resueltos paso a paso.
-3. Analogias creativas y aplicaciones en la vida real.
-4. Estrategias criticas y tips para enfrentar problemas dificiles.
-5. Formato enriquecido en Markdown con titulos claros, listas y enfasis constante.
-6. Usa lenguaje motivador y gamificado, tipo Manual del Maestro.
-
-IMPORTANTE: No generes preguntas de quiz. Solo teoria explicativa exhaustiva.`;
-
-            const body = {
-                sujeto: currentSubject,
-                accion: 'Generar Teoria Ludica',
-                tema: theoryPrompt,
-                nivel_estudiante: "1 medio Chile"
-            };
-
-            const response = await fetch(activeWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-
-            const text = await response.text();
-            const data = parseN8NResponse(text);
-
-            if (data && data.output) {
-                setAiContent(data.output);
-                setAiModalOpen(true);
-                
-                // NEW: LOG THEORY COMPLETION WITH XP
-                saveProgress('theory_completed', {
-                    subject: currentSubject,
-                    session: TODAYS_SESSION.session,
-                    topic: TODAYS_SESSION.topic,
-                    xp_reward: 25
-                });
-            }
-
-            console.log(`[THEORY] Teoria generada para Fase ${phase}`);
-            return theoryText;
-
-        } catch (e) {
-            console.error(`Error generando teoria:`, e);
-            return `# Error al generar teoria\n\nNo se pudo generar el contenido teorico. Por favor, intenta nuevamente.`;
-        }
-    };
-
-
     // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS (SISTEMA KAIZEN - 3 NIVELES ï¿½ 15 PREGUNTAS)
     const saveQuizPhaseProgress = (phase, score) => {
         const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
@@ -3889,7 +3600,6 @@ IMPORTANTE: No generes preguntas de quiz. Solo teoria explicativa exhaustiva.`;
 
         // Calcular porcentaje de Ã©xito basado en 45 preguntas (3 fases de 15)
         const successRate = Math.round((stats.correct / 45) * 100);
-        const mood = successRate >= 80 ? "excelente" : (successRate >= 60 ? "bueno" : "para mejorar");
 
         const reportPrompt = `[INSTRUCCIï¿½N AGENTE DE REPORTES MATICO]:
 Eres el Agente de ï¿½0xito AcadÃ©mico de Matico. Tu trabajo es tomar los resultados finales de una sesiÃ³n de 45 preguntas y generar una notificaciÃ³n de confirmaciÃ³n de logros, similar al estilo profesional de 'Glow & Grace Salon'.
@@ -4607,7 +4317,7 @@ ${finalData.capsule}`;
                                             </div>
                                             <div>
                                                 <p className="text-xl md:text-2xl font-black leading-tight text-[#2B2E4A]">
-                                                    {repairText(adaptiveNextAction)}
+                                                    {adaptiveNextActionLabel}
                                                 </p>
                                                 <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688] max-w-xl">
                                                     La app recuerda que sesiones le cuestan mas a tu hijo y arma el proximo repaso desde ahi.
@@ -4629,9 +4339,10 @@ ${finalData.capsule}`;
                                                     <span
                                                         key={`${item.subject || currentSubject}-${item.session}`}
                                                         className="inline-flex items-center gap-1.5 rounded-full bg-white border border-indigo-100 px-3 py-1.5 text-xs font-black text-[#4D96FF] shadow-sm"
+                                                        title={`${getAdaptiveWeakSessionTopic(item)} · Sesion ${item.session}`}
                                                     >
                                                         <span className="h-2 w-2 rounded-full bg-[#4D96FF]/70" />
-                                                        Sesion {item.session}
+                                                        {getAdaptiveWeakSessionTopic(item)} · S{item.session}
                                                     </span>
                                                 )) : (
                                                     <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-600 shadow-sm">
@@ -4664,7 +4375,6 @@ ${finalData.capsule}`;
 
                                         // STYLE LOGIC
                                         let btnStyle = "bg-[#E5E5E5] border-[#CECECE] text-[#AFAFAF]"; // Locked/Future
-                                        let isCurrent = idx === 0; // Default current?
                                         // Simple logic for demo: Step 0 is completed/current, others locked? 
                                         // Better: visual variety based on index
 
@@ -4675,8 +4385,6 @@ ${finalData.capsule}`;
 
                                         // Alternating offset
                                         const offsetClass = idx % 2 === 0 ? "-translate-x-12" : "translate-x-12";
-                                        const labelSide = idx % 2 === 0 ? "left-28" : "right-28 text-right";
-                                        const labelOrigin = idx % 2 === 0 ? "origin-left" : "origin-right flex-row-reverse";
 
                                         return (
                                             <div key={idx} className={`relative z-10 group ${offsetClass}`}>
