@@ -4026,17 +4026,17 @@ ${finalData.capsule}`;
                             {/* Text Content */}
                             <div className="flex flex-col text-center md:text-left">
                                 <h3 className="text-amber-900 font-black text-2xl leading-tight uppercase tracking-tight mb-2">
-                                    Â¡Ojo al piojo! Tienes algo pendiente
+                                    OJO AL PIOJO! TIENES ALGO PENDIENTE
                                 </h3>
                                 <div className="bg-white/40 rounded-3xl p-5 mb-4 border border-amber-200/50">
                                     <p className="text-amber-800 font-bold text-lg leading-relaxed">
                                         Hoy es <span className="text-amber-600 font-black uppercase">{missedSessionAlert.todayName}</span> y el plan dice <span className="text-indigo-600 font-black uppercase text-xl">{missedSessionAlert.todaySubject}</span>...
                                         <br /><br />
-                                        Pero antes de pasar a ella, debemos completar la sesiÃ³n de <strong className="text-amber-900">{missedSessionAlert.subject} (SesiÃ³n {missedSessionAlert.session})</strong> que quedÃ³ atrÃ¡s.
+                                        Pero antes de pasar a ella, debemos completar la sesion de <strong className="text-amber-900">{missedSessionAlert.subject} (Sesion {missedSessionAlert.session})</strong> que quedo atras.
                                     </p>
                                 </div>
                                 <p className="text-amber-600 font-black mt-1 text-sm flex items-center justify-center md:justify-start gap-2">
-                                    Â¡No dejes huecos en tu camino! ï¿½xaï¿½ï¿½Sï¿½
+                                    No dejes huecos en tu camino!
                                 </p>
 
                                 <div className="flex gap-4 mt-6">
@@ -4044,7 +4044,7 @@ ${finalData.capsule}`;
                                         onClick={() => setMissedSessionAlert(null)}
                                         className="w-full py-5 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xl font-black rounded-2xl shadow-[0_10px_25px_rgba(217,119,6,0.3)] hover:shadow-[0_15px_40px_rgba(217,119,6,0.5)] hover:-translate-y-1 active:scale-95 transition-all uppercase tracking-wide"
                                     >
-                                        Â¡Entendido, vamos!
+                                        ENTENDIDO, VAMOS!
                                     </button>
                                 </div>
                             </div>
@@ -4400,10 +4400,10 @@ ${finalData.capsule}`;
 
                                                 {/* FLOATING LABEL */}
                                                 <div className={`absolute top-6 ${idx % 2 === 0 ? "left-28" : "right-28"} bg-white border-2 border-gray-200 px-4 py-2 rounded-2xl shadow-sm min-w-[140px] transition-transform hover:scale-105`}>
-                                                    <h3 className="font-black text-[#3C3C3C] text-sm uppercase">{step.step}</h3>
+                                                    <h3 className="font-black text-[#3C3C3C] text-sm uppercase">{repairText(step.step)}</h3>
                                                     <p className="text-[#AFAFAF] text-xs font-bold">{
                                                         idx === 0 ? "CLASE DE HOY" :
-                                                            (idx === 1 ? "TEORÃA IA" :
+                                                            (idx === 1 ? "TEORIA IA" :
                                                                 (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"))
                                                     }</p>
 
@@ -4422,7 +4422,7 @@ ${finalData.capsule}`;
                                             className={`${clayBtnAction} ${(localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? '!bg-green-500 !border-green-600 hover:!bg-green-400' : ''}`}
                                             disabled={isCallingN8N}
                                         >
-                                            {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESIï¿½N COMPLETADA (Repasar)" : "INICIAR SESIï¿½N " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
+                                            {isCallingN8N ? 'CARGANDO...' : ((localStorage.getItem('MATICO_COMPLETED_SESSIONS') || '').includes(`${currentSubject}_${TODAYS_SESSION.session}`) ? "SESION COMPLETADA (Repasar)" : "INICIAR SESION " + TODAYS_SESSION.session)} <Play className="w-5 h-5 ml-2" fill="currentColor" />
                                         </button>
 
                                         <button
@@ -4547,7 +4547,7 @@ ${finalData.capsule}`;
                             <div className="bg-white px-6 py-4 border-b-2 border-gray-100 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Settings className="w-5 h-5 text-[#2B2E4A]" />
-                                    <h3 className="text-lg font-black text-[#2B2E4A]">ConfiguraciÃ³n</h3>
+                                    <h3 className="text-lg font-black text-[#2B2E4A]">Configuracion</h3>
                                 </div>
                                 <button
                                     onClick={() => setSettingsOpen(false)}
@@ -4567,7 +4567,7 @@ ${finalData.capsule}`;
                                         <div className="flex flex-col gap-3">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl shadow-inner border border-blue-200">
-                                                    ï¿½xï¿½
+                                                    @
                                                 </div>
                                                 <div className="flex flex-col overflow-hidden">
                                                     <span className="text-[10px] font-black text-gray-400 uppercase">Email</span>
@@ -4576,7 +4576,7 @@ ${finalData.capsule}`;
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-xl shadow-inner border border-purple-200">
-                                                    ï¿½x 
+                                                    #
                                                 </div>
                                                 <div className="flex flex-col overflow-hidden">
                                                     <span className="text-[10px] font-black text-gray-400 uppercase">User ID</span>
@@ -4643,7 +4643,7 @@ ${finalData.capsule}`;
                                     </h4>
                                     <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-bold text-gray-700">Modo de ConexiÃ³n</span>
+                                            <span className="text-sm font-bold text-gray-700">Modo de Conexion</span>
                                             <button
                                                 onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
                                                 className={`text-[10px] font-black px-4 py-1.5 rounded-full transition-all border-2 ${activeWebhookUrl === N8N_URLS.test
@@ -4651,7 +4651,7 @@ ${finalData.capsule}`;
                                                     : 'bg-red-50 text-red-600 border-red-100 animate-pulse'
                                                     }`}
                                             >
-                                                {activeWebhookUrl === N8N_URLS.test ? 'ï¿½x:ï¿½ï¸ TEST MODE' : 'ï¿½xaï¿½ PRODUCTION'}
+                                                {activeWebhookUrl === N8N_URLS.test ? 'TEST MODE' : 'PRODUCTION'}
                                             </button>
                                         </div>
                                         <button
@@ -4660,12 +4660,12 @@ ${finalData.capsule}`;
                                                 fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
                                                 localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
                                                 localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
-                                                alert("SimulaciÃ³n: Inicio hace 5 dÃ­as. Debes ponerte al dÃ­a.");
+                                                alert("Simulacion: inicio hace 5 dias. Debes ponerte al dia.");
                                                 window.location.reload();
                                             }}
                                             className="w-full text-[10px] font-black text-blue-500 uppercase tracking-widest py-2 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
                                         >
-                                            ï¿½x:ï¿½ï¸ Simular Atraso (5 DÃ­as)
+                                            SIMULAR ATRASO (5 DIAS)
                                         </button>
                                     </div>
                                 </div>
@@ -4721,7 +4721,7 @@ ${finalData.capsule}`;
                                     className="w-full py-4 bg-red-50 text-red-600 font-black rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
                                 >
                                     <XCircle className="w-5 h-5" />
-                                    Cerrar SesiÃ³n
+                                    Cerrar Sesion
                                 </button>
                             </div>
                         </div>
