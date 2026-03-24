@@ -92,6 +92,22 @@ async function readSheet(range) {
     }
 }
 
+const normalizeSheetRows = (value) => {
+    if (Array.isArray(value)) {
+        return value;
+    }
+
+    if (Array.isArray(value?.values)) {
+        return value.values;
+    }
+
+    if (Array.isArray(value?.data?.values)) {
+        return value.data.values;
+    }
+
+    return [];
+};
+
 // Helper: Escribir en Google Sheets
 async function writeSheet(range, values) {
     if (!sheets) {
@@ -128,7 +144,28 @@ const NOTEBOOKS_FILE = path.join(DATA_DIR, 'notebooks.json');
     }
 });
 
-const getUsers = () => JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+const getUsers = () => {
+    try {
+        const parsed = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+
+        if (Array.isArray(parsed)) {
+            return parsed.reduce((acc, item) => {
+                if (!item || !item.email) return acc;
+                acc[item.email] = item;
+                return acc;
+            }, {});
+        }
+
+        if (parsed && typeof parsed === 'object') {
+            return parsed;
+        }
+
+        return {};
+    } catch (error) {
+        console.error('[DATA] Error leyendo users.json, usando objeto vacio:', error.message);
+        return {};
+    }
+};
 const saveUsers = (users) => fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 const getProgress = () => JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf8'));
 const saveProgress = (progress) => fs.writeFileSync(PROGRESS_FILE, JSON.stringify(progress, null, 2));
@@ -167,9 +204,9 @@ app.post('/api/auth/login', async (req, res) => {
         
         // Intentar leer de Google Sheets primero
         let userData = null;
-        const sheetData = await readSheet('users');
+        const sheetData = normalizeSheetRows(await readSheet('users'));
         
-        if (sheetData) {
+        if (sheetData.length > 0) {
             // Buscar usuario en sheet
             const userRow = sheetData.find(row => row[0] === email && row[1] === password);
             if (userRow) {
