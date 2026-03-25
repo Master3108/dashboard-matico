@@ -15,11 +15,15 @@ const MathRenderer = ({ text, content }) => {
             // Import katex dynamically
             const katex = (await import('katex')).default;
 
-            let processed = rawText;
+            let processed = String(rawText || '');
 
             try {
                 // Step 1: Clean N8N triple escaping: \\\[ -> \[, \\\( -> \(
                 processed = processed
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
                     .replace(/\\\\\\\\/g, '\\')  // Quad backslash to single
                     .replace(/\\\\\\/g, '\\')     // Triple backslash to single
                     .replace(/\\\\/g, '\\');       // Double backslash to single

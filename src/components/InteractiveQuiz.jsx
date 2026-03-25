@@ -179,6 +179,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
     const quizSubtitle = isPrepExamMode ? 'Sistema Kaizen · Básico / Avanzado / Crítico' : 'Matico AI';
     const quizBadgeLabel = isPrepExamMode ? '45 PREGUNTAS · SESIONES SELECCIONADAS' : difficultyLevel.name;
     const quizBadgeIcon = isPrepExamMode ? '🧭' : difficultyLevel.icon;
+    const shouldShowNextLabel = (currentQuestion + 1) < displayedQuestionTotal;
     const quizBadgeClass = isPrepExamMode
         ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 text-white px-4 py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-md'
         : `${difficultyLevel.color} text-white px-4 py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-md`;
@@ -590,7 +591,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                                     onClick={handleNext}
                                     className="w-full bg-[#2B2E4A] hover:bg-[#1a1c2e] text-white font-black text-xl py-5 rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 flex items-center justify-center gap-3 group"
                                 >
-                                    {currentQuestion < activeQuestions.length - 1 ? 'Siguiente Pregunta' : 'Ver Resultados'}
+                                    {shouldShowNextLabel ? 'Siguiente Pregunta' : 'Ver Resultados'}
                                     <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </div>
