@@ -3839,6 +3839,24 @@ const App = () => {
         }));
     };
 
+    const resetQuizPhaseProgress = (phase) => {
+        return updateQuizProgressState((current) => {
+            const completedPhases = Array.isArray(current.completedPhases)
+                ? current.completedPhases.filter((item) => Number(item) !== Number(phase))
+                : [];
+            const scores = { ...(current.scores || {}) };
+            delete scores[phase];
+
+            return {
+                ...current,
+                completedPhases,
+                currentPhase: Math.min(3, Math.max(1, Number(phase || 1))),
+                scores,
+                lastUpdated: new Date().toISOString()
+            };
+        });
+    };
+
     const getSessionProtocolState = () => {
         const localProgress = getQuizProgress();
         const serverSessionInProgress = Number(serverProgress?.current_session_in_progress || 0);
@@ -4199,6 +4217,43 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             setAllWrongAnswers([]);
             markSessionComplete(currentSubject, TODAYS_SESSION.session);
         }
+    };
+
+    const restartQuizPhaseFromZero = async (phaseNumber, wrongAnswers = []) => {
+        const levelName = QUIZ_PHASE_LEVELS[phaseNumber] || 'Basico';
+
+        resetNormalQuizBatchLoading();
+        setBackgroundQuestionsQueue([]);
+        setIsLoadingNextBatch(false);
+        backgroundTaskRef.current = null;
+        resetQuizPhaseProgress(phaseNumber);
+        setCurrentQuizPhase(phaseNumber);
+
+        await saveProgress('phase_failed', {
+            subject: currentSubject,
+            session: TODAYS_SESSION.session,
+            phase: phaseNumber,
+            subLevel: phaseNumber,
+            levelName,
+            score: 0,
+            total_questions: QUIZ_PHASE_QUESTIONS,
+            batch_index: 0,
+            batch_size: QUIZ_BATCH_SIZE,
+            wrong_answers: Array.isArray(wrongAnswers) ? wrongAnswers.length : 0,
+            wrong_question_details: serializeWrongQuestionDetails(wrongAnswers),
+            weakness: buildWeaknessSummary(wrongAnswers),
+            improvement_plan: buildImprovementPlan(wrongAnswers),
+            xp_reward: 0
+        });
+
+        const questions = await generateQuizSubset(levelName, 0, false);
+        if (!Array.isArray(questions) || questions.length === 0) {
+            throw new Error(`No se pudo reiniciar la fase ${levelName}.`);
+        }
+
+        setQuizQuestions(questions);
+        primeNormalQuizBatchLoading(levelName, questions);
+        return questions;
     };
 
     // UPDATED CALL AGENT TO HANDLE IMAGES AND CONTEXT (POST)
@@ -4924,7 +4979,7 @@ ${finalData.capsule}`;
                             onRequestNextBatch={isPrepExamMode ? requestNextPrepExamBatch : requestNextNormalQuizBatch}
                             userEmail={currentUser?.email}
                             userId={USER_ID}
-                            onComplete={async (score, wrongAnswers) => {
+                            onComplete={async (score, wrongAnswers, completionMeta = {}) => {
                                 if (isPrepExamMode) {
                                     const finalWrongAnswers = wrongAnswers || [];
                                     const report = buildPrepExamReport(prepExamQuestions, finalWrongAnswers, prepExamConfig);
@@ -4942,6 +4997,14 @@ ${finalData.capsule}`;
                                     setPrepExamReport(report);
                                     setShowPrepExamResults(true);
                                     return;
+                                }
+
+                                if (completionMeta.failedByLives) {
+                                    const restartedQuestions = await restartQuizPhaseFromZero(currentQuizPhase, wrongAnswers || []);
+                                    return {
+                                        restartPhase: true,
+                                        questions: restartedQuestions
+                                    };
                                 }
 
                                 console.log(`Quiz Fase ${currentQuizPhase} completado:`, score, 'errores:', wrongAnswers?.length);

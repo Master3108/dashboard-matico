@@ -47,10 +47,41 @@ const wrapInlineMath = (text = '') => {
 };
 
 const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, subject, readingContent, quizMode = 'normal', onRequestNextBatch = null, userEmail, userId }) => {
+    const normalizeAnswerText = (value = '') => String(value || '')
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\$+/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .trim();
+
+    const inferCorrectAnswerFromExplanation = (questionData = {}) => {
+        const options = questionData.options || {};
+        const explanation = String(questionData.explanation || '');
+        const normalizedExplanation = normalizeAnswerText(explanation);
+        if (!normalizedExplanation) return null;
+
+        const explicitLetter = explanation.match(/(?:opcion|respuesta)\s+correcta\s+es\s+([A-D])/i);
+        if (explicitLetter?.[1] && options[explicitLetter[1].toUpperCase()]) {
+            return explicitLetter[1].toUpperCase();
+        }
+
+        const matchingOptions = Object.entries(options)
+            .map(([key, value]) => ({ key, normalized: normalizeAnswerText(value) }))
+            .filter((item) => item.normalized && normalizedExplanation.includes(item.normalized));
+
+        return matchingOptions.length === 1 ? matchingOptions[0].key : null;
+    };
 
     // MATH SAFETY NET: Validate questions on load
     const validateMath = (q) => {
         try {
+            const inferredCorrectAnswer = inferCorrectAnswerFromExplanation(q);
+            if (inferredCorrectAnswer && inferredCorrectAnswer !== q.correct_answer) {
+                return { ...q, correct_answer: inferredCorrectAnswer };
+            }
             // 1. Extract purely math expression (remove text like "Calcule el valor de la expresión:")
             // Look for patterns like: "number operator number" repeated
             // Clean symbols often used in text: ":" "?" "Calcule" "Resuelve"
@@ -268,7 +299,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
             // If no lives left, end quiz
             if (lives <= 1) {
                 setTimeout(() => {
-                    finishQuiz();
+                    finishQuiz({ failedByLives: true });
                 }, 2000);
             }
         }
@@ -313,28 +344,47 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
         }
     };
 
-    const finishQuiz = async () => {
+    const finishQuiz = async (completionMeta = {}) => {
         if (isSubmittingResults) return;
 
+        let shouldKeepFinishedState = true;
         setIsSubmittingResults(true);
-        playSound('success');
-        confetti({
-            particleCount: 200,
-            spread: 100,
-            origin: { y: 0.6 }
-        });
+        if (!completionMeta.failedByLives) {
+            playSound('success');
+            confetti({
+                particleCount: 200,
+                spread: 100,
+                origin: { y: 0.6 }
+            });
+        }
 
         try {
             // Wait for the parent to persist progress before enabling close/reload paths.
             if (onComplete) {
-                await onComplete(score.correct, wrongAnswers);
+                const result = await onComplete(score.correct, wrongAnswers, completionMeta);
+                if (result?.restartPhase && Array.isArray(result.questions) && result.questions.length > 0 && isMountedRef.current) {
+                    shouldKeepFinishedState = false;
+                    setActiveQuestions(result.questions.map(validateMath));
+                    setCurrentQuestion(0);
+                    setSelectedAnswer(null);
+                    setIsAnswered(false);
+                    setScore({ correct: 0, incorrect: 0 });
+                    setWrongAnswers([]);
+                    setShowExplanation(false);
+                    setShowMiniLesson(false);
+                    setLives(MAX_LIVES);
+                    setTimeLeft(getTimeLimit(0));
+                    setIsSubmittingResults(false);
+                    setIsFinished(false);
+                    return;
+                }
             }
         } catch (error) {
             console.error("[QUIZ] Error saving quiz results:", error);
         } finally {
             if (isMountedRef.current) {
                 setIsSubmittingResults(false);
-                setIsFinished(true);
+                setIsFinished(shouldKeepFinishedState);
             }
         }
     };
