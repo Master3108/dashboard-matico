@@ -28,6 +28,10 @@ const NOTEBOOK_UPLOADS_DIR = path.join(LOCAL_UPLOADS_DIR, 'cuadernos');
 app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
 
 const PORT = process.env.PORT || 5000;
+const QUIZ_BATCH_SIZE = 3;
+const QUIZ_PHASE_QUESTIONS = 15;
+const QUIZ_TOTAL_QUESTIONS = 45;
+const QUIZ_BATCHES_PER_PHASE = QUIZ_PHASE_QUESTIONS / QUIZ_BATCH_SIZE;
 
 // ConfiguraciÃƒÂ³n DeepSeek
 const AI_PROVIDER = (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi' : 'deepseek';
@@ -818,7 +822,7 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
             <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #dbeafe; margin: 16px 0;">
                 <h3 style="margin-top: 0; color: #1d4ed8;">Foco pedagogico</h3>
                 <p style="margin: 8px 0; color: #334155;"><strong>Debilidad detectada:</strong> ${escapeHtml(weakness || 'Sin focos criticos detectados en esta sesion.')}</p>
-                <p style="margin: 8px 0; color: #334155;"><strong>Que mejorar:</strong> ${escapeHtml(improvementPlan || 'Mantener practica constante en lotes de 5 preguntas.')}</p>
+                <p style="margin: 8px 0; color: #334155;"><strong>Que mejorar:</strong> ${escapeHtml(improvementPlan || `Mantener practica constante en lotes de ${QUIZ_BATCH_SIZE} preguntas.`)}</p>
             </div>` : '';
 
     return `
@@ -1374,10 +1378,11 @@ ${batchInstructions}
         if (currentAction.toLowerCase().includes('quiz') || currentAction.toLowerCase().includes('generar') || currentAction === 'generate_quiz') {
             const tema = body.tema || body.topic || 'Conocimiento General';
             const subject = (body.subject || body.sujeto || body.materia || data?.subject || 'MATEMATICA').toUpperCase();
-            const requestedCount = Math.max(1, Math.min(5, Number(body.batch_size) || 5));
+            const requestedCount = Math.max(1, Math.min(QUIZ_BATCH_SIZE, Number(body.batch_size) || QUIZ_BATCH_SIZE));
             const sourceSession = Number(body.session || data.session || 0) || 0;
             const levelName = String(body.phase || body.level || body.nivel || data.level || '').trim().toUpperCase();
             const batchIndex = Math.max(0, Number(body.batch_index ?? body.batchIndex ?? 0) || 0);
+            const totalBatches = Math.max(1, Number(body.total_batches) || QUIZ_BATCHES_PER_PHASE);
             const excludeSignatures = Array.isArray(body.exclude_signatures) ? body.exclude_signatures : [];
             const timingTrace = createRequestTimingTrace('generate_quiz', {
                 subject,
@@ -1611,9 +1616,21 @@ Estructura JSON:
                 });
             }
 
+            const promptContext = [
+                `Tema: ${tema}`,
+                `Asignatura: ${subject}`,
+                `Fase: ${levelName || 'BASICO'}`,
+                `Sesion: ${sourceSession || 'sin sesion'}`,
+                `Lote: ${batchIndex + 1}/${totalBatches}`,
+                `Genera EXACTAMENTE ${requestedCount} preguntas.`,
+                'Devuelve SOLO JSON valido con la clave "questions".',
+                'No devuelvas menos preguntas.',
+                'No repitas preguntas.'
+            ].join('\n');
+
             const comp = await openai.chat.completions.create({
                 model: AI_MODELS.fast,
-                messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }],
+                messages: [{ role: "system", content: systemMsg }, { role: "user", content: promptContext }],
                 response_format: { type: "json_object" },
                 temperature: aiTemperature
             });

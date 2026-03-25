@@ -133,6 +133,10 @@ const QUIZ_PHASE_LEVELS = {
     2: 'AVANZADO',
     3: 'Critico'
 };
+const QUIZ_TOTAL_QUESTIONS = 45;
+const QUIZ_PHASE_QUESTIONS = 15;
+const QUIZ_BATCH_SIZE = 3;
+const QUIZ_BATCHES_PER_PHASE = QUIZ_PHASE_QUESTIONS / QUIZ_BATCH_SIZE;
 
 // --- PRODUCCIóN: CALENDARIO MATICO ---
 const COURSE_START_DATE = new Date('2026-01-26T00:00:00'); // Lunes 26 de Enero
@@ -2600,7 +2604,7 @@ const App = () => {
     const normalQuizBatchRef = useRef({
         level: '',
         nextBatchIndex: 0,
-        totalBatches: 3,
+        totalBatches: QUIZ_BATCHES_PER_PHASE,
         nextPromise: null
     });
     const [allWrongAnswers, setAllWrongAnswers] = useState([]); // Acumula errores de las 3 fases
@@ -3482,7 +3486,7 @@ const App = () => {
     };
 
     const primeNormalQuizBatchLoading = (level, firstBatchQuestions = []) => {
-        const totalBatches = 3;
+        const totalBatches = QUIZ_BATCHES_PER_PHASE;
         normalQuizBatchRef.current = {
             level,
             nextBatchIndex: 1,
@@ -3527,7 +3531,7 @@ const App = () => {
         normalQuizBatchRef.current = {
             level: '',
             nextBatchIndex: 0,
-            totalBatches: 3,
+            totalBatches: QUIZ_BATCHES_PER_PHASE,
             nextPromise: null
         };
     };
@@ -3539,7 +3543,7 @@ const App = () => {
 
     const buildFormattedQuizQuestions = (rawQuestions = []) => {
 
-        const formattedQuestions = rawQuestions.slice(0, 5).map(q => {
+        const formattedQuestions = rawQuestions.slice(0, QUIZ_BATCH_SIZE).map(q => {
             let optsObj = {};
             let correctKey = 'A';
 
@@ -3577,7 +3581,7 @@ const App = () => {
         };
     };
 
-    const generateQuizSubset = async (level, batchIndex = 0, backgroundMode = false, retryCount = 0, requestedCount = 5, excludeSignatures = []) => {
+    const generateQuizSubset = async (level, batchIndex = 0, backgroundMode = false, retryCount = 0, requestedCount = QUIZ_BATCH_SIZE, excludeSignatures = []) => {
         if (retryCount > 1) {
             console.error(`[QUIZ] Max retries reached for subset ${level} batch ${batchIndex}.`);
             return [];
@@ -3603,13 +3607,13 @@ const App = () => {
         });
 
         if (shouldPublishDiagnostics) {
-            setLoadingMessage(`Preparando Quiz ${level}: primeras 5 preguntas...`);
+            setLoadingMessage(`🧠 Preparando Quiz ${level}...`);
         }
 
         const subsetPrompt = `${TODAYS_SUBJECT.oa_title} [INSTRUCCION TECNICA:
 1. Genera EXACTAMENTE ${requestedCount} (${requestedCount}) preguntas de seleccion multiple (JSON).
 2. Nivel: ${config.instruction}.
-3. LOTE PARCIAL ${batchIndex + 1}/3.
+3. LOTE PARCIAL ${batchIndex + 1}/${QUIZ_BATCHES_PER_PHASE}.
 4. ESTRUCTURA JSON ESTRICTA: {"questions": [{"question": "...", "options": ["texto completo de la alternativa 1", "texto completo de la alternativa 2", "texto completo de la alternativa 3", "texto completo de la alternativa 4"], "correctIndex": 0, "explanation": "..."}]}.
 5. LAS OPCIONES DEBEN SER TEXTO REAL DE LA RESPUESTA, NUNCA solo letras A/B/C/D ni numeros sueltos.
 6. FORMATO MATH: Usa LaTeX solo para formulas matematicas ($x^2$). NO encierres oraciones de texto normal en signos de pesos.
@@ -3627,11 +3631,12 @@ const App = () => {
                 phase: level,
                 batch_index: batchIndex,
                 batch_size: requestedCount,
+                total_batches: QUIZ_BATCHES_PER_PHASE,
                 exclude_signatures: excludeSignatures
             };
 
             if (shouldPublishDiagnostics) {
-                setLoadingMessage('Pidiendo preguntas del quiz al servidor...');
+                setLoadingMessage('⚡ Generando preguntas del quiz...');
             }
             quizDiagnostics.begin('Esperando respuesta del servidor');
             const response = await fetch(activeWebhookUrl, {
@@ -3694,9 +3699,9 @@ const App = () => {
 
             const missingCount = requestedCount - sanitizedQuestions.length;
             if (missingCount > 0 && retryCount < 1) {
-                console.warn(`[QUIZ] Lote ${batchIndex + 1}/3 incompleto (${sanitizedQuestions.length}/${requestedCount}). Rellenando ${missingCount} preguntas...`);
+                console.warn(`[QUIZ] Lote ${batchIndex + 1}/${QUIZ_BATCHES_PER_PHASE} incompleto (${sanitizedQuestions.length}/${requestedCount}). Rellenando ${missingCount} preguntas...`);
                 if (shouldPublishDiagnostics) {
-                    setLoadingMessage(`Completando ${missingCount} preguntas faltantes...`);
+                    setLoadingMessage(`✨ Completando ${missingCount} preguntas faltantes...`);
                 }
                 quizDiagnostics.begin('Solicitando preguntas faltantes');
                 const seenSignatures = sanitizedQuestions.map((question) => {
@@ -3707,9 +3712,9 @@ const App = () => {
                 sanitizedQuestions = [...sanitizedQuestions, ...(Array.isArray(refillQuestions) ? refillQuestions : [])];
             }
 
-            if (sanitizedQuestions.length < Math.max(4, requestedCount - 1)) {
+            if (sanitizedQuestions.length < Math.max(2, requestedCount - 1)) {
                 if (shouldPublishDiagnostics) {
-                    setLoadingMessage('Reintentando el lote porque llegaron pocas preguntas utiles...');
+                    setLoadingMessage('🔄 Ajustando el quiz para que quede completo...');
                 }
                 quizDiagnostics.begin('Reintentando lote incompleto');
                 const retryQuestions = await generateQuizSubset(level, batchIndex, backgroundMode, retryCount + 1, requestedCount, excludeSignatures);
@@ -3721,7 +3726,7 @@ const App = () => {
             }
 
             if (hasPlaceholderQuestions) {
-                console.warn(`[QUIZ] Lote ${batchIndex + 1}/3 aceptado con filtrado de placeholders (${sanitizedQuestions.length}/${requestedCount}).`);
+                console.warn(`[QUIZ] Lote ${batchIndex + 1}/${QUIZ_BATCHES_PER_PHASE} aceptado con filtrado de placeholders (${sanitizedQuestions.length}/${requestedCount}).`);
             }
 
             const finalQuestions = sanitizedQuestions.slice(0, requestedCount);
@@ -3859,8 +3864,8 @@ const App = () => {
         );
 
         const questionsCompleted = serverSessionCompleted
-            ? 45
-            : ((currentPhase - 1) * 15);
+            ? QUIZ_TOTAL_QUESTIONS
+            : ((currentPhase - 1) * QUIZ_PHASE_QUESTIONS);
 
         return {
             currentPhase,
@@ -3922,7 +3927,7 @@ const App = () => {
         try {
             const currentLevel = QUIZ_PHASE_LEVELS[startingPhase];
 
-            setLoadingMessage(`Preparando Quiz Kaizen: ${currentLevel}...`);
+            setLoadingMessage(`🧠 Preparando Quiz ${currentLevel}...`);
 
             const questions = await generateQuizSubset(currentLevel, 0, false);
 
@@ -3951,7 +3956,7 @@ const App = () => {
     const handleContinueToQuiz = async () => {
         console.log('[THEORY] Usuario finalizó lectura. Preparando quiz progresivo...');
         setIsCallingN8N(true);
-        setLoadingMessage('Preparando primeras 5 preguntas...');
+        setLoadingMessage(`🧠 Preparando las primeras ${QUIZ_BATCH_SIZE} preguntas...`);
 
         try {
             const currentLevel = QUIZ_PHASE_LEVELS[currentQuizPhase];
@@ -4068,8 +4073,8 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
     const buildImprovementPlan = (wrongAnswers = []) => {
         const weaknessSummary = buildWeaknessSummary(wrongAnswers);
-        if (!weaknessSummary) return 'Mantener el ritmo actual y seguir practicando con lotes de 5 preguntas.';
-        return `Reforzar estos focos: ${weaknessSummary}. Repetir teoria ludica y luego practicar otro lote de 5 preguntas en la misma fase.`;
+        if (!weaknessSummary) return `Mantener el ritmo actual y seguir practicando con lotes de ${QUIZ_BATCH_SIZE} preguntas.`;
+        return `Reforzar estos focos: ${weaknessSummary}. Repetir teoria ludica y luego practicar otro lote de ${QUIZ_BATCH_SIZE} preguntas en la misma fase.`;
     };
 
     // HANDLE QUIZ PHASE COMPLETION - SISTEMA KAIZEN SIMPLIFICADO (3 FASES DE 15 PREGUNTAS)
@@ -4080,7 +4085,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         setQuizStats(prev => ({
             ...prev,
             correct: prev.correct + phaseScore,
-            total: prev.total + 15
+            total: prev.total + QUIZ_PHASE_QUESTIONS
         }));
 
         saveQuizPhaseProgress(currentQuizPhase, phaseScore);
@@ -4098,10 +4103,10 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             subLevel: currentQuizPhase,
             levelName: levelName,
             score: phaseScore,
-            questionsCompleted: currentQuizPhase * 15,
-            totalQuestions: 45,
-            batch_index: 2,
-            batch_size: 5,
+            questionsCompleted: currentQuizPhase * QUIZ_PHASE_QUESTIONS,
+            totalQuestions: QUIZ_TOTAL_QUESTIONS,
+            batch_index: QUIZ_BATCHES_PER_PHASE - 1,
+            batch_size: QUIZ_BATCH_SIZE,
             correct_answers: phaseScore,
             wrong_answers: wrongCount,
             wrong_question_details: wrongDetails,
@@ -4130,7 +4135,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                     setBackgroundQuestionsQueue([]);
                 } else if (isLoadingNextBatch && backgroundTaskRef.current) {
                     console.log('[BACK] Esperando primera tanda de Fase ' + nextPhase + '...');
-                    setLoadingMessage('Preparando Nivel ' + nextLevel + ': primeras 5 preguntas...');
+                    setLoadingMessage(`🧠 Preparando Nivel ${nextLevel}...`);
                     const result = await backgroundTaskRef.current;
                     nextQuestions = result.questions || [];
                     setBackgroundQuestionsQueue([]);
@@ -4166,7 +4171,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             setIsLoadingNextBatch(false);
 
             const finalCorrectCount = quizStats.correct + phaseScore;
-            const finalStats = { ...quizStats, correct: finalCorrectCount, total: 45 };
+            const finalStats = { ...quizStats, correct: finalCorrectCount, total: QUIZ_TOTAL_QUESTIONS };
             const finalWrong = [...allWrongAnswers, ...phaseWrongAnswers];
 
             console.log('[REPORT] Enviando reporte final con score:', finalCorrectCount, 'errores:', finalWrong.length);
@@ -4176,7 +4181,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 subject: currentSubject,
                 session: TODAYS_SESSION.session,
                 topic: TODAYS_SESSION.topic,
-                total_questions: 45,
+                total_questions: QUIZ_TOTAL_QUESTIONS,
                 correct_answers: finalCorrectCount,
                 wrong_answers: finalWrong.length,
                 wrong_question_details: serializeWrongQuestionDetails(finalWrong),
@@ -4186,7 +4191,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             });
             console.log("[SAVE] 'session_completed' guardado en Google Sheets correctamente");
 
-            alert('SESIóN COMPLETA\\n\\nHaz dominado: ' + TODAYS_SESSION.topic + '\\n\\nPuntaje Final: ' + finalStats.correct + '/45\\n\\n+300 XP');
+            alert('SESIóN COMPLETA\\n\\nHaz dominado: ' + TODAYS_SESSION.topic + '\\n\\nPuntaje Final: ' + finalStats.correct + '/' + QUIZ_TOTAL_QUESTIONS + '\\n\\n+300 XP');
 
             clearQuizProgress();
             setCurrentQuizPhase(1);
@@ -4738,10 +4743,10 @@ ${finalData.capsule}`;
                                             };
 
                                             if (progress.currentPhase <= 3) {
-                                                const questionsCompleted = (progress.currentPhase - 1) * 15;
+                                                const questionsCompleted = (progress.currentPhase - 1) * QUIZ_PHASE_QUESTIONS;
                                                 return (
                                                     <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
-                                                        Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/45 preguntas completadas
+                                                        Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/{QUIZ_TOTAL_QUESTIONS} preguntas completadas
                                                     </div>
                                                 );
                                             }
