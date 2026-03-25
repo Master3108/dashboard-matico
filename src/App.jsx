@@ -128,6 +128,12 @@ const N8N_URLS = {
     test: "/webhook-test/MATICO"
 };
 
+const QUIZ_PHASE_LEVELS = {
+    1: 'Basico',
+    2: 'AVANZADO',
+    3: 'Critico'
+};
+
 // --- PRODUCCIóN: CALENDARIO MATICO ---
 const COURSE_START_DATE = new Date('2026-01-26T00:00:00'); // Lunes 26 de Enero
 const WEEKLY_PLAN = [
@@ -999,16 +1005,89 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
     );
 };
 
+const formatDurationMs = (ms = 0) => {
+    if (!Number.isFinite(ms)) return '0 ms';
+    if (ms < 1000) return `${Math.max(0, Math.round(ms))} ms`;
+    return `${(ms / 1000).toFixed(ms >= 10000 ? 1 : 2)} s`;
+};
+
 // NEW: CUSTOM LOADING OVERLAY
-const LoadingOverlay = ({ isOpen, message }) => {
+const LoadingOverlay = ({ isOpen, message, diagnostics }) => {
+    const [liveNow, setLiveNow] = useState(Date.now());
+
+    useEffect(() => {
+        if (!isOpen || !diagnostics?.startedAt || diagnostics?.finishedAt) return undefined;
+        setLiveNow(Date.now());
+        const intervalId = setInterval(() => setLiveNow(Date.now()), 200);
+        return () => clearInterval(intervalId);
+    }, [isOpen, diagnostics?.startedAt, diagnostics?.finishedAt]);
+
     if (!isOpen) return null;
+
+    const totalMs = diagnostics?.finishedAt
+        ? diagnostics.totalMs || 0
+        : diagnostics?.startedAt
+            ? liveNow - diagnostics.startedAt
+            : 0;
+
+    const clientSteps = Array.isArray(diagnostics?.steps) ? diagnostics.steps : [];
+    const serverSteps = Array.isArray(diagnostics?.serverTimings?.steps) ? diagnostics.serverTimings.steps : [];
+
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#2B2E4A]/60 backdrop-blur-md animate-fade-in">
-            <div className={`${clayCard} !bg-[#FFC300] flex flex-col items-center p-8 animate-bounce max-w-sm`}>
+            <div className={`${clayCard} !bg-[#FFC300] flex flex-col items-center p-8 animate-bounce max-w-xl w-[92vw]`}>
                 <Brain className="w-16 h-16 text-[#2B2E4A] animate-spin mb-4" />
                 <h2 className="text-2xl font-black text-[#2B2E4A] text-center uppercase tracking-widest whitespace-pre-line">
                     {message || "ESPERA...\nESTOY PENSANDO"}
                 </h2>
+                {diagnostics ? (
+                    <div className="w-full mt-5 rounded-3xl bg-white/65 border-4 border-[#2B2E4A] px-4 py-3 text-[#2B2E4A]">
+                        <div className="flex items-center justify-between gap-3 text-sm font-black uppercase tracking-wide">
+                            <span>Tiempo total</span>
+                            <span>{formatDurationMs(totalMs)}</span>
+                        </div>
+                        {diagnostics.currentStep ? (
+                            <p className="mt-2 text-xs font-bold uppercase tracking-wide text-[#5B4A00]">
+                                Paso actual: {diagnostics.currentStep}
+                            </p>
+                        ) : null}
+
+                        {clientSteps.length > 0 ? (
+                            <div className="mt-4">
+                                <p className="text-xs font-black uppercase tracking-[0.2em] text-[#5B4A00]">App</p>
+                                <div className="mt-2 space-y-2">
+                                    {clientSteps.map((step, index) => (
+                                        <div key={`${step.label}-${index}`} className="flex items-center justify-between gap-3 text-sm">
+                                            <span className="font-semibold">
+                                                {step.status === 'running' ? '• ' : ''}
+                                                {step.label}
+                                            </span>
+                                            <span className="font-black whitespace-nowrap">
+                                                {step.durationMs != null ? formatDurationMs(step.durationMs) : '...'}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {serverSteps.length > 0 ? (
+                            <div className="mt-4">
+                                <p className="text-xs font-black uppercase tracking-[0.2em] text-[#5B4A00]">Servidor / IA</p>
+                                <div className="mt-2 space-y-2">
+                                    {serverSteps.map((step, index) => (
+                                        <div key={`${step.step}-${index}`} className="flex items-center justify-between gap-3 text-sm">
+                                            <span className="font-semibold">{step.step}</span>
+                                            <span className="font-black whitespace-nowrap">
+                                                {formatDurationMs(step.delta_ms || 0)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
             </div>
         </div >
     );
@@ -2169,10 +2248,103 @@ const AdminGeneratedQuestionsModal = ({
 const App = () => {
     const [isCallingN8N, setIsCallingN8N] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState(""); // Helper state for multi-stage loading
+    const [loadingDiagnostics, setLoadingDiagnostics] = useState(null);
     const [aiModalOpen, setAiModalOpen] = useState(false);
     const [readingModalOpen, setReadingModalOpen] = useState(false);
     const [videoModalOpen, setVideoModalOpen] = useState(false);
     const [activeWebhookUrl, setActiveWebhookUrl] = useState(N8N_URLS.production);
+
+    const createLoadingDiagnostics = (flow, options = {}) => {
+        const publishToUi = options.publishToUi !== false;
+        const startedAt = Date.now();
+        const steps = [];
+        let currentStepIndex = -1;
+
+        const snapshot = (extra = {}) => {
+            const finishedAt = extra.finishedAt || null;
+            const totalMs = extra.totalMs ?? ((finishedAt || Date.now()) - startedAt);
+            const currentStep = currentStepIndex >= 0 ? steps[currentStepIndex]?.label || null : null;
+            const data = {
+                flow,
+                startedAt,
+                finishedAt,
+                totalMs,
+                currentStep,
+                steps: steps.map((step) => ({ ...step })),
+                ...extra
+            };
+
+            if (publishToUi) {
+                setLoadingDiagnostics(data);
+            }
+
+            return data;
+        };
+
+        const closeActiveStep = (status = 'completed') => {
+            if (currentStepIndex < 0) return;
+            const current = steps[currentStepIndex];
+            if (!current || current.durationMs != null) return;
+            const finishedAt = Date.now();
+            steps[currentStepIndex] = {
+                ...current,
+                status,
+                finishedAt,
+                durationMs: finishedAt - current.startedAt
+            };
+            currentStepIndex = -1;
+        };
+
+        const begin = (label, meta = {}) => {
+            closeActiveStep('completed');
+            steps.push({
+                label,
+                status: 'running',
+                startedAt: Date.now(),
+                durationMs: null,
+                ...meta
+            });
+            currentStepIndex = steps.length - 1;
+            return snapshot();
+        };
+
+        const finish = (extra = {}) => {
+            closeActiveStep('completed');
+            const finishedAt = Date.now();
+            const data = snapshot({
+                finishedAt,
+                totalMs: finishedAt - startedAt,
+                ...extra
+            });
+            console.log(`[TIMING][CLIENT][${flow}]`, data);
+            return data;
+        };
+
+        const fail = (error) => {
+            closeActiveStep('failed');
+            const finishedAt = Date.now();
+            const data = snapshot({
+                finishedAt,
+                totalMs: finishedAt - startedAt,
+                error: error?.message || String(error || 'Error')
+            });
+            console.error(`[TIMING][CLIENT][${flow}]`, data);
+            return data;
+        };
+
+        if (publishToUi) {
+            setLoadingDiagnostics({
+                flow,
+                startedAt,
+                finishedAt: null,
+                totalMs: 0,
+                currentStep: null,
+                steps: []
+            });
+        }
+
+        return { begin, finish, fail };
+    };
 
     // --- DATABASE INTEGRATION START ---
 
@@ -2193,6 +2365,12 @@ const App = () => {
         }
         setAuthChecking(false);
     }, []);
+
+    useEffect(() => {
+        if (!isCallingN8N) {
+            setLoadingDiagnostics(null);
+        }
+    }, [isCallingN8N]);
 
     const handleLogin = (userData) => {
         console.log("Logged in:", userData);
@@ -2538,6 +2716,26 @@ const App = () => {
                     }
                 }
 
+                if (data && data.current_session_in_progress > 0 && (data.current_theory_started || data.current_theory_completed)) {
+                    const sessionNum = data.current_session_in_progress;
+                    const key = `${currentSubject}_session_${sessionNum}`;
+                    const existing = JSON.parse(localStorage.getItem(quizProgressStorageKey) || '{}');
+                    const current = existing[key] || {
+                        completedPhases: [],
+                        currentPhase: 1,
+                        scores: {}
+                    };
+
+                    existing[key] = {
+                        ...current,
+                        theoryStarted: Boolean(current.theoryStarted || data.current_theory_started || data.current_theory_completed),
+                        theoryCompleted: Boolean(current.theoryCompleted || data.current_theory_completed),
+                        lastUpdated: new Date().toISOString()
+                    };
+
+                    localStorage.setItem(quizProgressStorageKey, JSON.stringify(existing));
+                }
+
                 // SYNC: Marcar sesiones completadas en localStorage
                 if (data && data.last_completed_session > 0) {
                     const completedKey = completedSessionsStorageKey;
@@ -2761,6 +2959,7 @@ const App = () => {
 
         setIsCallingN8N(true);
         setLoadingMessage('Armando la primera tanda de 5 preguntas...');
+        const prepExamDiagnostics = createLoadingDiagnostics('prep_exam_first_batch');
 
         try {
             const questionCount = 45;
@@ -2778,6 +2977,7 @@ const App = () => {
                 }))
             };
 
+            prepExamDiagnostics.begin('Guardando inicio de la prueba');
             await saveProgress('prep_exam_started', {
                 subject: currentSubject,
                 grade: ACTIVE_GRADE,
@@ -2788,6 +2988,8 @@ const App = () => {
                 xp_reward: 0
             });
 
+            setLoadingMessage('Pidiendo la primera tanda al servidor...');
+            prepExamDiagnostics.begin('Esperando primera tanda del servidor');
             const response = await fetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2805,6 +3007,8 @@ const App = () => {
                 })
             });
 
+            setLoadingMessage('Procesando la primera tanda...');
+            prepExamDiagnostics.begin('Procesando respuesta de la primera tanda');
             const text = await response.text();
             const parsed = parseN8NResponse(text);
             const firstBatchQuestions = (parsed.questions || []).map((question, index) => ({
@@ -2816,6 +3020,11 @@ const App = () => {
             if (!firstBatchQuestions.length) {
                 throw new Error('La IA no devolvió preguntas válidas para la primera tanda.');
             }
+
+            prepExamDiagnostics.finish({
+                questionCount: firstBatchQuestions.length,
+                serverTimings: parsed?.timings || null
+            });
 
             prepExamBatchRef.current = 1;
             prepExamNextBatchPromiseRef.current = null;
@@ -2860,6 +3069,7 @@ const App = () => {
             }
             return;
         } catch (error) {
+            prepExamDiagnostics.fail(error);
             console.error('[PREP_EXAM] Error iniciando prueba:', error);
             alert(`No pudimos generar la prueba preparatoria. ${error.message || 'Intenta nuevamente.'}`);
         } finally {
@@ -3387,8 +3597,12 @@ const App = () => {
 
         const config = levelConfig[level];
         if (!config) return [];
+        const shouldPublishDiagnostics = !backgroundMode && retryCount === 0 && batchIndex === 0;
+        const quizDiagnostics = createLoadingDiagnostics(`quiz_${level}_batch_${batchIndex + 1}_retry_${retryCount}`, {
+            publishToUi: shouldPublishDiagnostics
+        });
 
-        if (!backgroundMode && retryCount === 0 && batchIndex === 0) {
+        if (shouldPublishDiagnostics) {
             setLoadingMessage(`Preparando Quiz ${level}: primeras 5 preguntas...`);
         }
 
@@ -3402,6 +3616,7 @@ const App = () => {
 7. NO GENERES TEORIA. SOLO JSON.]`;
 
         try {
+            quizDiagnostics.begin('Preparando solicitud del quiz');
             const body = {
                 sujeto: currentSubject,
                 accion: 'Generar Quiz de Validacion',
@@ -3410,18 +3625,28 @@ const App = () => {
                 user_id: USER_ID,
                 session: TODAYS_SESSION.session,
                 phase: level,
+                batch_index: batchIndex,
                 batch_size: requestedCount,
                 exclude_signatures: excludeSignatures
             };
 
+            if (shouldPublishDiagnostics) {
+                setLoadingMessage('Pidiendo preguntas del quiz al servidor...');
+            }
+            quizDiagnostics.begin('Esperando respuesta del servidor');
             const response = await fetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
 
+            if (shouldPublishDiagnostics) {
+                setLoadingMessage('Leyendo y parseando la respuesta...');
+            }
+            quizDiagnostics.begin('Leyendo respuesta del servidor');
             const text = await response.text();
             const json = parseN8NResponse(text);
+            quizDiagnostics.begin('Parseando preguntas recibidas');
 
             let qData = [];
             if (json.questions && Array.isArray(json.questions)) {
@@ -3447,6 +3672,10 @@ const App = () => {
                 }
             }
 
+            if (shouldPublishDiagnostics) {
+                setLoadingMessage('Validando calidad de las preguntas...');
+            }
+            quizDiagnostics.begin('Sanitizando y validando preguntas');
             const { formattedQuestions, hasPlaceholderQuestions } = buildFormattedQuizQuestions(qData || []);
             let sanitizedQuestions = formattedQuestions.filter((question) => {
                 const optionValues = Object.values(question.options || {});
@@ -3455,12 +3684,21 @@ const App = () => {
             });
 
             if (sanitizedQuestions.length >= requestedCount) {
-                return sanitizedQuestions.slice(0, requestedCount);
+                const finalQuestions = sanitizedQuestions.slice(0, requestedCount);
+                quizDiagnostics.finish({
+                    questionCount: finalQuestions.length,
+                    serverTimings: json?.timings || null
+                });
+                return finalQuestions;
             }
 
             const missingCount = requestedCount - sanitizedQuestions.length;
             if (missingCount > 0 && retryCount < 1) {
                 console.warn(`[QUIZ] Lote ${batchIndex + 1}/3 incompleto (${sanitizedQuestions.length}/${requestedCount}). Rellenando ${missingCount} preguntas...`);
+                if (shouldPublishDiagnostics) {
+                    setLoadingMessage(`Completando ${missingCount} preguntas faltantes...`);
+                }
+                quizDiagnostics.begin('Solicitando preguntas faltantes');
                 const seenSignatures = sanitizedQuestions.map((question) => {
                     const optionValues = Object.values(question.options || {});
                     return `${String(question.question || '').trim()} || ${optionValues.join(' || ')}`;
@@ -3470,15 +3708,30 @@ const App = () => {
             }
 
             if (sanitizedQuestions.length < Math.max(4, requestedCount - 1)) {
-                return await generateQuizSubset(level, batchIndex, backgroundMode, retryCount + 1, requestedCount, excludeSignatures);
+                if (shouldPublishDiagnostics) {
+                    setLoadingMessage('Reintentando el lote porque llegaron pocas preguntas utiles...');
+                }
+                quizDiagnostics.begin('Reintentando lote incompleto');
+                const retryQuestions = await generateQuizSubset(level, batchIndex, backgroundMode, retryCount + 1, requestedCount, excludeSignatures);
+                quizDiagnostics.finish({
+                    questionCount: Array.isArray(retryQuestions) ? retryQuestions.length : 0,
+                    serverTimings: json?.timings || null
+                });
+                return retryQuestions;
             }
 
             if (hasPlaceholderQuestions) {
                 console.warn(`[QUIZ] Lote ${batchIndex + 1}/3 aceptado con filtrado de placeholders (${sanitizedQuestions.length}/${requestedCount}).`);
             }
 
-            return sanitizedQuestions.slice(0, requestedCount);
+            const finalQuestions = sanitizedQuestions.slice(0, requestedCount);
+            quizDiagnostics.finish({
+                questionCount: finalQuestions.length,
+                serverTimings: json?.timings || null
+            });
+            return finalQuestions;
         } catch (e) {
+            quizDiagnostics.fail(e);
             console.error(`Error generando subset ${level} lote ${batchIndex}:`, e);
             return [];
         }
@@ -3518,7 +3771,9 @@ const App = () => {
             existing[key] = {
                 completedPhases: [], // Ej: [1, 2]
                 currentPhase: 1,
-                scores: {}
+                scores: {},
+                theoryStarted: false,
+                theoryCompleted: false
             };
         }
 
@@ -3547,7 +3802,74 @@ const App = () => {
         return progress[key] || {
             completedPhases: [],
             currentPhase: 1,
-            scores: {}
+            scores: {},
+            theoryStarted: false,
+            theoryCompleted: false
+        };
+    };
+
+    const updateQuizProgressState = (updater) => {
+        const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
+        const allProgress = JSON.parse(localStorage.getItem(quizProgressStorageKey) || '{}');
+        const current = allProgress[key] || {
+            completedPhases: [],
+            currentPhase: 1,
+            scores: {},
+            theoryStarted: false,
+            theoryCompleted: false
+        };
+
+        allProgress[key] = updater(current) || current;
+        localStorage.setItem(quizProgressStorageKey, JSON.stringify(allProgress));
+        return allProgress[key];
+    };
+
+    const markTheoryStatus = ({ started = false, completed = false, phase = null } = {}) => {
+        return updateQuizProgressState((current) => ({
+            ...current,
+            currentPhase: Math.min(3, Math.max(1, Number(phase || current.currentPhase || 1))),
+            theoryStarted: current.theoryStarted || started || completed,
+            theoryCompleted: current.theoryCompleted || completed,
+            lastUpdated: new Date().toISOString()
+        }));
+    };
+
+    const getSessionProtocolState = () => {
+        const localProgress = getQuizProgress();
+        const serverSessionInProgress = Number(serverProgress?.current_session_in_progress || 0);
+        const serverPhaseCompleted = Number(serverProgress?.current_phase || 0);
+        const serverTheoryStarted = Boolean(serverProgress?.current_theory_started);
+        const serverTheoryCompleted = Boolean(serverProgress?.current_theory_completed);
+        const currentSessionNumber = Number(TODAYS_SESSION.session || 0);
+        const serverSessionCompleted = Number(serverProgress?.last_completed_session || 0) >= currentSessionNumber;
+
+        let currentPhase = Math.min(3, Math.max(1, Number(localProgress.currentPhase || 1)));
+        if (serverSessionInProgress === currentSessionNumber && serverPhaseCompleted > 0) {
+            currentPhase = Math.max(currentPhase, Math.min(3, serverPhaseCompleted + 1));
+        }
+
+        const sessionStarted = Boolean(
+            localProgress.theoryStarted ||
+            localProgress.theoryCompleted ||
+            (Array.isArray(localProgress.completedPhases) && localProgress.completedPhases.length > 0) ||
+            currentPhase > 1 ||
+            serverTheoryStarted ||
+            serverTheoryCompleted ||
+            serverSessionInProgress === currentSessionNumber
+        );
+
+        const questionsCompleted = serverSessionCompleted
+            ? 45
+            : ((currentPhase - 1) * 15);
+
+        return {
+            currentPhase,
+            currentLevel: QUIZ_PHASE_LEVELS[currentPhase] || 'Basico',
+            sessionStarted,
+            sessionCompleted: serverSessionCompleted,
+            requiresMandatoryTheory: !sessionStarted && !serverSessionCompleted,
+            questionsCompleted,
+            localProgress
         };
     };
 
@@ -3560,14 +3882,36 @@ const App = () => {
     };
 
     // START FULL MULTI-STAGE QUIZ - SISTEMA KAIZEN (3 FASES ó 15 PREGUNTAS)
+    const openTheoryForCurrentPhase = async ({ mandatory = false } = {}) => {
+        const protocol = getSessionProtocolState();
+        const phaseToUse = protocol.currentPhase;
+        const levelName = QUIZ_PHASE_LEVELS[phaseToUse] || 'Basico';
+        const theoryTopic = `${TODAYS_SUBJECT.oa_title} [FASE ACTUAL: ${levelName}] [MODO TEORIA: ${mandatory ? 'OBLIGATORIA' : 'OPCIONAL'}]`;
+
+        setCurrentQuizPhase(phaseToUse);
+        markTheoryStatus({ started: true, phase: phaseToUse });
+        await callAgent(currentSubject, 'start_route', theoryTopic, null, null, theoryTopic);
+    };
+
     const startFullQuiz = async () => {
+        const protocol = getSessionProtocolState();
+        const startingPhase = protocol.currentPhase;
+
+        if (protocol.sessionCompleted) {
+            alert('Esta sesion ya fue completada. Continuemos con la siguiente ruta.');
+            return;
+        }
+
+        if (protocol.requiresMandatoryTheory) {
+            console.log('[QUIZ] Sesion nueva detectada. Lanzando teoria ludica obligatoria antes del quiz.');
+            await openTheoryForCurrentPhase({ mandatory: true });
+            return;
+        }
+
         setIsCallingN8N(true);
         setAiModalOpen(false);
 
-        const savedProgress = getQuizProgress();
-        const startingPhase = savedProgress.currentPhase;
-
-        console.log(`[QUIZ] Progreso detectado:`, savedProgress);
+        console.log(`[QUIZ] Protocolo detectado:`, protocol);
         console.log(`[QUIZ] Iniciando desde Fase ${startingPhase} (Carga progresiva 5 en 5)`);
 
         setCurrentQuizPhase(startingPhase);
@@ -3576,8 +3920,7 @@ const App = () => {
         resetNormalQuizBatchLoading();
 
         try {
-            const levelMap = { 1: "Basico", 2: "AVANZADO", 3: "Critico" };
-            const currentLevel = levelMap[startingPhase];
+            const currentLevel = QUIZ_PHASE_LEVELS[startingPhase];
 
             setLoadingMessage(`Preparando Quiz Kaizen: ${currentLevel}...`);
 
@@ -3611,8 +3954,7 @@ const App = () => {
         setLoadingMessage('Preparando primeras 5 preguntas...');
 
         try {
-            const levelMap = { 1: "Basico", 2: "AVANZADO", 3: "Critico" };
-            const currentLevel = levelMap[currentQuizPhase];
+            const currentLevel = QUIZ_PHASE_LEVELS[currentQuizPhase];
             let questions = pendingQuizQuestions;
 
             if (!Array.isArray(questions) || questions.length === 0) {
@@ -3620,6 +3962,7 @@ const App = () => {
             }
 
             if (questions && questions.length > 0) {
+                markTheoryStatus({ started: true, completed: true, phase: currentQuizPhase });
                 saveProgress('theory_completed', {
                     subject: currentSubject,
                     session: TODAYS_SESSION.session,
@@ -3652,6 +3995,9 @@ const App = () => {
 
         // Calcular porcentaje de éxito basado en 45 preguntas (3 fases de 15)
         const successRate = Math.round((stats.correct / 45) * 100);
+        const wrongQuestionDetails = serializeWrongQuestionDetails(wrongAnswers);
+        const weakness = buildWeaknessSummary(wrongAnswers);
+        const improvementPlan = buildImprovementPlan(wrongAnswers);
 
         const reportPrompt = `[INSTRUCCIóN AGENTE DE REPORTES MATICO]:
 Eres el Agente de ó0xito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 45 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
@@ -3688,7 +4034,10 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                     session: TODAYS_SESSION.session,
                     topic: TODAYS_SESSION.topic,
                     stats: stats,
-                    wrong_answers: wrongAnswers
+                    wrong_answers: wrongAnswers,
+                    wrong_question_details: wrongQuestionDetails,
+                    weakness,
+                    improvement_plan: improvementPlan
                 })
             });
             console.log("[REPORT] óxó Reporte de sesión enviado");
@@ -3696,6 +4045,31 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         } catch (err) {
             console.error("[REPORT] Error en flujo de notificaciones:", err);
         }
+    };
+
+    const serializeWrongQuestionDetails = (wrongAnswers = []) => {
+        if (!Array.isArray(wrongAnswers) || wrongAnswers.length === 0) return '';
+
+        return JSON.stringify(wrongAnswers.map((item, index) => ({
+            index: index + 1,
+            question: item.question || '',
+            user_answer: item.user_answer || '',
+            correct_answer: item.correct_answer || '',
+            source_session: item.source_session ?? '',
+            source_topic: item.source_topic || ''
+        })));
+    };
+
+    const buildWeaknessSummary = (wrongAnswers = []) => {
+        const topics = [...new Set((wrongAnswers || []).map((item) => repairText(item.source_topic || '')).filter(Boolean))];
+        if (topics.length === 0) return '';
+        return topics.slice(0, 3).join(' | ');
+    };
+
+    const buildImprovementPlan = (wrongAnswers = []) => {
+        const weaknessSummary = buildWeaknessSummary(wrongAnswers);
+        if (!weaknessSummary) return 'Mantener el ritmo actual y seguir practicando con lotes de 5 preguntas.';
+        return `Reforzar estos focos: ${weaknessSummary}. Repetir teoria ludica y luego practicar otro lote de 5 preguntas en la misma fase.`;
     };
 
     // HANDLE QUIZ PHASE COMPLETION - SISTEMA KAIZEN SIMPLIFICADO (3 FASES DE 15 PREGUNTAS)
@@ -3711,8 +4085,11 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
         saveQuizPhaseProgress(currentQuizPhase, phaseScore);
 
-        const levelMap = { 1: "Basico", 2: "AVANZADO", 3: "Critico" };
-        const levelName = levelMap[currentQuizPhase];
+        const levelName = QUIZ_PHASE_LEVELS[currentQuizPhase];
+        const wrongCount = phaseWrongAnswers.length;
+        const wrongDetails = serializeWrongQuestionDetails(phaseWrongAnswers);
+        const weakness = buildWeaknessSummary(phaseWrongAnswers);
+        const improvementPlan = buildImprovementPlan(phaseWrongAnswers);
 
         await saveProgress('phase_completed', {
             subject: currentSubject,
@@ -3723,6 +4100,13 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             score: phaseScore,
             questionsCompleted: currentQuizPhase * 15,
             totalQuestions: 45,
+            batch_index: 2,
+            batch_size: 5,
+            correct_answers: phaseScore,
+            wrong_answers: wrongCount,
+            wrong_question_details: wrongDetails,
+            weakness,
+            improvement_plan: improvementPlan,
             xp_reward: 50
         });
 
@@ -3730,7 +4114,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
         if (currentQuizPhase < 3) {
             const nextPhase = currentQuizPhase + 1;
-            const nextLevel = levelMap[nextPhase];
+            const nextLevel = QUIZ_PHASE_LEVELS[nextPhase];
             console.log('[QUIZ] Avanzando a Fase ' + nextPhase + ' (' + nextLevel + ')...');
 
             setIsCallingN8N(true);
@@ -3794,6 +4178,10 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 topic: TODAYS_SESSION.topic,
                 total_questions: 45,
                 correct_answers: finalCorrectCount,
+                wrong_answers: finalWrong.length,
+                wrong_question_details: serializeWrongQuestionDetails(finalWrong),
+                weakness: buildWeaknessSummary(finalWrong),
+                improvement_plan: buildImprovementPlan(finalWrong),
                 xp_reward: 300
             });
             console.log("[SAVE] 'session_completed' guardado en Google Sheets correctamente");
@@ -3825,6 +4213,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         if (askModalOpen) setAskModalOpen(false);
 
         if (action === 'start_route') {
+            const protocol = getSessionProtocolState();
             setQuizStats({ correct: 0, incorrect: 0, total: 0 });
             setQuizLevel(1);
             setQuizQuestionNumber(1); // Reset question index
@@ -3834,6 +4223,8 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 subject: subject,
                 session: TODAYS_SESSION.session,
                 topic: TODAYS_SESSION.topic,
+                phase: protocol.currentPhase,
+                levelName: protocol.currentLevel,
                 xp_reward: 5 // Small ritual XP for starting
             });
         }
@@ -4150,8 +4541,10 @@ ${finalData.capsule}`;
                     onFinish={async () => {
                         setVideoModalOpen(false);
                         await saveProgress('video_completed', { title: TODAYS_SESSION.videoTitle, xp_reward: 50, session: TODAYS_SESSION.session });
-                        // NEW: AUTO-START THEORY AFTER VIDEO
-                        callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
+                        const protocol = getSessionProtocolState();
+                        if (protocol.requiresMandatoryTheory) {
+                            await openTheoryForCurrentPhase({ mandatory: true });
+                        }
                     }}
                 />
 
@@ -4193,7 +4586,7 @@ ${finalData.capsule}`;
                 />
 
                 {/* NEW LOADING OVERLAY */}
-                <LoadingOverlay isOpen={isCallingN8N} message={loadingMessage} />
+                <LoadingOverlay isOpen={isCallingN8N} message={loadingMessage} diagnostics={loadingDiagnostics} />
 
                 <AIContentModal
                     isOpen={aiModalOpen}
@@ -4420,8 +4813,8 @@ ${finalData.capsule}`;
 
                                         const handleClick = () => {
                                             if (idx === 0) handleStartSession();
-                                            if (idx === 1) callAgent(currentSubject, "start_route", TODAYS_SUBJECT.oa_title);
-                                            if (idx === 2) callAgent(currentSubject, 'generate_quiz', TODAYS_SUBJECT.oa_title);
+                                            if (idx === 1) openTheoryForCurrentPhase({ mandatory: false });
+                                            if (idx === 2) startFullQuiz();
                                             if (idx === 3) setAskModalOpen(true);
                                         };
 

@@ -295,8 +295,31 @@ const sendEmail = async (to, subject, htmlBody) => {
 };
 
 // --- HELPER: Guardar evento en progress_log ---
-const logToSheet = async (sheets, user_id, subject, session, event_type, phase, subLevel, levelName, score, xp, grade = '', topic = '', totalQuestions = '', sourceMode = '') => {
+const logToSheet = async (
+    sheets,
+    user_id,
+    subject,
+    session,
+    event_type,
+    phase,
+    subLevel,
+    levelName,
+    score,
+    xp,
+    grade = '',
+    topic = '',
+    totalQuestions = '',
+    sourceMode = '',
+    batchIndex = '',
+    batchSize = '',
+    correctAnswers = '',
+    wrongAnswers = '',
+    wrongQuestionDetails = '',
+    weakness = '',
+    improvementPlan = ''
+) => {
     try {
+        await ensureSheetHeaders(sheets, 'progress_log', PROGRESS_LOG_HEADERS);
         const timestamp = new Date().toISOString();
         const values = [
             timestamp,
@@ -312,12 +335,19 @@ const logToSheet = async (sheets, user_id, subject, session, event_type, phase, 
             grade || '',
             topic || '',
             totalQuestions || '',
-            sourceMode || ''
+            sourceMode || '',
+            batchIndex || '',
+            batchSize || '',
+            correctAnswers || '',
+            wrongAnswers || '',
+            wrongQuestionDetails || '',
+            weakness || '',
+            improvementPlan || ''
         ];
 
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'progress_log!A:N',
+            range: 'progress_log!A:U',
             valueInputOption: 'USER_ENTERED',
             requestBody: { values: [values] },
         });
@@ -327,6 +357,30 @@ const logToSheet = async (sheets, user_id, subject, session, event_type, phase, 
         console.error('[SHEET] ? Error:', err.message);
     }
 };
+
+const PROGRESS_LOG_HEADERS = [
+    'timestamp',
+    'user_id',
+    'subject',
+    'session',
+    'event_type',
+    'phase',
+    'subLevel',
+    'levelName',
+    'score',
+    'xp',
+    'grade',
+    'topic',
+    'totalQuestions',
+    'sourceMode',
+    'batchIndex',
+    'batchSize',
+    'correctAnswers',
+    'wrongAnswers',
+    'wrongQuestionDetails',
+    'weakness',
+    'improvementPlan'
+];
 
 const appendProgressToSheetOrThrow = async (sheets, {
     user_id = '',
@@ -341,7 +395,14 @@ const appendProgressToSheetOrThrow = async (sheets, {
     grade = '',
     topic = '',
     totalQuestions = '',
-    sourceMode = ''
+    sourceMode = '',
+    batchIndex = '',
+    batchSize = '',
+    correctAnswers = '',
+    wrongAnswers = '',
+    wrongQuestionDetails = '',
+    weakness = '',
+    improvementPlan = ''
 }) => {
     const timestamp = new Date().toISOString();
     const values = [
@@ -358,13 +419,21 @@ const appendProgressToSheetOrThrow = async (sheets, {
         grade || '',
         topic || '',
         totalQuestions || '',
-        sourceMode || ''
+        sourceMode || '',
+        batchIndex || '',
+        batchSize || '',
+        correctAnswers || '',
+        wrongAnswers || '',
+        wrongQuestionDetails || '',
+        weakness || '',
+        improvementPlan || ''
     ];
 
     try {
+        await ensureSheetHeaders(sheets, 'progress_log', PROGRESS_LOG_HEADERS);
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'progress_log!A:N',
+            range: 'progress_log!A:U',
             valueInputOption: 'USER_ENTERED',
             requestBody: { values: [values] },
         });
@@ -382,7 +451,14 @@ const appendProgressToSheetOrThrow = async (sheets, {
             grade,
             topic,
             totalQuestions,
-            sourceMode
+            sourceMode,
+            batchIndex,
+            batchSize,
+            correctAnswers,
+            wrongAnswers,
+            wrongQuestionDetails,
+            weakness,
+            improvementPlan
         }));
     } catch (err) {
         console.error('[SHEET_APPEND_FAIL]', JSON.stringify({
@@ -400,6 +476,13 @@ const appendProgressToSheetOrThrow = async (sheets, {
             topic,
             totalQuestions,
             sourceMode,
+            batchIndex,
+            batchSize,
+            correctAnswers,
+            wrongAnswers,
+            wrongQuestionDetails,
+            weakness,
+            improvementPlan,
             error: err.message
         }));
         throw err;
@@ -436,6 +519,28 @@ const ensureSheetTabExists = async (sheets, title, headers = []) => {
             requestBody: { values: [headers] }
         });
     }
+};
+
+const ensureSheetHeaders = async (sheets, title, headers = []) => {
+    if (!headers.length) return;
+
+    await ensureSheetTabExists(sheets, title, headers);
+
+    const headerRange = `${title}!A1:${columnLabel(headers.length)}1`;
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: headerRange
+    });
+    const existingHeaders = response.data.values?.[0] || [];
+    const needsUpdate = headers.some((header, index) => String(existingHeaders[index] || '').trim() !== header);
+    if (!needsUpdate) return;
+
+    await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: headerRange,
+        valueInputOption: 'RAW',
+        requestBody: { values: [headers] }
+    });
 };
 
 const autoAppendMissingSessionCompleted = async (sheets, rows = [], userId = '', subject = '', grade = '1medio') => {
@@ -583,12 +688,56 @@ const appendAdaptiveSnapshotToSheetOrThrow = async (sheets, {
     }
 };
 
+const parseStructuredField = (value, fallback = []) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string' || !value.trim()) return fallback;
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : fallback;
+    } catch {
+        return fallback;
+    }
+};
+
+const escapeHtml = (value) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const normalizeWrongAnswerDetails = (wrongAnswers = [], wrongQuestionDetails = []) => {
+    const normalizedFromAnswers = Array.isArray(wrongAnswers)
+        ? wrongAnswers.map((item, index) => ({
+            index: index + 1,
+            question: item?.question || '',
+            user_answer: item?.user_answer || item?.selected_option || '',
+            correct_answer: item?.correct_answer || item?.correct_option || '',
+            source_session: item?.source_session ?? item?.session ?? '',
+            source_topic: item?.source_topic || item?.topic || ''
+        }))
+        : [];
+
+    if (normalizedFromAnswers.length > 0) return normalizedFromAnswers;
+
+    return parseStructuredField(wrongQuestionDetails, []).map((item, index) => ({
+        index: item?.index || index + 1,
+        question: item?.question || '',
+        user_answer: item?.user_answer || item?.selected_option || '',
+        correct_answer: item?.correct_answer || item?.correct_option || '',
+        source_session: item?.source_session ?? item?.session ?? '',
+        source_topic: item?.source_topic || item?.topic || ''
+    }));
+};
+
 // --- HELPER: Generar HTML bonito para correos ---
-const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAnswers = [], aiAnalysis = '') => {
+const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAnswers = [], aiAnalysis = '', reportSummary = {}) => {
     const successRate = Math.round((stats.correct / 45) * 100);
     const emoji = successRate >= 80 ? 'Ã°Å¸Ââ€ ' : (successRate >= 60 ? 'Ã°Å¸â€˜Â' : 'Ã°Å¸â€™Âª');
     const color = successRate >= 80 ? '#22c55e' : (successRate >= 60 ? '#eab308' : '#ef4444');
     const wrongCount = wrongAnswers.length;
+    const weakness = reportSummary.weakness || '';
+    const improvementPlan = reportSummary.improvementPlan || '';
 
     // Helper: Convertir LaTeX a texto legible para emails
     const cleanLatex = (text) => {
@@ -630,9 +779,9 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
             const shortQ = cleanQ.substring(0, 80) + (cleanQ.length > 80 ? '...' : '');
             return `
             <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 10px; font-size: 13px; color: #475569; vertical-align: top; word-break: break-word;">${i + 1}. ${shortQ}</td>
-                <td style="padding: 10px; text-align: center; color: #ef4444; font-weight: bold;">${w.user_answer}</td>
-                <td style="padding: 10px; text-align: center; color: #22c55e; font-weight: bold;">${w.correct_answer}</td>
+                <td style="padding: 10px; font-size: 13px; color: #475569; vertical-align: top; word-break: break-word;">${i + 1}. ${escapeHtml(shortQ)}</td>
+                <td style="padding: 10px; text-align: center; color: #ef4444; font-weight: bold;">${escapeHtml(w.user_answer)}</td>
+                <td style="padding: 10px; text-align: center; color: #22c55e; font-weight: bold;">${escapeHtml(w.correct_answer)}</td>
             </tr>`;
         }).join('');
 
@@ -665,6 +814,13 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
             </div>`;
     }
 
+    const pedagogicalSummaryHTML = (weakness || improvementPlan) ? `
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #dbeafe; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #1d4ed8;">Foco pedagogico</h3>
+                <p style="margin: 8px 0; color: #334155;"><strong>Debilidad detectada:</strong> ${escapeHtml(weakness || 'Sin focos criticos detectados en esta sesion.')}</p>
+                <p style="margin: 8px 0; color: #334155;"><strong>Que mejorar:</strong> ${escapeHtml(improvementPlan || 'Mantener practica constante en lotes de 5 preguntas.')}</p>
+            </div>` : '';
+
     return `
     <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; text-align: center; color: white;">
@@ -690,6 +846,7 @@ const buildSessionReportHTML = (nombre, subject, session, topic, stats, wrongAns
                 <p>Ã°Å¸Å¸Â¡ <strong>Avanzado (15 preguntas):</strong> Completado</p>
                 <p>Ã°Å¸â€Â´ <strong>CrÃƒÂ­tico (15 preguntas):</strong> Completado</p>
             </div>
+            ${pedagogicalSummaryHTML}
             ${errorsHTML}
             ${analysisHTML}
             <p style="color: #64748b; font-size: 13px; text-align: center; margin-top: 24px;">
@@ -874,6 +1031,44 @@ const dedupePrepExamQuestions = (questions = []) => {
     }
 
     return { unique, seen };
+};
+
+const createRequestTimingTrace = (flowName, meta = {}) => {
+    const startedAt = Date.now();
+    let lastAt = startedAt;
+    const steps = [];
+    const requestId = `${flowName}-${startedAt}`;
+
+    const mark = (step, extra = {}) => {
+        const now = Date.now();
+        const entry = {
+            step,
+            delta_ms: now - lastAt,
+            elapsed_ms: now - startedAt,
+            ...extra
+        };
+
+        steps.push(entry);
+        lastAt = now;
+        console.log(`[TIMING][${requestId}] ${step}: +${entry.delta_ms}ms (${entry.elapsed_ms}ms total)`);
+        return entry;
+    };
+
+    const finish = (extra = {}) => {
+        const finishedAt = Date.now();
+        return {
+            request_id: requestId,
+            flow: flowName,
+            started_at: new Date(startedAt).toISOString(),
+            finished_at: new Date(finishedAt).toISOString(),
+            total_ms: finishedAt - startedAt,
+            steps,
+            ...meta,
+            ...extra
+        };
+    };
+
+    return { mark, finish, requestId };
 };
 
 // ========================================================================
@@ -1076,6 +1271,12 @@ ${batchInstructions}
             const batchIndex = Math.max(0, Number(body.batch_index) || 0);
             const batchSize = Math.max(1, Math.min(5, Number(body.batch_size) || 5));
             const totalBatches = Math.max(1, Number(body.total_batches) || 9);
+            const timingTrace = createRequestTimingTrace('generate_prep_exam_batch', {
+                subject,
+                batch_index: batchIndex,
+                batch_size: batchSize,
+                total_batches: totalBatches
+            });
 
             const sessionDetails = sessions.map((session, index) => ({
                 session,
@@ -1093,6 +1294,11 @@ ${batchInstructions}
             const batchInstructions = batchAssignments.map((item, index) => `${index + 1}. SesiÃ³n ${item.session} | Tema: ${item.topic}`).join('\n');
             const batchPrompt = `${baseTopic}\n\n[MODO PRUEBA PREPARATORIA DIAGNÃ“STICA]\n- Genera EXACTAMENTE ${batchAssignments.length} preguntas.\n- Esta es la tanda ${batchIndex + 1} de ${totalBatches}.\n- Debes seguir ESTA distribuciÃ³n exacta, una pregunta por lÃ­nea:\n${batchInstructions}\n- Si una sesiÃ³n se repite, crea preguntas distintas entre sÃ­.\n- NO repitas preguntas ya usadas ni reformules la misma idea con cambios menores.\n- Evita duplicados exactos y tambiÃ©n preguntas casi iguales.\n- \"source_session\" y \"source_topic\" deben coincidir EXACTAMENTE con cada lÃ­nea asignada.\n- MantÃ©n alternativas A/B/C/D y explicaciÃ³n Ãºtil para correcciÃ³n.\n- Responde SOLO con JSON vÃ¡lido.`;
 
+            timingTrace.mark('prompt_ready', {
+                session_count: sessionDetails.length,
+                assigned_questions: batchAssignments.length
+            });
+
             const comp = await openai.chat.completions.create({
                 model: AI_MODELS.fast,
                 messages: [
@@ -1102,9 +1308,15 @@ ${batchInstructions}
                 response_format: { type: 'json_object' },
                 temperature: aiTemperature
             });
+            timingTrace.mark('openai_completed', {
+                model: AI_MODELS.fast
+            });
 
             const parsed = JSON.parse(comp.choices[0].message.content);
             const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
+            timingTrace.mark('response_parsed', {
+                raw_questions: questions.length
+            });
 
             const normalizedQuestions = questions.map((question, index) => {
                 const assigned = batchAssignments[index] || batchAssignments[0];
@@ -1117,6 +1329,9 @@ ${batchInstructions}
                     source_topic: question.source_topic || assigned.topic
                 };
             }).filter(question => question.question);
+            timingTrace.mark('questions_normalized', {
+                question_count: normalizedQuestions.length
+            });
 
             await recordGeneratedQuestions(normalizedQuestions, {
                 subject,
@@ -1130,7 +1345,16 @@ ${batchInstructions}
                     total_batches: totalBatches,
                     sessions
                 }
-            }).catch((err) => console.error('[QUESTION_BANK] Error guardando batch de prueba preparatoria:', err.message));
+            }).then(() => {
+                timingTrace.mark('question_bank_saved', {
+                    saved_count: normalizedQuestions.length
+                });
+            }).catch((err) => {
+                console.error('[QUESTION_BANK] Error guardando batch de prueba preparatoria:', err.message);
+                timingTrace.mark('question_bank_save_failed', {
+                    error: err.message
+                });
+            });
 
             return res.json({
                 success: true,
@@ -1140,7 +1364,10 @@ ${batchInstructions}
                 batch_index: batchIndex,
                 batch_size: batchSize,
                 total_batches: totalBatches,
-                questions: normalizedQuestions
+                questions: normalizedQuestions,
+                timings: timingTrace.finish({
+                    question_count: normalizedQuestions.length
+                })
             });
         }
         // 2B. GENERAR QUIZ (5 preguntas por lote) Ã¢â‚¬â€ MULTIASIGNATURA
@@ -1150,7 +1377,15 @@ ${batchInstructions}
             const requestedCount = Math.max(1, Math.min(5, Number(body.batch_size) || 5));
             const sourceSession = Number(body.session || data.session || 0) || 0;
             const levelName = String(body.phase || body.level || body.nivel || data.level || '').trim().toUpperCase();
+            const batchIndex = Math.max(0, Number(body.batch_index ?? body.batchIndex ?? 0) || 0);
             const excludeSignatures = Array.isArray(body.exclude_signatures) ? body.exclude_signatures : [];
+            const timingTrace = createRequestTimingTrace('generate_quiz', {
+                subject,
+                requested_count: requestedCount,
+                source_session: sourceSession,
+                level: levelName,
+                batch_index: batchIndex
+            });
 
             let systemMsg = "";
             let verifyPrompt = "";
@@ -1297,28 +1532,17 @@ Estructura JSON:
                 source_session: sourceSession,
                 source_topic: tema,
                 levelName,
-                limit: Math.min(3, requestedCount),
+                batch_index: batchIndex,
+                limit: requestedCount,
                 exclude_signatures: Array.from(seenSignatures)
             }).catch((err) => {
                 console.error('[QUESTION_BANK] Error leyendo banco IA:', err.message);
                 return [];
             });
-
-            const comp = await openai.chat.completions.create({
-                model: AI_MODELS.fast,
-                messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }],
-                response_format: { type: "json_object" },
-                temperature: aiTemperature
+            timingTrace.mark('question_bank_seed_loaded', {
+                seed_count: Array.isArray(bankSeed) ? bankSeed.length : 0,
+                excluded_count: seenSignatures.size
             });
-
-            const content = comp.choices[0].message.content;
-            let questions = [];
-            try {
-                const parsed = JSON.parse(content);
-                questions = parsed.questions || [];
-            } catch {
-                return res.json({ output: content });
-            }
 
             const normalizeOptionsObject = (options = {}) => {
                 if (Array.isArray(options)) {
@@ -1361,8 +1585,76 @@ Estructura JSON:
             };
 
             const seededQuestions = dedupeQuestions(sanitizeQuestions(bankSeed));
+
+            if (seededQuestions.length >= requestedCount) {
+                const servedFromBank = seededQuestions
+                    .slice(0, requestedCount)
+                    .map((question, index) => ({
+                        ...question,
+                        source_session: Number(question.source_session || sourceSession || 0) || 0,
+                        source_topic: String(question.source_topic || tema).trim(),
+                        levelName: levelName || question.levelName || '',
+                        batch_index: batchIndex,
+                        question_index: index + 1
+                    }));
+
+                timingTrace.mark('served_from_bank', {
+                    question_count: servedFromBank.length
+                });
+
+                return res.json({
+                    questions: servedFromBank,
+                    timings: timingTrace.finish({
+                        question_count: servedFromBank.length,
+                        source: 'bank'
+                    })
+                });
+            }
+
+            const comp = await openai.chat.completions.create({
+                model: AI_MODELS.fast,
+                messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }],
+                response_format: { type: "json_object" },
+                temperature: aiTemperature
+            });
+            timingTrace.mark('openai_completed', {
+                model: AI_MODELS.fast
+            });
+
+            const content = comp.choices[0].message.content;
+            let questions = [];
+            try {
+                const parsed = JSON.parse(content);
+                questions = parsed.questions || [];
+            } catch {
+                timingTrace.mark('response_parse_fallback');
+                return res.json({
+                    output: content,
+                    timings: timingTrace.finish({
+                        parse_fallback: true
+                    })
+                });
+            }
+            timingTrace.mark('response_parsed', {
+                raw_questions: Array.isArray(questions) ? questions.length : 0
+            });
+
             const freshQuestions = dedupeQuestions(sanitizeQuestions(questions));
-            questions = [...seededQuestions, ...freshQuestions].slice(0, requestedCount);
+            questions = [...seededQuestions, ...freshQuestions]
+                .slice(0, requestedCount)
+                .map((question, index) => ({
+                    ...question,
+                    source_session: Number(question.source_session || sourceSession || 0) || 0,
+                    source_topic: String(question.source_topic || tema).trim(),
+                    levelName: levelName || question.levelName || '',
+                    batch_index: batchIndex,
+                    question_index: index + 1
+                }));
+            timingTrace.mark('questions_sanitized', {
+                seeded_count: seededQuestions.length,
+                fresh_count: freshQuestions.length,
+                question_count: questions.length
+            });
 
             // PASO 2: VERIFICACIÃƒâ€œN INDEPENDIENTE Ã¢â‚¬â€ Segunda IA revisa cada pregunta
             if (false && questions.length > 0 && verifyPrompt && subject.includes('MATEMAT')) {
@@ -1410,15 +1702,32 @@ Estructura JSON:
                 grade: body.grade || '1medio',
                 source_topic: tema,
                 source_session: body.session || data.session || '',
+                levelName,
+                batch_index: batchIndex,
                 metadata: {
                     currentAction,
-                    level: body.level || body.nivel || data.level || '',
+                    level: levelName || body.level || body.nivel || data.level || '',
                     topic: tema,
-                    user_id: user_id || ''
+                    user_id: user_id || '',
+                    batch_index: batchIndex
                 }
-            }).catch((err) => console.error('[QUESTION_BANK] Error guardando quiz generado:', err.message));
+            }).then(() => {
+                timingTrace.mark('question_bank_saved', {
+                    saved_count: questions.length
+                });
+            }).catch((err) => {
+                console.error('[QUESTION_BANK] Error guardando quiz generado:', err.message);
+                timingTrace.mark('question_bank_save_failed', {
+                    error: err.message
+                });
+            });
 
-            return res.json({ questions });
+            return res.json({
+                questions,
+                timings: timingTrace.finish({
+                    question_count: questions.length
+                })
+            });
         }
 
         // 3. RESPONDER DUDAS / REMEDIAL / PROFUNDIZAR
@@ -1502,13 +1811,20 @@ Entrega:
                 grade,
                 topic,
                 totalQuestions,
-                sourceMode: data.source_mode || data.mode || ''
+                sourceMode: data.source_mode || data.mode || '',
+                batchIndex: data.batch_index || data.batchIndex || '',
+                batchSize: data.batch_size || data.batchSize || '',
+                correctAnswers: data.correct_answers || '',
+                wrongAnswers: data.wrong_answers || '',
+                wrongQuestionDetails: data.wrong_question_details || '',
+                weakness: data.weakness || '',
+                improvementPlan: data.improvement_plan || ''
             });
             
             if ((data.subject || '') && (data.session || '') && (eventType === 'phase_completed' || eventType === 'session_completed')) {
                 const progressRowsResponse = await sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'progress_log!A:N',
+                    range: 'progress_log!A:U',
                 });
                 const progressRows = progressRowsResponse.data.values || [];
                 await autoAppendMissingSessionCompleted(sheets, progressRows, user_id, data.subject || '', grade)
@@ -1569,7 +1885,7 @@ Entrega:
             const grade = body.grade || '1medio';
             const subject = body.subject || '';
             const response = await sheets.spreadsheets.values.get({
-                spreadsheetId: SPREADSHEET_ID, range: 'progress_log!A:J',
+                spreadsheetId: SPREADSHEET_ID, range: 'progress_log!A:U',
             });
             const rows = response.data.values || [];
             const userRows = rows.filter(row => row[1] === user_id);
@@ -1607,7 +1923,9 @@ Entrega:
                 const subject = body.subject || 'Materia';
                 const session = body.session || '?';
                 const topic = body.topic || body.tema || '';
-                const wrongAnswers = body.wrong_answers || [];
+                const wrongAnswers = normalizeWrongAnswerDetails(body.wrong_answers || [], body.wrong_question_details || []);
+                const weakness = body.weakness || '';
+                const improvementPlan = body.improvement_plan || '';
 
                 // GENERAR ANÃƒÂLISIS IA DE LOS ERRORES
                 let aiAnalysis = '';
@@ -1627,7 +1945,7 @@ Entrega:
 3. Dar 3 SUGERENCIAS CONCRETAS para mejorar
 4. Un mensaje MOTIVADOR al final
 SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
-                                { role: "user", content: `Estudiante: ${userData.nombre}\nAsignatura: ${subject}\nTema: ${topic}\nResultado: ${stats.correct}/45\n\nPREGUNTAS INCORRECTAS:\n${errorSummary}` }
+                                { role: "user", content: `Estudiante: ${userData.nombre}\nAsignatura: ${subject}\nTema: ${topic}\nResultado: ${stats.correct}/45\nDebilidad resumida: ${weakness || 'No especificada'}\nPlan de mejora: ${improvementPlan || 'No especificado'}\n\nPREGUNTAS INCORRECTAS:\n${errorSummary}` }
                             ]
                         });
                         aiAnalysis = analysisComp.choices[0].message.content;
@@ -1637,7 +1955,10 @@ SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
                     }
                 }
 
-                const html = buildSessionReportHTML(userData.nombre, subject, session, topic, stats, wrongAnswers, aiAnalysis);
+                const html = buildSessionReportHTML(userData.nombre, subject, session, topic, stats, wrongAnswers, aiAnalysis, {
+                    weakness,
+                    improvementPlan
+                });
                 const emailSubject = `Ã°Å¸â€œÅ  Reporte Matico: ${userData.nombre} completÃƒÂ³ ${subject} - SesiÃƒÂ³n ${session}`;
 
                 // Enviar al alumno
@@ -1658,7 +1979,7 @@ SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
 
             const response = await sheets.spreadsheets.values.get({
                 spreadsheetId: SPREADSHEET_ID,
-                range: 'progress_log!A:J',
+                range: 'progress_log!A:U',
             });
             const rows = response.data.values || [];
 
@@ -1670,7 +1991,7 @@ SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
 
             const refreshedResponse = await sheets.spreadsheets.values.get({
                 spreadsheetId: SPREADSHEET_ID,
-                range: 'progress_log!A:J',
+                range: 'progress_log!A:U',
             });
             const refreshedRows = refreshedResponse.data.values || [];
             const userRowsRefreshed = refreshedRows.filter(row => row[1] === user_id);
@@ -1685,6 +2006,10 @@ SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
             // TambiÃƒÂ©n buscar fases completadas (por si estÃƒÂ¡ a mitad de sesiÃƒÂ³n o el histÃƒÂ³rico no grabÃƒÂ³ session_completed)
             const phaseRows = userRowsRefreshed.filter(row =>
                 row[4] === 'phase_completed' &&
+                (subjectFilter ? row[2] === subjectFilter : true)
+            );
+            const theoryRows = userRowsRefreshed.filter(row =>
+                (row[4] === 'theory_started' || row[4] === 'theory_completed') &&
                 (subjectFilter ? row[2] === subjectFilter : true)
             );
 
@@ -1726,6 +2051,30 @@ SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
                 }
             });
 
+            let currentTheoryStarted = false;
+            let currentTheoryCompleted = false;
+            theoryRows.forEach(row => {
+                const sessionNum = parseInt(row[3]) || 0;
+                const eventType = row[4] || '';
+
+                if (sessionNum > currentSessionInProgress) {
+                    currentSessionInProgress = sessionNum;
+                    currentPhase = 0;
+                    currentTheoryStarted = eventType === 'theory_started' || eventType === 'theory_completed';
+                    currentTheoryCompleted = eventType === 'theory_completed';
+                    return;
+                }
+
+                if (sessionNum === currentSessionInProgress) {
+                    if (eventType === 'theory_started' || eventType === 'theory_completed') {
+                        currentTheoryStarted = true;
+                    }
+                    if (eventType === 'theory_completed') {
+                        currentTheoryCompleted = true;
+                    }
+                }
+            });
+
             // Calcular XP total
             let totalXP = 0;
             userRowsRefreshed.forEach(row => {
@@ -1742,6 +2091,8 @@ SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
                 last_completed_session: maxSession,
                 current_session_in_progress: currentSessionInProgress,
                 current_phase: currentPhase,
+                current_theory_started: currentTheoryStarted,
+                current_theory_completed: currentTheoryCompleted,
                 sessions_completed: completedSessions.length,
                 xp: totalXP,
                 puntos: totalXP,

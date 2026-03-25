@@ -155,6 +155,7 @@ export const sampleGeneratedQuestions = async (filters = {}) => {
         .replace(/[\u0300-\u036f]/g, '');
     const levelFilter = normalizeText(filters.levelName || filters.level || '').toUpperCase();
     const sessionFilter = Number(filters.source_session || 0) || 0;
+    const batchFilter = Number(filters.batch_index ?? filters.batchIndex ?? -1);
     const limit = Math.max(0, Number(filters.limit || 5) || 5);
     const excludeSignatures = new Set(
         Array.isArray(filters.exclude_signatures)
@@ -173,6 +174,7 @@ export const sampleGeneratedQuestions = async (filters = {}) => {
         if (sourceModeFilter && item.source_mode !== sourceModeFilter) return false;
         if (sourceActionFilter && item.source_action !== sourceActionFilter) return false;
         if (sessionFilter && Number(item.source_session || 0) !== sessionFilter) return false;
+        if (batchFilter >= 0 && Number(item.batch_index ?? -1) !== batchFilter) return false;
         if (levelFilter) {
             const storedLevel = normalizeText(item.levelName || item.metadata?.level || '').toUpperCase();
             if (storedLevel !== levelFilter) return false;
