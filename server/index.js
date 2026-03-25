@@ -12,6 +12,10 @@ import { fileURLToPath } from 'url';
 import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions, sampleGeneratedQuestions } from './generatedQuestionBank.js';
 import { recordAdaptiveEvent, getAdaptiveSnapshot, backfillAdaptiveProfileFromProgressRows } from './adaptiveProfileStore.js';
 import { getCurriculumContext } from './curriculumCatalog.js';
+import { resolveMoralejaContext } from './moralejaCompetenciaLectora.js';
+import { resolveMoralejaMatematicaContext } from './moralejaMatematica.js';
+import { resolveMoralejaBiologiaContext } from './moralejaBiologia.js';
+import { resolveMoralejaQuimicaContext } from './moralejaQuimica.js';
 
 dotenv.config();
 
@@ -884,7 +888,7 @@ const buildDailyReminderHTML = (nombre, session, topic, subject) => {
 };
 
 const getQuizPromptConfig = (subject, tema, options = {}) => {
-    const { includeSourceMetadata = false } = options;
+    const { includeSourceMetadata = false, extraInstructions = '' } = options;
     const sourceFields = includeSourceMetadata ? `,
       "source_session": 12,
       "source_topic": "Tema de origen"` : '';
@@ -984,6 +988,180 @@ Genera SOLO JSON vÃƒÂ¡lido sin markdown.`;
     }
 
     return { systemMsg, aiTemperature };
+};
+
+const isReadingSubject = (subject = '') => {
+    const normalized = String(subject || '').toUpperCase();
+    return normalized.includes('LENGUAJE') || normalized.includes('LECTURA');
+};
+
+const isMathSubject = (subject = '') => {
+    const normalized = String(subject || '').toUpperCase();
+    return normalized.includes('MATEMATICA') || normalized.includes('MATEMÁTICA');
+};
+
+const isBiologySubject = (subject = '') => {
+    const normalized = String(subject || '').toUpperCase();
+    return normalized.includes('BIOLOGIA') || normalized.includes('BIOLOGÃA');
+};
+
+const isChemistrySubject = (subject = '') => {
+    const normalized = String(subject || '')
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    return normalized.includes('QUIMICA');
+};
+
+const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = '' } = {}) => {
+    const segments = [`Tema solicitado: ${topic || 'Sin tema especificado'}`];
+    const normalizedSubject = String(subject || '').toUpperCase();
+
+    if (normalizedSubject) segments.push(`Asignatura: ${normalizedSubject}`);
+    if (phase) segments.push(`Fase actual: ${phase}`);
+
+    if (isReadingSubject(normalizedSubject)) {
+        const moralejaContext = resolveMoralejaContext({
+            topic,
+            session,
+            phase,
+            mode: 'theory'
+        });
+        segments.push(`[BASE MORALEJA]\n${moralejaContext.theoryGuidance}`);
+        segments.push('Cierra con una mini estrategia aplicable y un ejemplo breve de como resolver una pregunta tipo PAES.');
+    } else if (isMathSubject(normalizedSubject)) {
+        const moralejaMathContext = resolveMoralejaMatematicaContext({
+            topic,
+            session,
+            phase,
+            mode: 'theory'
+        });
+        segments.push(`[BASE MORALEJA MATEMATICA]\n${moralejaMathContext.theoryGuidance}`);
+        segments.push('Cierra con un mini tip de procedimiento y un ejemplo breve estilo DEMRE/PAES.');
+    } else if (isBiologySubject(normalizedSubject)) {
+        const moralejaBiologiaContext = resolveMoralejaBiologiaContext({
+            topic,
+            session,
+            phase,
+            mode: 'theory'
+        });
+        segments.push(`[BASE MORALEJA BIOLOGIA]\n${moralejaBiologiaContext.theoryGuidance}`);
+        segments.push('Cierra con una mini clave de analisis biologico y un ejemplo breve tipo DEMRE/PAES.');
+    } else if (isChemistrySubject(normalizedSubject)) {
+        const moralejaQuimicaContext = resolveMoralejaQuimicaContext({
+            topic,
+            session,
+            phase,
+            mode: 'theory'
+        });
+        segments.push(`[BASE MORALEJA QUIMICA]\n${moralejaQuimicaContext.theoryGuidance}`);
+        segments.push('Cierra con una mini clave de resolucion quimica y un ejemplo breve tipo DEMRE/PAES.');
+    }
+
+    return segments.filter(Boolean).join('\n\n');
+};
+
+const buildReadingPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+    const moralejaContext = resolveMoralejaContext({
+        topic,
+        session,
+        phase,
+        mode: 'quiz'
+    });
+
+    return {
+        moralejaContext,
+        promptText: [
+            `Tema: ${topic}`,
+            `Asignatura: ${subject}`,
+            `Fase: ${phase || 'BASICO'}`,
+            `Sesion: ${session || 'sin sesion'}`,
+            `Lote: ${batchIndex + 1}/${totalBatches}`,
+            `Genera EXACTAMENTE ${requestedCount} preguntas.`,
+            `[BASE MORALEJA]\n${moralejaContext.quizGuidance}`,
+            'Devuelve SOLO JSON valido con la clave "questions".',
+            'No devuelvas menos preguntas.',
+            'No repitas preguntas.'
+        ].join('\n')
+    };
+};
+
+const buildMathPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+    const moralejaMathContext = resolveMoralejaMatematicaContext({
+        topic,
+        session,
+        phase,
+        mode: 'quiz'
+    });
+
+    return {
+        moralejaMathContext,
+        promptText: [
+            `Tema: ${topic}`,
+            `Asignatura: ${subject}`,
+            `Fase: ${phase || 'BASICO'}`,
+            `Sesion: ${session || 'sin sesion'}`,
+            `Lote: ${batchIndex + 1}/${totalBatches}`,
+            `Genera EXACTAMENTE ${requestedCount} preguntas.`,
+            `[BASE MORALEJA MATEMATICA]\n${moralejaMathContext.quizGuidance}`,
+            'Cada pregunta debe poder resolverse con procedimiento claro y consistente con el contenido escolar.',
+            'Devuelve SOLO JSON valido con la clave "questions".',
+            'No devuelvas menos preguntas.',
+            'No repitas preguntas.'
+        ].join('\n')
+    };
+};
+
+const buildBiologyPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+    const moralejaBiologiaContext = resolveMoralejaBiologiaContext({
+        topic,
+        session,
+        phase,
+        mode: 'quiz'
+    });
+
+    return {
+        moralejaBiologiaContext,
+        promptText: [
+            `Tema: ${topic}`,
+            `Asignatura: ${subject}`,
+            `Fase: ${phase || 'BASICO'}`,
+            `Sesion: ${session || 'sin sesion'}`,
+            `Lote: ${batchIndex + 1}/${totalBatches}`,
+            `Genera EXACTAMENTE ${requestedCount} preguntas.`,
+            `[BASE MORALEJA BIOLOGIA]\n${moralejaBiologiaContext.quizGuidance}`,
+            'Favorece preguntas con analisis de relaciones biologicas, interpretacion de evidencias o lectura de tablas y graficos cuando aporte valor.',
+            'Devuelve SOLO JSON valido con la clave "questions".',
+            'No devuelvas menos preguntas.',
+            'No repitas preguntas.'
+        ].join('\n')
+    };
+};
+
+const buildChemistryPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+    const moralejaQuimicaContext = resolveMoralejaQuimicaContext({
+        topic,
+        session,
+        phase,
+        mode: 'quiz'
+    });
+
+    return {
+        moralejaQuimicaContext,
+        promptText: [
+            `Tema: ${topic}`,
+            `Asignatura: ${subject}`,
+            `Fase: ${phase || 'BASICO'}`,
+            `Sesion: ${session || 'sin sesion'}`,
+            `Lote: ${batchIndex + 1}/${totalBatches}`,
+            `Genera EXACTAMENTE ${requestedCount} preguntas.`,
+            `[BASE MORALEJA QUIMICA]\n${moralejaQuimicaContext.quizGuidance}`,
+            'Favorece preguntas con balance correcto, relaciones cuantitativas claras y vocabulario escolar chileno consistente con PAES.',
+            'Devuelve SOLO JSON valido con la clave "questions".',
+            'No devuelvas menos preguntas.',
+            'No repitas preguntas.'
+        ].join('\n')
+    };
 };
 
 const buildPrepExamAssignments = (sessionDetails = [], totalQuestions = 45) => {
@@ -1135,7 +1313,18 @@ Tu tono es cercano, motivador y lleno de energÃƒÂ­a, como un tutor favorito.
 
             const comp = await openai.chat.completions.create({
                 model: AI_MODELS.fast,
-                messages: [{ role: "system", content: systemMsg }, { role: "user", content: tema }]
+                messages: [{
+                    role: "system",
+                    content: systemMsg
+                }, {
+                    role: "user",
+                    content: buildTheoryUserPrompt({
+                        topic: tema,
+                        subject: body.subject || body.sujeto || body.materia || data?.subject || '',
+                        session: body.session || data?.session || 0,
+                        phase: body.phase || body.level || body.nivel || data?.level || ''
+                    })
+                }]
             });
             return res.json({ output: comp.choices[0].message.content });
         }
@@ -1525,6 +1714,51 @@ Estructura JSON:
 {"my_calculation": "tu desarrollo paso a paso aquÃƒÂ­ primero", "correct_letter": "LETRA FINAL"}`;
             }
 
+            const readingPromptBundle = isReadingSubject(subject)
+                ? buildReadingPromptContext({
+                    topic: tema,
+                    subject,
+                    session: sourceSession,
+                    phase: levelName,
+                    batchIndex,
+                    totalBatches,
+                    requestedCount
+                })
+                : null;
+            const mathPromptBundle = isMathSubject(subject)
+                ? buildMathPromptContext({
+                    topic: tema,
+                    subject,
+                    session: sourceSession,
+                    phase: levelName,
+                    batchIndex,
+                    totalBatches,
+                    requestedCount
+                })
+                : null;
+            const biologyPromptBundle = isBiologySubject(subject)
+                ? buildBiologyPromptContext({
+                    topic: tema,
+                    subject,
+                    session: sourceSession,
+                    phase: levelName,
+                    batchIndex,
+                    totalBatches,
+                    requestedCount
+                })
+                : null;
+            const chemistryPromptBundle = isChemistrySubject(subject)
+                ? buildChemistryPromptContext({
+                    topic: tema,
+                    subject,
+                    session: sourceSession,
+                    phase: levelName,
+                    batchIndex,
+                    totalBatches,
+                    requestedCount
+                })
+                : null;
+
             const seenSignatures = new Set(
                 excludeSignatures
                     .map((item) => String(item || '').trim())
@@ -1565,14 +1799,51 @@ Estructura JSON:
                 }, {});
             };
 
-            const sanitizeQuestions = (items = []) => items.map((item) => ({
-                question: String(item.question || '').trim(),
-                options: normalizeOptionsObject(item.options || {}),
-                correct_answer: String(item.correct_answer || 'A').trim().toUpperCase().slice(0, 1) || 'A',
-                explanation: String(item.explanation || 'Explicacion no disponible.').trim(),
-                source_session: Number(item.source_session || sourceSession || 0) || 0,
-                source_topic: String(item.source_topic || tema).trim()
-            })).filter((item) => {
+            const normalizeAnswerText = (value = '') => String(value || '')
+                .replace(/<br\s*\/?>/gi, ' ')
+                .replace(/&nbsp;/gi, ' ')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/\$+/g, '')
+                .toLowerCase()
+                .replace(/\s+/g, '')
+                .trim();
+
+            const inferCorrectAnswerFromExplanation = (question = {}) => {
+                const options = question.options || {};
+                const explanation = String(question.explanation || '');
+                const normalizedExplanation = normalizeAnswerText(explanation);
+                if (!normalizedExplanation) return null;
+
+                const explicitLetter = explanation.match(/(?:opcion|respuesta)\s+correcta\s+es\s+([A-D])/i);
+                if (explicitLetter?.[1] && options[explicitLetter[1].toUpperCase()]) {
+                    return explicitLetter[1].toUpperCase();
+                }
+
+                const matches = Object.entries(options)
+                    .map(([key, value]) => ({ key, normalized: normalizeAnswerText(value) }))
+                    .filter((item) => item.normalized && normalizedExplanation.includes(item.normalized));
+
+                return matches.length === 1 ? matches[0].key : null;
+            };
+
+            const sanitizeQuestions = (items = []) => items.map((item) => {
+                const normalizedQuestion = {
+                    question: String(item.question || '').trim(),
+                    options: normalizeOptionsObject(item.options || {}),
+                    correct_answer: String(item.correct_answer || 'A').trim().toUpperCase().slice(0, 1) || 'A',
+                    explanation: String(item.explanation || 'Explicacion no disponible.').trim(),
+                    source_session: Number(item.source_session || sourceSession || 0) || 0,
+                    source_topic: String(item.source_topic || tema).trim()
+                };
+
+                const inferredCorrectAnswer = inferCorrectAnswerFromExplanation(normalizedQuestion);
+                if (inferredCorrectAnswer) {
+                    normalizedQuestion.correct_answer = inferredCorrectAnswer;
+                }
+
+                return normalizedQuestion;
+            }).filter((item) => {
                 const optionValues = Object.values(item.options || {}).map((value) => String(value || '').trim());
                 const placeholderCount = optionValues.filter((value) => ['A', 'B', 'C', 'D', 'AA', 'BB', 'CC', 'DD'].includes(value.toUpperCase())).length;
                 return item.question && optionValues.length === 4 && placeholderCount < 3;
@@ -1616,17 +1887,21 @@ Estructura JSON:
                 });
             }
 
-            const promptContext = [
-                `Tema: ${tema}`,
-                `Asignatura: ${subject}`,
-                `Fase: ${levelName || 'BASICO'}`,
-                `Sesion: ${sourceSession || 'sin sesion'}`,
-                `Lote: ${batchIndex + 1}/${totalBatches}`,
-                `Genera EXACTAMENTE ${requestedCount} preguntas.`,
-                'Devuelve SOLO JSON valido con la clave "questions".',
-                'No devuelvas menos preguntas.',
-                'No repitas preguntas.'
-            ].join('\n');
+            const promptContext = readingPromptBundle?.promptText
+                || mathPromptBundle?.promptText
+                || biologyPromptBundle?.promptText
+                || chemistryPromptBundle?.promptText
+                || [
+                    `Tema: ${tema}`,
+                    `Asignatura: ${subject}`,
+                    `Fase: ${levelName || 'BASICO'}`,
+                    `Sesion: ${sourceSession || 'sin sesion'}`,
+                    `Lote: ${batchIndex + 1}/${totalBatches}`,
+                    `Genera EXACTAMENTE ${requestedCount} preguntas.`,
+                    'Devuelve SOLO JSON valido con la clave "questions".',
+                    'No devuelvas menos preguntas.',
+                    'No repitas preguntas.'
+                ].join('\n');
 
             const comp = await openai.chat.completions.create({
                 model: AI_MODELS.fast,
@@ -1726,7 +2001,11 @@ Estructura JSON:
                     level: levelName || body.level || body.nivel || data.level || '',
                     topic: tema,
                     user_id: user_id || '',
-                    batch_index: batchIndex
+                    batch_index: batchIndex,
+                    ...(readingPromptBundle?.moralejaContext?.bankMetadata || {}),
+                    ...(mathPromptBundle?.moralejaMathContext?.bankMetadata || {}),
+                    ...(biologyPromptBundle?.moralejaBiologiaContext?.bankMetadata || {}),
+                    ...(chemistryPromptBundle?.moralejaQuimicaContext?.bankMetadata || {})
                 }
             }).then(() => {
                 timingTrace.mark('question_bank_saved', {
