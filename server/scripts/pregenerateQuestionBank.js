@@ -401,6 +401,7 @@ const main = async () => {
     const rowsToAppend = [];
     let inserted = 0;
     const failedGroups = [];
+    let flushedRows = 0;
 
     for (const group of limitedGroups) {
         console.log(`[QuestionBank] Generando sesion ${group.session} fase ${group.phase} slots ${group.slotGroup.join(', ')}`);
@@ -418,6 +419,7 @@ const main = async () => {
             continue;
         }
 
+        const groupRows = [];
         for (const item of generated) {
             const key = buildExistingKey({
                 subject: item.subject,
@@ -436,18 +438,22 @@ const main = async () => {
                 updatedAt: now
             };
             existingKeys.add(key);
-            rowsToAppend.push(toSheetRow(record));
+            const row = toSheetRow(record);
+            rowsToAppend.push(row);
+            groupRows.push(row);
             inserted += 1;
         }
-    }
 
-    if (!dryRun && rowsToAppend.length) {
-        await appendRows(sheets, QUESTION_BANK_SHEET, rowsToAppend);
+        if (!dryRun && groupRows.length) {
+            await appendRows(sheets, QUESTION_BANK_SHEET, groupRows);
+            flushedRows += groupRows.length;
+            console.log(`[QuestionBank] Guardadas ${groupRows.length} filas en sheet para sesion ${group.session} fase ${group.phase} slots ${group.slotGroup.join(', ')}`);
+        }
     }
 
     const notesBase = dryRun
         ? `dry-run con ${limitedGroups.length} grupos`
-        : `insertadas ${rowsToAppend.length} filas`;
+        : `insertadas ${inserted} filas${flushedRows ? `; escritas incrementalmente ${flushedRows}` : ''}`;
     const notes = failedGroups.length
         ? `${notesBase}; grupos fallidos: ${failedGroups.map((group) => `S${group.session}-F${group.phase}-[${group.slots}]`).join(' | ')}`
         : notesBase;
