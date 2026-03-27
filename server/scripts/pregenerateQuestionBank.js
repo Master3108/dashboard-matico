@@ -20,6 +20,7 @@ const DEFAULT_TO = 46;
 const DEFAULT_SLOTS_PER_PHASE = 15;
 const DEFAULT_PROPOSALS_PER_SLOT = 3;
 const DEFAULT_SLOT_GROUP_SIZE = 5;
+const DEFAULT_RETRIES = 2;
 const AI_PROVIDER = (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi' : 'deepseek';
 const AI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
 const AI_BASE_URL = AI_PROVIDER === 'kimi'
@@ -280,6 +281,22 @@ const generateSlotGroup = async ({ session, phase, levelName, slotGroup }) => {
     });
 };
 
+const generateSlotGroupWithRetry = async (group, retries = DEFAULT_RETRIES) => {
+    let lastError = null;
+    for (let attempt = 1; attempt <= retries + 1; attempt += 1) {
+        try {
+            if (attempt > 1) {
+                console.log(`[QuestionBank] Reintento ${attempt - 1}/${retries} para sesion ${group.session} fase ${group.phase} slots ${group.slotGroup.join(', ')}`);
+            }
+            return await generateSlotGroup(group);
+        } catch (error) {
+            lastError = error;
+            console.error(`[QuestionBank] Fallo intento ${attempt} en sesion ${group.session} fase ${group.phase} slots ${group.slotGroup.join(', ')}: ${error.message}`);
+        }
+    }
+    throw lastError;
+};
+
 const toSheetRow = (record) => ([
     record.questionId,
     record.subject,
@@ -323,6 +340,7 @@ const main = async () => {
     const toSession = Math.max(fromSession, Number(args.to || DEFAULT_TO));
     const slotGroupSize = Math.max(1, Math.min(DEFAULT_SLOTS_PER_PHASE, Number(args.slotGroupSize || DEFAULT_SLOT_GROUP_SIZE)));
     const maxGroups = Number(args.maxGroups || 0);
+    const retries = Math.max(0, Number(args.retries || DEFAULT_RETRIES));
     const dryRun = Boolean(args['dry-run']);
 
     if (!AI_API_KEY) {
@@ -377,13 +395,28 @@ const main = async () => {
     console.log(`[QuestionBank] Grupos pendientes: ${pendingGroups.length}`);
     console.log(`[QuestionBank] Ejecutando grupos: ${limitedGroups.length}`);
     console.log(`[QuestionBank] Modo: ${dryRun ? 'dry-run' : 'write'}`);
+    console.log(`[QuestionBank] Slots por grupo: ${slotGroupSize}`);
+    console.log(`[QuestionBank] Reintentos por grupo: ${retries}`);
 
     const rowsToAppend = [];
     let inserted = 0;
+    const failedGroups = [];
 
     for (const group of limitedGroups) {
         console.log(`[QuestionBank] Generando sesion ${group.session} fase ${group.phase} slots ${group.slotGroup.join(', ')}`);
-        const generated = await generateSlotGroup(group);
+        let generated = [];
+        try {
+            generated = await generateSlotGroupWithRetry(group, retries);
+        } catch (error) {
+            failedGroups.push({
+                session: group.session,
+                phase: group.phase,
+                slots: group.slotGroup.join(','),
+                error: error.message
+            });
+            console.error(`[QuestionBank] Grupo omitido tras agotar reintentos: sesion ${group.session} fase ${group.phase} slots ${group.slotGroup.join(', ')}`);
+            continue;
+        }
 
         for (const item of generated) {
             const key = buildExistingKey({
@@ -412,9 +445,12 @@ const main = async () => {
         await appendRows(sheets, QUESTION_BANK_SHEET, rowsToAppend);
     }
 
-    const notes = dryRun
+    const notesBase = dryRun
         ? `dry-run con ${limitedGroups.length} grupos`
         : `insertadas ${rowsToAppend.length} filas`;
+    const notes = failedGroups.length
+        ? `${notesBase}; grupos fallidos: ${failedGroups.map((group) => `S${group.session}-F${group.phase}-[${group.slots}]`).join(' | ')}`
+        : notesBase;
 
     await appendRows(sheets, QUESTION_BANK_BUILDS_SHEET, [
         createBuildLogRow({
@@ -423,7 +459,7 @@ const main = async () => {
             toSession,
             totalExpected,
             totalInserted: inserted,
-            status: dryRun ? 'DRY_RUN' : 'OK',
+            status: dryRun ? 'DRY_RUN' : (failedGroups.length ? 'PARTIAL' : 'OK'),
             notes
         })
     ]);
@@ -434,6 +470,7 @@ const main = async () => {
         fromSession,
         toSession,
         groupsProcessed: limitedGroups.length,
+        failedGroups,
         rowsPrepared: rowsToAppend.length,
         inserted,
         dryRun
