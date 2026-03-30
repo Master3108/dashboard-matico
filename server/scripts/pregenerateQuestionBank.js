@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { google } from 'googleapis';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { resolveMoralejaContext } from '../moralejaCompetenciaLectora.js';
 import { resolveMoralejaMatematicaContext } from '../moralejaMatematica.js';
 import { resolveMoralejaSessionReference } from '../moralejaSessionCatalog.js';
 
@@ -14,7 +15,7 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID || '1l1GLMXh8_Uo_O7XJOY7ZJxh1TER2hxrXTOsc_EcByHo';
 const QUESTION_BANK_SHEET = 'QuestionBank';
 const QUESTION_BANK_BUILDS_SHEET = 'QuestionBankBuilds';
-const SUBJECT = 'MATEMATICA';
+const DEFAULT_SUBJECT = 'MATEMATICA';
 const DEFAULT_FROM = 1;
 const DEFAULT_TO = 46;
 const DEFAULT_SLOTS_PER_PHASE = 15;
@@ -35,6 +36,30 @@ const PHASES = [
     { phase: '2', levelName: 'INTERMEDIO' },
     { phase: '3', levelName: 'AVANZADO' }
 ];
+const SUBJECT_CONFIG = {
+    MATEMATICA: {
+        code: 'MAT',
+        displayName: 'Matematica',
+        temperature: 0.35,
+        resolveContext: ({ session, topic, phase }) => resolveMoralejaMatematicaContext({
+            session,
+            topic,
+            phase,
+            mode: 'quiz'
+        })
+    },
+    LENGUAJE: {
+        code: 'LEN',
+        displayName: 'Lenguaje y Comunicacion',
+        temperature: 0.45,
+        resolveContext: ({ session, topic, phase }) => resolveMoralejaContext({
+            session,
+            topic,
+            phase,
+            mode: 'quiz'
+        })
+    }
+};
 
 const normalizePrivateKey = (value = '') => String(value)
     .trim()
@@ -80,6 +105,12 @@ const parseArgs = (argv = []) => {
     }
     return args;
 };
+
+const normalizeSubject = (value = DEFAULT_SUBJECT) => String(value || '')
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
 
 const getSheetsClient = async () => {
     const auth = new google.auth.GoogleAuth({
@@ -128,10 +159,10 @@ const appendRows = async (sheets, sheetTitle, rows) => {
     });
 };
 
-const buildQuestionId = ({ session, phase, slot, proposalIndex }) => {
+const buildQuestionId = ({ subjectCode, session, phase, slot, proposalIndex }) => {
     return [
         'QB',
-        'MAT',
+        subjectCode,
         String(session).padStart(2, '0'),
         String(phase),
         String(slot).padStart(2, '0'),
@@ -143,7 +174,7 @@ const buildExistingKey = ({ subject, session, phase, slot, proposalIndex }) => {
     return [subject, session, phase, slot, proposalIndex].join('|');
 };
 
-const sanitizeGeneratedItems = ({ items = [], session, phase, levelName, slotGroup, topic }) => {
+const sanitizeGeneratedItems = ({ items = [], subject, session, phase, levelName, slotGroup, topic }) => {
     const allowedSlots = new Set(slotGroup.map(Number));
     const acceptedSignatures = new Set();
     const normalized = [];
@@ -166,7 +197,7 @@ const sanitizeGeneratedItems = ({ items = [], session, phase, levelName, slotGro
         acceptedSignatures.add(signature);
 
         normalized.push({
-            subject: SUBJECT,
+            subject,
             session,
             phase,
             slot,
@@ -183,13 +214,13 @@ const sanitizeGeneratedItems = ({ items = [], session, phase, levelName, slotGro
     return normalized;
 };
 
-const buildPrompt = ({ session, phase, levelName, slotGroup, topic, guidance }) => {
+const buildPrompt = ({ subject, session, phase, levelName, slotGroup, topic, guidance }) => {
     const slotRules = slotGroup
         .map((slot) => `- slot ${slot}: genera exactamente 3 propuestas distintas (proposal_index 1, 2, 3)`)
         .join('\n');
 
     return [
-        `Asignatura: ${SUBJECT}`,
+        `Asignatura: ${subject}`,
         `Sesion: ${session}`,
         `Fase: ${phase} (${levelName})`,
         `Tema base: ${topic}`,
@@ -229,43 +260,43 @@ const buildPrompt = ({ session, phase, levelName, slotGroup, topic, guidance }) 
     ].join('\n');
 };
 
-const getSystemMessage = () => {
+const getSystemMessage = ({ subjectDisplayName }) => {
     return [
-        'Eres Matico, profesor experto en Matematica del curriculum chileno de 1 medio.',
+        `Eres Matico, profesor experto en ${subjectDisplayName} del curriculum chileno de 1 medio.`,
         'Tu tarea es generar preguntas de opcion multiple de alta calidad pedagógica.',
         'Cada pregunta debe tener 4 alternativas y una correcta.',
         'La respuesta debe ser SOLO JSON valido.'
     ].join('\n');
 };
 
-const generateSlotGroup = async ({ session, phase, levelName, slotGroup }) => {
-    const sessionReference = resolveMoralejaSessionReference({ subject: SUBJECT, session });
-    const mathContext = resolveMoralejaMatematicaContext({
+const generateSlotGroup = async ({ subject, subjectConfig, session, phase, levelName, slotGroup }) => {
+    const sessionReference = resolveMoralejaSessionReference({ subject, session });
+    const subjectContext = subjectConfig.resolveContext({
         session,
         topic: sessionReference?.focus || '',
-        phase: levelName,
-        mode: 'quiz'
+        phase: levelName
     });
-    const topic = sessionReference?.focus || mathContext.skill || mathContext.chapterLabel;
+    const topic = sessionReference?.focus || subjectContext.skill || subjectContext.chapterLabel;
 
     const completion = await openai.chat.completions.create({
         model: AI_MODEL,
         messages: [
-            { role: 'system', content: getSystemMessage() },
+            { role: 'system', content: getSystemMessage({ subjectDisplayName: subjectConfig.displayName }) },
             {
                 role: 'user',
                 content: buildPrompt({
+                    subject,
                     session,
                     phase,
                     levelName,
                     slotGroup,
                     topic,
-                    guidance: mathContext.quizGuidance
+                    guidance: subjectContext.quizGuidance
                 })
             }
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.35
+        temperature: subjectConfig.temperature
     });
 
     const parsed = JSON.parse(completion.choices[0].message.content || '{}');
@@ -273,6 +304,7 @@ const generateSlotGroup = async ({ session, phase, levelName, slotGroup }) => {
 
     return sanitizeGeneratedItems({
         items,
+        subject,
         session,
         phase,
         levelName,
@@ -319,10 +351,10 @@ const toSheetRow = (record) => ([
     'TRUE'
 ]);
 
-const createBuildLogRow = ({ buildId, fromSession, toSession, totalExpected, totalInserted, status, notes = '' }) => ([
+const createBuildLogRow = ({ buildId, subject, fromSession, toSession, totalExpected, totalInserted, status, notes = '' }) => ([
     new Date().toISOString(),
     buildId,
-    SUBJECT,
+    subject,
     String(fromSession),
     String(toSession),
     String(PHASES.length),
@@ -336,6 +368,8 @@ const createBuildLogRow = ({ buildId, fromSession, toSession, totalExpected, tot
 
 const main = async () => {
     const args = parseArgs(process.argv.slice(2));
+    const subject = normalizeSubject(args.subject || DEFAULT_SUBJECT);
+    const subjectConfig = SUBJECT_CONFIG[subject];
     const fromSession = Math.max(1, Number(args.from || DEFAULT_FROM));
     const toSession = Math.max(fromSession, Number(args.to || DEFAULT_TO));
     const slotGroupSize = Math.max(1, Math.min(DEFAULT_SLOTS_PER_PHASE, Number(args.slotGroupSize || DEFAULT_SLOT_GROUP_SIZE)));
@@ -345,6 +379,10 @@ const main = async () => {
 
     if (!AI_API_KEY) {
         throw new Error('No hay API key configurada para la IA.');
+    }
+
+    if (!subjectConfig) {
+        throw new Error(`Asignatura no soportada: ${subject}. Usa MATEMATICA o LENGUAJE.`);
     }
 
     const sheets = await getSheetsClient();
@@ -366,7 +404,7 @@ const main = async () => {
                 for (let slot = slotStart; slot < slotStart + slotGroupSize && slot <= DEFAULT_SLOTS_PER_PHASE; slot += 1) {
                     const needsAtLeastOne = [1, 2, 3].some((proposalIndex) => {
                         const key = buildExistingKey({
-                            subject: SUBJECT,
+                            subject,
                             session,
                             phase: phaseConfig.phase,
                             slot,
@@ -378,6 +416,8 @@ const main = async () => {
                 }
                 if (slotGroup.length) {
                     pendingGroups.push({
+                        subject,
+                        subjectConfig,
                         session,
                         ...phaseConfig,
                         slotGroup
@@ -391,6 +431,7 @@ const main = async () => {
     const limitedGroups = maxGroups > 0 ? pendingGroups.slice(0, maxGroups) : pendingGroups;
 
     console.log(`[QuestionBank] Build ${buildId}`);
+    console.log(`[QuestionBank] Asignatura: ${subject}`);
     console.log(`[QuestionBank] Rango sesiones: ${fromSession}-${toSession}`);
     console.log(`[QuestionBank] Grupos pendientes: ${pendingGroups.length}`);
     console.log(`[QuestionBank] Ejecutando grupos: ${limitedGroups.length}`);
@@ -433,7 +474,10 @@ const main = async () => {
             const now = new Date().toISOString();
             const record = {
                 ...item,
-                questionId: buildQuestionId(item),
+                questionId: buildQuestionId({
+                    ...item,
+                    subjectCode: subjectConfig.code
+                }),
                 createdAt: now,
                 updatedAt: now
             };
@@ -461,6 +505,7 @@ const main = async () => {
     await appendRows(sheets, QUESTION_BANK_BUILDS_SHEET, [
         createBuildLogRow({
             buildId,
+            subject,
             fromSession,
             toSession,
             totalExpected,
@@ -472,7 +517,7 @@ const main = async () => {
 
     console.log(JSON.stringify({
         buildId,
-        subject: SUBJECT,
+        subject,
         fromSession,
         toSession,
         groupsProcessed: limitedGroups.length,

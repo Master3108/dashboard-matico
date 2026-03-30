@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "pregenerate:math-bank": "node scripts/pregenerateQuestionBank.js"
+    "pregenerate:math-bank": "node scripts/pregenerateQuestionBank.js --subject MATEMATICA",
+    "pregenerate:language-bank": "node scripts/pregenerateQuestionBank.js --subject LENGUAJE"
   },
   "dependencies": {
     "cors": "^2.8.5",
