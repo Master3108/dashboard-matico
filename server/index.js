@@ -933,6 +933,151 @@ const buildDailyReminderHTML = (nombre, session, topic, subject) => {
     </div>`;
 };
 
+const buildSessionReportHTMLClean = (nombre, subject, session, topic, stats, wrongAnswers = [], aiAnalysis = '', reportSummary = {}) => {
+    const successRate = Math.round((stats.correct / 45) * 100);
+    const emoji = successRate >= 80 ? '🏆' : (successRate >= 60 ? '👏' : '💪');
+    const color = successRate >= 80 ? '#22c55e' : (successRate >= 60 ? '#eab308' : '#ef4444');
+    const wrongCount = wrongAnswers.length;
+    const weakness = reportSummary.weakness || '';
+    const improvementPlan = reportSummary.improvementPlan || '';
+
+    const cleanLatex = (text) => {
+        if (!text) return '';
+        return String(text)
+            .replace(/\$([^$]+)\$/g, '$1')
+            .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
+            .replace(/\\left\(/g, '(')
+            .replace(/\\right\)/g, ')')
+            .replace(/\\left\[/g, '[')
+            .replace(/\\right\]/g, ']')
+            .replace(/\\times/g, '×')
+            .replace(/\\div/g, '÷')
+            .replace(/\\cdot/g, '·')
+            .replace(/\\pm/g, '±')
+            .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')
+            .replace(/\^(\{[^}]+\})/g, (_, exp) => {
+                const superscripts = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', 'n': 'ⁿ' };
+                const inner = exp.replace(/[{}]/g, '');
+                return inner.split('').map(c => superscripts[c] || `^${c}`).join('');
+            })
+            .replace(/\^(\d)/g, (_, d) => {
+                const sup = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+                return sup[d] || `^${d}`;
+            })
+            .replace(/_(\{[^}]+\})/g, (_, sub) => sub.replace(/[{}]/g, ''))
+            .replace(/_(\d)/g, '$1')
+            .replace(/\\text\{([^}]+)\}/g, '$1')
+            .replace(/\\\\/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    };
+
+    let errorsHTML = '';
+    if (wrongCount > 0) {
+        const errorRows = wrongAnswers.map((w, i) => {
+            const cleanQ = cleanLatex(w.question || '');
+            const shortQ = cleanQ.substring(0, 80) + (cleanQ.length > 80 ? '...' : '');
+            return `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px; font-size: 13px; color: #475569; vertical-align: top; word-break: break-word;">${i + 1}. ${escapeHtml(shortQ)}</td>
+                <td style="padding: 10px; text-align: center; color: #ef4444; font-weight: bold;">${escapeHtml(w.user_answer)}</td>
+                <td style="padding: 10px; text-align: center; color: #22c55e; font-weight: bold;">${escapeHtml(w.correct_answer)}</td>
+            </tr>`;
+        }).join('');
+
+        errorsHTML = `
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #fecaca; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #dc2626;">❌ Preguntas Incorrectas (${wrongCount})</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #fef2f2;">
+                            <th style="padding: 8px; text-align: left;">Pregunta</th>
+                            <th style="padding: 8px; text-align: center;">Tu Resp.</th>
+                            <th style="padding: 8px; text-align: center;">Correcta</th>
+                        </tr>
+                    </thead>
+                    <tbody>${errorRows}</tbody>
+                </table>
+                ${wrongCount > 10 ? `<p style="color: #94a3b8; font-size: 12px; margin-top: 8px;">... y ${wrongCount - 10} más</p>` : ''}
+            </div>`;
+    }
+
+    let analysisHTML = '';
+    if (aiAnalysis) {
+        analysisHTML = `
+            <div style="background: linear-gradient(135deg, #eff6ff, #f0fdf4); border-radius: 12px; padding: 20px; border: 2px solid #6366f1; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #4f46e5;">🧠 Análisis Inteligente de Matico</h3>
+                <div style="color: #334155; font-size: 14px; line-height: 1.7;">
+                    ${aiAnalysis}
+                </div>
+            </div>`;
+    }
+
+    const pedagogicalSummaryHTML = (weakness || improvementPlan) ? `
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #dbeafe; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #1d4ed8;">Foco pedagógico</h3>
+                <p style="margin: 8px 0; color: #334155;"><strong>Debilidad detectada:</strong> ${escapeHtml(weakness || 'Sin focos críticos detectados en esta sesión.')}</p>
+                <p style="margin: 8px 0; color: #334155;"><strong>Qué mejorar:</strong> ${escapeHtml(improvementPlan || `Mantener práctica constante en lotes de ${QUIZ_BATCH_SIZE} preguntas.`)}</p>
+            </div>` : '';
+
+    return `
+    <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 28px;">🐶 Reporte Matico</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9;">Sesión de Estudio Completada</p>
+        </div>
+        <div style="padding: 30px;">
+            <h2 style="color: #1e293b;">¡Hola! Aquí está el reporte de <strong>${nombre}</strong></h2>
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin: 16px 0;">
+                <p><strong>🎯 Asignatura:</strong> ${subject}</p>
+                <p><strong>📝 Sesión ${session}:</strong> ${topic}</p>
+                <p><strong>📅 Fecha:</strong> ${new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+            <div style="text-align: center; margin: 24px 0;">
+                <div style="display: inline-block; background: ${color}; color: white; border-radius: 50%; width: 100px; height: 100px; line-height: 100px; font-size: 32px; font-weight: bold;">
+                    ${successRate}%
+                </div>
+                <p style="font-size: 20px; margin-top: 12px;">${emoji} ${stats.correct} de 45 correctas</p>
+            </div>
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0;">
+                <h3 style="margin-top: 0;">📊 Desglose por Nivel</h3>
+                <p>🟢 <strong>Básico (15 preguntas):</strong> Completado</p>
+                <p>🟡 <strong>Avanzado (15 preguntas):</strong> Completado</p>
+                <p>🔴 <strong>Crítico (15 preguntas):</strong> Completado</p>
+            </div>
+            ${pedagogicalSummaryHTML}
+            ${errorsHTML}
+            ${analysisHTML}
+            <p style="color: #64748b; font-size: 13px; text-align: center; margin-top: 24px;">
+                Este correo fue enviado automáticamente por Matico 🐶
+            </p>
+        </div>
+    </div>`;
+};
+
+const buildDailyReminderHTMLClean = (nombre, session, topic, subject) => {
+    return `
+    <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #f59e0b, #f97316); padding: 30px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 28px;">☀️ ¡Buenos días!</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9;">Tu sesión de hoy te espera</p>
+        </div>
+        <div style="padding: 30px;">
+            <h2 style="color: #1e293b;">¡Hola <strong>${nombre}</strong>! 👋</h2>
+            <p style="color: #475569; font-size: 16px;">Hoy es un gran día para aprender. Tu sesión de estudio ya está lista:</p>
+            <div style="background: white; border-radius: 12px; padding: 24px; border: 2px solid #6366f1; margin: 20px 0; text-align: center;">
+                <p style="font-size: 14px; color: #6366f1; font-weight: bold; margin: 0;">🎯 ${subject}</p>
+                <h3 style="font-size: 22px; color: #1e293b; margin: 8px 0;">Sesión ${session}: ${topic}</h3>
+                <p style="color: #64748b;">45 preguntas en 3 niveles: Básico → Avanzado → Crítico</p>
+            </div>
+            <p style="color: #475569;">¡Recuerda que cada sesión completada te acerca más a tu meta! 🏆</p>
+            <p style="color: #64748b; font-size: 13px; text-align: center; margin-top: 24px;">
+                Matico 🐶 - Tu compañero de estudio
+            </p>
+        </div>
+    </div>`;
+};
+
 const getQuizPromptConfig = (subject, tema, options = {}) => {
     const { includeSourceMetadata = false, extraInstructions = '' } = options;
     const sourceFields = includeSourceMetadata ? `,
@@ -2297,7 +2442,7 @@ SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
                     }
                 }
 
-                const html = buildSessionReportHTML(userData.nombre, subject, session, topic, stats, wrongAnswers, aiAnalysis, {
+                const html = buildSessionReportHTMLClean(userData.nombre, subject, session, topic, stats, wrongAnswers, aiAnalysis, {
                     weakness,
                     improvementPlan
                 });
@@ -2655,7 +2800,7 @@ cron.schedule('0 9 * * *', async () => {
         const subject = 'MATEMATICA'; // Se podrÃƒÂ­a alternar por dÃƒÂ­a
 
         for (const user of users) {
-            const html = buildDailyReminderHTML(user.nombre, sessionNumber, topic, subject);
+            const html = buildDailyReminderHTMLClean(user.nombre, sessionNumber, topic, subject);
             const emailSubject = `Ã¢Ëœâ‚¬Ã¯Â¸Â Ã‚Â¡Buenos DÃƒÂ­as ${user.nombre}! Tu sesiÃƒÂ³n de ${subject} te espera`;
 
             // Al alumno
