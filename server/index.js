@@ -36,6 +36,7 @@ const QUIZ_BATCH_SIZE = 3;
 const QUIZ_PHASE_QUESTIONS = 15;
 const QUIZ_TOTAL_QUESTIONS = 45;
 const QUIZ_BATCHES_PER_PHASE = QUIZ_PHASE_QUESTIONS / QUIZ_BATCH_SIZE;
+const QUESTION_BANK_SHEET = 'QuestionBank';
 
 // ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n DeepSeek
 const AI_PROVIDER = (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi' : 'deepseek';
@@ -89,6 +90,127 @@ const getSheetsClient = async () => {
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
     return google.sheets({ version: 'v4', auth });
+};
+
+const normalizeSheetText = (value = '') => String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const normalizeSheetBool = (value = '') => {
+    const normalized = normalizeSheetText(value).toUpperCase();
+    return ['TRUE', 'VERDADERO', '1', 'SI', 'YES'].includes(normalized);
+};
+
+const normalizeQuestionBankLevel = (value = '') => {
+    const normalized = normalizeSheetText(value).toUpperCase();
+    if (!normalized) return '';
+    if (normalized === 'BASICO') return 'BASICO';
+    if (normalized === 'INTERMEDIO') return 'INTERMEDIO';
+    if (normalized === 'AVANZADO') return 'INTERMEDIO';
+    if (normalized === 'CRITICO') return 'AVANZADO';
+    return normalized;
+};
+
+const resolveQuestionBankPhase = (value = '') => {
+    const normalized = normalizeSheetText(value).toUpperCase();
+    if (!normalized) return 0;
+    if (normalized === 'BASICO' || normalized === '1') return 1;
+    if (normalized === 'INTERMEDIO' || normalized === 'AVANZADO' || normalized === '2') return 2;
+    if (normalized === 'CRITICO' || normalized === '3') return 3;
+    return Number(normalized) || 0;
+};
+
+const getQuestionBankRows = async (sheets) => {
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${QUESTION_BANK_SHEET}!A:S`,
+    }).catch((error) => {
+        if (error?.code === 400) return { data: { values: [] } };
+        throw error;
+    });
+
+    const rows = response.data.values || [];
+    if (!rows.length) return [];
+
+    const [headers, ...dataRows] = rows;
+    return dataRows.map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] || ''])));
+};
+
+const sampleQuestionBankQuestions = async (sheets, {
+    subject = '',
+    session = 0,
+    levelName = '',
+    batchIndex = 0,
+    requestedCount = QUIZ_BATCH_SIZE,
+    excludeSignatures = []
+} = {}) => {
+    const normalizedSubject = normalizeSheetText(subject).toUpperCase();
+    const normalizedLevel = normalizeQuestionBankLevel(levelName);
+    const expectedPhase = resolveQuestionBankPhase(levelName);
+    const sessionNumber = Number(session || 0) || 0;
+    const startSlot = (Math.max(0, Number(batchIndex) || 0) * requestedCount) + 1;
+    const endSlot = startSlot + requestedCount - 1;
+    const desiredSlots = Array.from({ length: requestedCount }, (_, index) => startSlot + index);
+    const excluded = new Set((excludeSignatures || []).map((item) => String(item || '').trim()).filter(Boolean));
+    const rows = await getQuestionBankRows(sheets);
+
+    const candidatesBySlot = new Map();
+    for (const row of rows) {
+        const rowSubject = normalizeSheetText(row.subject).toUpperCase();
+        const rowSession = Number(row.session || 0) || 0;
+        const rowPhase = Number(row.phase || 0) || 0;
+        const rowLevel = normalizeQuestionBankLevel(row.levelName || '');
+        const rowSlot = Number(row.slot || 0) || 0;
+        const rowActive = row.active === '' ? true : normalizeSheetBool(row.active);
+
+        if (!rowActive) continue;
+        if (!rowSubject || rowSubject !== normalizedSubject) continue;
+        if (sessionNumber && rowSession !== sessionNumber) continue;
+        if (expectedPhase && rowPhase !== expectedPhase) continue;
+        if (normalizedLevel && rowLevel && rowLevel !== normalizedLevel) continue;
+        if (rowSlot < startSlot || rowSlot > endSlot) continue;
+
+        const options = {
+            A: String(row.option_a || '').trim(),
+            B: String(row.option_b || '').trim(),
+            C: String(row.option_c || '').trim(),
+            D: String(row.option_d || '').trim(),
+        };
+        const signature = normalizeQuestionSignature(String(row.question || '').trim(), options);
+        if (!signature || excluded.has(signature)) continue;
+
+        if (!candidatesBySlot.has(rowSlot)) {
+            candidatesBySlot.set(rowSlot, []);
+        }
+
+        candidatesBySlot.get(rowSlot).push({
+            question: String(row.question || '').trim(),
+            options,
+            correct_answer: String(row.correct_answer || 'A').trim().toUpperCase().slice(0, 1) || 'A',
+            explanation: String(row.explanation || 'Explicacion no disponible.').trim(),
+            source_session: rowSession,
+            source_topic: String(row.topic || '').trim(),
+            source_mode: 'question_bank',
+            source_action: 'question_bank',
+            levelName: row.levelName || normalizedLevel,
+            batch_index: Math.max(0, Number(batchIndex) || 0),
+            slot: rowSlot,
+            proposal_index: Number(row.proposal_index || 0) || 0,
+            signature,
+        });
+    }
+
+    const selected = [];
+    for (const slot of desiredSlots) {
+        const slotCandidates = candidatesBySlot.get(slot) || [];
+        if (!slotCandidates.length) continue;
+        const choice = slotCandidates[Math.floor(Math.random() * slotCandidates.length)];
+        excluded.add(choice.signature);
+        selected.push(choice);
+    }
+
+    return selected;
 };
 
 const sanitizeFileSegment = (value = '') => {
@@ -1948,22 +2070,36 @@ Estructura JSON:
                     .filter(Boolean)
             );
 
-            const bankSeed = await sampleGeneratedQuestions({
-                subject,
-                source_mode: 'quiz',
-                source_session: sourceSession,
-                source_topic: tema,
-                levelName,
-                batch_index: batchIndex,
-                limit: requestedCount,
-                exclude_signatures: Array.from(seenSignatures)
-            }).catch((err) => {
-                console.error('[QUESTION_BANK] Error leyendo banco IA:', err.message);
-                return [];
-            });
+            const useSpreadsheetQuestionBank = isMathSubject(subject) || isReadingSubject(subject);
+            const bankSeed = useSpreadsheetQuestionBank
+                ? await sampleQuestionBankQuestions(sheets, {
+                    subject,
+                    session: sourceSession,
+                    levelName,
+                    batchIndex,
+                    requestedCount,
+                    excludeSignatures: Array.from(seenSignatures)
+                }).catch((err) => {
+                    console.error('[QUESTION_BANK] Error leyendo QuestionBank:', err.message);
+                    return [];
+                })
+                : await sampleGeneratedQuestions({
+                    subject,
+                    source_mode: 'quiz',
+                    source_session: sourceSession,
+                    source_topic: tema,
+                    levelName,
+                    batch_index: batchIndex,
+                    limit: requestedCount,
+                    exclude_signatures: Array.from(seenSignatures)
+                }).catch((err) => {
+                    console.error('[QUESTION_BANK] Error leyendo banco IA:', err.message);
+                    return [];
+                });
             timingTrace.mark('question_bank_seed_loaded', {
                 seed_count: Array.isArray(bankSeed) ? bankSeed.length : 0,
-                excluded_count: seenSignatures.size
+                excluded_count: seenSignatures.size,
+                source: useSpreadsheetQuestionBank ? 'spreadsheet' : 'local_json'
             });
 
             const normalizeOptionsObject = (options = {}) => {
@@ -2017,7 +2153,11 @@ Estructura JSON:
                     correct_answer: String(item.correct_answer || 'A').trim().toUpperCase().slice(0, 1) || 'A',
                     explanation: String(item.explanation || 'Explicacion no disponible.').trim(),
                     source_session: Number(item.source_session || sourceSession || 0) || 0,
-                    source_topic: String(item.source_topic || tema).trim()
+                    source_topic: String(item.source_topic || tema).trim(),
+                    source_mode: String(item.source_mode || '').trim(),
+                    source_action: String(item.source_action || '').trim(),
+                    slot: Number(item.slot || 0) || 0,
+                    proposal_index: Number(item.proposal_index || 0) || 0
                 };
 
                 const inferredCorrectAnswer = inferCorrectAnswerFromExplanation(normalizedQuestion);
@@ -2054,7 +2194,9 @@ Estructura JSON:
                         source_topic: String(question.source_topic || tema).trim(),
                         levelName: levelName || question.levelName || '',
                         batch_index: batchIndex,
-                        question_index: index + 1
+                        question_index: index + 1,
+                        source_mode: question.source_mode || (useSpreadsheetQuestionBank ? 'question_bank' : 'quiz'),
+                        source_action: question.source_action || (useSpreadsheetQuestionBank ? 'question_bank' : 'generate_quiz')
                     }));
 
                 timingTrace.mark('served_from_bank', {
@@ -2070,17 +2212,64 @@ Estructura JSON:
                 });
             }
 
-            const promptContext = readingPromptBundle?.promptText
-                || mathPromptBundle?.promptText
-                || biologyPromptBundle?.promptText
-                || chemistryPromptBundle?.promptText
+            const missingCount = Math.max(0, requestedCount - seededQuestions.length);
+            const aiRequestedCount = missingCount || requestedCount;
+            const readingPromptForGeneration = isReadingSubject(subject)
+                ? buildReadingPromptContext({
+                    topic: tema,
+                    subject,
+                    session: sourceSession,
+                    phase: levelName,
+                    batchIndex,
+                    totalBatches,
+                    requestedCount: aiRequestedCount
+                })
+                : null;
+            const mathPromptForGeneration = isMathSubject(subject)
+                ? buildMathPromptContext({
+                    topic: tema,
+                    subject,
+                    session: sourceSession,
+                    phase: levelName,
+                    batchIndex,
+                    totalBatches,
+                    requestedCount: aiRequestedCount
+                })
+                : null;
+            const biologyPromptForGeneration = isBiologySubject(subject)
+                ? buildBiologyPromptContext({
+                    topic: tema,
+                    subject,
+                    session: sourceSession,
+                    phase: levelName,
+                    batchIndex,
+                    totalBatches,
+                    requestedCount: aiRequestedCount
+                })
+                : null;
+            const chemistryPromptForGeneration = isChemistrySubject(subject)
+                ? buildChemistryPromptContext({
+                    topic: tema,
+                    subject,
+                    session: sourceSession,
+                    phase: levelName,
+                    batchIndex,
+                    totalBatches,
+                    requestedCount: aiRequestedCount
+                })
+                : null;
+
+            const promptContext = readingPromptForGeneration?.promptText
+                || mathPromptForGeneration?.promptText
+                || biologyPromptForGeneration?.promptText
+                || chemistryPromptForGeneration?.promptText
                 || [
                     `Tema: ${tema}`,
                     `Asignatura: ${subject}`,
                     `Fase: ${levelName || 'BASICO'}`,
                     `Sesion: ${sourceSession || 'sin sesion'}`,
                     `Lote: ${batchIndex + 1}/${totalBatches}`,
-                    `Genera EXACTAMENTE ${requestedCount} preguntas.`,
+                    `Genera EXACTAMENTE ${aiRequestedCount} preguntas.`,
                     'Devuelve SOLO JSON valido con la clave "questions".',
                     'No devuelvas menos preguntas.',
                     'No repitas preguntas.'
