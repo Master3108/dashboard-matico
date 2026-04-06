@@ -46,6 +46,33 @@ const wrapInlineMath = (text = '') => {
     return text;
 };
 
+const latexifyPlainMathSegment = (segment = '') => {
+    return String(segment || '')
+        .replace(/\*/g, ' \\cdot ')
+        .replace(/([A-Za-z0-9\)])\^([A-Za-z0-9]+)/g, '$1^{$2}')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+const wrapQuestionMath = (text = '', subject = '') => {
+    if (!text) return '';
+    if (text.includes('$')) return text;
+
+    const normalizedSubject = String(subject || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase();
+
+    if (!normalizedSubject.includes('MATEMAT')) {
+        return text;
+    }
+
+    return String(text).replace(
+        /(\(?\b[0-9A-Za-z]+\s*(?:\^[0-9A-Za-z]+)?(?:\s*[\*\/\+\-]\s*\(?\s*[0-9A-Za-z]+\s*(?:\^[0-9A-Za-z]+)?\s*\)?)+)/g,
+        (match) => `$${latexifyPlainMathSegment(match)}$`
+    );
+};
+
 const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, subject, readingContent, quizMode = 'normal', onRequestNextBatch = null, userEmail, userId }) => {
     const normalizeAnswerText = (value = '') => String(value || '')
         .replace(/<br\s*\/?>/gi, ' ')
@@ -521,7 +548,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                                 {question.isRetry ? '🔁 REPASO DE REITERACIÓN' : `Pregunta ${currentQuestion + 1} de ${displayedQuestionTotal}`}
                             </div>
                             <div className="text-xl md:text-2xl font-bold text-gray-800 leading-relaxed">
-                                <MathRenderer text={question.question} />
+                                <MathRenderer text={wrapQuestionMath(question.question, subject)} />
                             </div>
                         </div>
 
