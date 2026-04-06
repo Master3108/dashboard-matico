@@ -6,7 +6,7 @@ This file documents the current production setup for `dashboard-matico` so any d
 
 - VPS path: `/var/www/dashboard-matico`
 - Frontend build: `/var/www/dashboard-matico/dist`
-- Backend process: `pm2` running `server/server.js`
+- Backend process: `pm2` running `server/index.js`
 - Backend port: `127.0.0.1:3001`
 - Public domain: `https://srv1048418.hstgr.cloud`
 - Reverse proxy: `nginx` on the VPS
@@ -165,3 +165,20 @@ caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(()
 - Backend entry used in production: `server/server.js`
 
 If an AI or teammate is debugging production, start with this file before changing nginx, pm2, or webhook behavior.
+
+## Backend Entry Clarification
+
+- The active backend entry for this repo is `server/index.js`
+- `server/server.js` is a legacy compatibility file and should not be used for production deploys
+- The frontend session report flow (`accion: "send_session_report"`) is implemented in `server/index.js`
+- If `pm2` is still pointing at `server/server.js`, email/report features can fail or never run
+
+Useful `pm2` checks on the VPS:
+
+```bash
+cd /var/www/dashboard-matico/server
+pm2 show matico-server
+pm2 delete matico-server || true
+pm2 start index.js --name matico-server
+pm2 save
+```
