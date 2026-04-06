@@ -31,7 +31,7 @@ const NOTEBOOK_UPLOADS_DIR = path.join(LOCAL_UPLOADS_DIR, 'cuadernos');
 
 app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 const QUIZ_BATCH_SIZE = 3;
 const QUIZ_PHASE_QUESTIONS = 15;
 const QUIZ_TOTAL_QUESTIONS = 45;
@@ -239,13 +239,34 @@ const uploadToDrive = async (base64File, fileName, folderId, mimeType = 'image/j
 };
 
 // --- ConfiguraciÃƒÂ³n Nodemailer (Gmail) ---
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-    },
-});
+const EMAIL_CONFIG = {
+    user: (process.env.GMAIL_USER || '').trim(),
+    appPassword: (process.env.GMAIL_APP_PASSWORD || '').trim()
+};
+
+const isEmailEnabled = () => Boolean(EMAIL_CONFIG.user && EMAIL_CONFIG.appPassword);
+
+const getEmailStatus = () => {
+    const missing = [];
+
+    if (!EMAIL_CONFIG.user) missing.push('GMAIL_USER');
+    if (!EMAIL_CONFIG.appPassword) missing.push('GMAIL_APP_PASSWORD');
+
+    return {
+        enabled: missing.length === 0,
+        missing
+    };
+};
+
+const transporter = isEmailEnabled()
+    ? nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: EMAIL_CONFIG.user,
+            pass: EMAIL_CONFIG.appPassword,
+        },
+    })
+    : null;
 
 // --- HELPER: Obtener datos del usuario desde la hoja Usuarios ---
 const getUserFromSheet = async (sheets, user_id) => {
@@ -303,6 +324,31 @@ const sendEmail = async (to, subject, htmlBody) => {
 };
 
 // --- HELPER: Guardar evento en progress_log ---
+const sendEmailSafe = async (to, subject, htmlBody) => {
+    if (!to) {
+        console.log('[EMAIL] No se envio: falta destinatario');
+        return;
+    }
+
+    if (!isEmailEnabled() || !transporter) {
+        const status = getEmailStatus();
+        console.log(`[EMAIL] Deshabilitado, faltan variables: ${status.missing.join(', ')}`);
+        return;
+    }
+
+    try {
+        await transporter.sendMail({
+            from: `"Matico" <${EMAIL_CONFIG.user}>`,
+            to,
+            subject,
+            html: htmlBody,
+        });
+        console.log(`[EMAIL] Enviado a ${to}: "${subject}"`);
+    } catch (err) {
+        console.error(`[EMAIL] Error enviando a ${to}:`, err.message);
+    }
+};
+
 const logToSheet = async (
     sheets,
     user_id,
@@ -2259,11 +2305,11 @@ SÃƒÂ© conciso (mÃƒÂ¡ximo 200 palabras). Usa lenguaje cercano.` },
 
                 // Enviar al alumno
                 if (userData.email) {
-                    await sendEmail(userData.email, emailSubject, html);
+                    await sendEmailSafe(userData.email, emailSubject, html);
                 }
                 // Enviar al apoderado
                 if (userData.correo_apoderado) {
-                    await sendEmail(userData.correo_apoderado, `Ã°Å¸â€˜Â¨Ã¢â‚¬ÂÃ°Å¸â€˜Â©Ã¢â‚¬ÂÃ°Å¸â€˜Â§ ${emailSubject}`, html);
+                    await sendEmailSafe(userData.correo_apoderado, `Ã°Å¸â€˜Â¨Ã¢â‚¬ÂÃ°Å¸â€˜Â©Ã¢â‚¬ÂÃ°Å¸â€˜Â§ ${emailSubject}`, html);
                 }
             }
             return res.json({ success: true, message: "Reportes enviados con anÃƒÂ¡lisis IA" });
@@ -2614,11 +2660,11 @@ cron.schedule('0 9 * * *', async () => {
 
             // Al alumno
             if (user.email) {
-                await sendEmail(user.email, emailSubject, html);
+                await sendEmailSafe(user.email, emailSubject, html);
             }
             // Al apoderado
             if (user.correo_apoderado) {
-                await sendEmail(user.correo_apoderado, `Ã°Å¸â€œâ€¹ Recordatorio: ${user.nombre} tiene sesiÃƒÂ³n hoy`, html);
+                await sendEmailSafe(user.correo_apoderado, `Ã°Å¸â€œâ€¹ Recordatorio: ${user.nombre} tiene sesiÃƒÂ³n hoy`, html);
             }
         }
         console.log(`[CRON] Ã¢Å“â€¦ Recordatorios enviados a ${users.length} usuarios`);
@@ -2627,7 +2673,16 @@ cron.schedule('0 9 * * *', async () => {
     }
 }, { timezone: 'America/Santiago' });
 
-app.listen(PORT, () => console.log(`Ã°Å¸Å¡â‚¬ Servidor Matico Kaizen en puerto ${PORT}`));
+app.listen(PORT, () => {
+    const emailStatus = getEmailStatus();
+
+    console.log(`Servidor Matico Kaizen en puerto ${PORT}`);
+    if (emailStatus.enabled) {
+        console.log(`[EMAIL] Habilitado con la cuenta ${EMAIL_CONFIG.user}`);
+    } else {
+        console.log(`[EMAIL] Deshabilitado. Faltan variables: ${emailStatus.missing.join(', ')}`);
+    }
+});
 
 
 

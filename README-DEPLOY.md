@@ -22,7 +22,7 @@ The repository still contains Docker files, but the working production setup is 
 Do not assume production uses:
 
 - frontend on `127.0.0.1:8080`
-- backend on `127.0.0.1:5000`
+- backend on `127.0.0.1:3001`
 - `docker-compose up --build -d`
 
 That was an older setup and caused production confusion.
