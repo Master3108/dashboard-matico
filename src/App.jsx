@@ -3813,6 +3813,21 @@ const App = () => {
         };
     };
 
+    const getAccumulatedQuizCorrectAnswers = (fallbackCurrentPhase = null, fallbackPhaseScore = 0) => {
+        const localProgress = getQuizProgress();
+        const scores = localProgress?.scores || {};
+        const totalFromStoredScores = [1, 2, 3].reduce((sum, phase) => {
+            return sum + (Number(scores[phase] || 0) || 0);
+        }, 0);
+
+        if (totalFromStoredScores > 0) {
+            return totalFromStoredScores;
+        }
+
+        const currentPhaseNumber = Number(fallbackCurrentPhase || currentQuizPhase || 0) || 0;
+        return (Number(quizStats.correct || 0) || 0) + (currentPhaseNumber === 3 ? (Number(fallbackPhaseScore || 0) || 0) : 0);
+    };
+
     const updateQuizProgressState = (updater) => {
         const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
         const allProgress = JSON.parse(localStorage.getItem(quizProgressStorageKey) || '{}');
@@ -4188,7 +4203,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             backgroundTaskRef.current = null;
             setIsLoadingNextBatch(false);
 
-            const finalCorrectCount = quizStats.correct + phaseScore;
+            const finalCorrectCount = getAccumulatedQuizCorrectAnswers(currentQuizPhase, phaseScore);
             const finalStats = { ...quizStats, correct: finalCorrectCount, total: QUIZ_TOTAL_QUESTIONS };
             const finalWrong = [...allWrongAnswers, ...phaseWrongAnswers];
 
