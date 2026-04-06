@@ -590,7 +590,7 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                                                     {key}
                                                 </div>
                                                 <div className="text-gray-700 font-medium">
-                                                    <MathRenderer text={wrapInlineMath(value)} />
+                                                    <MathRenderer text={wrapQuestionMath(wrapInlineMath(value), subject)} />
                                                 </div>
                                             </div>
 
