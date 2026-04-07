@@ -3950,6 +3950,20 @@ const App = () => {
             return;
         }
 
+        if (
+            startingPhase === 1 &&
+            Number(protocol.questionsCompleted || 0) === 0 &&
+            protocol.localProgress?.theoryStarted &&
+            !protocol.localProgress?.theoryCompleted
+        ) {
+            console.log('[QUIZ] Basico inicial detectado con teoria leida pero sin cuaderno. Abriendo cuaderno obligatorio.');
+            setCurrentQuizPhase(startingPhase);
+            setIsTheoryNotebookMandatory(true);
+            setAiModalOpen(false);
+            setShowTheoryNotebookMission(true);
+            return;
+        }
+
         setIsCallingN8N(true);
         setAiModalOpen(false);
 
