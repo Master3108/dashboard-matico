@@ -2615,6 +2615,7 @@ const App = () => {
     const [theoryContent, _setTheoryContent] = useState("");
     const [theoryTitle, _setTheoryTitle] = useState("");
     const [showTheoryNotebookMission, setShowTheoryNotebookMission] = useState(false);
+    const [isTheoryNotebookMandatory, setIsTheoryNotebookMandatory] = useState(false);
     const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
     const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al día"
     const [showPrepExamSetup, setShowPrepExamSetup] = useState(false);
@@ -3929,6 +3930,7 @@ const App = () => {
         const theoryTopic = `${TODAYS_SUBJECT.oa_title} [FASE ACTUAL: ${levelName}] [MODO TEORIA: ${mandatory ? 'OBLIGATORIA' : 'OPCIONAL'}]`;
 
         setCurrentQuizPhase(phaseToUse);
+        setIsTheoryNotebookMandatory(Boolean(mandatory));
         markTheoryStatus({ started: true, phase: phaseToUse });
         await callAgent(currentSubject, 'start_route', theoryTopic, null, null, theoryTopic);
     };
@@ -3945,14 +3947,6 @@ const App = () => {
         if (protocol.requiresMandatoryTheory) {
             console.log('[QUIZ] Sesion nueva detectada. Lanzando teoria ludica obligatoria antes del quiz.');
             await openTheoryForCurrentPhase({ mandatory: true });
-            return;
-        }
-
-        if (protocol.localProgress?.theoryStarted && !protocol.localProgress?.theoryCompleted) {
-            console.log('[QUIZ] Teoria visible detectada. Abriendo cuaderno antes del quiz.');
-            setCurrentQuizPhase(startingPhase);
-            setAiModalOpen(false);
-            setShowTheoryNotebookMission(true);
             return;
         }
 
@@ -4109,18 +4103,26 @@ SALIDA REQUERIDA (JSON ESTRICTO):
     };
 
     const handleContinueToQuiz = async () => {
-        console.log('[THEORY] Usuario finalizó lectura. Abriendo cuaderno antes del quiz...');
-        setShowTheoryModal(false);
-        setShowTheoryNotebookMission(true);
+        if (isTheoryNotebookMandatory) {
+            console.log('[THEORY] Primera entrada de la sesión. Abriendo cuaderno obligatorio antes del quiz...');
+            setShowTheoryModal(false);
+            setShowTheoryNotebookMission(true);
+            return;
+        }
+
+        console.log('[THEORY] Reingreso detectado. Continuando directo al quiz sin cuaderno.');
+        await launchQuizAfterTheoryNotebook();
     };
 
     const handleTheoryNotebookComplete = async () => {
         setShowTheoryNotebookMission(false);
+        setIsTheoryNotebookMandatory(false);
         await launchQuizAfterTheoryNotebook();
     };
 
     const handleTheoryNotebookSkip = async () => {
         setShowTheoryNotebookMission(false);
+        setIsTheoryNotebookMandatory(false);
         await launchQuizAfterTheoryNotebook();
     };
 
@@ -4674,7 +4676,7 @@ ${finalData.capsule}`;
                         topic={theoryTitle || TODAYS_SUBJECT.oa_title || 'Teoría lúdica'}
                         readingContent={theoryContent || aiContent || TODAYS_SESSION.readingContent || ''}
                         onComplete={handleTheoryNotebookComplete}
-                        onSkip={handleTheoryNotebookSkip}
+                        onSkip={isTheoryNotebookMandatory ? null : handleTheoryNotebookSkip}
                         userEmail={currentUser?.email}
                         userId={USER_ID}
                     />
