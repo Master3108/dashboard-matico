@@ -46,6 +46,8 @@ const scoreToStars = (score = 0) => {
     return 0;
 };
 
+const isVisualProviderFailure = (message = '') => /invalid authentication|401|proveedor visual|kimi_api_key|nvidia_api_key|moonshot|analizar el cuaderno/i.test(String(message || ''));
+
 const buildPageAsset = (source, pageNumber) => {
     const canvas = document.createElement('canvas');
     let width = source.width || source.videoWidth || 0;
@@ -395,6 +397,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
     const stars = scoreToStars(analysis?.interpretation_score || 0);
     const tier = TIER_UI[analysis?.tier || 'insuficiente'] || TIER_UI.insuficiente;
     const pages = scanAssets?.pages || [];
+    const canBypassProviderFailure = status === 'error' && isVisualProviderFailure(feedback) && typeof onComplete === 'function';
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -556,8 +559,19 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
                                 <button onClick={restartFlow} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
                                     <RotateCcw size={18} /> Intentar de nuevo
                                 </button>
-                                {onSkip && <button onClick={onSkip} className="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl">Saltar</button>}
+                                {canBypassProviderFailure ? (
+                                    <button onClick={() => onComplete?.(0, 'insuficiente')} className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-semibold">
+                                        Continuar al quiz
+                                    </button>
+                                ) : (
+                                    onSkip && <button onClick={onSkip} className="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl">Saltar</button>
+                                )}
                             </div>
+                            {canBypassProviderFailure && (
+                                <p className="text-xs text-slate-500 text-center">
+                                    El cuaderno quedó temporalmente fuera de servicio por un problema del proveedor visual. Puedes seguir estudiando mientras lo corregimos.
+                                </p>
+                            )}
                         </div>
                     )}
                 </div>
