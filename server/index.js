@@ -44,22 +44,34 @@ const QUIZ_BATCHES_PER_PHASE = QUIZ_PHASE_QUESTIONS / QUIZ_BATCH_SIZE;
 const QUESTION_BANK_SHEET = 'QuestionBank';
 
 // ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n DeepSeek
-const AI_PROVIDER = (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi' : 'deepseek';
-const AI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
+const FORCED_AI_PROVIDER = String(process.env.AI_PROVIDER || '').trim().toLowerCase();
+const AI_PROVIDER = FORCED_AI_PROVIDER || (
+    process.env.DEEPSEEK_API_KEY ? 'deepseek'
+        : (process.env.OPENAI_API_KEY ? 'openai' : ((process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi' : 'deepseek'))
+);
+const AI_API_KEY = AI_PROVIDER === 'kimi'
+    ? (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || process.env.OPENAI_API_KEY)
+    : (AI_PROVIDER === 'openai'
+        ? (process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY)
+        : (process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY || process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY));
 const AI_BASE_URL = AI_PROVIDER === 'kimi'
     ? (process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1')
-    : 'https://api.deepseek.com/v1';
+    : (AI_PROVIDER === 'openai'
+        ? (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1')
+        : 'https://api.deepseek.com/v1');
 const AI_MODELS = {
     fast: AI_PROVIDER === 'kimi'
         ? (process.env.KIMI_FAST_MODEL || 'kimi-k2-turbo-preview')
-        : 'deepseek-chat',
+        : (AI_PROVIDER === 'openai' ? (process.env.OPENAI_FAST_MODEL || 'gpt-4.1-mini') : 'deepseek-chat'),
     thinking: AI_PROVIDER === 'kimi'
         ? (process.env.KIMI_THINKING_MODEL || 'kimi-k2-thinking-preview')
-        : 'deepseek-chat'
+        : (AI_PROVIDER === 'openai' ? (process.env.OPENAI_THINKING_MODEL || 'gpt-4.1') : 'deepseek-chat')
 };
 const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '';
 const KIMI_BASE_URL = process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1';
 const NOTEBOOK_VISION_MODEL = process.env.KIMI_VISION_MODEL || process.env.KIMI_FAST_MODEL || 'kimi-k2.5';
+const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini';
+const OPENAI_DIRECT_API_KEY = process.env.OPENAI_API_KEY || '';
 
 const openai = new OpenAI({
     apiKey: AI_API_KEY,
@@ -70,6 +82,12 @@ const kimiVisionClient = KIMI_API_KEY
     ? new OpenAI({
         apiKey: KIMI_API_KEY,
         baseURL: KIMI_BASE_URL
+    })
+    : null;
+
+const openaiVisionClient = OPENAI_DIRECT_API_KEY
+    ? new OpenAI({
+        apiKey: OPENAI_DIRECT_API_KEY
     })
     : null;
 
@@ -652,6 +670,23 @@ RESPONDE SOLO JSON VALIDO CON ESTA FORMA:
 
         const responseJson = await nvidiaResponse.json();
         rawText = responseJson.choices?.[0]?.message?.content || '';
+    } else if (openaiVisionClient) {
+        const openaiResponse = await openaiVisionClient.chat.completions.create({
+            model: OPENAI_VISION_MODEL,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: prompt },
+                    ...normalizedImages.map((imageBase64) => ({
+                        type: 'image_url',
+                        image_url: { url: `data:${imageMimeType};base64,${imageBase64}` }
+                    }))
+                ]
+            }],
+            max_tokens: 1600,
+            temperature: 0.2
+        });
+        rawText = openaiResponse.choices?.[0]?.message?.content || '';
     } else if (kimiVisionClient) {
         const kimiResponse = await kimiVisionClient.chat.completions.create({
             model: NOTEBOOK_VISION_MODEL,
@@ -670,7 +705,7 @@ RESPONDE SOLO JSON VALIDO CON ESTA FORMA:
         });
         rawText = kimiResponse.choices?.[0]?.message?.content || '';
     } else {
-        throw new Error('No hay proveedor visual configurado. Configura KIMI_API_KEY para analizar el cuaderno.');
+        throw new Error('No hay proveedor visual configurado. Configura OPENAI_API_KEY o KIMI_API_KEY para analizar el cuaderno.');
     }
 
     const parsed = parseNotebookAnalysisResponse(rawText);
@@ -3491,6 +3526,20 @@ RESPONDE SOLO CON JSON VALIDO:
 
                         const nvidiaData = await nvidiaResponse.json();
                         resultText = nvidiaData.choices?.[0]?.message?.content || '';
+                    } else if (openaiVisionClient) {
+                        const openaiResponse = await openaiVisionClient.chat.completions.create({
+                            model: OPENAI_VISION_MODEL,
+                            messages: [{
+                                role: 'user',
+                                content: [
+                                    { type: 'text', text: cuadernoPrompt },
+                                    { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}` } }
+                                ]
+                            }],
+                            max_tokens: 2048,
+                            temperature: 0.3
+                        });
+                        resultText = openaiResponse.choices?.[0]?.message?.content || '';
                     } else if (kimiVisionClient) {
                         const kimiResponse = await kimiVisionClient.chat.completions.create({
                             model: NOTEBOOK_VISION_MODEL,
