@@ -178,10 +178,20 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
             let stream;
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1080 },
+                        height: { ideal: 1920 },
+                        aspectRatio: { ideal: 9 / 16 }
+                    }
                 });
             } catch {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        aspectRatio: { ideal: 9 / 16 }
+                    }
+                });
             }
 
             streamRef.current = stream;
@@ -572,7 +582,9 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
                     </div>
 
                     <div className="relative w-full max-w-2xl px-4">
-                        <video ref={videoRef} className="w-full rounded-2xl bg-black object-cover" playsInline muted />
+                        <div className="w-full max-w-sm mx-auto aspect-[9/16] rounded-2xl overflow-hidden bg-black border border-slate-200 shadow-inner">
+                            <video ref={videoRef} className="w-full h-full bg-black object-cover" playsInline muted />
+                        </div>
                     </div>
 
                     <div className="mt-8">

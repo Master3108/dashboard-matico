@@ -57,11 +57,21 @@ const AI_MODELS = {
         ? (process.env.KIMI_THINKING_MODEL || 'kimi-k2-thinking-preview')
         : 'deepseek-chat'
 };
+const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '';
+const KIMI_BASE_URL = process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1';
+const NOTEBOOK_VISION_MODEL = process.env.KIMI_VISION_MODEL || process.env.KIMI_FAST_MODEL || 'kimi-k2.5';
 
 const openai = new OpenAI({
     apiKey: AI_API_KEY,
     baseURL: AI_BASE_URL
 });
+
+const kimiVisionClient = KIMI_API_KEY
+    ? new OpenAI({
+        apiKey: KIMI_API_KEY,
+        baseURL: KIMI_BASE_URL
+    })
+    : null;
 
 // ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n Google Sheets
 const SPREADSHEET_ID = '1l1GLMXh8_Uo_O7XJOY7ZJxh1TER2hxrXTOsc_EcByHo';
@@ -609,18 +619,42 @@ RESPONDE SOLO JSON VALIDO CON ESTA FORMA:
   "reasoning_summary": ""
 }`;
 
-    if (!process.env.NVIDIA_API_KEY) {
-        throw new Error('NVIDIA_API_KEY no configurada para el analisis visual');
-    }
+    let rawText = '';
 
-    const nvidiaResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            model: 'moonshotai/kimi-k2.5',
+    if (process.env.NVIDIA_API_KEY) {
+        const nvidiaResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'moonshotai/kimi-k2.5',
+                messages: [{
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: prompt },
+                        ...normalizedImages.map((imageBase64) => ({
+                            type: 'image_url',
+                            image_url: { url: `data:${imageMimeType};base64,${imageBase64}` }
+                        }))
+                    ]
+                }],
+                max_tokens: 1600,
+                temperature: 0.2
+            })
+        });
+
+        if (!nvidiaResponse.ok) {
+            const errText = await nvidiaResponse.text();
+            throw new Error(`NVIDIA API error: ${nvidiaResponse.status} - ${errText.substring(0, 160)}`);
+        }
+
+        const responseJson = await nvidiaResponse.json();
+        rawText = responseJson.choices?.[0]?.message?.content || '';
+    } else if (kimiVisionClient) {
+        const kimiResponse = await kimiVisionClient.chat.completions.create({
+            model: NOTEBOOK_VISION_MODEL,
             messages: [{
                 role: 'user',
                 content: [
@@ -633,16 +667,12 @@ RESPONDE SOLO JSON VALIDO CON ESTA FORMA:
             }],
             max_tokens: 1600,
             temperature: 0.2
-        })
-    });
-
-    if (!nvidiaResponse.ok) {
-        const errText = await nvidiaResponse.text();
-        throw new Error(`NVIDIA API error: ${nvidiaResponse.status} - ${errText.substring(0, 160)}`);
+        });
+        rawText = kimiResponse.choices?.[0]?.message?.content || '';
+    } else {
+        throw new Error('No hay proveedor visual configurado. Configura KIMI_API_KEY para analizar el cuaderno.');
     }
 
-    const responseJson = await nvidiaResponse.json();
-    const rawText = responseJson.choices?.[0]?.message?.content || '';
     const parsed = parseNotebookAnalysisResponse(rawText);
     const normalized = normalizeNotebookAnalysisResult(parsed, { topic: submission.topic });
 
@@ -3431,19 +3461,39 @@ CALIFICACION:
 RESPONDE SOLO CON JSON VALIDO:
 {"success":true,"tier":"oro|plata|insuficiente","feedback":"Mensaje motivador 2-3 oraciones","suggestion":"Tip para mejorar","conceptos_detectados":["concepto1"],"conceptos_faltantes":["concepto"],"es_manuscrito":true,"tiene_organizadores":true}`;
 
-                    if (!process.env.NVIDIA_API_KEY) {
-                        console.error('[CUADERNO-BG] NVIDIA_API_KEY no configurada');
-                        return;
-                    }
+                    let resultText = '';
 
-                    const nvidiaResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            model: 'moonshotai/kimi-k2.5',
+                    if (process.env.NVIDIA_API_KEY) {
+                        const nvidiaResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                model: 'moonshotai/kimi-k2.5',
+                                messages: [{
+                                    role: 'user',
+                                    content: [
+                                        { type: 'text', text: cuadernoPrompt },
+                                        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}` } }
+                                    ]
+                                }],
+                                max_tokens: 2048,
+                                temperature: 0.3
+                            })
+                        });
+
+                        if (!nvidiaResponse.ok) {
+                            const errText = await nvidiaResponse.text();
+                            throw new Error(`NVIDIA API error: ${nvidiaResponse.status} - ${errText.substring(0, 100)}`);
+                        }
+
+                        const nvidiaData = await nvidiaResponse.json();
+                        resultText = nvidiaData.choices?.[0]?.message?.content || '';
+                    } else if (kimiVisionClient) {
+                        const kimiResponse = await kimiVisionClient.chat.completions.create({
+                            model: NOTEBOOK_VISION_MODEL,
                             messages: [{
                                 role: 'user',
                                 content: [
@@ -3453,16 +3503,13 @@ RESPONDE SOLO CON JSON VALIDO:
                             }],
                             max_tokens: 2048,
                             temperature: 0.3
-                        })
-                    });
-
-                    if (!nvidiaResponse.ok) {
-                        const errText = await nvidiaResponse.text();
-                        throw new Error(`NVIDIA API error: ${nvidiaResponse.status} - ${errText.substring(0, 100)}`);
+                        });
+                        resultText = kimiResponse.choices?.[0]?.message?.content || '';
+                    } else {
+                        console.error('[CUADERNO-BG] No hay proveedor visual configurado');
+                        return;
                     }
 
-                    const nvidiaData = await nvidiaResponse.json();
-                    let resultText = nvidiaData.choices?.[0]?.message?.content || '';
                     resultText = resultText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
 
                     let result;
