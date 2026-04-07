@@ -8,6 +8,7 @@ import cron from 'node-cron';
 import { Readable } from 'stream';
 import fs from 'fs/promises';
 import path from 'path';
+import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions, sampleGeneratedQuestions } from './generatedQuestionBank.js';
 import { recordAdaptiveEvent, getAdaptiveSnapshot, backfillAdaptiveProfileFromProgressRows } from './adaptiveProfileStore.js';
@@ -28,6 +29,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const LOCAL_UPLOADS_DIR = path.join(__dirname, 'uploads');
 const NOTEBOOK_UPLOADS_DIR = path.join(LOCAL_UPLOADS_DIR, 'cuadernos');
+const DATA_DIR = path.join(__dirname, 'data');
+const NOTEBOOK_SUBMISSIONS_FILE = path.join(DATA_DIR, 'notebook_submissions.json');
+const NOTEBOOK_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const NOTEBOOK_QUIZ_THRESHOLD = 40;
 
 app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
 
@@ -223,7 +228,12 @@ const sanitizeFileSegment = (value = '') => {
 };
 
 const saveBase64ToLocalFile = async (base64File, fileName, subfolder = 'general') => {
-    const targetDir = path.join(LOCAL_UPLOADS_DIR, subfolder);
+    const normalizedSubfolder = String(subfolder || 'general')
+        .replace(/\\/g, '/')
+        .split('/')
+        .filter(Boolean);
+    const publicSubfolder = normalizedSubfolder.join('/');
+    const targetDir = path.join(LOCAL_UPLOADS_DIR, ...normalizedSubfolder);
     await fs.mkdir(targetDir, { recursive: true });
 
     const cleanName = sanitizeFileSegment(path.parse(fileName).name);
@@ -246,9 +256,222 @@ const saveBase64ToLocalFile = async (base64File, fileName, subfolder = 'general'
 
     return {
         absolutePath,
-        publicUrl: `/uploads/${subfolder}/${finalName}`,
+        publicUrl: `/uploads/${publicSubfolder}/${finalName}`,
         fileName: finalName
     };
+};
+
+const ensureJsonFile = async (filePath, defaultValue) => {
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+
+    try {
+        await fs.access(filePath);
+    } catch {
+        await fs.writeFile(filePath, JSON.stringify(defaultValue, null, 2), 'utf-8');
+    }
+};
+
+const readJsonFile = async (filePath, defaultValue) => {
+    await ensureJsonFile(filePath, defaultValue);
+
+    try {
+        const raw = await fs.readFile(filePath, 'utf-8');
+        return raw.trim() ? JSON.parse(raw) : defaultValue;
+    } catch (error) {
+        console.error(`[JSON] Error leyendo ${path.basename(filePath)}:`, error.message);
+        return defaultValue;
+    }
+};
+
+const writeJsonFile = async (filePath, value) => {
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.writeFile(filePath, JSON.stringify(value, null, 2), 'utf-8');
+};
+
+const readNotebookSubmissions = async () => readJsonFile(NOTEBOOK_SUBMISSIONS_FILE, {});
+
+const writeNotebookSubmissions = async (submissions) => {
+    await writeJsonFile(NOTEBOOK_SUBMISSIONS_FILE, submissions);
+};
+
+const clampNumber = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const resolveNotebookTier = (score = 0, isHandwritten = false) => {
+    if (!isHandwritten || score < NOTEBOOK_QUIZ_THRESHOLD) return 'insuficiente';
+    if (score >= 85) return 'oro';
+    return 'plata';
+};
+
+const buildNotebookDefaultFeedback = ({ isHandwritten, interpretationScore, topic = '' }) => {
+    if (!isHandwritten) {
+        return 'Profe Matico no pudo validar escritura a mano en el documento. Escribe en tu cuaderno y toma una foto centrada, con buena luz.';
+    }
+
+    if (interpretationScore >= NOTEBOOK_QUIZ_THRESHOLD) {
+        return `Profe Matico detectó una comprensión suficiente de ${topic || 'la sesión'} y el quiz ya está listo para continuar.`;
+    }
+
+    if (interpretationScore >= 50) {
+        return 'Vas bien, pero todavía faltan ideas clave o mayor claridad en tus palabras. Corrige el cuaderno y vuelve a enviarlo para desbloquear el quiz.';
+    }
+
+    return 'El resumen todavía no refleja la idea central de la sesión. Reescribe con tus palabras, corrige tus errores y toma una nueva foto más clara.';
+};
+
+const buildNotebookDefaultSuggestion = ({ isHandwritten, interpretationScore }) => {
+    if (!isHandwritten) {
+        return 'Evita pantallazos o texto impreso. Usa lápiz o lápices de color y enfoca solo la hoja.';
+    }
+
+    if (interpretationScore >= NOTEBOOK_QUIZ_THRESHOLD) {
+        return 'Sigue al quiz inmediato y usa la retroalimentación para sostener el aprendizaje.';
+    }
+
+    if (interpretationScore >= 50) {
+        return 'Agrega dos ideas principales que faltaron, explica con tus palabras y vuelve a escanear.';
+    }
+
+    return 'Parte desde cero con 3 ideas clave, una explicación simple y, si puedes, flechas o esquemas.';
+};
+
+const normalizeNotebookAnalysisResult = (rawResult = {}, { topic = '' } = {}) => {
+    const isHandwritten = Boolean(rawResult.is_handwritten ?? rawResult.es_manuscrito);
+    const interpretationScore = clampNumber(
+        Number(rawResult.interpretation_score ?? rawResult.nivel_comprension ?? 0) || 0,
+        0,
+        100
+    );
+    const detectedConcepts = Array.isArray(rawResult.detected_concepts)
+        ? rawResult.detected_concepts
+        : (Array.isArray(rawResult.conceptos_detectados) ? rawResult.conceptos_detectados : []);
+    const missingConcepts = Array.isArray(rawResult.missing_concepts)
+        ? rawResult.missing_concepts
+        : (Array.isArray(rawResult.conceptos_faltantes) ? rawResult.conceptos_faltantes : []);
+    const ocrText = String(rawResult.ocr_text ?? rawResult.transcripcion_ocr ?? '').trim();
+    const reasoningSummary = String(rawResult.reasoning_summary ?? rawResult.analisis_escritura ?? '').trim();
+    const quizReady = isHandwritten && interpretationScore >= NOTEBOOK_QUIZ_THRESHOLD;
+    const tier = resolveNotebookTier(interpretationScore, isHandwritten);
+    const xpReward = tier === 'oro' ? 50 : (tier === 'plata' ? 30 : 0);
+
+    return {
+        is_handwritten: isHandwritten,
+        ocr_text: ocrText,
+        detected_concepts: detectedConcepts.map((item) => String(item || '').trim()).filter(Boolean),
+        missing_concepts: missingConcepts.map((item) => String(item || '').trim()).filter(Boolean),
+        interpretation_score: interpretationScore,
+        feedback: String(rawResult.feedback || '').trim() || buildNotebookDefaultFeedback({ isHandwritten, interpretationScore, topic }),
+        suggestion: String(rawResult.suggestion || '').trim() || buildNotebookDefaultSuggestion({ isHandwritten, interpretationScore }),
+        reasoning_summary: reasoningSummary,
+        quiz_ready: quizReady,
+        tier,
+        xp_reward: xpReward
+    };
+};
+
+const upsertNotebookSubmission = async (submissionId, nextValue) => {
+    const submissions = await readNotebookSubmissions();
+    submissions[submissionId] = nextValue;
+    await writeNotebookSubmissions(submissions);
+    return submissions[submissionId];
+};
+
+const updateNotebookSubmission = async (submissionId, updater) => {
+    const submissions = await readNotebookSubmissions();
+    const current = submissions[submissionId];
+    if (!current) return null;
+
+    const updated = typeof updater === 'function' ? updater(current) : { ...current, ...updater };
+    submissions[submissionId] = {
+        ...updated,
+        updated_at: new Date().toISOString()
+    };
+    await writeNotebookSubmissions(submissions);
+    return submissions[submissionId];
+};
+
+const resolveNotebookPublicUrl = (submission = {}) => {
+    const userFolder = sanitizeFileSegment(submission.user_id || submission.email || 'anon');
+    const fileName = submission.file_name || `${submission.id}.pdf`;
+    return `/uploads/cuadernos/${userFolder}/${fileName}`;
+};
+
+const deleteNotebookSubmissionFile = async (submission = {}) => {
+    const targetPath = submission.pdf_path;
+    if (!targetPath) return false;
+
+    try {
+        await fs.unlink(targetPath);
+        return true;
+    } catch (error) {
+        if (error?.code !== 'ENOENT') {
+            console.error('[NOTEBOOK] Error eliminando PDF:', error.message);
+        }
+        return false;
+    }
+};
+
+const expireNotebookSubmissionIfNeeded = async (submission = {}) => {
+    if (!submission?.id || !submission.expires_at) return submission;
+    if (submission.status === 'expired') return submission;
+
+    const expiresAt = new Date(submission.expires_at).getTime();
+    if (!expiresAt || expiresAt > Date.now()) {
+        return submission;
+    }
+
+    await deleteNotebookSubmissionFile(submission);
+    return updateNotebookSubmission(submission.id, (current) => ({
+        ...current,
+        status: 'expired',
+        public_url: resolveNotebookPublicUrl(current),
+        error: null
+    }));
+};
+
+const cleanupExpiredNotebookSubmissions = async () => {
+    const submissions = await readNotebookSubmissions();
+    let expiredCount = 0;
+    let changed = false;
+
+    for (const [submissionId, submission] of Object.entries(submissions)) {
+        if (!submission?.expires_at || submission.status === 'expired') continue;
+        const expiresAt = new Date(submission.expires_at).getTime();
+        if (!expiresAt || expiresAt > Date.now()) continue;
+
+        await deleteNotebookSubmissionFile(submission);
+        submissions[submissionId] = {
+            ...submission,
+            status: 'expired',
+            public_url: resolveNotebookPublicUrl(submission),
+            updated_at: new Date().toISOString(),
+            error: null
+        };
+        expiredCount += 1;
+        changed = true;
+    }
+
+    if (changed) {
+        await writeNotebookSubmissions(submissions);
+    }
+
+    return expiredCount;
+};
+
+const getLatestNotebookSubmissionForSession = async ({ userId = '', subject = '', session = '' } = {}) => {
+    const submissions = await readNotebookSubmissions();
+    const normalizedUserId = String(userId || '').trim();
+    const normalizedSubject = String(subject || '').trim().toUpperCase();
+    const normalizedSession = String(session || '').trim();
+
+    return Object.values(submissions)
+        .filter((submission) => {
+            if (!submission || submission.status !== 'completed' || !submission.analysis_result) return false;
+            if (normalizedUserId && String(submission.user_id || '').trim() !== normalizedUserId) return false;
+            if (normalizedSubject && String(submission.subject || '').trim().toUpperCase() !== normalizedSubject) return false;
+            if (normalizedSession && String(submission.session_id || '').trim() !== normalizedSession) return false;
+            return true;
+        })
+        .sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime())[0] || null;
 };
 
 const getAdminEmails = () => {
@@ -263,35 +486,327 @@ const isAdminEmail = (email = '') => {
 };
 
 const listNotebookFiles = async () => {
-    await fs.mkdir(NOTEBOOK_UPLOADS_DIR, { recursive: true });
-    const entries = await fs.readdir(NOTEBOOK_UPLOADS_DIR, { withFileTypes: true });
+    const submissions = await readNotebookSubmissions();
+    const files = await Promise.all(Object.values(submissions).map(async (submission) => {
+        const activeSubmission = await expireNotebookSubmissionIfNeeded(submission);
+        if (!activeSubmission || activeSubmission.status === 'expired') return null;
 
-    const files = await Promise.all(entries
-        .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.pdf'))
-        .map(async (entry) => {
-            const absolutePath = path.join(NOTEBOOK_UPLOADS_DIR, entry.name);
-            const stats = await fs.stat(absolutePath);
-
+        try {
+            const stats = await fs.stat(activeSubmission.pdf_path);
             return {
-                fileName: entry.name,
-                absolutePath,
-                publicUrl: `/uploads/cuadernos/${entry.name}`,
+                submissionId: activeSubmission.id,
+                fileName: activeSubmission.file_name,
+                absolutePath: activeSubmission.pdf_path,
+                publicUrl: activeSubmission.public_url || resolveNotebookPublicUrl(activeSubmission),
                 sizeBytes: stats.size,
                 sizeLabel: `${(stats.size / 1024).toFixed(1)} KB`,
-                updatedAt: stats.mtime.toISOString(),
-                updatedAtLabel: stats.mtime.toLocaleString('es-CL')
+                updatedAt: activeSubmission.updated_at || stats.mtime.toISOString(),
+                updatedAtLabel: new Date(activeSubmission.updated_at || stats.mtime).toLocaleString('es-CL'),
+                ownerEmail: activeSubmission.email || '',
+                userId: activeSubmission.user_id || '',
+                status: activeSubmission.status || 'completed'
             };
-        }));
+        } catch (error) {
+            if (error?.code !== 'ENOENT') {
+                console.error('[NOTEBOOK] Error leyendo archivo del listado:', error.message);
+            }
+            return null;
+        }
+    }));
 
-    return files.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    return files
+        .filter(Boolean)
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 };
 
 const deleteNotebookFile = async (fileName) => {
     const safeName = path.basename(fileName);
+    const submissions = await readNotebookSubmissions();
+    const match = Object.values(submissions).find((submission) => submission?.file_name === safeName);
+
+    if (match) {
+        await deleteNotebookSubmissionFile(match);
+        delete submissions[match.id];
+        await writeNotebookSubmissions(submissions);
+        return match.pdf_path;
+    }
+
     const absolutePath = path.join(NOTEBOOK_UPLOADS_DIR, safeName);
     await fs.unlink(absolutePath);
     return absolutePath;
 };
+
+const parseNotebookAnalysisResponse = (rawText = '') => {
+    const cleaned = String(rawText || '')
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+
+    try {
+        return JSON.parse(cleaned);
+    } catch {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) {
+            return JSON.parse(match[0]);
+        }
+        throw new Error('No se pudo interpretar el JSON del analisis');
+    }
+};
+
+const analyzeNotebookSubmission = async (submission, {
+    previewImageBase64,
+    previewImagesBase64 = [],
+    imageMimeType = 'image/jpeg',
+    readingContent = '',
+    grade = '1medio'
+} = {}) => {
+    const normalizedImages = (Array.isArray(previewImagesBase64) ? previewImagesBase64 : [])
+        .map((item) => String(item || '').trim())
+        .filter(Boolean);
+    if (!normalizedImages.length && previewImageBase64) {
+        normalizedImages.push(String(previewImageBase64).trim());
+    }
+    const readingExcerpt = String(readingContent || '').substring(0, 4000);
+    const isCorrectionFlow = /correcci[oó]n|error/i.test(String(submission.topic || ''));
+    const prompt = `Eres Profe Matico, tutor pedagógico para estudiantes de ${grade} en Chile.
+
+Analiza un cuaderno manuscrito enviado por un alumno.
+
+CONTEXTO
+- Asignatura: ${submission.subject || 'MATEMATICA'}
+- Sesion: ${submission.session_id || '0'}
+- Tema: ${submission.topic || 'Sesion de estudio'}
+- Cantidad de paginas: ${submission.page_count || normalizedImages.length || 1}
+- Flujo de correccion de error: ${isCorrectionFlow ? 'si' : 'no'}
+- Teoria o explicacion esperada:
+${readingExcerpt || 'Sin contenido adicional'}
+
+OBJETIVO
+- Lee la hoja manuscrita.
+- Verifica si es escritura a mano real.
+- Haz OCR solo del texto principal legible.
+- Compara contra la teoria.
+- Evalua comprension, ideas principales, uso de palabras propias, errores conceptuales, omisiones relevantes y, si aplica, evidencia de correccion de falencias.
+
+REGLAS
+- interpretation_score debe ser un entero de 0 a 100.
+- Si no es manuscrito, marca is_handwritten=false.
+- Si la comprension es suficiente para comenzar quiz, debe quedar en ${NOTEBOOK_QUIZ_THRESHOLD} o mas.
+- detected_concepts y missing_concepts deben ser listas cortas.
+- feedback debe ser claro, motivador y accionable en 2 o 3 oraciones.
+- suggestion debe ser una sola accion concreta.
+- reasoning_summary debe resumir por que tomaste la decision.
+
+RESPONDE SOLO JSON VALIDO CON ESTA FORMA:
+{
+  "is_handwritten": true,
+  "ocr_text": "",
+  "detected_concepts": ["concepto"],
+  "missing_concepts": ["concepto"],
+  "interpretation_score": 0,
+  "feedback": "",
+  "suggestion": "",
+  "reasoning_summary": ""
+}`;
+
+    if (!process.env.NVIDIA_API_KEY) {
+        throw new Error('NVIDIA_API_KEY no configurada para el analisis visual');
+    }
+
+    const nvidiaResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: 'moonshotai/kimi-k2.5',
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: prompt },
+                    ...normalizedImages.map((imageBase64) => ({
+                        type: 'image_url',
+                        image_url: { url: `data:${imageMimeType};base64,${imageBase64}` }
+                    }))
+                ]
+            }],
+            max_tokens: 1600,
+            temperature: 0.2
+        })
+    });
+
+    if (!nvidiaResponse.ok) {
+        const errText = await nvidiaResponse.text();
+        throw new Error(`NVIDIA API error: ${nvidiaResponse.status} - ${errText.substring(0, 160)}`);
+    }
+
+    const responseJson = await nvidiaResponse.json();
+    const rawText = responseJson.choices?.[0]?.message?.content || '';
+    const parsed = parseNotebookAnalysisResponse(rawText);
+    const normalized = normalizeNotebookAnalysisResult(parsed, { topic: submission.topic });
+
+    await updateNotebookSubmission(submission.id, (current) => ({
+        ...current,
+        status: 'completed',
+        error: null,
+        analysis_result: normalized,
+        public_url: current.public_url || resolveNotebookPublicUrl(current)
+    }));
+
+    if (normalized.xp_reward > 0 && submission.user_id) {
+        try {
+            const sheets = await getSheetsClient();
+            await logToSheet(
+                sheets,
+                submission.user_id,
+                submission.subject || '',
+                submission.session_id || '',
+                'cuaderno_completed',
+                '',
+                '',
+                normalized.tier,
+                '',
+                normalized.xp_reward,
+                grade,
+                submission.topic || '',
+                '',
+                'cuaderno'
+            );
+        } catch (error) {
+            console.error('[NOTEBOOK] Error registrando XP en Sheet:', error.message);
+        }
+    }
+
+    return normalized;
+};
+
+const createNotebookSubmission = async ({
+    user_id,
+    email,
+    subject,
+    session_id,
+    topic,
+    reading_content,
+    pdf_base64,
+    pdf_file_name,
+    preview_image_base64,
+    preview_images_base64,
+    image_mime_type,
+    scan_id,
+    page_count,
+    grade
+} = {}) => {
+    if (!pdf_base64) {
+        throw new Error('Falta pdf_base64');
+    }
+
+    const normalizedImages = (Array.isArray(preview_images_base64) ? preview_images_base64 : [])
+        .map((item) => String(item || '').trim())
+        .filter(Boolean);
+    if (!normalizedImages.length && preview_image_base64) {
+        normalizedImages.push(String(preview_image_base64).trim());
+    }
+
+    if (!normalizedImages.length) {
+        throw new Error('Falta preview_image_base64 o preview_images_base64');
+    }
+
+    const submissionId = sanitizeFileSegment(scan_id || `notebook_${randomUUID()}`);
+    const userFolder = sanitizeFileSegment(user_id || email || 'anon');
+    const storedFile = await saveBase64ToLocalFile(
+        pdf_base64,
+        `${submissionId}.pdf`,
+        `cuadernos/${userFolder}`
+    );
+
+    const nowIso = new Date().toISOString();
+    const submission = {
+        id: submissionId,
+        scan_id: scan_id || submissionId,
+        user_id: user_id || '',
+        email: email || '',
+        subject: subject || '',
+        session_id: String(session_id || ''),
+        topic: topic || '',
+        page_count: Number(page_count || normalizedImages.length || 1) || 1,
+        original_file_name: pdf_file_name || `${submissionId}.pdf`,
+        file_name: storedFile.fileName,
+        pdf_path: storedFile.absolutePath,
+        public_url: storedFile.publicUrl,
+        status: 'processing',
+        analysis_result: null,
+        error: null,
+        created_at: nowIso,
+        updated_at: nowIso,
+        expires_at: new Date(Date.now() + NOTEBOOK_RETENTION_MS).toISOString()
+    };
+
+    await upsertNotebookSubmission(submissionId, submission);
+
+    (async () => {
+        try {
+            await analyzeNotebookSubmission(submission, {
+                previewImageBase64: preview_image_base64,
+                previewImagesBase64: normalizedImages,
+                imageMimeType: image_mime_type || 'image/jpeg',
+                readingContent: reading_content || '',
+                grade: grade || '1medio'
+            });
+        } catch (error) {
+            console.error('[NOTEBOOK] Error analizando submission:', error.message);
+            await updateNotebookSubmission(submissionId, (current) => ({
+                ...current,
+                status: 'failed',
+                error: error.message || 'No se pudo analizar el cuaderno',
+                analysis_result: current.analysis_result || null,
+                public_url: current.public_url || resolveNotebookPublicUrl(current)
+            }));
+        }
+    })();
+
+    return submission;
+};
+
+app.post('/api/notebook/submissions', async (req, res) => {
+    try {
+        const submission = await createNotebookSubmission(req.body || {});
+        return res.json({
+            success: true,
+            submission_id: submission.id,
+            status: submission.status,
+            file_path: submission.pdf_path,
+            file_url: submission.public_url,
+            file_name: submission.file_name,
+            expires_at: submission.expires_at
+        });
+    } catch (error) {
+        console.error('[NOTEBOOK] Error creando submission:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo crear la entrega del cuaderno' });
+    }
+});
+
+app.get('/api/notebook/submissions/:id', async (req, res) => {
+    try {
+        const submissions = await readNotebookSubmissions();
+        const submission = submissions[req.params.id];
+
+        if (!submission) {
+            return res.status(404).json({ success: false, error: 'Submission no encontrada' });
+        }
+
+        const refreshed = await expireNotebookSubmissionIfNeeded(submission) || submission;
+        return res.json({
+            success: true,
+            submission: refreshed,
+            status: refreshed.status,
+            analysis_result: refreshed.analysis_result || null
+        });
+    } catch (error) {
+        console.error('[NOTEBOOK] Error consultando submission:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo consultar la entrega' });
+    }
+});
 
 app.post('/api/save-notebook', async (req, res) => {
     try {
@@ -309,13 +824,13 @@ app.post('/api/save-notebook', async (req, res) => {
         }
 
         const safeScanId = scan_id || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const extension = path.extname(file_name || '') || '.pdf';
-        const baseName = file_name
-            ? path.basename(file_name, path.extname(file_name))
-            : `cuaderno_${user_id || 'anon'}_${(subject || 'MATERIA').toUpperCase()}_S${session_id || '0'}_${safeScanId}`;
-        const finalFileName = `${baseName}${extension}`;
+        const userFolder = sanitizeFileSegment(user_id || req.body?.email || 'anon');
+        const storedFile = await saveBase64ToLocalFile(
+            pdf_base64,
+            `${sanitizeFileSegment(file_name || safeScanId)}.pdf`,
+            `cuadernos/${userFolder}`
+        );
 
-        const storedFile = await saveBase64ToLocalFile(pdf_base64, finalFileName, 'cuadernos');
         return res.json({
             success: true,
             file_path: storedFile.absolutePath,
@@ -1062,6 +1577,7 @@ const buildSessionReportHTMLClean = (nombre, subject, session, topic, stats, wro
     const wrongCount = wrongAnswers.length;
     const weakness = reportSummary.weakness || '';
     const improvementPlan = reportSummary.improvementPlan || '';
+    const notebookSummary = reportSummary.notebookSummary || null;
 
     const cleanLatex = (text) => {
         if (!text) return '';
@@ -1135,6 +1651,18 @@ const buildSessionReportHTMLClean = (nombre, subject, session, topic, stats, wro
                 <p style="margin: 8px 0; color: #334155;"><strong>Que mejorar:</strong> ${escapeHtml(improvementPlan || `Mantener practica constante en lotes de ${QUIZ_BATCH_SIZE} preguntas.`)}</p>
             </div>` : '';
 
+    const notebookHTML = notebookSummary ? `
+            <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #fde68a; margin: 16px 0;">
+                <h3 style="margin-top: 0; color: #b45309;">Revision de cuaderno con Profe Matico</h3>
+                <p style="margin: 8px 0; color: #334155;"><strong>Resultado:</strong> ${notebookSummary.quizReady ? 'Paso directo al quiz' : 'Necesita reforzar antes del quiz'}</p>
+                <p style="margin: 8px 0; color: #334155;"><strong>Interpretacion:</strong> ${escapeHtml(String(notebookSummary.interpretationScore || 0))}%</p>
+                <p style="margin: 8px 0; color: #334155;"><strong>Paginas revisadas:</strong> ${escapeHtml(String(notebookSummary.pageCount || 1))}</p>
+                <p style="margin: 8px 0; color: #334155;"><strong>Retroalimentacion:</strong> ${escapeHtml(notebookSummary.feedback || 'Sin retroalimentacion registrada.')}</p>
+                <p style="margin: 8px 0; color: #334155;"><strong>Siguiente paso:</strong> ${escapeHtml(notebookSummary.suggestion || 'Continuar con la siguiente actividad.')}</p>
+                ${notebookSummary.detectedConcepts?.length ? `<p style="margin: 8px 0; color: #334155;"><strong>Conceptos detectados:</strong> ${escapeHtml(notebookSummary.detectedConcepts.join(', '))}</p>` : ''}
+                ${notebookSummary.missingConcepts?.length ? `<p style="margin: 8px 0; color: #334155;"><strong>Conceptos faltantes:</strong> ${escapeHtml(notebookSummary.missingConcepts.join(', '))}</p>` : ''}
+            </div>` : '';
+
     return `
     <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; text-align: center; color: white;">
@@ -1161,6 +1689,7 @@ const buildSessionReportHTMLClean = (nombre, subject, session, topic, stats, wro
                 <p><strong>Critico (15 preguntas):</strong> Completado</p>
             </div>
             ${pedagogicalSummaryHTML}
+            ${notebookHTML}
             ${errorsHTML}
             ${analysisHTML}
             <p style="color: #64748b; font-size: 13px; text-align: center; margin-top: 24px;">
@@ -2594,6 +3123,11 @@ Entrega:
                 const wrongAnswers = normalizeWrongAnswerDetails(body.wrong_answers || [], body.wrong_question_details || []);
                 const weakness = body.weakness || '';
                 const improvementPlan = body.improvement_plan || '';
+                const notebookSubmission = await getLatestNotebookSubmissionForSession({
+                    userId: user_id,
+                    subject,
+                    session
+                });
 
                 // GENERAR ANÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂLISIS IA DE LOS ERRORES
                 let aiAnalysis = '';
@@ -2625,7 +3159,16 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒ
 
                 const html = buildSessionReportHTMLClean(userData.nombre, subject, session, topic, stats, wrongAnswers, aiAnalysis, {
                     weakness,
-                    improvementPlan
+                    improvementPlan,
+                    notebookSummary: notebookSubmission ? {
+                        pageCount: notebookSubmission.page_count || 1,
+                        interpretationScore: notebookSubmission.analysis_result?.interpretation_score || 0,
+                        quizReady: Boolean(notebookSubmission.analysis_result?.quiz_ready),
+                        feedback: notebookSubmission.analysis_result?.feedback || '',
+                        suggestion: notebookSubmission.analysis_result?.suggestion || '',
+                        detectedConcepts: notebookSubmission.analysis_result?.detected_concepts || [],
+                        missingConcepts: notebookSubmission.analysis_result?.missing_concepts || []
+                    } : null
                 });
                 const emailSubject = `Reporte Matico: ${userData.nombre} completo ${subject} - Sesion ${session}`;
 
@@ -2996,6 +3539,15 @@ cron.schedule('0 9 * * *', async () => {
         console.log(`[CRON] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ Recordatorios enviados a ${users.length} usuarios`);
     } catch (err) {
         console.error('[CRON] Error:', err.message);
+    }
+}, { timezone: 'America/Santiago' });
+
+cron.schedule('15 3 * * *', async () => {
+    try {
+        const expiredCount = await cleanupExpiredNotebookSubmissions();
+        console.log(`[CRON_NOTEBOOK] Limpieza de cuadernos completada. Expirados: ${expiredCount}`);
+    } catch (error) {
+        console.error('[CRON_NOTEBOOK] Error limpiando cuadernos:', error.message);
     }
 }, { timezone: 'America/Santiago' });
 

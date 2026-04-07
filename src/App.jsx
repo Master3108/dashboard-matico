@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import MathRenderer from './components/MathRenderer';
 import InteractiveQuiz from './components/InteractiveQuiz';
 import LoginPage from './components/LoginPage';
+import CuadernoMission from './components/CuadernoMission';
 import {
     BookOpen,
     Brain,
@@ -2613,6 +2614,7 @@ const App = () => {
     const [showTheoryModal, setShowTheoryModal] = useState(false);
     const [theoryContent, _setTheoryContent] = useState("");
     const [theoryTitle, _setTheoryTitle] = useState("");
+    const [showTheoryNotebookMission, setShowTheoryNotebookMission] = useState(false);
     const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
     const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al día"
     const [showPrepExamSetup, setShowPrepExamSetup] = useState(false);
@@ -3946,6 +3948,14 @@ const App = () => {
             return;
         }
 
+        if (protocol.localProgress?.theoryStarted && !protocol.localProgress?.theoryCompleted) {
+            console.log('[QUIZ] Teoria visible detectada. Abriendo cuaderno antes del quiz.');
+            setCurrentQuizPhase(startingPhase);
+            setAiModalOpen(false);
+            setShowTheoryNotebookMission(true);
+            return;
+        }
+
         setIsCallingN8N(true);
         setAiModalOpen(false);
 
@@ -3986,8 +3996,8 @@ const App = () => {
     };
 
     // HANDLE "CONTINUAR AL QUIZ" BUTTON - Cerrar teoría y mostrar quiz
-    const handleContinueToQuiz = async () => {
-        console.log('[THEORY] Usuario finalizó lectura. Preparando quiz progresivo...');
+    const launchQuizAfterTheoryNotebook = async () => {
+        console.log('[THEORY] Cuaderno completado. Preparando quiz progresivo...');
         setIsCallingN8N(true);
         setLoadingMessage(`🧠 Preparando las primeras ${QUIZ_BATCH_SIZE} preguntas...`);
 
@@ -4096,6 +4106,22 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             source_session: item.source_session ?? '',
             source_topic: item.source_topic || ''
         })));
+    };
+
+    const handleContinueToQuiz = async () => {
+        console.log('[THEORY] Usuario finalizó lectura. Abriendo cuaderno antes del quiz...');
+        setShowTheoryModal(false);
+        setShowTheoryNotebookMission(true);
+    };
+
+    const handleTheoryNotebookComplete = async () => {
+        setShowTheoryNotebookMission(false);
+        await launchQuizAfterTheoryNotebook();
+    };
+
+    const handleTheoryNotebookSkip = async () => {
+        setShowTheoryNotebookMission(false);
+        await launchQuizAfterTheoryNotebook();
     };
 
     const buildWeaknessSummary = (wrongAnswers = []) => {
@@ -4640,6 +4666,19 @@ ${finalData.capsule}`;
                     onFinish={handleContinueToQuiz}
                     buttonText="INICIAR QUIZ COMPLETO"
                 />
+
+                {showTheoryNotebookMission && (
+                    <CuadernoMission
+                        sessionId={TODAYS_SESSION.session}
+                        subject={currentSubject}
+                        topic={theoryTitle || TODAYS_SUBJECT.oa_title || 'Teoría lúdica'}
+                        readingContent={theoryContent || aiContent || TODAYS_SESSION.readingContent || ''}
+                        onComplete={handleTheoryNotebookComplete}
+                        onSkip={handleTheoryNotebookSkip}
+                        userEmail={currentUser?.email}
+                        userId={USER_ID}
+                    />
+                )}
 
                 <QuestionModal
                     isOpen={askModalOpen}
