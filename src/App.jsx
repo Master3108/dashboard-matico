@@ -5097,20 +5097,6 @@ ${finalData.capsule}`;
                                                 <ArrowRight className="w-5 h-5 ml-2" />
                                             </button>
 
-                                            <button
-                                                onClick={() => {
-                                                    setPrepExamOracleSubject(currentSubject);
-                                                    setPrepExamOracleSession(TODAYS_SESSION.session || 1);
-                                                    setPrepExamOraclePrompt('');
-                                                    setPrepExamOracleQuestionCount(15);
-                                                    setShowOraclePrepModal(true);
-                                                }}
-                                                className={`${clayBtnAction} !w-full !bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9] !min-h-[58px] !text-base`}
-                                            >
-                                                <span>ORACULO MATICO</span>
-                                                <MessageCircle className="w-5 h-5 ml-2" />
-                                            </button>
-
                                             <div className="flex flex-wrap gap-2">
                                                 {adaptiveWeakSessions.length > 0 ? adaptiveWeakSessions.slice(0, 4).map((item) => (
                                                     <span
@@ -5128,6 +5114,44 @@ ${finalData.capsule}`;
                                                     </span>
                                                 )}
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-[28px] border-2 border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-5 md:p-6 shadow-[0_12px_28px_rgba(124,58,237,0.08)] mb-6">
+                                    <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                                        <div className="space-y-3">
+                                            <div className="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#7C3AED]">
+                                                <span className="h-2 w-2 rounded-full bg-[#7C3AED]" />
+                                                Oráculo Mático
+                                            </div>
+                                            <div>
+                                                <p className="text-xl md:text-2xl font-black leading-tight text-[#2B2E4A]">
+                                                    Prueba a tu medida, incluso si el libro o tema no está en el banco
+                                                </p>
+                                                <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688] max-w-xl">
+                                                    Si necesitas practicar una materia, un libro o un capítulo específico, entra al Oráculo y Matico te arma una prueba para que practiques.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col items-stretch gap-3">
+                                            <button
+                                                onClick={() => {
+                                                    setPrepExamOracleSubject(currentSubject);
+                                                    setPrepExamOracleSession(TODAYS_SESSION.session || 1);
+                                                    setPrepExamOraclePrompt('');
+                                                    setPrepExamOracleQuestionCount(15);
+                                                    setShowOraclePrepModal(true);
+                                                }}
+                                                className={`${clayBtnAction} !w-full !bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9] !min-h-[58px] !text-base`}
+                                            >
+                                                <span>ORÁCULO MÁTICO</span>
+                                                <MessageCircle className="w-5 h-5 ml-2" />
+                                            </button>
+                                            <p className="text-xs font-bold text-[#6F7688] leading-relaxed px-1">
+                                                Ideal para pruebas de libro, ensayo por materia o práctica extra cuando no hay contenido cargado.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
