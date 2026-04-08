@@ -1427,32 +1427,58 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                 <MathRenderer text={apiJson.question} />
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="grid grid-cols-1 gap-3">
                                 {apiJson.options && apiJson.options.map((option, index) => {
-                                    const cleanOption = option.replace(/^[A-Z]\)\s*/, '');
-                                    let btnStyle = "w-full text-left p-4 rounded-xl transition-all duration-200 font-bold text-sm border-2 ";
+                                    const cleanOption = String(option || '').replace(/^[A-Z]\)\s*/, '').trim();
+                                    const letter = ['A', 'B', 'C', 'D'][index] || String(index + 1);
+                                    const isCorrectOption = index === apiJson.correctIndex;
+                                    const isSelectedOption = index === selectedOption;
+                                    const isIncorrectSelected = showExplanation && isSelectedOption && !isCorrectOption;
+
+                                    let cardStyle = "w-full text-left rounded-2xl border-2 p-4 md:p-5 transition-all duration-200 shadow-sm ";
                                     if (showExplanation) {
-                                        if (index === apiJson.correctIndex) {
-                                            btnStyle += "bg-[#6BCB77]/20 border-[#6BCB77] text-[#2B2E4A]";
-                                        } else if (index === selectedOption) {
-                                            btnStyle += "bg-[#FF6B6B]/20 border-[#FF6B6B] text-[#2B2E4A]";
+                                        if (isCorrectOption) {
+                                            cardStyle += "bg-emerald-50 border-emerald-300 shadow-emerald-100";
+                                        } else if (isIncorrectSelected) {
+                                            cardStyle += "bg-red-50 border-red-300 shadow-red-100";
                                         } else {
-                                            btnStyle += "bg-white/50 border-transparent text-gray-400";
+                                            cardStyle += "bg-white/70 border-gray-200 opacity-70";
                                         }
                                     } else {
-                                        btnStyle += "bg-[#E0E5EC] border-white hover:border-[#4D96FF] hover:bg-white shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff] active:shadow-inner text-[#2B2E4A]";
+                                        cardStyle += "bg-white border-[#DCE7FF] hover:border-[#4D96FF] hover:shadow-md active:scale-[0.99]";
                                     }
+
                                     return (
                                         <button
                                             key={index}
                                             onClick={() => !showExplanation && handleOptionClick(index)}
-                                            className={btnStyle}
+                                            className={cardStyle}
                                             disabled={showExplanation}
                                         >
-                                            <span className="opacity-60 mr-2">{index === 0 ? 'A)' : index === 1 ? 'B)' : index === 2 ? 'C)' : 'D)'}</span>
-                                            <MathRenderer text={cleanOption} />
-                                            {showExplanation && index === apiJson.correctIndex && <Check className="inline w-4 h-4 ml-2 text-[#6BCB77]" />}
-                                            {showExplanation && index === selectedOption && index !== apiJson.correctIndex && <X className="inline w-4 h-4 ml-2 text-[#FF6B6B]" />}
+                                            <div className="flex items-start gap-3">
+                                                <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm
+                                                    ${showExplanation
+                                                        ? isCorrectOption
+                                                            ? 'bg-emerald-500 text-white'
+                                                            : isIncorrectSelected
+                                                                ? 'bg-red-500 text-white'
+                                                                : 'bg-gray-100 text-gray-500'
+                                                        : 'bg-[#4D96FF] text-white'
+                                                    }`}>
+                                                    {letter}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <MathRenderer text={cleanOption || 'Sin texto'} />
+                                                </div>
+
+                                                {showExplanation && isCorrectOption && (
+                                                    <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-1" />
+                                                )}
+                                                {showExplanation && isIncorrectSelected && (
+                                                    <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-1" />
+                                                )}
+                                            </div>
                                         </button>
                                     );
                                 })}
@@ -1782,6 +1808,17 @@ const distributePrepSessions = (sessions, totalQuestions) => {
     return distributed;
 };
 
+const PREP_EXAM_SUBJECT_OPTIONS = [
+    { value: 'MATEMATICA', label: 'Matemática' },
+    { value: 'LENGUAJE', label: 'Lenguaje' },
+    { value: 'HISTORIA', label: 'Historia' },
+    { value: 'FISICA', label: 'Física' },
+    { value: 'QUIMICA', label: 'Química' },
+    { value: 'BIOLOGIA', label: 'Biología' }
+];
+
+const PREP_EXAM_COUNT_OPTIONS = [15, 30, 45];
+
 const PrepExamSetupModal = ({
     isOpen,
     onClose,
@@ -1898,6 +1935,122 @@ const PrepExamSetupModal = ({
                             {isLoading ? 'ARMANDO ENSAYO...' : 'INICIAR PRUEBA PREPARATORIA'}
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const OraclePrepModal = ({
+    isOpen,
+    onClose,
+    subject,
+    onChangeSubject,
+    session,
+    onChangeSession,
+    prompt,
+    onChangePrompt,
+    questionCount,
+    onChangeQuestionCount,
+    onStart,
+    isLoading
+}) => {
+    if (!isOpen) return null;
+
+    const promptReady = Number(session) > 0 && String(subject || '').trim().length > 0;
+
+    return (
+        <div className="fixed inset-0 z-[181] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md">
+            <div className="bg-[#F4F7FF] w-full max-w-3xl rounded-[32px] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.35)] border-4 border-white">
+                <div className="bg-white px-6 py-5 border-b-2 border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 className="text-2xl font-black text-[#2B2E4A]">Oráculo Matico</h3>
+                        <p className="text-sm font-bold text-[#9094A6]">
+                            Prueba libre por materia, sesión o libro. La IA llena los vacíos si no hay banco.
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <X className="w-6 h-6 text-gray-400" />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-5">
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
+                                Materia
+                            </label>
+                            <select
+                                value={subject}
+                                onChange={(e) => onChangeSubject(e.target.value)}
+                                className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED]"
+                            >
+                                {PREP_EXAM_SUBJECT_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
+                                Sesión base
+                            </label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={session}
+                                onChange={(e) => onChangeSession(Number(e.target.value) || 1)}
+                                className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED]"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
+                            Tema, libro o capítulo
+                        </label>
+                        <textarea
+                            value={prompt}
+                            onChange={(e) => onChangePrompt(e.target.value)}
+                            rows={5}
+                            className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED] resize-none"
+                            placeholder="Ej: El Principito, capítulos 1 al 4. Quiero preguntas de comprensión, inferencia y vocabulario."
+                        />
+                    </div>
+
+                    <div className="bg-[#F8FAFF] rounded-2xl p-4 border border-[#E5ECFF]">
+                        <h4 className="text-sm font-black uppercase tracking-widest text-[#9094A6] mb-3">Cantidad de preguntas</h4>
+                        <div className="grid grid-cols-3 gap-3">
+                            {PREP_EXAM_COUNT_OPTIONS.map((count) => (
+                                <button
+                                    key={count}
+                                    onClick={() => onChangeQuestionCount(count)}
+                                    className={`rounded-2xl border-2 px-3 py-3 font-black transition-all ${questionCount === count
+                                        ? 'bg-[#7C3AED] text-white border-[#7C3AED] shadow-md'
+                                        : 'bg-white text-[#64748B] border-gray-200 hover:border-[#7C3AED]/40'
+                                        }`}
+                                >
+                                    {count}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4">
+                        <p className="text-sm text-violet-900 leading-relaxed">
+                            Tip: escribe un libro, un capítulo o un tema concreto. Si el banco no alcanza, el Oráculo usa IA para completar la prueba.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={onStart}
+                        disabled={!promptReady || isLoading}
+                        className={`${clayBtnAction} ${!promptReady || isLoading ? '!bg-gray-300 !border-gray-400 hover:!scale-100 hover:!translate-y-0 cursor-not-allowed' : '!bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9]'}`}
+                    >
+                        {isLoading ? 'ARMANDO ORÁCULO...' : 'CREAR PRUEBA ORÁCULO'}
+                    </button>
                 </div>
             </div>
         </div>
@@ -2492,7 +2645,7 @@ const App = () => {
                     email: currentUser?.email, // Added for n8n mapping
                     data: {
                         type: type,
-                        subject: currentSubject,
+                        subject: payload.subject || currentSubject,
                         grade: ACTIVE_GRADE,
                         topic: payload.topic || TODAYS_SESSION.topic,
                         timestamp: new Date().toISOString(),
@@ -2619,7 +2772,12 @@ const App = () => {
     const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
     const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al día"
     const [showPrepExamSetup, setShowPrepExamSetup] = useState(false);
+    const [showOraclePrepModal, setShowOraclePrepModal] = useState(false);
     const [selectedPrepSessions, setSelectedPrepSessions] = useState([]);
+    const [prepExamOracleSubject, setPrepExamOracleSubject] = useState('MATEMATICA');
+    const [prepExamOracleSession, setPrepExamOracleSession] = useState(1);
+    const [prepExamOraclePrompt, setPrepExamOraclePrompt] = useState('');
+    const [prepExamOracleQuestionCount, setPrepExamOracleQuestionCount] = useState(15);
     const [isPrepExamMode, setIsPrepExamMode] = useState(false);
     const [prepExamConfig, setPrepExamConfig] = useState(null);
     const [prepExamQuestions, setPrepExamQuestions] = useState([]);
@@ -2858,6 +3016,10 @@ const App = () => {
     const openPrepExamSetup = (seedSessions = []) => {
         setPrepExamReport(null);
         setShowPrepExamResults(false);
+        setPrepExamOracleSubject(currentSubject);
+        setPrepExamOracleSession(TODAYS_SESSION.session || 1);
+        setPrepExamOraclePrompt('');
+        setPrepExamOracleQuestionCount(15);
         const normalizedSeeds = [...new Set((seedSessions || []).map(Number).filter(Boolean))].sort((a, b) => a - b);
         setSelectedPrepSessions(prev => (
             normalizedSeeds.length > 0
@@ -2955,9 +3117,12 @@ const App = () => {
         };
     };
 
-    const startPrepExam = async () => {
-        const sortedSessions = [...selectedPrepSessions].sort((a, b) => a - b);
-        const selectedDetails = ACTIVE_SYLLABUS.filter(item => sortedSessions.includes(item.session));
+    const startPrepExam = async (overrides = {}) => {
+        const subject = overrides.subject || currentSubject;
+        const selectedSourceSessions = overrides.sessions || selectedPrepSessions;
+        const sortedSessions = [...selectedSourceSessions].map(Number).filter(Boolean).sort((a, b) => a - b);
+        const selectedDetails = overrides.sessionDetails || ACTIVE_SYLLABUS.filter(item => sortedSessions.includes(item.session));
+        const questionCount = Number(overrides.questionCount) || 45;
 
         if (selectedDetails.length === 0) {
             alert('Selecciona al menos una sesión para preparar la prueba.');
@@ -2969,10 +3134,9 @@ const App = () => {
         const prepExamDiagnostics = createLoadingDiagnostics('prep_exam_first_batch');
 
         try {
-            const questionCount = 45;
             const totalBatches = Math.ceil(questionCount / 5);
             const config = {
-                subject: currentSubject,
+                subject,
                 sessions: sortedSessions,
                 questionCount,
                 totalBatches,
@@ -2986,7 +3150,7 @@ const App = () => {
 
             prepExamDiagnostics.begin('Guardando inicio de la prueba');
             await saveProgress('prep_exam_started', {
-                subject: currentSubject,
+                subject,
                 grade: ACTIVE_GRADE,
                 session: sortedSessions.join(','),
                 selected_sessions: sortedSessions.join(','),
@@ -3003,7 +3167,7 @@ const App = () => {
                 body: JSON.stringify({
                     action: 'generate_prep_exam_batch',
                     user_id: USER_ID,
-                    subject: currentSubject,
+                    subject,
                     grade: ACTIVE_GRADE,
                     sessions: sortedSessions,
                     topics: selectedDetails.map(item => item.topic),
@@ -3055,7 +3219,7 @@ const App = () => {
                     body: JSON.stringify({
                         action: 'generate_prep_exam_batch',
                         user_id: USER_ID,
-                        subject: currentSubject,
+                        subject,
                         grade: ACTIVE_GRADE,
                         sessions: sortedSessions,
                         topics: selectedDetails.map(item => item.topic),
@@ -3083,6 +3247,30 @@ const App = () => {
             setLoadingMessage('');
             setIsCallingN8N(false);
         }
+    };
+
+    const startOraclePrepExam = async () => {
+        const subject = prepExamOracleSubject || currentSubject;
+        const session = Math.max(1, Number(prepExamOracleSession) || 1);
+        const prompt = String(prepExamOraclePrompt || '').trim();
+        const topic = prompt || `${subject} - Sesion ${session}`;
+        const questionCount = PREP_EXAM_COUNT_OPTIONS.includes(prepExamOracleQuestionCount)
+            ? prepExamOracleQuestionCount
+            : 15;
+
+        setShowOraclePrepModal(false);
+        setShowPrepExamSetup(false);
+        setCurrentSubject(subject);
+        await startPrepExam({
+            subject,
+            questionCount,
+            sessions: [session],
+            sessionDetails: [{
+                session,
+                topic,
+                readingContent: prompt
+            }]
+        });
     };
 
     const requestNextPrepExamBatch = async () => {
@@ -4909,6 +5097,20 @@ ${finalData.capsule}`;
                                                 <ArrowRight className="w-5 h-5 ml-2" />
                                             </button>
 
+                                            <button
+                                                onClick={() => {
+                                                    setPrepExamOracleSubject(currentSubject);
+                                                    setPrepExamOracleSession(TODAYS_SESSION.session || 1);
+                                                    setPrepExamOraclePrompt('');
+                                                    setPrepExamOracleQuestionCount(15);
+                                                    setShowOraclePrepModal(true);
+                                                }}
+                                                className={`${clayBtnAction} !w-full !bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9] !min-h-[58px] !text-base`}
+                                            >
+                                                <span>ORACULO MATICO</span>
+                                                <MessageCircle className="w-5 h-5 ml-2" />
+                                            </button>
+
                                             <div className="flex flex-wrap gap-2">
                                                 {adaptiveWeakSessions.length > 0 ? adaptiveWeakSessions.slice(0, 4).map((item) => (
                                                     <span
@@ -5046,6 +5248,7 @@ ${finalData.capsule}`;
                             subject={currentSubject}
                             readingContent=""
                             quizMode={isPrepExamMode ? 'prep_exam' : 'normal'}
+                            totalQuestions={isPrepExamMode ? (prepExamConfig?.questionCount || 45) : 15}
                             onRequestNextBatch={isPrepExamMode ? requestNextPrepExamBatch : requestNextNormalQuizBatch}
                             userEmail={currentUser?.email}
                             userId={USER_ID}
@@ -5108,6 +5311,21 @@ ${finalData.capsule}`;
                     selectedSessions={selectedPrepSessions}
                     onToggleSession={togglePrepSession}
                     onStart={startPrepExam}
+                    isLoading={isCallingN8N}
+                />
+
+                <OraclePrepModal
+                    isOpen={showOraclePrepModal}
+                    onClose={() => setShowOraclePrepModal(false)}
+                    subject={prepExamOracleSubject}
+                    onChangeSubject={setPrepExamOracleSubject}
+                    session={prepExamOracleSession}
+                    onChangeSession={setPrepExamOracleSession}
+                    prompt={prepExamOraclePrompt}
+                    onChangePrompt={setPrepExamOraclePrompt}
+                    questionCount={prepExamOracleQuestionCount}
+                    onChangeQuestionCount={setPrepExamOracleQuestionCount}
+                    onStart={startOraclePrepExam}
                     isLoading={isCallingN8N}
                 />
 

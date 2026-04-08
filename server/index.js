@@ -1768,20 +1768,20 @@ const buildDailyReminderHTMLClean = (nombre, session, topic, subject) => {
     return `
     <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 16px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #f59e0b, #f97316); padding: 30px; text-align: center; color: white;">
-            <h1 style="margin: 0; font-size: 28px;">Buenos dias</h1>
-            <p style="margin: 8px 0 0; opacity: 0.9;">Tu sesion de hoy te espera</p>
+            <h1 style="margin: 0; font-size: 28px;">Buenos días</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9;">Tu sesión de hoy te espera</p>
         </div>
         <div style="padding: 30px;">
             <h2 style="color: #1e293b;">Hola <strong>${nombre}</strong></h2>
-            <p style="color: #475569; font-size: 16px;">Hoy es un gran dia para aprender. Tu sesion de estudio ya esta lista:</p>
+            <p style="color: #475569; font-size: 16px;">Hoy es un gran día para aprender. Tu sesión de estudio ya está lista:</p>
             <div style="background: white; border-radius: 12px; padding: 24px; border: 2px solid #6366f1; margin: 20px 0; text-align: center;">
                 <p style="font-size: 14px; color: #6366f1; font-weight: bold; margin: 0;">${subject}</p>
-                <h3 style="font-size: 22px; color: #1e293b; margin: 8px 0;">Sesion ${session}: ${topic}</h3>
-                <p style="color: #64748b;">45 preguntas en 3 niveles: Basico, Avanzado y Critico</p>
+                <h3 style="font-size: 22px; color: #1e293b; margin: 8px 0;">Sesión ${session}: ${topic}</h3>
+                <p style="color: #64748b;">45 preguntas en 3 niveles: Básico, Avanzado y Crítico</p>
             </div>
-            <p style="color: #475569;">Recuerda que cada sesion completada te acerca mas a tu meta.</p>
+            <p style="color: #475569;">Recuerda que cada sesión completada te acerca más a tu meta.</p>
             <p style="color: #64748b; font-size: 13px; text-align: center; margin-top: 24px;">
-                Matico - Tu companero de estudio
+                Matico - Tu compañero de estudio
             </p>
         </div>
     </div>`;
@@ -3606,33 +3606,30 @@ RESPONDE SOLO CON JSON VALIDO:
 // CRON: Recordatorio Diario a las 09:00 AM (Chile)
 // ========================================================================
 cron.schedule('0 9 * * *', async () => {
-    console.log('[CRON] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° Ejecutando recordatorio matutino...');
+    console.log('[CRON] Ejecutando recordatorio matutino...');
     try {
         const sheets = await getSheetsClient();
         const users = await getAllUsersFromSheet(sheets);
 
-        // Calcular quÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© sesiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n toca hoy (simplificado: dÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a desde inicio)
         const startDate = new Date('2026-01-15'); // Fecha de inicio del curso
         const today = new Date();
         const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
         const sessionNumber = (daysDiff % 43) + 1; // Ciclo de 43 sesiones
-        const topic = `SesiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n ${sessionNumber} del dÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a`;
-        const subject = 'MATEMATICA'; // Se podrÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a alternar por dÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a
+        const topic = `Sesión ${sessionNumber} del día`;
+        const subject = 'MATEMATICA'; // Se podría alternar por día
 
         for (const user of users) {
             const html = buildDailyReminderHTMLClean(user.nombre, sessionNumber, topic, subject);
-            const emailSubject = `Buenos dias ${user.nombre}: tu sesion de ${subject} te espera`;
+            const emailSubject = `Buenos días ${user.nombre}: tu sesión de ${subject} te espera`;
 
-            // Al alumno
             if (user.email) {
                 await sendEmailSafe(user.email, emailSubject, html);
             }
-            // Al apoderado
             if (user.correo_apoderado) {
-                await sendEmailSafe(user.correo_apoderado, `Recordatorio: ${user.nombre} tiene sesion hoy`, html);
+                await sendEmailSafe(user.correo_apoderado, `Recordatorio: ${user.nombre} tiene sesión hoy`, html);
             }
         }
-        console.log(`[CRON] ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ Recordatorios enviados a ${users.length} usuarios`);
+        console.log(`[CRON] Recordatorios enviados a ${users.length} usuarios`);
     } catch (err) {
         console.error('[CRON] Error:', err.message);
     }
@@ -3657,24 +3654,3 @@ app.listen(PORT, () => {
         console.log(`[EMAIL] Deshabilitado. Faltan variables: ${emailStatus.missing.join(', ')}`);
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

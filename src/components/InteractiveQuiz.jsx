@@ -43,6 +43,13 @@ const wrapInlineMath = (text = '') => {
     if (/\\(frac|sqrt|pi|times|cdot|le|ge|ne|approx|left|right|sum|int|alpha|beta|gamma|theta|lambda|mu|sigma|Delta|Omega|pi|phi|rho|tau|infty|degree)\b/.test(text)) {
         return `$${text}$`;
     }
+    if (/^[\s0-9A-Za-z().,+\-*/^=]+$/.test(text) && text.includes('^')) {
+        const normalized = String(text)
+            .replace(/([A-Za-z0-9\)])\^([A-Za-z0-9]+)/g, '$1^{$2}')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return `$${normalized}$`;
+    }
     return text;
 };
 
@@ -73,7 +80,7 @@ const wrapQuestionMath = (text = '', subject = '') => {
     );
 };
 
-const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, subject, readingContent, quizMode = 'normal', onRequestNextBatch = null, userEmail, userId }) => {
+const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, subject, readingContent, quizMode = 'normal', totalQuestions = 15, onRequestNextBatch = null, userEmail, userId }) => {
     const normalizeAnswerText = (value = '') => String(value || '')
         .replace(/<br\s*\/?>/gi, ' ')
         .replace(/&nbsp;/gi, ' ')
@@ -230,12 +237,12 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
 
     const question = activeQuestions[currentQuestion];
     const isPrepExamMode = quizMode === 'prep_exam';
-    const displayedQuestionTotal = isPrepExamMode ? 45 : 15;
+    const displayedQuestionTotal = isPrepExamMode ? (Number(totalQuestions) || 45) : 15;
     const progressBase = Math.max(displayedQuestionTotal, activeQuestions.length || 1);
     const progress = Math.round(((currentQuestion + 1) / progressBase) * 100);
     const quizTitle = isPrepExamMode ? 'Prueba Preparatoria' : 'Quiz Interactivo';
     const quizSubtitle = isPrepExamMode ? 'Sistema Kaizen · Básico / Avanzado / Crítico' : 'Matico AI';
-    const quizBadgeLabel = isPrepExamMode ? '45 PREGUNTAS · SESIONES SELECCIONADAS' : difficultyLevel.name;
+    const quizBadgeLabel = isPrepExamMode ? `${displayedQuestionTotal} PREGUNTAS · SESIONES SELECCIONADAS` : difficultyLevel.name;
     const quizBadgeIcon = isPrepExamMode ? '🧭' : difficultyLevel.icon;
     const shouldShowNextLabel = (currentQuestion + 1) < displayedQuestionTotal;
     const quizBadgeClass = isPrepExamMode
