@@ -5004,49 +5004,6 @@ ${finalData.capsule}`;
                     </div>
 
                     <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                        <div className="rounded-[32px] border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-6 md:p-7 shadow-[0_18px_40px_rgba(77,150,255,0.08)] mb-8">
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                                <div className="space-y-3 max-w-2xl">
-                                    <div className="inline-flex items-center gap-2 rounded-full bg-white border border-indigo-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#4D96FF] shadow-sm">
-                                        <span className="h-2 w-2 rounded-full bg-[#4D96FF]" />
-                                        Hoy toca esto
-                                    </div>
-                                    <div>
-                                        <h2 className="text-3xl md:text-4xl font-black leading-tight text-[#2B2E4A]">
-                                            {repairText(TODAYS_SUBJECT.name)} - SesiÃƒÂ³n {TODAYS_SESSION.session}
-                                        </h2>
-                                        <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688]">
-                                            {repairText(TODAYS_SESSION.topic)}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-indigo-100 px-3 py-1.5 text-xs font-black text-[#4D96FF] shadow-sm">
-                                            <span className="h-2 w-2 rounded-full bg-[#4D96FF]/70" />
-                                            Ruta diaria
-                                        </span>
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-600 shadow-sm">
-                                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                            Formar hÃƒÂ¡bito
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col items-stretch gap-3 lg:min-w-[320px]">
-                                    <button
-                                        onClick={() => setVideoModalOpen(true)}
-                                        className="w-full bg-[#58CC02] text-white font-black rounded-3xl border-b-8 border-[#46A302] hover:bg-[#46A302] active:border-b-0 active:translate-y-1 transition-all duration-100 min-h-[72px] px-6 flex items-center justify-center gap-3 uppercase tracking-widest text-base shadow-[inset_0_4px_4px_rgba(255,255,255,0.35),0_12px_26px_rgba(88,204,2,0.28)] hover:scale-[1.02]"
-                                        disabled={isCallingN8N}
-                                    >
-                                        <Play className="w-6 h-6" fill="currentColor" />
-                                        {todaysSessionCtaLabel}
-                                    </button>
-                                    <p className="text-xs font-bold text-[#6F7688] leading-relaxed px-1 text-center lg:text-left">
-                                        Primero completa la sesiÃƒÂ³n de hoy. Lo demÃƒÂ¡s queda como apoyo para despuÃƒÂ©s.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
                         <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-2">
                             <div>
                                 <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#7C3AED]">MÃƒÂ¡s opciones</p>
