@@ -493,31 +493,36 @@ const repairText = (value = '') => {
     }
 
     return text
-        .replace(/AÂ¡/g, 'Ã¡')
-        .replace(/AÂ©/g, 'Ã©')
-        .replace(/AÃ­/g, 'Ã­')
-        .replace(/AÂ³/g, 'Ã³')
-        .replace(/AÂº/g, 'Ãº')
-        .replace(/AÂ±/g, 'Ã±')
-        .replace(/Aâ€°/g, 'Ã‰')
-        .replace(/A/g, 'Ã')
-        .replace(/ÃƒÂ¡/g, 'Ã¡')
-        .replace(/ÃƒÂ©/g, 'Ã©')
-        .replace(/ÃƒÂ­/g, 'Ã­')
-        .replace(/ÃƒÂ³/g, 'Ã³')
-        .replace(/ÃƒÂº/g, 'Ãº')
-        .replace(/ÃƒÂ±/g, 'Ã±')
-        .replace(/Ãƒ/g, 'Ã')
-        .replace(/Ã‚Â°/g, 'Â°')
-        .replace(/Ã‚/g, '')
+        // Common mojibake fixes (UTF-8 interpreted as Latin-1)
+        .replace(/Ã¡/g, 'á')
+        .replace(/Ã©/g, 'é')
+        .replace(/Ã­/g, 'í')
+        .replace(/Ã³/g, 'ó')
+        .replace(/Ãº/g, 'ú')
+        .replace(/Ã±/g, 'ñ')
+        .replace(/Ã/g, 'Á')
+        .replace(/Ã‰/g, 'É')
+        .replace(/Ã/g, 'Í')
+        .replace(/Ã“/g, 'Ó')
+        .replace(/Ãš/g, 'Ú')
+        .replace(/Ã‘/g, 'Ñ')
+        .replace(/Ã¼/g, 'ü')
+        .replace(/Ãœ/g, 'Ü')
+        .replace(/Â°/g, '°')
+        .replace(/Â·/g, '·')
+        .replace(/Â/g, '')
+        // Double-encoded variants
+        .replace(/ÃƒÂ¡/g, 'á')
+        .replace(/ÃƒÂ©/g, 'é')
+        .replace(/ÃƒÂ­/g, 'í')
+        .replace(/ÃƒÂ³/g, 'ó')
+        .replace(/ÃƒÂº/g, 'ú')
+        .replace(/ÃƒÂ±/g, 'ñ')
+        .replace(/Ãƒâ€˜/g, 'Ñ')
+        .replace(/ÃƒÂ¼/g, 'ü')
+        // Cleanup
         .replace(/ï¿½/g, '')
         .replace(/Ã³x[^\s]*/g, '')
-        .replace(/Ã³/g, '')
-        .replace(/Ludica/g, 'LÃºdica')
-        .replace(/Teoria/g, 'TeorÃ­a')
-        .replace(/Sesion/g, 'SesiÃ³n')
-        .replace(/Multiplicacion/g, 'MultiplicaciÃ³n')
-        .replace(/Division/g, 'DivisiÃ³n')
         .replace(/\s{2,}/g, ' ')
         .trim();
 };
@@ -4978,7 +4983,7 @@ ${finalData.capsule}`;
                                         <MessageCircle className="w-5 h-5 text-[#4F46E5]" />
                                     </div>
                                     <div className="flex flex-col items-start leading-tight text-left">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-[#7C83B9]">AYUDA RÃPIDA</span>
+                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-[#7C83B9]">AYUDA RAPIDA</span>
                                         <span className="text-sm font-black tracking-tight">Tengo una duda</span>
                                     </div>
                                     <ArrowRight className="w-5 h-5 ml-auto opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
@@ -5006,11 +5011,11 @@ ${finalData.capsule}`;
                     <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                         <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-2">
                             <div>
-                                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#7C3AED]">MÃƒÂ¡s opciones</p>
+                                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#7C3AED]">Mas opciones</p>
                                 <h3 className="text-lg font-black text-[#2B2E4A]">Cambiar materia si hace falta</h3>
                             </div>
                             <p className="text-xs font-semibold text-[#6F7688] max-w-lg">
-                                Lo principal es la sesiÃƒÂ³n de hoy. Estas materias solo cambian el foco cuando quieras otra ruta.
+                                Lo principal es la sesion de hoy. Estas materias solo cambian el foco cuando quieras otra ruta.
                             </p>
                         </div>
 
@@ -5170,7 +5175,7 @@ ${finalData.capsule}`;
                                             className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
                                             disabled={isCallingN8N}
                                         >
-                                            MÃƒÂS OPCIONES: PRUEBA PREPARATORIA 45 <Flag className="w-5 h-5 ml-2" />
+                                            MAS OPCIONES: PRUEBA PREPARATORIA 45 <Flag className="w-5 h-5 ml-2" />
                                         </button>
                                     </div>
                                 </div>
