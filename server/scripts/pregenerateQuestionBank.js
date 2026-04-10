@@ -22,14 +22,26 @@ const DEFAULT_SLOTS_PER_PHASE = 15;
 const DEFAULT_PROPOSALS_PER_SLOT = 3;
 const DEFAULT_SLOT_GROUP_SIZE = 5;
 const DEFAULT_RETRIES = 2;
-const AI_PROVIDER = (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi' : 'deepseek';
-const AI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
+const FORCED_AI_PROVIDER = String(process.env.AI_PROVIDER || '').trim().toLowerCase();
+const AI_PROVIDER = FORCED_AI_PROVIDER || (
+    (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi'
+        : (process.env.OPENAI_API_KEY ? 'openai' : 'deepseek')
+);
+const AI_API_KEY = AI_PROVIDER === 'kimi'
+    ? (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '')
+    : (AI_PROVIDER === 'openai'
+        ? (process.env.OPENAI_API_KEY || '')
+        : (process.env.DEEPSEEK_API_KEY || ''));
 const AI_BASE_URL = AI_PROVIDER === 'kimi'
     ? (process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1')
-    : 'https://api.deepseek.com/v1';
+    : (AI_PROVIDER === 'openai'
+        ? (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1')
+        : (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1'));
 const AI_MODEL = AI_PROVIDER === 'kimi'
     ? (process.env.KIMI_FAST_MODEL || 'kimi-k2-turbo-preview')
-    : 'deepseek-chat';
+    : (AI_PROVIDER === 'openai'
+        ? (process.env.OPENAI_FAST_MODEL || 'gpt-4.1-mini')
+        : (process.env.DEEPSEEK_FAST_MODEL || 'deepseek-chat'));
 
 const PHASES = [
     { phase: '1', levelName: 'BASICO' },
@@ -123,6 +135,10 @@ const getSheetsClient = async () => {
 
     return google.sheets({ version: 'v4', auth });
 };
+
+if (!AI_API_KEY) {
+    throw new Error(`[QuestionBank] Falta API key para AI_PROVIDER="${AI_PROVIDER}". Revisa variables de entorno.`);
+}
 
 const openai = new OpenAI({
     apiKey: AI_API_KEY,
@@ -438,6 +454,9 @@ const main = async () => {
     console.log(`[QuestionBank] Modo: ${dryRun ? 'dry-run' : 'write'}`);
     console.log(`[QuestionBank] Slots por grupo: ${slotGroupSize}`);
     console.log(`[QuestionBank] Reintentos por grupo: ${retries}`);
+    console.log(`[QuestionBank] AI provider: ${AI_PROVIDER}`);
+    console.log(`[QuestionBank] AI model: ${AI_MODEL}`);
+    console.log(`[QuestionBank] AI base URL: ${AI_BASE_URL}`);
 
     const rowsToAppend = [];
     let inserted = 0;
