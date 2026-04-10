@@ -5047,105 +5047,6 @@ ${finalData.capsule}`;
                             </div>
                         </div>
 
-                        <div className="mb-8">
-                            <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-2">
-                                <div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#4D96FF]">Practica de apoyo</p>
-                                    <h3 className="text-lg font-black text-[#2B2E4A]">Refuerzo y prueba a tu medida</h3>
-                                </div>
-                                <p className="text-xs font-semibold text-[#6F7688] max-w-lg">
-                                    Primero sesion diaria (recomendado), pero puedes practicar cuando lo necesites.
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                                <div className="rounded-[28px] border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-5 md:p-6 shadow-[0_12px_28px_rgba(77,150,255,0.08)]">
-                                    <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-                                        <div className="space-y-3">
-                                            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#4D96FF]">
-                                                <span className="h-2 w-2 rounded-full bg-[#4D96FF]" />
-                                                Ruta adaptativa - {repairText(adaptiveGradeLabel)}
-                                            </div>
-                                            <div>
-                                                <p className="text-xl md:text-2xl font-black leading-tight text-[#2B2E4A]">
-                                                    {adaptiveNextActionLabel}
-                                                </p>
-                                                <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688] max-w-xl">
-                                                    {adaptiveWeakTopicsDescription}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col items-stretch gap-4">
-                                            <button
-                                                onClick={() => openPrepExamSetup(adaptiveWeakSessions.map(item => Number(item.session)).filter(Boolean))}
-                                                className={`${clayBtnAction} !w-full !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6] !min-h-[58px] !text-base`}
-                                            >
-                                                <span>REPASAR SESIONES DEBILES</span>
-                                                <ArrowRight className="w-5 h-5 ml-2" />
-                                            </button>
-
-                                            <div className="flex flex-wrap gap-2">
-                                                {adaptiveWeakSessions.length > 0 ? adaptiveWeakSessions.slice(0, 4).map((item) => (
-                                                    <span
-                                                        key={`${item.subject || currentSubject}-${item.session}`}
-                                                        className="inline-flex items-center gap-1.5 rounded-full bg-white border border-indigo-100 px-3 py-1.5 text-xs font-black text-[#4D96FF] shadow-sm"
-                                                        title={`${getAdaptiveWeakSessionTopic(item)} Â· Sesion ${item.session}`}
-                                                    >
-                                                        <span className="h-2 w-2 rounded-full bg-[#4D96FF]/70" />
-                                                        {getAdaptiveWeakSessionTopic(item)} Â· S{item.session}
-                                                    </span>
-                                                )) : (
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-600 shadow-sm">
-                                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                                        Sin sesiones debiles marcadas todavia
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="rounded-[28px] border-2 border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-5 md:p-6 shadow-[0_12px_28px_rgba(124,58,237,0.08)]">
-                                    <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-                                        <div className="space-y-3">
-                                            <div className="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#7C3AED]">
-                                                <span className="h-2 w-2 rounded-full bg-[#7C3AED]" />
-                                                Oraculo Matico
-                                            </div>
-                                            <div>
-                                                <p className="text-xl md:text-2xl font-black leading-tight text-[#2B2E4A]">
-                                                    Prueba a tu medida, incluso si el libro o tema no esta en las sesiones de tu curso
-                                                </p>
-                                                <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688] max-w-xl">
-                                                    Si necesitas practicar una materia, un libro o un capitulo especifico, entra al Oraculo y Matico te arma una prueba para que practiques.
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col items-stretch gap-3">
-                                            <button
-                                                onClick={() => {
-                                                    setPrepExamOracleSubject(currentSubject);
-                                                    setPrepExamOracleSession(TODAYS_SESSION.session || 1);
-                                                    setPrepExamOraclePrompt('');
-                                                    setPrepExamOracleQuestionCount(15);
-                                                    setShowOraclePrepModal(true);
-                                                }}
-                                                className={`${clayBtnAction} !w-full !bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9] !min-h-[58px] !text-base`}
-                                            >
-                                                <span>ORACULO MATICO</span>
-                                                <MessageCircle className="w-5 h-5 ml-2" />
-                                            </button>
-                                            <p className="text-xs font-bold text-[#6F7688] leading-relaxed px-1">
-                                                Ideal para pruebas de libro, ensayo por materia o practica extra cuando no hay contenido cargado.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-2">
                             <div>
                                 <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#7C3AED]">MÃƒÂ¡s opciones</p>
@@ -5243,7 +5144,7 @@ ${finalData.capsule}`;
                                     Continuar plan
                                 </div>
                                 <p className="mb-6 text-sm font-semibold text-[#6F7688]">
-                                    Ya tienes el apoyo principal arriba. Aqui continuas con la ruta diaria completa y las opciones avanzadas.
+                                    Aqui continuas con la ruta diaria completa y las opciones avanzadas.
                                 </p>
 
                                 {/* ROUTE STEPS RENDERER */}
@@ -5315,6 +5216,105 @@ ${finalData.capsule}`;
                                         >
                                             MÃƒÂS OPCIONES: PRUEBA PREPARATORIA 45 <Flag className="w-5 h-5 ml-2" />
                                         </button>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8">
+                                    <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-2">
+                                        <div>
+                                            <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#4D96FF]">Practica de apoyo</p>
+                                            <h3 className="text-lg font-black text-[#2B2E4A]">Refuerzo y prueba a tu medida</h3>
+                                        </div>
+                                        <p className="text-xs font-semibold text-[#6F7688] max-w-lg">
+                                            Primero sesion diaria (recomendado), pero puedes practicar cuando lo necesites.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                                        <div className="rounded-[28px] border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-5 md:p-6 shadow-[0_12px_28px_rgba(77,150,255,0.08)]">
+                                            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                                                <div className="space-y-3">
+                                                    <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#4D96FF]">
+                                                        <span className="h-2 w-2 rounded-full bg-[#4D96FF]" />
+                                                        Ruta adaptativa - {repairText(adaptiveGradeLabel)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xl md:text-2xl font-black leading-tight text-[#2B2E4A]">
+                                                            {adaptiveNextActionLabel}
+                                                        </p>
+                                                        <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688] max-w-xl">
+                                                            {adaptiveWeakTopicsDescription}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col items-stretch gap-4">
+                                                    <button
+                                                        onClick={() => openPrepExamSetup(adaptiveWeakSessions.map(item => Number(item.session)).filter(Boolean))}
+                                                        className={`${clayBtnAction} !w-full !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6] !min-h-[58px] !text-base`}
+                                                    >
+                                                        <span>REPASAR SESIONES DEBILES</span>
+                                                        <ArrowRight className="w-5 h-5 ml-2" />
+                                                    </button>
+
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {adaptiveWeakSessions.length > 0 ? adaptiveWeakSessions.slice(0, 4).map((item) => (
+                                                            <span
+                                                                key={`${item.subject || currentSubject}-${item.session}`}
+                                                                className="inline-flex items-center gap-1.5 rounded-full bg-white border border-indigo-100 px-3 py-1.5 text-xs font-black text-[#4D96FF] shadow-sm"
+                                                                title={`${getAdaptiveWeakSessionTopic(item)} · Sesion ${item.session}`}
+                                                            >
+                                                                <span className="h-2 w-2 rounded-full bg-[#4D96FF]/70" />
+                                                                {getAdaptiveWeakSessionTopic(item)} · S{item.session}
+                                                            </span>
+                                                        )) : (
+                                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-600 shadow-sm">
+                                                                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                                                Sin sesiones debiles marcadas todavia
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-[28px] border-2 border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-5 md:p-6 shadow-[0_12px_28px_rgba(124,58,237,0.08)]">
+                                            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                                                <div className="space-y-3">
+                                                    <div className="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#7C3AED]">
+                                                        <span className="h-2 w-2 rounded-full bg-[#7C3AED]" />
+                                                        Oraculo Matico
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xl md:text-2xl font-black leading-tight text-[#2B2E4A]">
+                                                            Prueba a tu medida, incluso si el libro o tema no esta en las sesiones de tu curso
+                                                        </p>
+                                                        <p className="mt-2 text-sm md:text-[15px] font-semibold leading-relaxed text-[#6F7688] max-w-xl">
+                                                            Si necesitas practicar una materia, un libro o un capitulo especifico, entra al Oraculo y Matico te arma una prueba para que practiques.
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col items-stretch gap-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            setPrepExamOracleSubject(currentSubject);
+                                                            setPrepExamOracleSession(TODAYS_SESSION.session || 1);
+                                                            setPrepExamOraclePrompt('');
+                                                            setPrepExamOracleQuestionCount(15);
+                                                            setShowOraclePrepModal(true);
+                                                        }}
+                                                        className={`${clayBtnAction} !w-full !bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9] !min-h-[58px] !text-base`}
+                                                    >
+                                                        <span>ORACULO MATICO</span>
+                                                        <MessageCircle className="w-5 h-5 ml-2" />
+                                                    </button>
+                                                    <p className="text-xs font-bold text-[#6F7688] leading-relaxed px-1">
+                                                        Ideal para pruebas de libro, ensayo por materia o practica extra cuando no hay contenido cargado.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
