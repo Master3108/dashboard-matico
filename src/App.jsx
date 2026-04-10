@@ -5161,11 +5161,16 @@ ${finalData.capsule}`;
                                 <div className="mt-12">
                                     <div className="flex flex-col gap-3">
                                         <button
-                                            onClick={openPrepExamSetup}
+                                            onClick={() => {
+                                                if (isCallingN8N) {
+                                                    alert('Estamos procesando una solicitud. Intenta en unos segundos.');
+                                                    return;
+                                                }
+                                                openPrepExamSetup();
+                                            }}
                                             className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
-                                            disabled={isCallingN8N}
                                         >
-                                            MAS OPCIONES: PRUEBA PREPARATORIA 45 <Flag className="w-5 h-5 ml-2" />
+                                            Mas opciones: prueba preparatoria 45 <Flag className="w-5 h-5 ml-2" />
                                         </button>
                                     </div>
                                 </div>
