@@ -5102,9 +5102,8 @@ ${finalData.capsule}`;
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-
-                        <div className="xl:col-span-2 space-y-8">
+                    <div className="mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                        <div className="space-y-8">
                             <div className={`${clayCard} relative overflow-visible`}>
                                 <div className="flex justify-between items-start mb-8">
                                     <div>
@@ -5318,10 +5317,6 @@ ${finalData.capsule}`;
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="space-y-8">
-
-                            <PomodoroTimer />
                         </div>
                     </div>
                 </div>
