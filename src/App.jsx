@@ -5108,9 +5108,9 @@ ${finalData.capsule}`;
                                     Aqui continuas con la ruta diaria completa y las opciones avanzadas.
                                 </p>
 
-                                {/* ROUTE STEPS RENDERER (HORIZONTAL) */}
-                                <div className="py-6">
-                                    <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory">
+                                {/* ROUTE STEPS RENDERER (RESPONSIVE GRID) */}
+                                <div className="py-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                                         {dailyRoute.daily_route_steps.map((step, idx) => {
                                             const IconComponent = step.icon === "Play" ? Play : (step.icon === "Brain" ? Brain : (step.icon === "MessageCircle" ? MessageCircle : Lock));
 
@@ -5132,23 +5132,21 @@ ${finalData.capsule}`;
                                                 : (idx === 1 ? "TEORIA IA" : (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"));
 
                                             return (
-                                                <div key={idx} className="snap-start shrink-0 w-[260px]">
-                                                    <div className="rounded-3xl border-2 border-[#E2E8F0] bg-white p-4 shadow-sm h-full">
-                                                        <div className="flex items-center gap-4">
-                                                            <button
-                                                                onClick={handleClick}
-                                                                className={`w-20 h-20 rounded-full flex items-center justify-center border-b-8 transition-all duration-300 hover:scale-105 active:border-b-0 active:translate-y-1 ${btnStyle}`}
-                                                            >
-                                                                <IconComponent className="w-9 h-9" fill="currentColor" />
-                                                            </button>
-                                                            <div className="min-w-0">
-                                                                <h3 className="font-black text-[#2B2E4A] text-base leading-tight uppercase">
-                                                                    {repairText(step.step)}
-                                                                </h3>
-                                                                <p className="text-[#9094A6] text-xs font-bold mt-1 uppercase">
-                                                                    {subtitle}
-                                                                </p>
-                                                            </div>
+                                                <div key={idx} className="rounded-3xl border-2 border-[#E2E8F0] bg-white p-4 shadow-sm">
+                                                    <div className="flex items-center gap-4">
+                                                        <button
+                                                            onClick={handleClick}
+                                                            className={`w-20 h-20 rounded-full shrink-0 flex items-center justify-center border-b-8 transition-all duration-300 hover:scale-105 active:border-b-0 active:translate-y-1 ${btnStyle}`}
+                                                        >
+                                                            <IconComponent className="w-9 h-9" fill="currentColor" />
+                                                        </button>
+                                                        <div className="min-w-0">
+                                                            <h3 className="font-black text-[#2B2E4A] text-base leading-tight uppercase break-words">
+                                                                {repairText(step.step)}
+                                                            </h3>
+                                                            <p className="text-[#9094A6] text-xs font-bold mt-1 uppercase">
+                                                                {subtitle}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
