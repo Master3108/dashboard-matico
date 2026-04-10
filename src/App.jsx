@@ -5108,64 +5108,53 @@ ${finalData.capsule}`;
                                     Aqui continuas con la ruta diaria completa y las opciones avanzadas.
                                 </p>
 
-                                {/* ROUTE STEPS RENDERER */}
-                                <div className="flex flex-col items-center gap-8 relative py-8 min-h-[400px]">
-                                    {/* CONNECTOR LINE WITH ENERGY GLOW */}
-                                    <div className="absolute top-0 bottom-0 w-4 bg-[#E2E8F0] rounded-full z-0 overflow-hidden shadow-inner">
-                                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/20 via-blue-500/20 to-indigo-500/20 animate-pulse"></div>
-                                        <div className="absolute top-0 w-full h-full bg-gradient-to-b from-transparent via-white/40 to-transparent animate-infinite-scroll" style={{ height: '200%' }}></div>
-                                    </div>
+                                {/* ROUTE STEPS RENDERER (HORIZONTAL) */}
+                                <div className="py-6">
+                                    <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory">
+                                        {dailyRoute.daily_route_steps.map((step, idx) => {
+                                            const IconComponent = step.icon === "Play" ? Play : (step.icon === "Brain" ? Brain : (step.icon === "MessageCircle" ? MessageCircle : Lock));
 
-                                    {dailyRoute.daily_route_steps.map((step, idx) => {
-                                        const IconComponent = step.icon === "Play" ? Play : (step.icon === "Brain" ? Brain : (step.icon === "MessageCircle" ? MessageCircle : Lock));
+                                            const handleClick = () => {
+                                                if (idx === 0) handleStartSession();
+                                                if (idx === 1) openTheoryForCurrentPhase({ mandatory: false });
+                                                if (idx === 2) startFullQuiz();
+                                                if (idx === 3) setAskModalOpen(true);
+                                            };
 
-                                        const handleClick = () => {
-                                            if (idx === 0) handleStartSession();
-                                            if (idx === 1) openTheoryForCurrentPhase({ mandatory: false });
-                                            if (idx === 2) startFullQuiz();
-                                            if (idx === 3) setAskModalOpen(true);
-                                        };
+                                            let btnStyle = "bg-[#E5E5E5] border-[#CECECE] text-[#AFAFAF]";
+                                            if (idx === 0) btnStyle = "bg-[#58CC02] border-[#46A302] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(88,204,2,0.6)]";
+                                            else if (idx === 1) btnStyle = "bg-[#1CB0F6] border-[#1899D6] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(28,176,246,0.6)]";
+                                            else if (idx === 2) btnStyle = "bg-[#FFD900] border-[#E5C300] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,217,0,0.6)]";
+                                            else btnStyle = "bg-[#FF4B4B] border-[#D63E3E] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,75,75,0.6)]";
 
-                                        // STYLE LOGIC
-                                        let btnStyle = "bg-[#E5E5E5] border-[#CECECE] text-[#AFAFAF]"; // Locked/Future
-                                        // Simple logic for demo: Step 0 is completed/current, others locked? 
-                                        // Better: visual variety based on index
+                                            const subtitle = idx === 0
+                                                ? "CLASE DE HOY"
+                                                : (idx === 1 ? "TEORIA IA" : (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"));
 
-                                        if (idx === 0) btnStyle = "bg-[#58CC02] border-[#46A302] text-white animate-bounce-subtle z-20 shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(88,204,2,0.6)]"; // Active
-                                        else if (idx === 1) btnStyle = "bg-[#1CB0F6] border-[#1899D6] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(28,176,246,0.6)]"; // Next
-                                        else if (idx === 2) btnStyle = "bg-[#FFD900] border-[#E5C300] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,217,0,0.6)]"; // Quiz
-                                        else btnStyle = "bg-[#FF4B4B] border-[#D63E3E] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,75,75,0.6)]"; // Practice
-
-                                        // Alternating offset
-                                        const offsetClass = idx % 2 === 0 ? "-translate-x-12" : "translate-x-12";
-
-                                        return (
-                                            <div key={idx} className={`relative z-10 group ${offsetClass}`}>
-                                                <button
-                                                    onClick={handleClick}
-                                                    className={`w-24 h-24 rounded-full flex items-center justify-center border-b-8 transition-all duration-300 hover:scale-110 hover:-translate-y-2 hover:z-30 active:border-b-0 active:translate-y-2 shadow-sm ${btnStyle}`}
-                                                >
-                                                    <IconComponent className="w-10 h-10" fill="currentColor" />
-
-                                                    {/* CROWN/STAR for detailed polish */}
-                                                    <div className="absolute top-1 right-2 w-3 h-3 bg-white/30 rounded-full"></div>
-                                                </button>
-
-                                                {/* FLOATING LABEL */}
-                                                <div className={`absolute top-6 ${idx % 2 === 0 ? "left-28" : "right-28"} bg-white border-2 border-gray-200 px-4 py-2 rounded-2xl shadow-sm min-w-[140px] transition-transform hover:scale-105`}>
-                                                    <h3 className="font-black text-[#3C3C3C] text-sm uppercase">{repairText(step.step)}</h3>
-                                                    <p className="text-[#AFAFAF] text-xs font-bold">{
-                                                        idx === 0 ? "CLASE DE HOY" :
-                                                            (idx === 1 ? "TEORIA IA" :
-                                                                (idx === 3 ? "CONSULTA" : "45 PREGUNTAS KAIZEN"))
-                                                    }</p>
-
-                                                    {/* TRIANGLE POINTER */}
-                                                    <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-b-2 border-l-2 border-gray-200 transform rotate-45 ${idx % 2 === 0 ? "-left-[7px]" : "-right-[7px] border-l-0 border-b-0 border-t-2 border-r-2"}`}></div>
+                                            return (
+                                                <div key={idx} className="snap-start shrink-0 w-[260px]">
+                                                    <div className="rounded-3xl border-2 border-[#E2E8F0] bg-white p-4 shadow-sm h-full">
+                                                        <div className="flex items-center gap-4">
+                                                            <button
+                                                                onClick={handleClick}
+                                                                className={`w-20 h-20 rounded-full flex items-center justify-center border-b-8 transition-all duration-300 hover:scale-105 active:border-b-0 active:translate-y-1 ${btnStyle}`}
+                                                            >
+                                                                <IconComponent className="w-9 h-9" fill="currentColor" />
+                                                            </button>
+                                                            <div className="min-w-0">
+                                                                <h3 className="font-black text-[#2B2E4A] text-base leading-tight uppercase">
+                                                                    {repairText(step.step)}
+                                                                </h3>
+                                                                <p className="text-[#9094A6] text-xs font-bold mt-1 uppercase">
+                                                                    {subtitle}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
 
                                 <div className="mt-12">
