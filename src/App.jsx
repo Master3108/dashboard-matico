@@ -5102,9 +5102,9 @@ ${finalData.capsule}`;
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
 
-                        <div className="lg:col-span-2 space-y-8">
+                        <div className="xl:col-span-2 space-y-8">
                             <div className={`${clayCard} relative overflow-visible`}>
                                 <div className="flex justify-between items-start mb-8">
                                     <div>
@@ -5232,7 +5232,7 @@ ${finalData.capsule}`;
 
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                                         <div className="rounded-[28px] border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-5 md:p-6 shadow-[0_12px_28px_rgba(77,150,255,0.08)]">
-                                            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                                            <div className="grid gap-5 2xl:grid-cols-[1.1fr_0.9fr] 2xl:items-center">
                                                 <div className="space-y-3">
                                                     <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#4D96FF]">
                                                         <span className="h-2 w-2 rounded-full bg-[#4D96FF]" />
@@ -5279,7 +5279,7 @@ ${finalData.capsule}`;
                                         </div>
 
                                         <div className="rounded-[28px] border-2 border-violet-100 bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-5 md:p-6 shadow-[0_12px_28px_rgba(124,58,237,0.08)]">
-                                            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                                            <div className="grid gap-5 2xl:grid-cols-[1.1fr_0.9fr] 2xl:items-center">
                                                 <div className="space-y-3">
                                                     <div className="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#7C3AED]">
                                                         <span className="h-2 w-2 rounded-full bg-[#7C3AED]" />
