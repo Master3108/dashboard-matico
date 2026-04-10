@@ -5186,7 +5186,7 @@ ${finalData.capsule}`;
                                         </p>
                                     </div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                                    <div className="grid grid-cols-1 gap-5">
                                         <div className="rounded-[28px] border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-5 md:p-6 shadow-[0_12px_28px_rgba(77,150,255,0.08)]">
                                             <div className="grid gap-5 2xl:grid-cols-[1.1fr_0.9fr] 2xl:items-center">
                                                 <div className="space-y-3">
