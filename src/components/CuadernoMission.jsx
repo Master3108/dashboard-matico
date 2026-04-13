@@ -3,7 +3,7 @@ import { AlertTriangle, Camera, CheckCircle, Download, RotateCcw, Sparkles, Star
 
 const MAX_PAGES = 3;
 const POLL_INTERVAL_MS = 2000;
-const NOTEBOOK_QUIZ_THRESHOLD = 40;
+const NOTEBOOK_QUIZ_THRESHOLD = 80;
 
 const TIER_UI = {
     oro: { xp: 50, title: 'Excelente trabajo', box: 'bg-amber-50 border-amber-300', text: 'text-amber-700' },
@@ -130,7 +130,7 @@ const buildPdfFromPages = async (pages, subject, sessionId, scanId) => {
     };
 };
 
-const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete, onSkip, userEmail, userId }) => {
+const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onComplete, onSkip, userEmail, userId }) => {
     const [status, setStatus] = useState('idle');
     const [feedback, setFeedback] = useState('');
     const [suggestion, setSuggestion] = useState('');
@@ -359,6 +359,7 @@ const CuadernoMission = ({ sessionId, subject, topic, readingContent, onComplete
                     email: userEmail || 'anonimo@matico.ai',
                     subject,
                     session_id: sessionId,
+                    phase: phase || '',
                     topic,
                     reading_content: readingContent?.substring(0, 4000) || '',
                     pdf_base64: scanAssets.pdfBase64,

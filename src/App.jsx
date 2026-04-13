@@ -4579,6 +4579,8 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         }
 
         const finalTopic = topic + difficultyPrompt + questionSuffix;
+        const phaseForRequest = Number(getSessionProtocolState()?.currentPhase || currentQuizPhase || 1) || 1;
+        const sessionForRequest = Number(TODAYS_SESSION?.session || 0) || 0;
 
         try {
             // ALWAYS USE POST
@@ -4587,7 +4589,9 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 accion: n8nAction,
                 tema: finalTopic, // Use modified topic
                 nivel_estudiante: "1Ã‚Â° Medio Chile",
-                numero_pregunta: questionNumberOverride || quizQuestionNumber
+                numero_pregunta: questionNumberOverride || quizQuestionNumber,
+                session: sessionForRequest,
+                phase: phaseForRequest
             };
 
             if (image) {
@@ -4606,7 +4610,9 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 sujeto: subject,
                 accion: n8nAction,
                 tema: finalTopic, // Use modified topic
-                nivel_estudiante: "1Ã‚Â° Medio Chile"
+                nivel_estudiante: "1Ã‚Â° Medio Chile",
+                session: String(sessionForRequest),
+                phase: String(phaseForRequest)
             });
 
             console.log("[N8N] Calling via POST:", activeWebhookUrl);
@@ -4895,6 +4901,7 @@ ${finalData.capsule}`;
                 {showTheoryNotebookMission && (
                     <CuadernoMission
                         sessionId={TODAYS_SESSION.session}
+                        phase={currentQuizPhase}
                         subject={currentSubject}
                         topic={theoryTitle || TODAYS_SUBJECT.oa_title || 'TeorÃ­a lÃºdica'}
                         readingContent={theoryContent || aiContent || TODAYS_SESSION.readingContent || ''}
