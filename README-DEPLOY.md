@@ -2,7 +2,32 @@
 
 This file documents the current production setup for `dashboard-matico` so any developer or AI can verify how the project is actually deployed.
 
-## Current Production Architecture
+## Owner Deployment Protocol (Required)
+
+From now on, always deliver deployment commands in this exact order:
+
+1. Update local machine (commit and push).
+2. Update Hostinger VPS (Docker containers).
+
+Quick commands:
+
+```powershell
+cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico
+.\scripts\deploy-local.ps1
+```
+
+```bash
+cd /var/www/dashboard-matico
+bash scripts/deploy-vps-docker.sh
+```
+
+If needed, override defaults for branch/host/path:
+
+```bash
+BRANCH=main VPS_HOST=root@72.60.245.87 VPS_PATH=/var/www/dashboard-matico bash scripts/deploy-vps-docker.sh
+```
+
+## Current Production Architecture (Legacy Reference)
 
 - VPS path: `/var/www/dashboard-matico`
 - Frontend build: `/var/www/dashboard-matico/dist`
@@ -11,7 +36,7 @@ This file documents the current production setup for `dashboard-matico` so any d
 - Public domain: `https://srv1048418.hstgr.cloud`
 - Reverse proxy: `nginx` on the VPS
 
-## Important: Current Setup Is Not Docker-Based
+## Important: Legacy Note (Pre-Docker)
 
 The repository still contains Docker files, but the working production setup is currently:
 
