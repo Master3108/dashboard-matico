@@ -3,6 +3,7 @@ import MathRenderer from './components/MathRenderer';
 import InteractiveQuiz from './components/InteractiveQuiz';
 import LoginPage from './components/LoginPage';
 import CuadernoMission from './components/CuadernoMission';
+import ExamCaptureModal from './components/ExamCaptureModal';
 import {
     BookOpen,
     Brain,
@@ -2798,6 +2799,7 @@ const App = () => {
     const [showAdminGeneratedQuestionsModal, setShowAdminGeneratedQuestionsModal] = useState(false);
     const [adminGeneratedQuestions, setAdminGeneratedQuestions] = useState([]);
     const [isLoadingAdminGeneratedQuestions, setIsLoadingAdminGeneratedQuestions] = useState(false);
+    const [showExamCaptureModal, setShowExamCaptureModal] = useState(false);
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
     useEffect(() => {
@@ -4934,6 +4936,13 @@ ${finalData.capsule}`;
                 {/* NEW LOADING OVERLAY */}
                 <LoadingOverlay isOpen={isCallingN8N} message={loadingMessage} diagnostics={loadingDiagnostics} />
 
+                <ExamCaptureModal
+                    isOpen={showExamCaptureModal}
+                    onClose={() => setShowExamCaptureModal(false)}
+                    userId={USER_ID}
+                    userEmail={currentUser?.email}
+                />
+
                 <AIContentModal
                     isOpen={aiModalOpen}
                     onClose={() => setAiModalOpen(false)}
@@ -4954,6 +4963,13 @@ ${finalData.capsule}`;
                     onStartQuiz={startFullQuiz}
                     quizProgress={getQuizProgress()} // NEW: Pass quiz progress for UI
                 />
+
+                <button
+                    onClick={() => setShowExamCaptureModal(true)}
+                    className="fixed bottom-6 right-6 z-[205] bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] transition-all"
+                >
+                    Registrar prueba
+                </button>
 
                 <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
                     <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">

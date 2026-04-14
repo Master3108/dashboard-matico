@@ -53,6 +53,26 @@ const THEORY_LUDICA_HEADERS = [
     'source',
     'active'
 ];
+const EXAM_REMINDER_SHEET = 'ExamReminderBank';
+const EXAM_REMINDER_HEADERS = [
+    'timestamp',
+    'event_id',
+    'user_id',
+    'student_name',
+    'student_email',
+    'guardian_email',
+    'subject',
+    'exam_date',
+    'title',
+    'source',
+    'confidence',
+    'status',
+    'sent_d7',
+    'sent_d2',
+    'sent_d1',
+    'last_sent_at',
+    'notes'
+];
 
 // ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n DeepSeek
 const FORCED_AI_PROVIDER = String(process.env.AI_PROVIDER || '').trim().toLowerCase();
@@ -940,6 +960,152 @@ app.post('/api/save-notebook', async (req, res) => {
         return res.status(500).json({ success: false, error: error.message || 'No se pudo guardar el PDF' });
     }
 });
+
+app.post('/api/exams/intake', async (req, res) => {
+    try {
+        const {
+            user_id = '',
+            email = '',
+            source_type = 'screenshot',
+            image_base64 = '',
+            image_mime_type = 'image/png'
+        } = req.body || {};
+
+        if (!user_id) {
+            return res.status(400).json({ success: false, error: 'Falta user_id' });
+        }
+
+        if (!image_base64) {
+            return res.status(400).json({ success: false, error: 'Falta image_base64 para analizar la prueba' });
+        }
+
+        const sheets = await getSheetsClient();
+        const userData = await getUserFromSheet(sheets, user_id).catch(() => null);
+        const preview = await analyzeExamEvidence({
+            imageBase64: image_base64,
+            imageMimeType: image_mime_type || 'image/png'
+        });
+
+        const eventId = `EXAM_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        const record = {
+            timestamp: new Date().toISOString(),
+            event_id: eventId,
+            user_id: String(user_id || '').trim(),
+            student_name: userData?.nombre || 'Estudiante',
+            student_email: email || userData?.email || '',
+            guardian_email: userData?.correo_apoderado || '',
+            subject: preview.subject || '',
+            exam_date: preview.exam_date || '',
+            title: preview.title || '',
+            source: String(source_type || 'screenshot').trim(),
+            confidence: String(preview.confidence || 0),
+            status: preview.needs_confirmation ? 'draft_pending_confirmation' : 'confirmed_scheduled',
+            sent_d7: 'FALSE',
+            sent_d2: 'FALSE',
+            sent_d1: 'FALSE',
+            last_sent_at: '',
+            notes: preview.notes || ''
+        };
+
+        await appendExamReminderRow(sheets, record);
+
+        return res.json({
+            success: true,
+            event_id: eventId,
+            needs_confirmation: preview.needs_confirmation,
+            confidence: preview.confidence,
+            event_preview: {
+                exam_date: preview.exam_date,
+                subject: preview.subject,
+                title: preview.title,
+                school: preview.school || '',
+                notes: preview.notes || '',
+                guardian_email: record.guardian_email || ''
+            }
+        });
+    } catch (error) {
+        console.error('[EXAM_INTAKE] Error:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo registrar la prueba' });
+    }
+});
+
+app.post('/api/exams/confirm', async (req, res) => {
+    try {
+        const {
+            event_id = '',
+            confirm = false,
+            confirmed_data = {}
+        } = req.body || {};
+
+        if (!event_id) {
+            return res.status(400).json({ success: false, error: 'Falta event_id' });
+        }
+
+        if (!confirm) {
+            return res.status(400).json({ success: false, error: 'Debes confirmar el evento' });
+        }
+
+        const sheets = await getSheetsClient();
+        const found = await findExamReminderById(sheets, event_id);
+        if (!found) {
+            return res.status(404).json({ success: false, error: 'Evento no encontrado' });
+        }
+
+        const nextSubject = normalizeSheetText(confirmed_data?.subject || found.subject).toUpperCase();
+        const nextDate = normalizeExamDate(confirmed_data?.exam_date || found.exam_date);
+        const nextTitle = String(confirmed_data?.title || found.title || '').trim();
+
+        const updated = await updateExamReminderRow(sheets, found.rowNumber, {
+            subject: nextSubject,
+            exam_date: nextDate,
+            title: nextTitle,
+            status: 'confirmed_scheduled',
+            notes: String(confirmed_data?.notes || found.notes || '')
+        });
+
+        return res.json({
+            success: true,
+            status: updated?.status || 'confirmed_scheduled',
+            event: updated || null
+        });
+    } catch (error) {
+        console.error('[EXAM_CONFIRM] Error:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo confirmar el evento' });
+    }
+});
+
+app.get('/api/exams/list', async (req, res) => {
+    try {
+        const userId = String(req.query?.user_id || '').trim();
+        const sheets = await getSheetsClient();
+        const rows = await getExamReminderRows(sheets);
+        const filtered = userId
+            ? rows.filter((row) => String(row.user_id || '').trim() === userId)
+            : rows;
+
+        return res.json({
+            success: true,
+            events: filtered
+                .sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime())
+                .map((row) => ({
+                    event_id: row.event_id,
+                    subject: row.subject,
+                    exam_date: row.exam_date,
+                    title: row.title,
+                    confidence: Number(row.confidence || 0) || 0,
+                    status: row.status,
+                    sent_d7: parseSheetBool(row.sent_d7),
+                    sent_d2: parseSheetBool(row.sent_d2),
+                    sent_d1: parseSheetBool(row.sent_d1),
+                    guardian_email: row.guardian_email,
+                    timestamp: row.timestamp
+                }))
+        });
+    } catch (error) {
+        console.error('[EXAM_LIST] Error:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo listar eventos' });
+    }
+});
 // --- HELPER: Subir imagen a Google Drive ---
 const uploadToDrive = async (base64File, fileName, folderId, mimeType = 'image/jpeg') => {
     try {
@@ -1465,6 +1631,274 @@ const appendTheoryLudicaToSheet = async (sheets, {
         source: String(source || 'ai_generated').trim(),
         active: 'TRUE'
     };
+};
+
+const parseExamAnalysisResponse = (rawText = '') => {
+    const cleaned = String(rawText || '')
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+
+    try {
+        return JSON.parse(cleaned);
+    } catch {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('No se pudo interpretar el JSON del analisis de prueba');
+        return JSON.parse(match[0]);
+    }
+};
+
+const normalizeExamDate = (value = '') => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+    const clMatch = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (clMatch) {
+        const day = String(clMatch[1]).padStart(2, '0');
+        const month = String(clMatch[2]).padStart(2, '0');
+        return `${clMatch[3]}-${month}-${day}`;
+    }
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toISOString().slice(0, 10);
+};
+
+const boolToSheet = (value) => (value ? 'TRUE' : 'FALSE');
+
+const parseSheetBool = (value = '') => normalizeSheetBool(value);
+
+const getExamReminderRows = async (sheets) => {
+    await ensureSheetHeaders(sheets, EXAM_REMINDER_SHEET, EXAM_REMINDER_HEADERS);
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${EXAM_REMINDER_SHEET}!A:Q`
+    }).catch((error) => {
+        if (error?.code === 400) return { data: { values: [] } };
+        throw error;
+    });
+
+    const rows = response.data.values || [];
+    if (!rows.length) return [];
+
+    const [headers, ...dataRows] = rows;
+    return dataRows.map((row, index) => ({
+        rowNumber: index + 2,
+        ...Object.fromEntries(headers.map((header, headerIndex) => [header, row[headerIndex] || '']))
+    }));
+};
+
+const appendExamReminderRow = async (sheets, record = {}) => {
+    await ensureSheetHeaders(sheets, EXAM_REMINDER_SHEET, EXAM_REMINDER_HEADERS);
+    const values = EXAM_REMINDER_HEADERS.map((header) => String(record?.[header] || ''));
+    await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${EXAM_REMINDER_SHEET}!A:Q`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [values] }
+    });
+};
+
+const updateExamReminderRow = async (sheets, rowNumber, patch = {}) => {
+    const rows = await getExamReminderRows(sheets);
+    const current = rows.find((row) => Number(row.rowNumber) === Number(rowNumber));
+    if (!current) return null;
+
+    const next = { ...current, ...patch };
+    const values = EXAM_REMINDER_HEADERS.map((header) => String(next?.[header] || ''));
+    await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${EXAM_REMINDER_SHEET}!A${rowNumber}:Q${rowNumber}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [values] }
+    });
+    return { ...next, rowNumber };
+};
+
+const findExamReminderById = async (sheets, eventId = '') => {
+    const normalized = String(eventId || '').trim();
+    if (!normalized) return null;
+    const rows = await getExamReminderRows(sheets);
+    return rows.find((row) => String(row.event_id || '').trim() === normalized) || null;
+};
+
+const daysUntilExam = (examDate = '', now = new Date()) => {
+    const normalized = normalizeExamDate(examDate);
+    if (!normalized) return null;
+
+    const today = new Date(now);
+    const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+    const [y, m, d] = normalized.split('-').map((item) => Number(item));
+    const examUtc = Date.UTC(y, (m || 1) - 1, d || 1);
+    return Math.floor((examUtc - todayUtc) / (24 * 60 * 60 * 1000));
+};
+
+const normalizeExamEventPreview = (parsed = {}) => {
+    const confidenceRaw = Number(parsed?.confidence ?? parsed?.score_confianza ?? 0) || 0;
+    const confidence = Math.max(0, Math.min(100, Math.round(confidenceRaw)));
+    const examDate = normalizeExamDate(parsed?.exam_date || parsed?.fecha_prueba || '');
+    const subject = normalizeSheetText(parsed?.subject || parsed?.materia || '').toUpperCase();
+    const title = String(parsed?.title || parsed?.nombre_prueba || parsed?.descripcion || '').trim();
+    const school = String(parsed?.school || parsed?.colegio || '').trim();
+    const notes = String(parsed?.notes || parsed?.observaciones || '').trim();
+
+    return {
+        exam_date: examDate,
+        subject,
+        title,
+        school,
+        notes,
+        confidence,
+        needs_confirmation: confidence < 70 || !examDate || !subject
+    };
+};
+
+const generateExamReminderPlanAndPractice = async ({
+    studentName = 'Estudiante',
+    subject = '',
+    title = '',
+    examDate = '',
+    daysLeft = 0
+} = {}) => {
+    const fallback = `## Plan de estudio rapido\n- Revisa el temario principal de ${subject || 'la prueba'} en 20-30 minutos.\n- Haz 1 resumen con definiciones clave y 3 ejemplos.\n- Practica 3 ejercicios similares y corrige errores.\n\n## Mini practica\n1. Explica con tus palabras un concepto central de ${subject || 'la materia'}.\n2. Resuelve un ejercicio representativo y justifica cada paso.\n3. Identifica un error comun y como evitarlo.`;
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model: AI_MODELS.fast,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'Eres tutor academico chileno para apoderados. Devuelve markdown breve con secciones "Plan de estudio rapido" y "Mini practica".'
+                },
+                {
+                    role: 'user',
+                    content: `Alumno: ${studentName}\nMateria: ${subject}\nEvaluacion: ${title}\nFecha prueba: ${examDate}\nDias restantes: ${daysLeft}\n\nGenera plan accionable y mini practica (max 3 preguntas).`
+                }
+            ],
+            temperature: 0.4
+        });
+
+        return String(completion.choices?.[0]?.message?.content || '').trim() || fallback;
+    } catch (error) {
+        console.error('[EXAM_REMINDER] Error generando plan IA:', error.message);
+        return fallback;
+    }
+};
+
+const buildExamReminderEmailHtml = ({
+    studentName = 'Estudiante',
+    subject = '',
+    title = '',
+    examDate = '',
+    daysLeft = 0,
+    planMarkdown = ''
+} = {}) => {
+    const safePlan = escapeHtml(String(planMarkdown || '')).replace(/\n/g, '<br>');
+    return `
+        <div style="font-family: Arial, sans-serif; background:#f8fafc; padding:24px; color:#0f172a;">
+            <h2 style="margin:0 0 12px 0;">Recordatorio de prueba</h2>
+            <p style="margin:0 0 8px 0;"><strong>Alumno:</strong> ${escapeHtml(studentName)}</p>
+            <p style="margin:0 0 8px 0;"><strong>Materia:</strong> ${escapeHtml(subject || 'No indicada')}</p>
+            <p style="margin:0 0 8px 0;"><strong>Prueba:</strong> ${escapeHtml(title || 'Evaluacion')}</p>
+            <p style="margin:0 0 16px 0;"><strong>Fecha:</strong> ${escapeHtml(examDate || '-')} (${escapeHtml(String(daysLeft))} dias)</p>
+            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px; line-height:1.6;">
+                ${safePlan}
+            </div>
+        </div>
+    `;
+};
+
+const analyzeExamEvidence = async ({
+    imageBase64 = '',
+    imageMimeType = 'image/png'
+} = {}) => {
+    const trimmed = String(imageBase64 || '').trim();
+    if (!trimmed) throw new Error('No se recibio imagen para analizar');
+
+    const prompt = `Analiza una captura/foto de calendario o app escolar y extrae datos de una evaluacion.
+
+Responde SOLO en JSON valido:
+{
+  "exam_date": "YYYY-MM-DD",
+  "subject": "MATERIA",
+  "title": "nombre de la prueba",
+  "school": "opcional",
+  "notes": "contexto breve",
+  "confidence": 0
+}
+
+Reglas:
+- exam_date en formato ISO YYYY-MM-DD.
+- confidence entero 0-100.
+- Si no encuentras un dato, usa string vacio y baja confidence.`;
+
+    let rawText = '';
+
+    if (process.env.NVIDIA_API_KEY) {
+        const nvidiaResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'moonshotai/kimi-k2.5',
+                messages: [{
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: prompt },
+                        { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                    ]
+                }],
+                max_tokens: 1200,
+                temperature: 0.1
+            })
+        });
+
+        if (!nvidiaResponse.ok) {
+            const errText = await nvidiaResponse.text();
+            throw new Error(`NVIDIA API error: ${nvidiaResponse.status} - ${errText.substring(0, 160)}`);
+        }
+
+        const responseJson = await nvidiaResponse.json();
+        rawText = responseJson.choices?.[0]?.message?.content || '';
+    } else if (openaiVisionClient) {
+        const openaiResponse = await openaiVisionClient.chat.completions.create({
+            model: OPENAI_VISION_MODEL,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: prompt },
+                    { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                ]
+            }],
+            max_tokens: 1200,
+            temperature: 0.1
+        });
+        rawText = openaiResponse.choices?.[0]?.message?.content || '';
+    } else if (kimiVisionClient) {
+        const kimiResponse = await kimiVisionClient.chat.completions.create({
+            model: NOTEBOOK_VISION_MODEL,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: prompt },
+                    { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                ]
+            }],
+            max_tokens: 1200,
+            temperature: 0.1
+        });
+        rawText = kimiResponse.choices?.[0]?.message?.content || '';
+    } else {
+        throw new Error('No hay proveedor visual configurado para analizar pruebas.');
+    }
+
+    const parsed = parseExamAnalysisResponse(rawText);
+    return normalizeExamEventPreview(parsed);
 };
 
 const autoAppendMissingSessionCompleted = async (sheets, rows = [], userId = '', subject = '', grade = '1medio') => {
@@ -3850,6 +4284,81 @@ cron.schedule('0 9 * * *', async () => {
         console.log(`[CRON] Recordatorios enviados a ${users.length} usuarios`);
     } catch (err) {
         console.error('[CRON] Error:', err.message);
+    }
+}, { timezone: 'America/Santiago' });
+
+// ========================================================================
+// CRON: Recordatorio de pruebas detectadas (D-7, D-2, D-1)
+// ========================================================================
+cron.schedule('30 8 * * *', async () => {
+    try {
+        const sheets = await getSheetsClient();
+        const rows = await getExamReminderRows(sheets);
+        const candidates = rows.filter((row) => String(row.status || '') === 'confirmed_scheduled');
+
+        for (const row of candidates) {
+            const examDate = normalizeExamDate(row.exam_date);
+            const daysLeft = daysUntilExam(examDate);
+            if (daysLeft === null || daysLeft < 0) continue;
+
+            let stageKey = '';
+            let alreadySent = false;
+
+            if (daysLeft === 7) {
+                stageKey = 'sent_d7';
+                alreadySent = parseSheetBool(row.sent_d7);
+            } else if (daysLeft === 2) {
+                stageKey = 'sent_d2';
+                alreadySent = parseSheetBool(row.sent_d2);
+            } else if (daysLeft === 1) {
+                stageKey = 'sent_d1';
+                alreadySent = parseSheetBool(row.sent_d1);
+            } else {
+                continue;
+            }
+
+            if (alreadySent) continue;
+
+            const guardianEmail = String(row.guardian_email || '').trim();
+            if (!guardianEmail) continue;
+
+            const studentName = row.student_name || 'Estudiante';
+            const subject = row.subject || 'MATERIA';
+            const title = row.title || 'Prueba';
+            const planMarkdown = await generateExamReminderPlanAndPractice({
+                studentName,
+                subject,
+                title,
+                examDate,
+                daysLeft
+            });
+            const html = buildExamReminderEmailHtml({
+                studentName,
+                subject,
+                title,
+                examDate,
+                daysLeft,
+                planMarkdown
+            });
+
+            await sendEmailSafe(
+                guardianEmail,
+                `Recordatorio Matico: ${subject} (${title}) en ${daysLeft} dia(s)`,
+                html
+            );
+
+            await updateExamReminderRow(sheets, row.rowNumber, {
+                [stageKey]: boolToSheet(true),
+                last_sent_at: new Date().toISOString(),
+                status: (parseSheetBool(row.sent_d7) || stageKey === 'sent_d7')
+                    && (parseSheetBool(row.sent_d2) || stageKey === 'sent_d2')
+                    && (parseSheetBool(row.sent_d1) || stageKey === 'sent_d1')
+                    ? 'completed'
+                    : 'confirmed_scheduled'
+            });
+        }
+    } catch (error) {
+        console.error('[CRON_EXAM_REMINDER] Error:', error.message);
     }
 }, { timezone: 'America/Santiago' });
 
