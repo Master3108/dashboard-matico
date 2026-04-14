@@ -1498,6 +1498,51 @@ const ensureSheetHeaders = async (sheets, title, headers = []) => {
     });
 };
 
+const ensureTheorySheetFormatting = async (sheets) => {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+    const theorySheet = (meta.data.sheets || []).find((sheet) => sheet.properties?.title === THEORY_LUDICA_SHEET);
+    const theorySheetId = theorySheet?.properties?.sheetId;
+    if (theorySheetId === undefined || theorySheetId === null) return;
+
+    await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: {
+            requests: [
+                {
+                    repeatCell: {
+                        range: {
+                            sheetId: theorySheetId,
+                            startRowIndex: 1,
+                            startColumnIndex: 5,
+                            endColumnIndex: 6
+                        },
+                        cell: {
+                            userEnteredFormat: {
+                                wrapStrategy: 'CLIP',
+                                verticalAlignment: 'TOP'
+                            }
+                        },
+                        fields: 'userEnteredFormat.wrapStrategy,userEnteredFormat.verticalAlignment'
+                    }
+                },
+                {
+                    updateDimensionProperties: {
+                        range: {
+                            sheetId: theorySheetId,
+                            dimension: 'ROWS',
+                            startIndex: 1
+                        },
+                        properties: {
+                            pixelSize: 21
+                        },
+                        fields: 'pixelSize'
+                    }
+                }
+            ]
+        }
+    });
+};
+
 const normalizeTheorySubject = (value = '') => normalizeSheetText(value).toUpperCase();
 
 const normalizeTheorySession = (value = '') => {
@@ -1541,6 +1586,7 @@ const resolveTheoryLookup = ({
 
 const getTheoryLudicaRows = async (sheets) => {
     await ensureSheetHeaders(sheets, THEORY_LUDICA_SHEET, THEORY_LUDICA_HEADERS);
+    await ensureTheorySheetFormatting(sheets);
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: `${THEORY_LUDICA_SHEET}!A:H`
