@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Camera, CheckCircle, Clipboard, Monitor, UploadCloud } from 'lucide-react';
+import { AlertTriangle, Camera, CheckCircle, Clipboard, Monitor, Smartphone, UploadCloud } from 'lucide-react';
+import { captureNativeScreenshot, isNativeScreenCaptureAvailable } from '../mobile/screenCaptureBridge';
 
 const MAX_PAGES = 3;
 
@@ -68,6 +69,7 @@ const OracleNotebookExamBuilder = ({
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [nativeCaptureSupported, setNativeCaptureSupported] = useState(false);
     const [draftId, setDraftId] = useState('');
     const [confidence, setConfidence] = useState(0);
     const [detectedTopics, setDetectedTopics] = useState([]);
@@ -93,6 +95,10 @@ const OracleNotebookExamBuilder = ({
     };
 
     useEffect(() => () => stopCamera(), []);
+
+    useEffect(() => {
+        setNativeCaptureSupported(isNativeScreenCaptureAvailable());
+    }, []);
 
     useEffect(() => {
         setConfirmData((prev) => ({
@@ -210,6 +216,33 @@ const OracleNotebookExamBuilder = ({
         }
     };
 
+    const captureFromNativeApp = async () => {
+        try {
+            const nativeCapture = await captureNativeScreenshot();
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const pageNumber = pages.length + 1;
+                    const asset = buildImageAssetFromSource(img, pageNumber);
+                    addPageAsset({
+                        ...asset,
+                        imageBase64: nativeCapture.imageBase64,
+                        imageMimeType: nativeCapture.imageMimeType
+                    });
+                } catch (error) {
+                    setErrorMsg(error.message || 'No se pudo procesar la captura nativa');
+                }
+            };
+            img.src = nativeCapture.dataUrl;
+        } catch (error) {
+            if (error?.message === 'native_not_available') {
+                setErrorMsg('Captura directa requiere app móvil nativa. En web móvil usa "Subir archivo" desde galería.');
+                return;
+            }
+            setErrorMsg('No se pudo capturar pantalla desde la app móvil.');
+        }
+    };
+
     const removePage = (id) => {
         setPages((prev) => prev.filter((item) => item.id !== id));
     };
@@ -321,7 +354,7 @@ const OracleNotebookExamBuilder = ({
 
     return (
         <div className="space-y-4" onPaste={handlePaste}>
-            <div className="grid md:grid-cols-4 gap-3">
+            <div className="grid md:grid-cols-5 gap-3">
                 <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
                     <Camera className="w-4 h-4" /> Tomar foto
                 </button>
@@ -332,10 +365,26 @@ const OracleNotebookExamBuilder = ({
                 <button type="button" onClick={captureScreen} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
                     <Monitor className="w-4 h-4" /> Capturar pantalla
                 </button>
+                <button
+                    type="button"
+                    onClick={captureFromNativeApp}
+                    className={`rounded-2xl border-2 px-3 py-3 text-sm font-black flex items-center justify-center gap-2 ${nativeCaptureSupported
+                        ? 'border-[#16A34A] bg-[#ECFDF3] text-[#166534] hover:border-[#15803D]'
+                        : 'border-gray-200 bg-white text-[#64748B] hover:border-[#7C3AED]/50'
+                        }`}
+                >
+                    <Smartphone className="w-4 h-4" /> Captura directa app
+                </button>
                 <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-[#F8FAFF] px-3 py-3 text-xs font-bold text-[#64748B] flex items-center justify-center gap-2">
                     <Clipboard className="w-4 h-4" /> Pegar screenshot (Ctrl+V)
                 </div>
             </div>
+
+            {!nativeCaptureSupported && (
+                <p className="text-xs text-[#64748B] font-bold">
+                    En celular web usa "Subir archivo" (screenshot de galería). Captura directa funciona en la app móvil nativa de Matico.
+                </p>
+            )}
 
             {isCameraOpen && (
                 <div className="bg-[#EEF2FF] border border-[#C7D2FE] rounded-2xl p-3 space-y-3">
