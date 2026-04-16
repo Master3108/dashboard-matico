@@ -7,7 +7,8 @@
     "dev": "vite --host",
     "build": "vite build",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "theory:backfill": "node scripts/backfill-theory-ludica.mjs"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

@@ -530,16 +530,16 @@ const repairText = (value = '') => {
 const clayInset = 'bg-[#F7F7F7] rounded-2xl border-transparent shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]';
 
 const MATH_SYLLABUS = [
-    { session: 1, unit: 'NÃºmeros', topic: 'Racionales: Concepto y ConversiÃ³n', videoTitle: 'MatemÃ¡tica-Clase NÃ‚Â°1-Racionales', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' },
-    { session: 2, unit: 'NÃºmeros', topic: 'Operatoria Combinada en Q', videoTitle: 'Operatoria combinada con racionales', videoLink: 'https://www.youtube.com/watch?v=vbh4lcMtpoI' },
-    { session: 3, unit: 'NÃºmeros', topic: 'MultiplicaciÃ³n y DivisiÃ³n Q', videoTitle: 'Capsule-Rational Numbers', videoLink: 'https://www.youtube.com/watch?v=M6qOX1Xj_tY' },
-    { session: 4, unit: 'NÃºmeros', topic: 'Potencias: DefiniciÃ³n', videoTitle: 'AyudantÃ­a PTU-Potencias', videoLink: 'https://www.youtube.com/watch?v=0BILyJ_NyDA' },
-    { session: 5, unit: 'NÃºmeros', topic: 'Propiedades de Potencias', videoTitle: '#PruebadeInvierno MatemÃ¡tica-POTENCIAS', videoLink: 'https://www.youtube.com/watch?v=9VCg25rf7xg' },
-    { session: 6, unit: 'NÃºmeros', topic: 'Exponente Cero y Negativo', videoTitle: 'Potencias y sus propiedades (Segmento)', videoLink: 'https://www.youtube.com/watch?v=Cdti7efBqVc' },
-    { session: 7, unit: 'NÃºmeros', topic: 'Crecimiento Exponencial', videoTitle: 'MatemÃ¡tica-Potencias 1Ã‚Â° Medio', videoLink: 'https://www.youtube.com/watch?v=1RjOhQwPJB4' },
-    { session: 8, unit: 'NÃºmeros', topic: 'RaÃ­ces EnÃ©simas', videoTitle: 'Prueba de TransiciÃ³n-RaÃ­ces', videoLink: 'https://www.youtube.com/watch?v=xMYFzXcFYns' },
-    { session: 9, unit: 'NÃºmeros', topic: 'Operatoria con RaÃ­ces', videoTitle: 'Capsule-Roots', videoLink: 'https://www.youtube.com/watch?v=HwxfKSq0lh8' },
-    { session: 10, unit: 'NÃºmeros', topic: 'Porcentajes', videoTitle: 'PAES M1-Porcentaje', videoLink: 'https://www.youtube.com/watch?v=YJ9l1Ew_rns' },
+    { session: 1, unit: 'Números', topic: 'Racionales: Concepto y Conversión', videoTitle: 'Matemática - Clase N°1 - Racionales', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' },
+    { session: 2, unit: 'Números', topic: 'Operatoria Combinada en Q', videoTitle: 'Operatoria combinada con racionales', videoLink: 'https://www.youtube.com/watch?v=vbh4lcMtpoI' },
+    { session: 3, unit: 'Números', topic: 'Multiplicación y División en Q', videoTitle: 'Capsule-Rational Numbers', videoLink: 'https://www.youtube.com/watch?v=M6qOX1Xj_tY' },
+    { session: 4, unit: 'Números', topic: 'Potencias: Definición', videoTitle: 'Ayudantía PTU-Potencias', videoLink: 'https://www.youtube.com/watch?v=0BILyJ_NyDA' },
+    { session: 5, unit: 'Números', topic: 'Propiedades de Potencias', videoTitle: '#PruebadeInvierno Matemática-POTENCIAS', videoLink: 'https://www.youtube.com/watch?v=9VCg25rf7xg' },
+    { session: 6, unit: 'Números', topic: 'Exponente Cero y Negativo', videoTitle: 'Potencias y sus propiedades (Segmento)', videoLink: 'https://www.youtube.com/watch?v=Cdti7efBqVc' },
+    { session: 7, unit: 'Números', topic: 'Crecimiento Exponencial', videoTitle: 'Matemática-Potencias 1° Medio', videoLink: 'https://www.youtube.com/watch?v=1RjOhQwPJB4' },
+    { session: 8, unit: 'Números', topic: 'Raíces Enésimas', videoTitle: 'Prueba de Transición-Raíces', videoLink: 'https://www.youtube.com/watch?v=xMYFzXcFYns' },
+    { session: 9, unit: 'Números', topic: 'Operatoria con Raíces', videoTitle: 'Capsule-Roots', videoLink: 'https://www.youtube.com/watch?v=HwxfKSq0lh8' },
+    { session: 10, unit: 'Números', topic: 'Porcentajes', videoTitle: 'PAES M1-Porcentaje', videoLink: 'https://www.youtube.com/watch?v=YJ9l1Ew_rns' },
     { session: 11, unit: 'Ã­Ã‚Âlgebra', topic: 'Lenguaje Algebraico', videoTitle: 'EXPRESIONES ALGEBRAICAS Clase NÃ­ÃƒÂ¢Ã‚Â¬Ã³aÃƒâ€™Ã³Ã‚Âº3', videoLink: 'https://www.youtube.com/watch?v=lojCGXH4Odk' },
     { session: 12, unit: 'Ã­Ã‚Âlgebra', topic: 'Cuadrado de Binomio', videoTitle: 'Cuadrado de binomio', videoLink: 'https://www.youtube.com/watch?v=IjL5zOyxs20' },
     { session: 13, unit: 'Ã­Ã‚Âlgebra', topic: 'Suma por Diferencia', videoTitle: 'Suma por diferencia', videoLink: 'https://www.youtube.com/watch?v=-w_lg-r7pDg' },
@@ -581,17 +581,17 @@ const MATH_SYLLABUS = [
 // ---------------------------------------------------
 
 const DEFAULT_DAILY_ROUTE = {
-    sujeto: 'MatemÃ¡tica',
-    oa_title: 'S1: Racionales: Concepto y ConversiÃ³n',
+    sujeto: 'Matemática',
+    oa_title: 'S1: Racionales: Concepto y Conversión',
     color: '#4D96FF',
     icon: Brain,
     video_link: 'https://youtube.com',
     daily_route_steps: [
         { step: '1. Video de la Clase', action: 'video', icon: 'Play', isComplete: false },
-        { step: '2. TeorÃ­a LÃºdica IA', action: 'start_route', icon: 'Brain', isComplete: false },
+        { step: '2. Teoría Lúdica IA', action: 'start_route', icon: 'Brain', isComplete: false },
         { step: '3. Quiz de 45 Preguntas Kaizen', action: 'quiz', icon: 'Lock', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÃƒÂLISIS HISTÃ³RICO"
+    recommended_action_text: "INICIAR ANÁLISIS HISTÓRICO"
 };
 
 const DEFAULT_LANG_ROUTE = {
@@ -1852,7 +1852,7 @@ const PrepExamSetupModal = ({
                     <div>
                         <h3 className="text-2xl font-black text-[#2B2E4A]">Prueba preparatoria</h3>
                         <p className="text-sm font-bold text-[#9094A6]">
-                            {subject} Ã‚Â· 45 preguntas Ã‚Â· generaciÃ³n rÃ¡pida de 5 en 5
+                            {subject} · 45 preguntas · generación rápida de 5 en 5
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -1864,8 +1864,8 @@ const PrepExamSetupModal = ({
                     <div className="p-6 border-r border-gray-100 max-h-[70vh] overflow-y-auto">
                         <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-5">
                             <p className="text-sm text-indigo-900 leading-relaxed">
-                                Elige las sesiones que le van a tomar a tu hijo. Matico armarÃ¡ un ensayo
-                                acumulativo balanceado y despuÃ©s te dirÃ¡ en quÃ© sesiones estÃ¡ mÃ¡s dÃ©bil.
+                                Elige las sesiones que le van a tomar a tu hijo. Matico armará un ensayo
+                                acumulativo balanceado y después te dirá en qué sesiones está más débil.
                             </p>
                         </div>
 
@@ -1884,7 +1884,7 @@ const PrepExamSetupModal = ({
                                         <div className="flex items-start justify-between gap-4">
                                             <div>
                                                 <p className="text-xs font-black uppercase tracking-widest text-[#9094A6]">
-                                                    SesiÃ³n {item.session} Ã‚Â· {item.unit || 'Unidad'}
+                                                    Sesión {item.session} · {item.unit || 'Unidad'}
                                                 </p>
                                                 <p className="text-sm md:text-base font-black text-[#2B2E4A] mt-1">
                                                     {item.topic}
@@ -1908,7 +1908,7 @@ const PrepExamSetupModal = ({
                             <div className="space-y-2 text-sm font-bold text-[#2B2E4A]">
                                 <p>Sesiones elegidas: {selectedDetails.length}</p>
                                 <p>Preguntas totales: {totalQuestions}</p>
-                                <p>Formato: diagnÃ³stico + repaso guiado</p>
+                                <p>Formato: diagnóstico + repaso guiado</p>
                             </div>
                         </div>
 
@@ -1917,12 +1917,12 @@ const PrepExamSetupModal = ({
                                 Cobertura
                             </h4>
                             {selectedDetails.length === 0 ? (
-                                <p className="text-sm text-[#9094A6]">Selecciona al menos una sesiÃ³n para ver la distribuciÃ³n.</p>
+                                <p className="text-sm text-[#9094A6]">Selecciona al menos una sesión para ver la distribución.</p>
                             ) : (
                                 <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
                                     {selectedDetails.map((item) => (
                                         <div key={item.session} className="rounded-2xl border border-gray-200 p-3">
-                                            <p className="text-sm font-black text-[#2B2E4A]">SesiÃ³n {item.session}</p>
+                                            <p className="text-sm font-black text-[#2B2E4A]">Sesión {item.session}</p>
                                             <p className="text-xs text-[#9094A6] mt-1">{item.topic}</p>
                                             <p className="text-xs font-black text-[#4D96FF] mt-2">
                                                 {distributionMap[item.session] || 0} preguntas asignadas
@@ -1970,7 +1970,7 @@ const OraclePrepModal = ({
             <div className="bg-[#F4F7FF] w-full max-w-3xl rounded-[32px] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.35)] border-4 border-white">
                 <div className="bg-white px-6 py-5 border-b-2 border-gray-100 flex items-center justify-between">
                     <div>
-                        <h3 className="text-2xl font-black text-[#2B2E4A]">OrÃ¡culo Matico</h3>
+                        <h3 className="text-2xl font-black text-[#2B2E4A]">Oráculo Matico</h3>
                         <p className="text-sm font-bold text-[#9094A6]">
                             Prueba libre por materia, sesiÃ³n o libro. La IA llena los vacÃ­os si no hay banco.
                         </p>
@@ -2001,7 +2001,7 @@ const OraclePrepModal = ({
 
                         <div>
                             <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
-                                SesiÃ³n base
+                                Sesión base
                             </label>
                             <input
                                 type="number"
@@ -2015,14 +2015,14 @@ const OraclePrepModal = ({
 
                     <div>
                         <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
-                            Tema, libro o capÃ­tulo
+                            Tema, libro o capítulo
                         </label>
                         <textarea
                             value={prompt}
                             onChange={(e) => onChangePrompt(e.target.value)}
                             rows={5}
                             className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED] resize-none"
-                            placeholder="Ej: El Principito, capÃ­tulos 1 al 4. Quiero preguntas de comprensiÃ³n, inferencia y vocabulario."
+                            placeholder="Ej: El Principito, capítulos 1 al 4. Quiero preguntas de comprensión, inferencia y vocabulario."
                         />
                     </div>
 
@@ -2046,7 +2046,7 @@ const OraclePrepModal = ({
 
                     <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4">
                         <p className="text-sm text-violet-900 leading-relaxed">
-                            Tip: escribe un libro, un capÃ­tulo o un tema concreto. Si el banco no alcanza, el OrÃ¡culo usa IA para completar la prueba.
+                            Tip: escribe un libro, un capítulo o un tema concreto. Si el banco no alcanza, el Oráculo usa IA para completar la prueba.
                         </p>
                     </div>
 
@@ -2055,7 +2055,7 @@ const OraclePrepModal = ({
                         disabled={!promptReady || isLoading}
                         className={`${clayBtnAction} ${!promptReady || isLoading ? '!bg-gray-300 !border-gray-400 hover:!scale-100 hover:!translate-y-0 cursor-not-allowed' : '!bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9]'}`}
                     >
-                        {isLoading ? 'ARMANDO ORÃCULO...' : 'CREAR PRUEBA ORÃCULO'}
+                        {isLoading ? 'ARMANDO ORÁCULO...' : 'CREAR PRUEBA ORÁCULO'}
                     </button>
                 </div>
             </div>
@@ -2071,9 +2071,9 @@ const PrepExamResultsModal = ({ isOpen, onClose, report, onReview }) => {
             <div className="bg-[#F4F7FF] w-full max-w-4xl rounded-[32px] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.35)] border-4 border-white">
                 <div className="bg-white px-6 py-5 border-b-2 border-gray-100 flex items-center justify-between">
                     <div>
-                        <h3 className="text-2xl font-black text-[#2B2E4A]">DiagnÃ³stico de la prueba</h3>
+                        <h3 className="text-2xl font-black text-[#2B2E4A]">Diagnóstico de la prueba</h3>
                         <p className="text-sm font-bold text-[#9094A6]">
-                            {report.subject} Ã‚Â· {report.totalCorrect}/{report.totalQuestions} correctas
+                            {report.subject} · {report.totalCorrect}/{report.totalQuestions} correctas
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -2092,29 +2092,29 @@ const PrepExamResultsModal = ({ isOpen, onClose, report, onReview }) => {
                             <p className="text-3xl font-black text-red-600 mt-2">{report.totalIncorrect}</p>
                         </div>
                         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-                            <p className="text-xs font-black uppercase tracking-widest text-blue-700">PrecisiÃ³n</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-blue-700">Precisión</p>
                             <p className="text-3xl font-black text-blue-600 mt-2">{report.accuracy}%</p>
                         </div>
                         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                            <p className="text-xs font-black uppercase tracking-widest text-amber-700">Sesiones dÃ©biles</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-amber-700">Sesiones débiles</p>
                             <p className="text-3xl font-black text-amber-600 mt-2">{report.weakSessions.length}</p>
                         </div>
                     </div>
 
                     <div className="bg-white rounded-3xl border border-gray-100 p-5">
-                        <h4 className="text-lg font-black text-[#2B2E4A] mb-2">Lectura rÃ¡pida para apoderado</h4>
+                        <h4 className="text-lg font-black text-[#2B2E4A] mb-2">Lectura rápida para apoderado</h4>
                         <p className="text-sm text-[#4B5563] leading-relaxed">{report.summary}</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-5">
                         <div className="bg-white rounded-3xl border border-gray-100 p-5">
-                            <h4 className="text-lg font-black text-[#2B2E4A] mb-4">Desglose por sesiÃ³n</h4>
+                            <h4 className="text-lg font-black text-[#2B2E4A] mb-4">Desglose por sesión</h4>
                             <div className="space-y-3">
                                 {report.breakdown.map((item) => (
                                     <div key={item.session} className="border border-gray-100 rounded-2xl p-4">
                                         <div className="flex items-start justify-between gap-4">
                                             <div>
-                                                <p className="font-black text-[#2B2E4A]">SesiÃ³n {item.session}</p>
+                                                <p className="font-black text-[#2B2E4A]">Sesión {item.session}</p>
                                                 <p className="text-xs text-[#9094A6] mt-1">{item.topic}</p>
                                             </div>
                                             <div className="text-right">
@@ -2131,15 +2131,15 @@ const PrepExamResultsModal = ({ isOpen, onClose, report, onReview }) => {
                             <div className="bg-white rounded-3xl border border-gray-100 p-5">
                                 <h4 className="text-lg font-black text-[#2B2E4A] mb-3">Sesiones para reforzar</h4>
                                 {report.weakSessions.length === 0 ? (
-                                    <p className="text-sm text-[#4B5563]">No hay sesiones dÃ©biles marcadas. Va muy bien en este bloque.</p>
+                                    <p className="text-sm text-[#4B5563]">No hay sesiones débiles marcadas. Va muy bien en este bloque.</p>
                                 ) : (
                                     <div className="space-y-3">
                                         {report.weakSessions.map((item) => (
                                             <div key={item.session} className="rounded-2xl bg-amber-50 border border-amber-200 p-4">
-                                                <p className="font-black text-amber-700">SesiÃ³n {item.session}</p>
+                                                <p className="font-black text-amber-700">Sesión {item.session}</p>
                                                 <p className="text-sm text-[#4B5563] mt-1">{item.topic}</p>
                                                 <p className="text-xs font-bold text-amber-700 mt-2">
-                                                    {item.incorrect} errores Ã‚Â· foco: {item.focus}
+                                                    {item.incorrect} errores · foco: {item.focus}
                                                 </p>
                                             </div>
                                         ))}
@@ -2167,7 +2167,7 @@ const PrepExamResultsModal = ({ isOpen, onClose, report, onReview }) => {
                         <div className="space-y-3">
                             {report.reviewPlan.map((step, index) => (
                                 <div key={`${step.session}-${index}`} className="bg-white rounded-2xl border border-white/80 p-4">
-                                    <p className="font-black text-[#2B2E4A]">SesiÃ³n {step.session} Ã‚Â· {step.topic}</p>
+                                    <p className="font-black text-[#2B2E4A]">Sesión {step.session} · {step.topic}</p>
                                     <p className="text-sm text-[#4B5563] mt-1">{step.action}</p>
                                 </div>
                             ))}
@@ -2358,7 +2358,7 @@ const AdminGeneratedQuestionsModal = ({
                                                         {item.source_action || 'generated'}
                                                     </span>
                                                     <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full bg-gray-50 text-gray-500 border border-gray-100">
-                                                        SesiÃ³n {item.source_session || 'N/A'}
+                                                        Sesión {item.source_session || 'N/A'}
                                                     </span>
                                                     <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
                                                         {item.occurrences || 1} veces
@@ -2985,7 +2985,7 @@ const App = () => {
         name: TODAYS_SESSION.unit || 'Sin Unidad',
         color: currentSubject === 'LENGUAJE' ? '#FF9F43' : (currentSubject === 'FISICA' ? '#9D4EDD' : (currentSubject === 'QUIMICA' ? '#E84393' : (currentSubject === 'BIOLOGIA' ? '#2ECC71' : (currentSubject === 'HISTORIA' ? '#E67E22' : '#4D96FF')))),
         icon: currentSubject === 'LENGUAJE' ? BookOpen : (currentSubject === 'FISICA' ? Atom : (currentSubject === 'QUIMICA' ? FlaskConical : (currentSubject === 'BIOLOGIA' ? Dna : (currentSubject === 'HISTORIA' ? Globe : Brain)))),
-        oa_title: `SesiÃ³n ${TODAYS_SESSION.session}: ${TODAYS_SESSION.topic}`,
+        oa_title: `Sesión ${TODAYS_SESSION.session}: ${TODAYS_SESSION.topic}`,
         video_link: TODAYS_SESSION.videoLink
     };
 
@@ -3014,7 +3014,7 @@ const App = () => {
         if (adaptiveWeakSessions.length === 0) return 'Todas las sesiones estÃ¡n al dÃ­a. Â¡Sigue asÃ­!';
         const topics = adaptiveWeakSessions.slice(0, 3).map(item => {
             const topic = getAdaptiveWeakSessionTopic(item);
-            return topic || `SesiÃ³n ${item?.session || '?'}`;
+            return topic || `Sesión ${item?.session || '?'}`;
         }).filter(Boolean);
         if (topics.length === 0) return 'La app recuerda quÃ© sesiones le cuestan mÃ¡s y arma el prÃ³ximo repaso desde ahÃ­.';
         return `Debes repasar: ${topics.join(', ')}. Completa estas sesiones para avanzar sin huecos.`;
@@ -3068,7 +3068,7 @@ const App = () => {
         const grouped = new Map();
         questions.forEach((question) => {
             const session = question.source_session || 0;
-            const topic = question.source_topic || `SesiÃ³n ${session}`;
+            const topic = question.source_topic || `Sesión ${session}`;
             if (!grouped.has(session)) {
                 grouped.set(session, {
                     session,
@@ -3372,7 +3372,7 @@ const App = () => {
         if (!prepExamReport || !prepExamConfig) return;
 
         setIsCallingN8N(true);
-        setLoadingMessage('Generando repaso guiado de las sesiones mÃ¡s dÃ©biles...');
+        setLoadingMessage('Generando repaso guiado de las sesiones más débiles...');
 
         try {
             const weakSessions = prepExamReport.weakSessions.map(item => item.session);
@@ -5616,6 +5616,7 @@ ${finalData.capsule}`;
 };
 
 export default App;
+
 
 
 
