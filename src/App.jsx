@@ -473,58 +473,31 @@ const repairText = (value = '') => {
     if (value === null || value === undefined) return '';
     let text = String(value);
 
-    try {
-        if (/[ÃƒÃ‚]/.test(text)) {
-            text = decodeURIComponent(escape(text));
-        }
-    } catch (error) {
-        // Keep original text if decoding fails.
-    }
+    const looksBroken = (input) => /(?:Ã.|Â.|ï¿½|[\u0080-\u009F])/.test(input);
 
-    try {
-        if (/[ÃƒÃ‚ï¿½]/.test(text) && typeof TextDecoder !== 'undefined') {
-            const bytes = Uint8Array.from(text, (char) => char.charCodeAt(0) & 0xff);
-            const decoded = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-            if (decoded && decoded.replace(/\u0000/g, '').trim()) {
+    const decodeLatin1AsUtf8 = (input) => {
+        const bytes = Uint8Array.from(input, (char) => char.charCodeAt(0) & 0xff);
+        return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    };
+
+    if (typeof TextDecoder !== 'undefined') {
+        for (let i = 0; i < 3; i += 1) {
+            if (!looksBroken(text)) break;
+            try {
+                const decoded = decodeLatin1AsUtf8(text);
+                if (!decoded || decoded === text) break;
                 text = decoded;
+            } catch (_error) {
+                break;
             }
         }
-    } catch (error) {
-        // Keep current text if second-pass decoding fails.
     }
 
     return text
-        // Common mojibake fixes (UTF-8 interpreted as Latin-1)
-        .replace(/Ã¡/g, 'á')
-        .replace(/Ã©/g, 'é')
-        .replace(/Ã­/g, 'í')
-        .replace(/Ã³/g, 'ó')
-        .replace(/Ãº/g, 'ú')
-        .replace(/Ã±/g, 'ñ')
-        .replace(/Ã/g, 'Á')
-        .replace(/Ã‰/g, 'É')
-        .replace(/Ã/g, 'Í')
-        .replace(/Ã“/g, 'Ó')
-        .replace(/Ãš/g, 'Ú')
-        .replace(/Ã‘/g, 'Ñ')
-        .replace(/Ã¼/g, 'ü')
-        .replace(/Ãœ/g, 'Ü')
-        .replace(/Â°/g, '°')
         .replace(/Â·/g, '·')
+        .replace(/Â°/g, '°')
         .replace(/Â/g, '')
-        // Double-encoded variants
-        .replace(/ÃƒÂ¡/g, 'á')
-        .replace(/ÃƒÂ©/g, 'é')
-        .replace(/ÃƒÂ­/g, 'í')
-        .replace(/ÃƒÂ³/g, 'ó')
-        .replace(/ÃƒÂº/g, 'ú')
-        .replace(/ÃƒÂ±/g, 'ñ')
-        .replace(/Ãƒâ€˜/g, 'Ñ')
-        .replace(/ÃƒÂ¼/g, 'ü')
-        .replace(/Ã­Ã‚Â/g, 'Á')
-        // Cleanup
         .replace(/ï¿½/g, '')
-        .replace(/Ã³x[^\s]*/g, '')
         .replace(/[\u0080-\u009F]/g, '')
         .replace(/\s{2,}/g, ' ')
         .trim();
