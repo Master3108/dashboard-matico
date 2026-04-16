@@ -8,6 +8,15 @@
 @layer base {
   body {
     @apply bg-[#F8FAFC] min-h-screen overflow-x-hidden;
+    /* Scroll nativo en Android WebView */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Todos los contenedores con scroll deben funcionar en Android */
+  .overflow-y-auto,
+  .overflow-y-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 }
 

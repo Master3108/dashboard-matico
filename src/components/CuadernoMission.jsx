@@ -1,7 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Camera, CheckCircle, Download, RotateCcw, Sparkles, Star, Trash2, UploadCloud, Video, X } from 'lucide-react';
+import { AlertTriangle, Camera, CheckCircle, Clipboard, Download, Monitor, RotateCcw, Sparkles, Star, Trash2, UploadCloud, Video, X, Smartphone } from 'lucide-react';
+import {
+    captureNowNativeSession,
+    clearNativeQueuedCaptures,
+    getNativeCaptureSessionState,
+    isNativeScreenCaptureAvailable,
+    listNativeQueuedCaptures,
+    startNativeCaptureSession,
+    stopNativeCaptureSession
+} from '../mobile/screenCaptureBridge';
 
-const MAX_PAGES = 3;
+const MAX_PAGES = 10;
 const POLL_INTERVAL_MS = 2000;
 const NOTEBOOK_QUIZ_THRESHOLD = 80;
 
@@ -139,6 +148,10 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     const [submissionId, setSubmissionId] = useState('');
     const [retryCount, setRetryCount] = useState(0);
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const [nativeCaptureSupported, setNativeCaptureSupported] = useState(false);
+    const [nativeSessionActive, setNativeSessionActive] = useState(false);
+    const [nativeQueueCount, setNativeQueueCount] = useState(0);
+    const isNativePlatform = Boolean(window?.Capacitor?.isNativePlatform?.());
 
     const videoRef = useRef(null);
     const streamRef = useRef(null);
@@ -150,6 +163,35 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         clearPolling();
         stopCamera();
     }, []);
+
+    const refreshNativeState = async () => {
+        if (!isNativeScreenCaptureAvailable()) {
+            setNativeSessionActive(false);
+            setNativeQueueCount(0);
+            return;
+        }
+        try {
+            const state = await getNativeCaptureSessionState();
+            setNativeSessionActive(Boolean(state?.active));
+            setNativeQueueCount(Number(state?.queueCount || 0) || 0);
+        } catch {
+            setNativeSessionActive(false);
+            setNativeQueueCount(0);
+        }
+    };
+
+    useEffect(() => {
+        setNativeCaptureSupported(isNativeScreenCaptureAvailable());
+        refreshNativeState();
+    }, []);
+
+    useEffect(() => {
+        if (!nativeSessionActive) return undefined;
+        const interval = setInterval(() => {
+            refreshNativeState();
+        }, 2500);
+        return () => clearInterval(interval);
+    }, [nativeSessionActive]);
 
     const clearPolling = () => {
         if (pollRef.current) {
@@ -263,6 +305,141 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         img.src = URL.createObjectURL(file);
     };
 
+    const handlePaste = (event) => {
+        const items = event.clipboardData?.items || [];
+        for (let i = 0; i < items.length; i += 1) {
+            const item = items[i];
+            if (!item.type.includes('image')) continue;
+            const blob = item.getAsFile();
+            if (!blob) continue;
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = async () => {
+                    await addPageFromSource(img);
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(blob);
+            event.preventDefault();
+            break;
+        }
+    };
+
+    const captureScreen = async () => {
+        if (!navigator.mediaDevices?.getDisplayMedia) {
+            setFeedback('Captura de pantalla no disponible en este dispositivo/navegador.');
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+            const track = stream.getVideoTracks()[0];
+            const video = document.createElement('video');
+            video.srcObject = new MediaStream([track]);
+            await video.play();
+            await addPageFromSource(video);
+            track.stop();
+        } catch {
+            setFeedback('No se pudo capturar pantalla.');
+        }
+    };
+
+    const startNativeSession = async () => {
+        try {
+            await startNativeCaptureSession();
+            await refreshNativeState();
+            setFeedback('Permiso activado. Navega en tu celular y usa la burbuja flotante azul para capturar.');
+        } catch (error) {
+            if (String(error?.message || '').toLowerCase().includes('overlay_permission_required')) {
+                setFeedback('Debes activar "mostrar sobre otras apps" para ver la burbuja.');
+                return;
+            }
+            setFeedback('No se pudo iniciar la captura de pantalla celular.');
+        }
+    };
+
+    const nativeCaptureNow = async () => {
+        try {
+            await captureNowNativeSession();
+            await refreshNativeState();
+            setFeedback('Captura enviada a cola. Vuelve a Matico y pulsa "Importar cola".');
+        } catch (error) {
+            if (String(error?.message || '').toLowerCase().includes('session_not_active')) {
+                setFeedback('Primero inicia la sesion de captura celular.');
+                return;
+            }
+            setFeedback('No se pudo capturar en la sesion celular.');
+        }
+    };
+
+    const importNativeQueue = async () => {
+        try {
+            const queued = await listNativeQueuedCaptures();
+            const rows = Array.isArray(queued?.items) ? queued.items : [];
+            if (!rows.length) {
+                setFeedback('No hay capturas en cola para importar.');
+                return;
+            }
+
+            const existingPages = scanAssets?.pages || [];
+            const freeSlots = Math.max(0, MAX_PAGES - existingPages.length);
+            if (freeSlots <= 0) {
+                setFeedback(`Maximo ${MAX_PAGES} paginas por envio.`);
+                return;
+            }
+
+            const selectedRows = rows.slice(0, freeSlots);
+            setIsGeneratingPdf(true);
+            setStatus('processing');
+
+            const nextPages = [...existingPages];
+            for (const row of selectedRows) {
+                const base64 = String(row?.imageBase64 || row?.image_base64 || '').trim();
+                const mimeType = String(row?.imageMimeType || row?.image_mime_type || 'image/jpeg').trim() || 'image/jpeg';
+                if (!base64) continue;
+                const img = new Image();
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = `data:${mimeType};base64,${base64}`;
+                });
+                const pageAsset = buildPageAsset(img, nextPages.length + 1);
+                nextPages.push({
+                    ...pageAsset,
+                    imageBase64: base64,
+                    imageMimeType: mimeType
+                });
+            }
+
+            if (!nextPages.length) {
+                setFeedback('No se pudo importar ninguna captura.');
+                setStatus(existingPages.length ? 'preview' : 'idle');
+                return;
+            }
+
+            await rebuildAssets(nextPages, scanAssets?.scanId || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+            await clearNativeQueuedCaptures();
+            await refreshNativeState();
+            setFeedback(`Importadas ${nextPages.length - existingPages.length} capturas desde celular.`);
+            setStatus('preview');
+        } catch {
+            setFeedback('No se pudo importar la cola de captura celular.');
+            setStatus(scanAssets?.pages?.length ? 'preview' : 'idle');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+
+    const stopNativeSession = async () => {
+        try {
+            await stopNativeCaptureSession();
+            await refreshNativeState();
+            setFeedback('Sesion de captura cerrada.');
+        } catch {
+            setFeedback('No se pudo cerrar la sesion de captura celular.');
+        }
+    };
+
     const removePage = async (pageId) => {
         const pages = (scanAssets?.pages || []).filter((page) => page.id !== pageId).map((page, index) => ({ ...page, pageNumber: index + 1 }));
         if (!pages.length) {
@@ -365,6 +542,12 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                     pdf_base64: scanAssets.pdfBase64,
                     pdf_file_name: scanAssets.pdfFileName,
                     preview_images_base64: scanAssets.pages.map((page) => page.imageBase64),
+                    evidences: scanAssets.pages.map((page, index) => ({
+                        image_base64: page.imageBase64,
+                        image_mime_type: page.imageMimeType || 'image/jpeg',
+                        source_type: 'notebook',
+                        page_number: index + 1
+                    })),
                     image_mime_type: scanAssets.pages[0]?.imageMimeType || 'image/jpeg',
                     scan_id: scanAssets.scanId,
                     page_count: scanAssets.pages.length
@@ -393,6 +576,8 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         setScanAssets(null);
         setAnalysis(null);
         setSubmissionId('');
+        setNativeSessionActive(false);
+        setNativeQueueCount(0);
     };
 
     const stars = scoreToStars(analysis?.interpretation_score || 0);
@@ -401,7 +586,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     const canBypassProviderFailure = status === 'error' && isVisualProviderFailure(feedback) && typeof onComplete === 'function';
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onPaste={handlePaste}>
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden max-h-[90vh] overflow-y-auto">
                 <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white">
                     <div className="flex items-center gap-3">
@@ -431,6 +616,59 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                     <UploadCloud size={20} /> Subir foto
                                     <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
                                 </label>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                {/* Solo en web/desktop: en Android nativo muestra dialogo confuso */}
+                                {!isNativePlatform && (
+                                    <button onClick={captureScreen} className="flex-1 bg-emerald-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-700 flex items-center justify-center gap-2">
+                                        <Monitor size={18} /> Capturar pantalla
+                                    </button>
+                                )}
+                                <button onClick={startNativeSession} disabled={!nativeCaptureSupported} className={`flex-1 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${nativeCaptureSupported ? 'bg-green-700 text-white hover:bg-green-800' : 'bg-slate-200 text-slate-500'}`}>
+                                    <Smartphone size={18} /> Captura de pantalla celular
+                                </button>
+                            </div>
+                            {nativeCaptureSupported && (
+                                <div className="bg-green-50 border border-green-200 rounded-xl p-3 space-y-3">
+                                    <p className="text-xs font-bold text-green-800">
+                                        Estado captura celular: sesion {nativeSessionActive ? 'activa' : 'inactiva'} � cola {nativeQueueCount}
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={nativeCaptureNow}
+                                            disabled={!nativeSessionActive}
+                                            className={`px-3 py-2 rounded-lg text-xs font-black ${nativeSessionActive ? 'bg-[#15803D] text-white' : 'bg-slate-200 text-slate-500'}`}
+                                        >
+                                            Capturar ahora
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={importNativeQueue}
+                                            disabled={nativeQueueCount <= 0}
+                                            className={`px-3 py-2 rounded-lg text-xs font-black ${nativeQueueCount > 0 ? 'bg-[#2563EB] text-white' : 'bg-slate-200 text-slate-500'}`}
+                                        >
+                                            Importar cola
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={stopNativeSession}
+                                            className="px-3 py-2 rounded-lg text-xs font-black bg-slate-700 text-white"
+                                        >
+                                            Cerrar sesion
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={refreshNativeState}
+                                            className="px-3 py-2 rounded-lg text-xs font-black bg-white border border-slate-200 text-slate-700"
+                                        >
+                                            Actualizar estado
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-600 flex items-center gap-2">
+                                <Clipboard size={14} /> También puedes pegar screenshot (Ctrl+V).
                             </div>
                             {onSkip && <button onClick={onSkip} className="w-full text-sm text-slate-400 hover:text-slate-600 py-2">Saltar por ahora</button>}
                         </div>

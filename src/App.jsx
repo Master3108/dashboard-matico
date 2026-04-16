@@ -5,6 +5,7 @@ import LoginPage from './components/LoginPage';
 import CuadernoMission from './components/CuadernoMission';
 import ExamCaptureModal from './components/ExamCaptureModal';
 import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
+import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntake';
 import {
     BookOpen,
     Brain,
@@ -1828,6 +1829,8 @@ const PrepExamSetupModal = ({
     syllabus,
     selectedSessions,
     onToggleSession,
+    evidences = [],
+    onChangeEvidences,
     onStart,
     isLoading
 }) => {
@@ -1856,8 +1859,8 @@ const PrepExamSetupModal = ({
                     </button>
                 </div>
 
-                <div className="grid md:grid-cols-[1.4fr_1fr] gap-0">
-                    <div className="p-6 border-r border-gray-100 max-h-[70vh] overflow-y-auto">
+                <div className="grid md:grid-cols-[1.4fr_1fr] gap-0 max-h-[80vh] overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+                    <div className="p-6 border-r border-gray-100">
                         <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-5">
                             <p className="text-sm text-indigo-900 leading-relaxed">
                                 {normalizeUiText(`Elige las sesiones que le van a tomar a tu hijo. Matico armara un ensayo acumulativo balanceado y despues te dira en que sesiones esta mas debil.`)}
@@ -1892,6 +1895,23 @@ const PrepExamSetupModal = ({
                                     </button>
                                 );
                             })}
+                        </div>
+                        <div className="mt-6">
+                            <div className="bg-[#F8FAFF] rounded-2xl p-4 border border-[#E5ECFF] mb-3">
+                                <h4 className="text-sm font-black uppercase tracking-widest text-[#9094A6] mb-2">
+                                    Evidencia de clase (opcional)
+                                </h4>
+                                <p className="text-xs text-[#64748B] font-bold">
+                                    Adjunta hasta {DEFAULT_MAX_EVIDENCE} fotos/capturas para contextualizar esta prueba.
+                                </p>
+                            </div>
+                            <EvidenceIntake
+                                maxEvidence={DEFAULT_MAX_EVIDENCE}
+                                value={evidences}
+                                onChange={onChangeEvidences}
+                                showNativeCapture
+                                showPasteHint
+                            />
                         </div>
                     </div>
 
@@ -1979,7 +1999,7 @@ const OraclePrepModal = ({
                     </button>
                 </div>
 
-                <div className="p-6 space-y-5">
+                <div className="p-6 space-y-5 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 90px)', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             type="button"
@@ -2823,6 +2843,7 @@ const App = () => {
     const [prepExamConfig, setPrepExamConfig] = useState(null);
     const [prepExamQuestions, setPrepExamQuestions] = useState([]);
     const [prepExamReport, setPrepExamReport] = useState(null);
+    const [prepExamEvidences, setPrepExamEvidences] = useState([]);
     const [showPrepExamResults, setShowPrepExamResults] = useState(false);
     const [_prepExamLoadedCount, setPrepExamLoadedCount] = useState(0);
     const prepExamBatchRef = useRef(0);
@@ -3074,6 +3095,7 @@ const App = () => {
     const openPrepExamSetup = (seedSessions = []) => {
         setPrepExamReport(null);
         setShowPrepExamResults(false);
+        setPrepExamEvidences([]);
         setPrepExamOracleSubject(currentSubject);
         setPrepExamOracleSession(TODAYS_SESSION.session || 1);
         setPrepExamOraclePrompt('');
@@ -3181,6 +3203,14 @@ const App = () => {
         const sortedSessions = [...selectedSourceSessions].map(Number).filter(Boolean).sort((a, b) => a - b);
         const selectedDetails = overrides.sessionDetails || ACTIVE_SYLLABUS.filter(item => sortedSessions.includes(item.session));
         const questionCount = Number(overrides.questionCount) || 45;
+        const evidencePayload = (Array.isArray(overrides.evidences) ? overrides.evidences : prepExamEvidences)
+            .slice(0, DEFAULT_MAX_EVIDENCE)
+            .map((item, index) => ({
+                image_base64: item.imageBase64,
+                image_mime_type: item.imageMimeType || 'image/jpeg',
+                source_type: item.sourceType || 'prep_exam',
+                page_number: index + 1
+            }));
 
         if (selectedDetails.length === 0) {
             alert('Selecciona al menos una sesión para preparar la prueba.');
@@ -3199,6 +3229,7 @@ const App = () => {
                 questionCount,
                 totalBatches,
                 topics: selectedDetails.map(item => item.topic),
+                evidences: Array.isArray(overrides.evidences) ? overrides.evidences : prepExamEvidences,
                 sessionDetails: selectedDetails.map(item => ({
                     session: item.session,
                     topic: item.topic,
@@ -3229,6 +3260,7 @@ const App = () => {
                     grade: ACTIVE_GRADE,
                     sessions: sortedSessions,
                     topics: selectedDetails.map(item => item.topic),
+                    evidences: evidencePayload,
                     batch_index: 0,
                     batch_size: 5,
                     total_batches: totalBatches,
@@ -3281,6 +3313,7 @@ const App = () => {
                         grade: ACTIVE_GRADE,
                         sessions: sortedSessions,
                         topics: selectedDetails.map(item => item.topic),
+                        evidences: evidencePayload,
                         batch_index: 1,
                         batch_size: 5,
                         total_batches: totalBatches,
@@ -3323,6 +3356,7 @@ const App = () => {
             subject,
             questionCount,
             sessions: [session],
+            evidences: prepExamEvidences,
             sessionDetails: [{
                 session,
                 topic,
@@ -3412,6 +3446,12 @@ const App = () => {
                     grade: ACTIVE_GRADE,
                     sessions: prepExamConfig.sessions,
                     topics: prepExamConfig.sessionDetails.map(item => item.topic),
+                    evidences: (prepExamConfig.evidences || []).slice(0, DEFAULT_MAX_EVIDENCE).map((item, index) => ({
+                        image_base64: item.imageBase64,
+                        image_mime_type: item.imageMimeType || 'image/jpeg',
+                        source_type: item.sourceType || 'prep_exam',
+                        page_number: index + 1
+                    })),
                     batch_index: nextBatchIndex,
                     batch_size: 5,
                     total_batches: totalBatches,
@@ -3445,6 +3485,12 @@ const App = () => {
                     grade: ACTIVE_GRADE,
                     sessions: prepExamConfig.sessions,
                     topics: prepExamConfig.sessionDetails.map(item => item.topic),
+                    evidences: (prepExamConfig.evidences || []).slice(0, DEFAULT_MAX_EVIDENCE).map((item, index) => ({
+                        image_base64: item.imageBase64,
+                        image_mime_type: item.imageMimeType || 'image/jpeg',
+                        source_type: item.sourceType || 'prep_exam',
+                        page_number: index + 1
+                    })),
                     batch_index: nextBatchIndex + 1,
                     batch_size: 5,
                     total_batches: totalBatches,
@@ -3481,6 +3527,12 @@ const App = () => {
                     grade: ACTIVE_GRADE,
                     sessions: prepExamConfig.sessions,
                     weak_sessions: weakSessions,
+                    evidences: (prepExamConfig.evidences || []).slice(0, DEFAULT_MAX_EVIDENCE).map((item, index) => ({
+                        image_base64: item.imageBase64,
+                        image_mime_type: item.imageMimeType || 'image/jpeg',
+                        source_type: item.sourceType || 'prep_review',
+                        page_number: index + 1
+                    })),
                     wrong_answers: prepExamQuestions.filter(q => weakSessions.includes(q.source_session)).slice(0, 8).map(q => ({
                         session: q.source_session,
                         topic: q.source_topic,
@@ -4879,7 +4931,7 @@ ${finalData.capsule}`;
     }
 
     return (
-        <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-hidden">
+        <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-x-hidden">
             {/* ALERTA GLOBAL CENTRADA */}
             {missedSessionAlert && (
                 <div className="fixed inset-0 z-[999] grid place-items-center p-4 md:p-10 bg-[#2B2E4A]/40 backdrop-blur-md animate-fade-in">
@@ -5468,6 +5520,8 @@ ${finalData.capsule}`;
                     syllabus={ACTIVE_SYLLABUS}
                     selectedSessions={selectedPrepSessions}
                     onToggleSession={togglePrepSession}
+                    evidences={prepExamEvidences}
+                    onChangeEvidences={setPrepExamEvidences}
                     onStart={startPrepExam}
                     isLoading={isCallingN8N}
                 />
@@ -5606,111 +5660,4 @@ ${finalData.capsule}`;
                                             <label className="relative inline-flex items-center cursor-pointer">
                                                 <input
                                                     type="checkbox"
-                                                    className="sr-only peer"
-                                                    checked={progressReportsEnabled}
-                                                    onChange={(e) => updateNotificationPrefs('progress_reports', e.target.checked)}
-                                                />
-                                                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500 shadow-inner"></div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* SYSTEM & ENVIRONMENT */}
-                                <div className="space-y-2">
-                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Server className="w-3 h-3" /> Sistema y Entorno
-                                    </h4>
-                                    <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-bold text-gray-700">Modo de Conexion</span>
-                                            <button
-                                                onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
-                                                className={`text-[10px] font-black px-4 py-1.5 rounded-full transition-all border-2 ${activeWebhookUrl === N8N_URLS.test
-                                                    ? 'bg-gray-100 text-gray-500 border-gray-200'
-                                                    : 'bg-red-50 text-red-600 border-red-100 animate-pulse'
-                                                    }`}
-                                            >
-                                                {activeWebhookUrl === N8N_URLS.test ? 'TEST MODE' : 'PRODUCTION'}
-                                            </button>
-                                        </div>
-                                        <button
-                                            onClick={() => {
-                                                const fiveDaysAgo = new Date();
-                                                fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-                                                localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
-                                                localStorage.removeItem(completedSessionsStorageKey);
-                                                localStorage.removeItem(quizProgressStorageKey);
-                                                alert("Simulacion: inicio hace 5 dias. Debes ponerte al dia.");
-                                                window.location.reload();
-                                            }}
-                                            className="w-full text-[10px] font-black text-blue-500 uppercase tracking-widest py-2 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
-                                        >
-                                            SIMULAR ATRASO (5 DIAS)
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {isAdminUser && (
-                                    <div className="space-y-2">
-                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                            <Shield className="w-3 h-3" /> Administrador
-                                        </h4>
-                                        <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center border border-amber-100">
-                                                    <FileText className="w-4 h-4 text-amber-600" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-gray-700">PDFs del cuaderno</span>
-                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Ver y borrar archivos del VPS</span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={openAdminFilesModal}
-                                                className={`${clayBtnAction} !bg-[#E67E22] !border-[#D35400] hover:!bg-[#D35400]`}
-                                            >
-                                                VER PDFS DEL VPS <FileText className="w-5 h-5" />
-                                            </button>
-
-                                            <div className="h-px bg-gray-100" />
-
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
-                                                    <Database className="w-4 h-4 text-blue-600" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-gray-700">Banco de preguntas IA</span>
-                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Descargar o eliminar preguntas generadas</span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={openAdminGeneratedQuestionsModal}
-                                                className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
-                                            >
-                                                VER BANCO IA <Database className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* LOGOUT */}
-                                <button
-                                    onClick={() => {
-                                        handleLogout();
-                                    }}
-                                    className="w-full py-4 bg-red-50 text-red-600 font-black rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <XCircle className="w-5 h-5" />
-                                    Cerrar Sesion
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-export default App;
+                                                    className="sr-only pee
