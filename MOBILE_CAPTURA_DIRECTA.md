@@ -1,84 +1,81 @@
-# Captura Directa Móvil (Paso a Paso)
+# Matico Android App (Guia simple)
 
-Este documento es para habilitar el botón **"Captura directa app"** en Android/iPhone.
+Esta guia te ayuda a convertir la web de Matico en app Android y activar "Captura de pantalla celular".
 
-## 1) Preparar el proyecto
+## Estado actual (ya implementado)
 
-Desde la raíz del proyecto:
+- Proyecto configurado con Capacitor.
+- Plataforma Android creada en carpeta `android/`.
+- Plugin nativo Android `MaticoScreenCapture` agregado.
+- Boton "Captura de pantalla celular" conectado desde Oraculo.
+- Fallback para navegador movil: "Subir archivo" desde galeria.
+
+## Requisitos en tu computador
+
+- Node.js instalado.
+- Android Studio instalado.
+- Android SDK configurado (desde Android Studio).
+- Java JDK (normalmente Android Studio lo resuelve).
+
+## Comandos rapidos
+
+Desde la raiz del proyecto:
 
 ```bash
-npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios
-npx cap init matico app.matico.dashboard
-```
-
-Cuando pregunte la carpeta web, usa:
-
-```text
-dist
-```
-
-## 2) Build web + sincronizar móvil
-
-```bash
+npm install
 npm run build
-npx cap add android
-npx cap add ios
-npx cap sync
+npm run cap:sync
+npm run cap:android
 ```
 
-## 3) Crear plugin nativo `MaticoScreenCapture`
+Esto abre Android Studio con el proyecto listo.
 
-Debes crear un plugin nativo llamado `MaticoScreenCapture` con método:
+## Crear APK beta para probar en celular
 
-- `captureScreenshot()`
-
-Salida esperada:
-
-```json
-{
-  "imageBase64": "...",
-  "imageMimeType": "image/jpeg"
-}
-```
-
-## 4) Android (MediaProjection)
-
-- Abrir Android Studio:
+### Opcion facil (debug)
 
 ```bash
-npx cap open android
+npm run apk:debug
 ```
 
-- Implementar permiso/flujo de `MediaProjection`.
-- Mostrar prompt del sistema.
-- Al aceptar, capturar frame y devolver base64.
+APK generado en:
 
-## 5) iOS (ReplayKit)
+`android/app/build/outputs/apk/debug/app-debug.apk`
 
-- Abrir Xcode:
+### Opcion produccion (release)
 
 ```bash
-npx cap open ios
+npm run apk:release
 ```
 
-- Implementar flujo con `ReplayKit`.
-- Solicitar permiso al usuario.
-- Capturar imagen y devolver base64.
+APK generado en:
 
-## 6) Probar en teléfono
+`android/app/build/outputs/apk/release/app-release-unsigned.apk`
 
-```bash
-npm run build
-npx cap sync
-```
+Nota: para distribuir a usuarios finales, lo ideal es firmar el APK en Android Studio.
 
-Luego compilar y ejecutar desde Android Studio/Xcode.
+## Instalar APK en Android
 
-## 7) Qué pasa hoy en web
+1. Enviar APK por WhatsApp, Drive o cable USB.
+2. En el telefono, abrir el APK.
+3. Si aparece bloqueo, habilitar "Instalar apps desconocidas".
+4. Instalar y abrir Matico.
 
-- En navegador móvil normal, la captura directa no existe por seguridad del sistema.
-- Por eso Matico muestra fallback: **subir screenshot desde galería**.
+## Probar captura directa
 
----
+1. Abrir app Matico.
+2. Ir a Oraculo -> "Foto/screenshot cuaderno".
+3. Tocar "Captura de pantalla celular".
+4. Aceptar permiso de captura de pantalla del sistema.
+5. Verificar que la imagen llegue al flujo OCR y genere preguntas.
 
-Si quieres, el siguiente paso es que te entregue el **plugin Android completo** (Java/Kotlin) para copiar y pegar.
+## Si algo falla
+
+- Si no funciona captura directa, usar "Subir archivo" como respaldo.
+- Revisar logs en Android Studio (`Logcat`) filtrando por `MaticoScreenCapturePlugin`.
+- Confirmar que la app abre `https://srv1048418.hstgr.cloud`.
+
+## Siguiente fase (opcional)
+
+- iPhone (iOS) con ReplayKit.
+- Publicacion en Play Store.

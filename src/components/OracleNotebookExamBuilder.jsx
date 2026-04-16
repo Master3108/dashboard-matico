@@ -236,7 +236,7 @@ const OracleNotebookExamBuilder = ({
             img.src = nativeCapture.dataUrl;
         } catch (error) {
             if (error?.message === 'native_not_available') {
-                setErrorMsg('Captura directa requiere app móvil nativa. En web móvil usa "Subir archivo" desde galería.');
+                setErrorMsg('Captura de pantalla celular requiere app móvil nativa. En web móvil usa "Subir archivo" desde galería.');
                 return;
             }
             setErrorMsg('No se pudo capturar pantalla desde la app móvil.');
@@ -373,7 +373,7 @@ const OracleNotebookExamBuilder = ({
                         : 'border-gray-200 bg-white text-[#64748B] hover:border-[#7C3AED]/50'
                         }`}
                 >
-                    <Smartphone className="w-4 h-4" /> Captura directa app
+                    <Smartphone className="w-4 h-4" /> Captura de pantalla celular
                 </button>
                 <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-[#F8FAFF] px-3 py-3 text-xs font-bold text-[#64748B] flex items-center justify-center gap-2">
                     <Clipboard className="w-4 h-4" /> Pegar screenshot (Ctrl+V)
@@ -382,7 +382,7 @@ const OracleNotebookExamBuilder = ({
 
             {!nativeCaptureSupported && (
                 <p className="text-xs text-[#64748B] font-bold">
-                    En celular web usa "Subir archivo" (screenshot de galería). Captura directa funciona en la app móvil nativa de Matico.
+                    En celular web usa "Subir archivo" (screenshot de galería). La captura de pantalla celular funciona en la app móvil nativa de Matico.
                 </p>
             )}
 
