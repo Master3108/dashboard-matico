@@ -9,7 +9,22 @@ From now on, always deliver deployment commands in this exact order:
 1. Update local machine (commit and push).
 2. Update Hostinger VPS (Docker containers).
 
-Quick commands:
+## Official one-command flow (recommended)
+
+Run this from the local repo to execute both steps automatically:
+
+```powershell
+cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico
+.\scripts\deploy-all.ps1
+```
+
+Optional overrides:
+
+```powershell
+.\scripts\deploy-all.ps1 -Branch main -CommitMessage "chore: release update" -VpsHost root@72.60.245.87 -VpsPath /var/www/dashboard-matico
+```
+
+## Manual fallback commands
 
 ```powershell
 cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico

@@ -1,5 +1,6 @@
 Param(
-    [string]$Branch = "main"
+    [string]$Branch = "main",
+    [string]$CommitMessage = "chore: update before VPS deploy"
 )
 
 $ErrorActionPreference = "Stop"
@@ -7,7 +8,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "==> Deploy local: commit + push ($Branch)" -ForegroundColor Cyan
 
 git add .
-git commit -m "chore: update before VPS deploy"
+git commit -m $CommitMessage
 if ($LASTEXITCODE -ne 0) {
     Write-Host "No hay cambios nuevos para commit."
 }
