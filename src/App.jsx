@@ -494,11 +494,37 @@ const repairText = (value = '') => {
     }
 
     return text
+        // Common mojibake sequences
+        .replace(/Ã¡/g, 'á')
+        .replace(/Ã©/g, 'é')
+        .replace(/Ã­/g, 'í')
+        .replace(/Ã³/g, 'ó')
+        .replace(/Ãº/g, 'ú')
+        .replace(/Ã±/g, 'ñ')
+        .replace(/Ã/g, 'Á')
+        .replace(/Ã‰/g, 'É')
+        .replace(/Ã/g, 'Í')
+        .replace(/Ã“/g, 'Ó')
+        .replace(/Ãš/g, 'Ú')
+        .replace(/Ã‘/g, 'Ñ')
+        .replace(/Ã¼/g, 'ü')
+        .replace(/Ãœ/g, 'Ü')
+        .replace(/Ã‚/g, '')
         .replace(/Â·/g, '·')
         .replace(/Â°/g, '°')
         .replace(/Â/g, '')
         .replace(/ï¿½/g, '')
         .replace(/[\u0080-\u009F]/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+};
+
+const normalizeUiText = (value = '') => {
+    const fixed = repairText(value);
+    return fixed
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\x20-\x7E]/g, '')
         .replace(/\s{2,}/g, ' ')
         .trim();
 };
@@ -1827,7 +1853,7 @@ const PrepExamSetupModal = ({
                     <div>
                         <h3 className="text-2xl font-black text-[#2B2E4A]">Prueba preparatoria</h3>
                         <p className="text-sm font-bold text-[#9094A6]">
-                            {repairText(`${subject} · 45 preguntas · generación rápida de 5 en 5`)}
+                            {normalizeUiText(`${subject} · 45 preguntas · generacion rapida de 5 en 5`)}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -1839,8 +1865,7 @@ const PrepExamSetupModal = ({
                     <div className="p-6 border-r border-gray-100 max-h-[70vh] overflow-y-auto">
                         <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-5">
                             <p className="text-sm text-indigo-900 leading-relaxed">
-                                Elige las sesiones que le van a tomar a tu hijo. Matico armará un ensayo
-                                acumulativo balanceado y después te dirá en qué sesiones está más débil.
+                                {normalizeUiText(`Elige las sesiones que le van a tomar a tu hijo. Matico armara un ensayo acumulativo balanceado y despues te dira en que sesiones esta mas debil.`)}
                             </p>
                         </div>
 
@@ -1859,10 +1884,10 @@ const PrepExamSetupModal = ({
                                         <div className="flex items-start justify-between gap-4">
                                             <div>
                                                 <p className="text-xs font-black uppercase tracking-widest text-[#9094A6]">
-                                                    {repairText(`Sesión ${item.session} · ${item.unit || 'Unidad'}`)}
+                                                    {normalizeUiText(`Sesion ${item.session} · ${item.unit || 'Unidad'}`)}
                                                 </p>
                                                 <p className="text-sm md:text-base font-black text-[#2B2E4A] mt-1">
-                                                    {repairText(item.topic)}
+                                                    {normalizeUiText(item.topic)}
                                                 </p>
                                             </div>
                                             <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected ? 'bg-[#4D96FF] border-[#4D96FF] text-white' : 'border-gray-300 text-gray-300'}`}>
@@ -1898,7 +1923,7 @@ const PrepExamSetupModal = ({
                                     {selectedDetails.map((item) => (
                                         <div key={item.session} className="rounded-2xl border border-gray-200 p-3">
                                             <p className="text-sm font-black text-[#2B2E4A]">Sesión {item.session}</p>
-                                            <p className="text-xs text-[#9094A6] mt-1">{repairText(item.topic)}</p>
+                                            <p className="text-xs text-[#9094A6] mt-1">{normalizeUiText(item.topic)}</p>
                                             <p className="text-xs font-black text-[#4D96FF] mt-2">
                                                 {distributionMap[item.session] || 0} preguntas asignadas
                                             </p>
