@@ -4,6 +4,7 @@ import InteractiveQuiz from './components/InteractiveQuiz';
 import LoginPage from './components/LoginPage';
 import CuadernoMission from './components/CuadernoMission';
 import ExamCaptureModal from './components/ExamCaptureModal';
+import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
 import {
     BookOpen,
     Brain,
@@ -140,7 +141,7 @@ const QUIZ_PHASE_QUESTIONS = 15;
 const QUIZ_BATCH_SIZE = 3;
 const QUIZ_BATCHES_PER_PHASE = QUIZ_PHASE_QUESTIONS / QUIZ_BATCH_SIZE;
 
-// --- PRODUCCIÃ³N: CALENDARIO MATICO ---
+// --- PRODUCCIóN: CALENDARIO MATICO ---
 const COURSE_START_DATE = new Date('2026-01-26T00:00:00'); // Lunes 26 de Enero
 const WEEKLY_PLAN = [
     { day: 1, subject: 'MATEMATICA' },
@@ -167,213 +168,213 @@ const COLORS = {
 const LANGUAGE_SYLLABUS = [
     {
         session: 1,
-        unit: 'DiagnÃ³stico',
-        topic: 'ComprensiÃ³n Lectora: La vida simplemente',
-        videoTitle: 'Contexto HistÃ³rico (Opcional)',
+        unit: 'Diagnóstico',
+        topic: 'Comprensión Lectora: La vida simplemente',
+        videoTitle: 'Contexto Histórico (Opcional)',
         videoLink: 'https://www.youtube.com/watch?v=Fyy9nGemSqU',
-        readingTitle: 'La vida simplemente (Resumen y AnÃ¡lisis)',
-        readingContent: `En las profundidades de la ciudad de Rancagua, durante las primeras dÃ©cadas del siglo XX, la existencia parecÃ­a transcurrir bajo una ley distinta a la del resto del mundo, una ley dictada por la geografÃ­a del desamparo y el peso del lodo. AllÃ­ se extendÃ­a el legendario "CallejÃ³n de la Muerte", un rincÃ³n donde la dignidad humana libraba una batalla diaria contra la precariedad y el olvido. Roberto, el protagonista de este relato, creciÃ³ respirando el aire cargado de humedad de este callejÃ³n, donde las viviendas no eran mÃ¡s que precarias estructuras de tablas y latas que apenas lograban sostenerse en pie sobre un suelo que, con cada lluvia, se convertÃ­a en un pantano voraz. Para Roberto, el barro no era simplemente suciedad en los zapatos; era un elemento vivo, una presencia constante que simbolizaba la inmovilidad de la pobreza, esa fuerza que parecÃ­a querer succionar cualquier sueÃ±o de libertad que intentara elevarse por encima de los techos de zinc.
+        readingTitle: 'La vida simplemente (Resumen y Análisis)',
+        readingContent: `En las profundidades de la ciudad de Rancagua, durante las primeras décadas del siglo XX, la existencia parecía transcurrir bajo una ley distinta a la del resto del mundo, una ley dictada por la geografía del desamparo y el peso del lodo. Allí se extendía el legendario "Callejón de la Muerte", un rincón donde la dignidad humana libraba una batalla diaria contra la precariedad y el olvido. Roberto, el protagonista de este relato, creció respirando el aire cargado de humedad de este callejón, donde las viviendas no eran más que precarias estructuras de tablas y latas que apenas lograban sostenerse en pie sobre un suelo que, con cada lluvia, se convertía en un pantano voraz. Para Roberto, el barro no era simplemente suciedad en los zapatos; era un elemento vivo, una presencia constante que simbolizaba la inmovilidad de la pobreza, esa fuerza que parecía querer succionar cualquier sueño de libertad que intentara elevarse por encima de los techos de zinc.
 
-El centro del universo de Roberto era una casa de remolienda, un burdel que funcionaba bajo la administraciÃ³n implacable de su tÃ­a, DoÃ±a Munda. Aquella mujer era el pilar de un negocio que florecÃ­a en medio de la miseria, una figura de autoridad que se movÃ­a entre el estrÃ©pito de las botellas, el humo denso de los cigarrillos "Yolanda" y las risas fingidas de las mujeres que allÃ­ trabajaban. Munda entendÃ­a la vida como un sistema de engranajes donde el dinero era el Ãºnico aceite capaz de evitar el colapso, y su carÃ¡cter se habÃ­a forjado con la dureza de quien sabe que en el callejÃ³n no hay espacio para la debilidad. En un rincÃ³n opuesto de esa misma casa habitaba la madre de Roberto, una presencia de dulzura casi milagrosa en aquel ambiente. Ella era la cara de la resignaciÃ³n amorosa, una mujer que se desgastaba fÃ­sicamente para que su hijo tuviera lo que el entorno le negaba: un rastro de limpieza en su ropa y una barrera protectora, aunque fuera frÃ¡gil, contra la crudeza de lo que sucedÃ­a tras las cortinas del burdel. Roberto creciÃ³ observando esta dualidad: la fuerza de la tÃ­a que garantizaba la supervivencia y la ternura de la madre que alimentaba su alma.
+El centro del universo de Roberto era una casa de remolienda, un burdel que funcionaba bajo la administración implacable de su tía, Doña Munda. Aquella mujer era el pilar de un negocio que florecía en medio de la miseria, una figura de autoridad que se movía entre el estrépito de las botellas, el humo denso de los cigarrillos "Yolanda" y las risas fingidas de las mujeres que allí trabajaban. Munda entendía la vida como un sistema de engranajes donde el dinero era el único aceite capaz de evitar el colapso, y su carácter se había forjado con la dureza de quien sabe que en el callejón no hay espacio para la debilidad. En un rincón opuesto de esa misma casa habitaba la madre de Roberto, una presencia de dulzura casi milagrosa en aquel ambiente. Ella era la cara de la resignación amorosa, una mujer que se desgastaba físicamente para que su hijo tuviera lo que el entorno le negaba: un rastro de limpieza en su ropa y una barrera protectora, aunque fuera frágil, contra la crudeza de lo que sucedía tras las cortinas del burdel. Roberto creció observando esta dualidad: la fuerza de la tía que garantizaba la supervivencia y la ternura de la madre que alimentaba su alma.
 
-Durante su primera infancia, el mundo de Roberto se limitaba a los lÃ­mites del callejÃ³n y al vasto "pajonal", un terreno baldÃ­o donde la naturaleza salvaje se mezclaba con los desperdicios de la ciudad. AllÃ­, junto a otros niÃ±os de rodillas costrosas y mirada despierta, Roberto descubrÃ­a los secretos de la vida a travÃ©s del juego. En el pajonal, los niÃ±os eran reyes de reinos invisibles, pero tambiÃ©n eran receptores de los miedos colectivos que los adultos sembraban para controlarlos. Historias sobre el "Viejo del Saco" o el "CulebrÃ³n" poblaban sus pesadillas nocturnas, dÃ¡ndole una forma fantÃ¡stica a los peligros reales que acechaban en la oscuridad. Sin embargo, a medida que Roberto dejaba de ser un niÃ±o pequeÃ±o, empezÃ³ a notar que los hombres que llegaban a la casa de su tÃ­a eran mÃ¡s aterradores que cualquier monstruo de cuento; eran hombres consumidos por el alcohol, por el trabajo agotador en las minas o en el campo, que buscaban un momento de olvido en los brazos de mujeres que, al igual que ellos, solo intentaban sobrevivir un dÃ­a mÃ¡s.
+Durante su primera infancia, el mundo de Roberto se limitaba a los límites del callejón y al vasto "pajonal", un terreno baldío donde la naturaleza salvaje se mezclaba con los desperdicios de la ciudad. Allí, junto a otros niños de rodillas costrosas y mirada despierta, Roberto descubría los secretos de la vida a través del juego. En el pajonal, los niños eran reyes de reinos invisibles, pero también eran receptores de los miedos colectivos que los adultos sembraban para controlarlos. Historias sobre el "Viejo del Saco" o el "Culebrón" poblaban sus pesadillas nocturnas, dándole una forma fantástica a los peligros reales que acechaban en la oscuridad. Sin embargo, a medida que Roberto dejaba de ser un niño pequeño, empezó a notar que los hombres que llegaban a la casa de su tía eran más aterradores que cualquier monstruo de cuento; eran hombres consumidos por el alcohol, por el trabajo agotador en las minas o en el campo, que buscaban un momento de olvido en los brazos de mujeres que, al igual que ellos, solo intentaban sobrevivir un día más.
 
-El gran quiebre en la vida de Roberto, el momento en que su horizonte dejÃ³ de ser una pared de madera podrida, fue su entrada en la escuela pÃºblica. Al principio, la escuela representaba un lugar extraÃ±o, con sus reglas rÃ­gidas y su atmÃ³sfera de orden que contrastaba violentamente con el caos del callejÃ³n. Pero fue allÃ­ donde Roberto se encontrÃ³ con el poder transformador de las letras. Su profesor, un hombre que supo detectar la inteligencia vivaz que se escondÃ­a tras la apariencia humilde del niÃ±o, se convirtiÃ³ en su mentor silencioso. Roberto descubriÃ³ que las palabras eran herramientas, llaves capaces de abrir celdas invisibles. Cada libro que caÃ­a en sus manos Ã³Ã‚Âdesde cuentos de aventuras hasta poemas de grandes autoresÃ³Ã‚Â era una invitaciÃ³n a un mundo donde la justicia no era un concepto abstracto y donde la belleza no estaba prohibida para los pobres. La lectura despertÃ³ en Ã©l una sensibilidad que lo alejaba de sus pares; mientras otros niÃ±os aceptaban su destino como obreros o delincuentes en potencia, Roberto empezaba a soÃ±ar con ser escritor, con tener una voz que pudiera narrar el dolor de su gente.
+El gran quiebre en la vida de Roberto, el momento en que su horizonte dejó de ser una pared de madera podrida, fue su entrada en la escuela pública. Al principio, la escuela representaba un lugar extraño, con sus reglas rígidas y su atmósfera de orden que contrastaba violentamente con el caos del callejón. Pero fue allí donde Roberto se encontró con el poder transformador de las letras. Su profesor, un hombre que supo detectar la inteligencia vivaz que se escondía tras la apariencia humilde del niño, se convirtió en su mentor silencioso. Roberto descubrió que las palabras eran herramientas, llaves capaces de abrir celdas invisibles. Cada libro que caía en sus manos ódesde cuentos de aventuras hasta poemas de grandes autoresó era una invitación a un mundo donde la justicia no era un concepto abstracto y donde la belleza no estaba prohibida para los pobres. La lectura despertó en él una sensibilidad que lo alejaba de sus pares; mientras otros niños aceptaban su destino como obreros o delincuentes en potencia, Roberto empezaba a soñar con ser escritor, con tener una voz que pudiera narrar el dolor de su gente.
 
-Sin embargo, este despertar intelectual trajo consigo el veneno de la conciencia de clase. Al salir de su barrio para ir a la escuela o al centro de Rancagua, Roberto comenzÃ³ a percibir las miradas de los "otros". Notaba cÃ³mo las personas de las casas sÃ³lidas y jardines cuidados se apartaban al paso de alguien que venÃ­a del callejÃ³n, cÃ³mo la policÃ­a trataba con sospecha a cualquiera que tuviera el rastro del barro en su vestimenta. SurgiÃ³ entonces una contradicciÃ³n dolorosa en su pecho: el amor profundo y la gratitud que sentÃ­a por su madre y su tÃ­a se mezclaban con una vergÃƒÂ¼enza punzante por el origen de su sustento. Se sentÃ­a un traidor al avergonzarse de la casa donde recibÃ­a alimento, pero no podÃ­a evitar el asco moral que le producÃ­a el negocio de la prostituciÃ³n y la degradaciÃ³n humana que veÃ­a a diario. Esta lucha interna marcÃ³ su paso de la niÃ±ez a la adolescencia, convirtiÃ©ndolo en un observador melancÃ³lico de su propia realidad.
+Sin embargo, este despertar intelectual trajo consigo el veneno de la conciencia de clase. Al salir de su barrio para ir a la escuela o al centro de Rancagua, Roberto comenzó a percibir las miradas de los "otros". Notaba cómo las personas de las casas sólidas y jardines cuidados se apartaban al paso de alguien que venía del callejón, cómo la policía trataba con sospecha a cualquiera que tuviera el rastro del barro en su vestimenta. Surgió entonces una contradicción dolorosa en su pecho: el amor profundo y la gratitud que sentía por su madre y su tía se mezclaban con una vergüenza punzante por el origen de su sustento. Se sentía un traidor al avergonzarse de la casa donde recibía alimento, pero no podía evitar el asco moral que le producía el negocio de la prostitución y la degradación humana que veía a diario. Esta lucha interna marcó su paso de la niñez a la adolescencia, convirtiéndolo en un observador melancólico de su propia realidad.
 
-A medida que Roberto crecÃ­a, tambiÃ©n veÃ­a cÃ³mo sus amigos de la infancia eran devorados por la maquinaria del callejÃ³n. Algunos terminaban en la cÃ¡rcel, otros se perdÃ­an en el vicio del juego y el aguardiente, y muchos simplemente desaparecÃ­an en la mediocridad de un trabajo que les robaba la juventud. Roberto veÃ­a en ellos su propio reflejo si decidÃ­a rendirse. La novela detalla cÃ³mo las experiencias de Roberto en el burdel le enseÃ±aron sobre la naturaleza humana mÃ¡s que cualquier manual de psicologÃ­a: vio la soledad de los hombres, la desesperaciÃ³n de las mujeres y la fragilidad de las promesas. Todo ese cÃºmulo de experiencias fue fermentando en su interior. ComprendiÃ³ que la frase "la vida simplemente" era lo que la gente decÃ­a para justificar su falta de lucha, para aceptar que el mundo era asÃ­ y nada podÃ­a cambiarse. Pero Ã©l, armado con la educaciÃ³n que tanto le costÃ³ conseguir y con la pluma que empezaba a manejar con destreza, decidiÃ³ que su vida no serÃ­a "simplemente" lo que el azar decidiÃ³.
+A medida que Roberto crecía, también veía cómo sus amigos de la infancia eran devorados por la maquinaria del callejón. Algunos terminaban en la cárcel, otros se perdían en el vicio del juego y el aguardiente, y muchos simplemente desaparecían en la mediocridad de un trabajo que les robaba la juventud. Roberto veía en ellos su propio reflejo si decidía rendirse. La novela detalla cómo las experiencias de Roberto en el burdel le enseñaron sobre la naturaleza humana más que cualquier manual de psicología: vio la soledad de los hombres, la desesperación de las mujeres y la fragilidad de las promesas. Todo ese cúmulo de experiencias fue fermentando en su interior. Comprendió que la frase "la vida simplemente" era lo que la gente decía para justificar su falta de lucha, para aceptar que el mundo era así y nada podía cambiarse. Pero él, armado con la educación que tanto le costó conseguir y con la pluma que empezaba a manejar con destreza, decidió que su vida no sería "simplemente" lo que el azar decidió.
 
-Hacia el final de su proceso de formaciÃ³n, Roberto logra una madurez que lo sitÃºa por encima de sus circunstancias. Comprende que no necesita borrar su pasado ni renegar de su madre para ser alguien; por el contrario, su origen es su mayor fuente de verdad. El libro concluye con una imagen de esperanza contenida: Roberto sabe que el camino hacia afuera del callejÃ³n es largo y que todavÃ­a tendrÃ¡ que pisar mucho barro, pero su mente ya ha cruzado el pajonal y ha llegado a las estrellas. Ha entendido que la educaciÃ³n no es solo acumular datos, sino la capacidad de entender el mundo para transformarlo. Al final, Roberto se convierte en el cronista de los olvidados, en aquel que darÃ¡ testimonio de que en el CallejÃ³n de la Muerte tambiÃ©n hubo amor, sueÃ±os y una lucha incansable por la dignidad. La historia termina no con un final feliz de cuento de hadas, sino con la victoria real de un joven que ha conquistado su propia identidad y que estÃ¡ listo para escribir su destino, dejando atrÃ¡s la resignaciÃ³n para abrazar la posibilidad de una vida que sea mucho mÃ¡s que "simplemente" existir.`
+Hacia el final de su proceso de formación, Roberto logra una madurez que lo sitúa por encima de sus circunstancias. Comprende que no necesita borrar su pasado ni renegar de su madre para ser alguien; por el contrario, su origen es su mayor fuente de verdad. El libro concluye con una imagen de esperanza contenida: Roberto sabe que el camino hacia afuera del callejón es largo y que todavía tendrá que pisar mucho barro, pero su mente ya ha cruzado el pajonal y ha llegado a las estrellas. Ha entendido que la educación no es solo acumular datos, sino la capacidad de entender el mundo para transformarlo. Al final, Roberto se convierte en el cronista de los olvidados, en aquel que dará testimonio de que en el Callejón de la Muerte también hubo amor, sueños y una lucha incansable por la dignidad. La historia termina no con un final feliz de cuento de hadas, sino con la victoria real de un joven que ha conquistado su propia identidad y que está listo para escribir su destino, dejando atrás la resignación para abrazar la posibilidad de una vida que sea mucho más que "simplemente" existir.`
     },
     {
         session: 2,
         unit: 'Narrativa',
         topic: 'Narrador y Conflicto: Frankenstein',
-        videoTitle: 'LENGUAJE | El Narrador | Clase NÃ‚Â°4',
+        videoTitle: 'LENGUAJE | El Narrador | Clase N°4',
         videoLink: 'https://www.youtube.com/watch?v=0Vv5aIgDp9c',
         readingTitle: 'Frankenstein (Fragmento)',
-        readingContent: `La historia de Victor Frankenstein no comienza en un laboratorio oscuro, sino en la idÃ­lica y refinada ciudad de Ginebra, rodeado de una familia que personificaba la bondad y el orden. Victor fue un niÃ±o amado, el hijo primogÃ©nito de Alphonse Frankenstein, un hombre de leyes respetado, y de Caroline Beaufort, una mujer cuya compasiÃ³n la llevaba a buscar a los mÃ¡s necesitados. Fue en uno de esos viajes de caridad donde la familia adoptÃ³ a Elizabeth Lavenza, una niÃ±a de una belleza casi angelical que se convirtiÃ³ en la compaÃ±era inseparable de Victor y, con el tiempo, en el amor de su vida. Junto a ellos creciÃ³ tambiÃ©n Henry Clerval, un joven de espÃ­ritu noble y poÃ©tico que representaba la humanidad y el arte, en contraste con la mente analÃ­tica y curiosa de Victor. Esta infancia perfecta, sin embargo, sembrÃ³ en el joven Frankenstein una sed de conocimiento que no conocÃ­a lÃ­mites. Mientras sus amigos se interesaban por la polÃ­tica o la literatura, Victor se sumergÃ­a en los textos antiguos de alquimistas como Cornelio Agrippa y Paracelso, buscando en sus pÃ¡ginas el secreto para dominar la vida y la muerte.
+        readingContent: `La historia de Victor Frankenstein no comienza en un laboratorio oscuro, sino en la idílica y refinada ciudad de Ginebra, rodeado de una familia que personificaba la bondad y el orden. Victor fue un niño amado, el hijo primogénito de Alphonse Frankenstein, un hombre de leyes respetado, y de Caroline Beaufort, una mujer cuya compasión la llevaba a buscar a los más necesitados. Fue en uno de esos viajes de caridad donde la familia adoptó a Elizabeth Lavenza, una niña de una belleza casi angelical que se convirtió en la compañera inseparable de Victor y, con el tiempo, en el amor de su vida. Junto a ellos creció también Henry Clerval, un joven de espíritu noble y poético que representaba la humanidad y el arte, en contraste con la mente analítica y curiosa de Victor. Esta infancia perfecta, sin embargo, sembró en el joven Frankenstein una sed de conocimiento que no conocía límites. Mientras sus amigos se interesaban por la política o la literatura, Victor se sumergía en los textos antiguos de alquimistas como Cornelio Agrippa y Paracelso, buscando en sus páginas el secreto para dominar la vida y la muerte.
 
-La tragedia golpeÃ³ su hogar cuando la fiebre escarlatina se llevÃ³ a su madre, cuya Ãºltima voluntad fue ver a Victor y Elizabeth unidos en matrimonio. Este dolor, en lugar de detenerlo, impulsÃ³ a Victor hacia la Universidad de Ingolstadt en Alemania, donde su mente brillante se enfrentÃ³ a la ciencia moderna. AllÃ­, bajo la tutela del profesor Waldman, quien lo alentÃ³ a explorar los misterios de la creaciÃ³n, Victor se sumergiÃ³ en una obsesiÃ³n que lo aislÃ³ del mundo. Durante dos aÃ±os, dejÃ³ de escribir a su familia, descuidÃ³ su salud y pasÃ³ noches enteras en cementerios y salas de disecciÃ³n, estudiando la descomposiciÃ³n de la carne para entender cÃ³mo devolverle la chispa de la vida. Su meta era ambiciosa: querÃ­a crear una nueva especie que bendijera a su creador, una raza de seres que no conocieran la enfermedad ni la muerte prematura. En su ceguera cientÃ­fica, no se detuvo a pensar en las consecuencias morales de jugar a ser Dios.
+La tragedia golpeó su hogar cuando la fiebre escarlatina se llevó a su madre, cuya última voluntad fue ver a Victor y Elizabeth unidos en matrimonio. Este dolor, en lugar de detenerlo, impulsó a Victor hacia la Universidad de Ingolstadt en Alemania, donde su mente brillante se enfrentó a la ciencia moderna. Allí, bajo la tutela del profesor Waldman, quien lo alentó a explorar los misterios de la creación, Victor se sumergió en una obsesión que lo aisló del mundo. Durante dos años, dejó de escribir a su familia, descuidó su salud y pasó noches enteras en cementerios y salas de disección, estudiando la descomposición de la carne para entender cómo devolverle la chispa de la vida. Su meta era ambiciosa: quería crear una nueva especie que bendijera a su creador, una raza de seres que no conocieran la enfermedad ni la muerte prematura. En su ceguera científica, no se detuvo a pensar en las consecuencias morales de jugar a ser Dios.
 
-La culminaciÃ³n de sus esfuerzos llegÃ³ en una lÃºgubre noche de noviembre, mientras la lluvia golpeaba las ventanas de su laboratorio. Utilizando una mezcla de quÃ­mica, galvanismo y restos humanos que habÃ­a recolectado con gran esfuerzo, Victor logrÃ³ lo imposible. Al aplicar la descarga final, vio cÃ³mo el cuerpo gigantesco que habÃ­a construido abrÃ­a sus ojos de un amarillo apagado. Pero en ese instante de triunfo, la belleza de su sueÃ±o se transformÃ³ en una pesadilla insoportable. Al ver la piel amarillenta que apenas cubrÃ­a los mÃºsculos y las arterias, el cabello negro lustroso y los dientes de una blancura aterradora, Victor sintiÃ³ un asco que le recorriÃ³ la mÃ©dula. No pudo soportar la visiÃ³n de aquel ser que Ã©l mismo habÃ­a diseÃ±ado para ser hermoso y que ahora le devolvÃ­a una mirada de muda sÃºplica. Preso del pÃ¡nico, Victor huyÃ³ de la habitaciÃ³n, abandonando a su creaciÃ³n a su suerte, esperando que el olvido o la muerte se llevaran aquel error. Sin embargo, cuando regresÃ³ a su habitaciÃ³n escoltado por su amigo Henry Clerval, quien acababa de llegar a Ingolstadt, la criatura habÃ­a desaparecido.
+La culminación de sus esfuerzos llegó en una lúgubre noche de noviembre, mientras la lluvia golpeaba las ventanas de su laboratorio. Utilizando una mezcla de química, galvanismo y restos humanos que había recolectado con gran esfuerzo, Victor logró lo imposible. Al aplicar la descarga final, vio cómo el cuerpo gigantesco que había construido abría sus ojos de un amarillo apagado. Pero en ese instante de triunfo, la belleza de su sueño se transformó en una pesadilla insoportable. Al ver la piel amarillenta que apenas cubría los músculos y las arterias, el cabello negro lustroso y los dientes de una blancura aterradora, Victor sintió un asco que le recorrió la médula. No pudo soportar la visión de aquel ser que él mismo había diseñado para ser hermoso y que ahora le devolvía una mirada de muda súplica. Preso del pánico, Victor huyó de la habitación, abandonando a su creación a su suerte, esperando que el olvido o la muerte se llevaran aquel error. Sin embargo, cuando regresó a su habitación escoltado por su amigo Henry Clerval, quien acababa de llegar a Ingolstadt, la criatura había desaparecido.
 
-Mientras Victor caÃ­a en una fiebre nerviosa que lo mantuvo postrado durante meses, la criatura iniciaba su propio y doloroso viaje por el mundo. Dotado de una fuerza sobrehumana y una resistencia increÃ­ble, el ser vagÃ³ por los bosques, sufriendo el acoso del hambre, la sed y el frÃ­o. Su mente, inicialmente como la de un niÃ±o reciÃ©n nacido, procesaba los sonidos de los pÃ¡jaros y el calor del sol con una mezcla de asombro y miedo. Su primer contacto con la humanidad fue desastroso: al entrar en una aldea buscando comida, fue recibido con piedras y gritos de terror. ComprendiÃ³ rÃ¡pidamente que su apariencia era una barrera insuperable. Buscando refugio, se escondiÃ³ en un cobertizo adosado a una pequeÃ±a cabaÃ±a en el bosque, donde vivÃ­a la familia De Lacey. A travÃ©s de una grieta en la pared, el ser se convirtiÃ³ en un observador invisible de la vida de esta familia compuesta por un anciano ciego, su hijo Felix y su hija Agatha.
+Mientras Victor caía en una fiebre nerviosa que lo mantuvo postrado durante meses, la criatura iniciaba su propio y doloroso viaje por el mundo. Dotado de una fuerza sobrehumana y una resistencia increíble, el ser vagó por los bosques, sufriendo el acoso del hambre, la sed y el frío. Su mente, inicialmente como la de un niño recién nacido, procesaba los sonidos de los pájaros y el calor del sol con una mezcla de asombro y miedo. Su primer contacto con la humanidad fue desastroso: al entrar en una aldea buscando comida, fue recibido con piedras y gritos de terror. Comprendió rápidamente que su apariencia era una barrera insuperable. Buscando refugio, se escondió en un cobertizo adosado a una pequeña cabaña en el bosque, donde vivía la familia De Lacey. A través de una grieta en la pared, el ser se convirtió en un observador invisible de la vida de esta familia compuesta por un anciano ciego, su hijo Felix y su hija Agatha.
 
-Durante casi un aÃ±o, el monstruo viviÃ³ en las sombras, alimentÃ¡ndose de las sobras y ayudando a los De Lacey de forma anÃ³nima, recolectando leÃ±a por las noches para que Felix no tuviera que esforzarse tanto. Al observar a los humanos, aprendiÃ³ el significado de las palabras, los conceptos de propiedad, familia y amor. La llegada de Safie, una joven extranjera, le permitiÃ³ aprender a hablar y leer al mismo ritmo que ella mientras Felix le enseÃ±aba. El ser encontrÃ³ tres libros en el bosque: "El paraÃ­so perdido", "Las vidas de Plutarco" y "Las cuitas del joven Werther", los cuales leyÃ³ con una sed voraz. Estas obras le enseÃ±aron sobre la historia de las naciones, los sentimientos humanos y, fatalmente, sobre la creaciÃ³n y el abandono. Al leer los diarios de Victor que habÃ­a guardado en su abrigo al huir del laboratorio, comprendiÃ³ finalmente su origen: Ã©l no era un hijo amado, sino un monstruo despreciado por su propio padre. Su corazÃ³n, inicialmente lleno de benevolencia, comenzÃ³ a llenarse de una amargura profunda.
+Durante casi un año, el monstruo vivió en las sombras, alimentándose de las sobras y ayudando a los De Lacey de forma anónima, recolectando leña por las noches para que Felix no tuviera que esforzarse tanto. Al observar a los humanos, aprendió el significado de las palabras, los conceptos de propiedad, familia y amor. La llegada de Safie, una joven extranjera, le permitió aprender a hablar y leer al mismo ritmo que ella mientras Felix le enseñaba. El ser encontró tres libros en el bosque: "El paraíso perdido", "Las vidas de Plutarco" y "Las cuitas del joven Werther", los cuales leyó con una sed voraz. Estas obras le enseñaron sobre la historia de las naciones, los sentimientos humanos y, fatalmente, sobre la creación y el abandono. Al leer los diarios de Victor que había guardado en su abrigo al huir del laboratorio, comprendió finalmente su origen: él no era un hijo amado, sino un monstruo despreciado por su propio padre. Su corazón, inicialmente lleno de benevolencia, comenzó a llenarse de una amargura profunda.
 
-El punto de no retorno ocurriÃ³ cuando la criatura intentÃ³ presentarse ante el anciano De Lacey, confiando en que su ceguera le permitirÃ­a juzgarlo por su voz y no por su aspecto. El anciano lo escuchÃ³ con amabilidad, pero cuando el resto de la familia regresÃ³, el horror se desatÃ³. Felix, creyendo que el monstruo atacaba a su padre, lo golpeÃ³ con furia. El ser huyÃ³ hacia el bosque, pero esta vez la tristeza se habÃ­a transformado en un odio ardiente. Al ver que incluso los humanos mÃ¡s nobles lo rechazaban, decidiÃ³ declarar una guerra eterna contra la especie humana y, especialmente, contra su creador. En su camino hacia Ginebra, salvÃ³ a una niÃ±a de morir ahogada, solo para recibir un disparo de su padre, quien creyÃ³ que el monstruo intentaba hacerle daÃ±o. Este fue el Ãºltimo clavo en la tumba de su bondad. Al llegar a las afueras de Ginebra, se encontrÃ³ con un niÃ±o pequeÃ±o, William Frankenstein. Al saber que el niÃ±o era pariente de su creador, lo asesinÃ³ con sus propias manos y colocÃ³ un retrato que el niÃ±o llevaba en el vestido de Justine, una joven sirvienta de la familia, para incriminarla.
+El punto de no retorno ocurrió cuando la criatura intentó presentarse ante el anciano De Lacey, confiando en que su ceguera le permitiría juzgarlo por su voz y no por su aspecto. El anciano lo escuchó con amabilidad, pero cuando el resto de la familia regresó, el horror se desató. Felix, creyendo que el monstruo atacaba a su padre, lo golpeó con furia. El ser huyó hacia el bosque, pero esta vez la tristeza se había transformado en un odio ardiente. Al ver que incluso los humanos más nobles lo rechazaban, decidió declarar una guerra eterna contra la especie humana y, especialmente, contra su creador. En su camino hacia Ginebra, salvó a una niña de morir ahogada, solo para recibir un disparo de su padre, quien creyó que el monstruo intentaba hacerle daño. Este fue el último clavo en la tumba de su bondad. Al llegar a las afueras de Ginebra, se encontró con un niño pequeño, William Frankenstein. Al saber que el niño era pariente de su creador, lo asesinó con sus propias manos y colocó un retrato que el niño llevaba en el vestido de Justine, una joven sirvienta de la familia, para incriminarla.
 
-Victor, destrozado por la muerte de su hermano y la posterior ejecuciÃ³n de la inocente Justine, buscÃ³ consuelo en las montaÃ±as. Fue en el glaciar de Montanvert donde creador y criatura se encontraron cara a cara. AllÃ­, en un discurso de una elocuencia desgarradora, el monstruo le relatÃ³ sus sufrimientos y le hizo una Ãºnica peticiÃ³n: "Soy malvado porque soy infeliz. Hazme una compaÃ±era tan deforme como yo para que podamos vivir aislados del hombre". Victor, movido por la compasiÃ³n y el miedo, aceptÃ³ el trato. ViajÃ³ a Inglaterra y luego a las remotas islas Orcadas en Escocia para comenzar su segunda obra. Sin embargo, mientras trabajaba en la nueva criatura, lo asaltaron dudas atroces: Â¿y si ella fuera mÃ¡s malvada que el primero? Â¿y si procreaban una raza de demonios? Al ver al monstruo observÃ¡ndolo a travÃ©s de la ventana con una sonrisa macabra, Victor destruyÃ³ el cuerpo de la mujer frente a sus ojos. El ser jurÃ³ venganza con una frase que sellarÃ­a el destino de Victor: "EstarÃ© contigo en tu noche de bodas".
+Victor, destrozado por la muerte de su hermano y la posterior ejecución de la inocente Justine, buscó consuelo en las montañas. Fue en el glaciar de Montanvert donde creador y criatura se encontraron cara a cara. Allí, en un discurso de una elocuencia desgarradora, el monstruo le relató sus sufrimientos y le hizo una única petición: "Soy malvado porque soy infeliz. Hazme una compañera tan deforme como yo para que podamos vivir aislados del hombre". Victor, movido por la compasión y el miedo, aceptó el trato. Viajó a Inglaterra y luego a las remotas islas Orcadas en Escocia para comenzar su segunda obra. Sin embargo, mientras trabajaba en la nueva criatura, lo asaltaron dudas atroces: ¿y si ella fuera más malvada que el primero? ¿y si procreaban una raza de demonios? Al ver al monstruo observándolo a través de la ventana con una sonrisa macabra, Victor destruyó el cuerpo de la mujer frente a sus ojos. El ser juró venganza con una frase que sellaría el destino de Victor: "Estaré contigo en tu noche de bodas".
 
-La venganza fue sistemÃ¡tica y cruel. Primero, la criatura asesinÃ³ a Henry Clerval, haciendo que Victor fuera arrestado injustamente en Irlanda. Tras recuperar su libertad, Victor regresÃ³ a Ginebra para casarse con Elizabeth, esperando que el matrimonio fuera un refugio contra la sombra que lo perseguÃ­a. Pero en la noche de bodas, mientras Victor buscaba al monstruo por la casa armado con pistolas, escuchÃ³ el grito agÃ³nico de su esposa. El ser habÃ­a cumplido su promesa, estrangulando a Elizabeth en su propia cama. La muerte de Elizabeth provocÃ³ tambiÃ©n el fallecimiento del padre de Victor, quien no pudo soportar tanto dolor. HabiÃ©ndolo perdido todo, Victor Frankenstein transformÃ³ su remordimiento en una furia ciega y dedicÃ³ sus Ãºltimos dÃ­as a perseguir a su creaciÃ³n por todo el mundo, desde los desiertos de la Tartaria hasta los hielos eternos del Polo Norte.
+La venganza fue sistemática y cruel. Primero, la criatura asesinó a Henry Clerval, haciendo que Victor fuera arrestado injustamente en Irlanda. Tras recuperar su libertad, Victor regresó a Ginebra para casarse con Elizabeth, esperando que el matrimonio fuera un refugio contra la sombra que lo perseguía. Pero en la noche de bodas, mientras Victor buscaba al monstruo por la casa armado con pistolas, escuchó el grito agónico de su esposa. El ser había cumplido su promesa, estrangulando a Elizabeth en su propia cama. La muerte de Elizabeth provocó también el fallecimiento del padre de Victor, quien no pudo soportar tanto dolor. Habiéndolo perdido todo, Victor Frankenstein transformó su remordimiento en una furia ciega y dedicó sus últimos días a perseguir a su creación por todo el mundo, desde los desiertos de la Tartaria hasta los hielos eternos del Polo Norte.
 
-La persecuciÃ³n terminÃ³ cuando un Victor exhausto y moribundo fue rescatado por el barco del capitÃ¡n Robert Walton, un explorador que buscaba el paso del norte. Victor le confiÃ³ su historia como una advertencia sobre los peligros de la ambiciÃ³n intelectual sin Ã©tica. Tras la muerte de Victor a bordo del barco, Walton encontrÃ³ a la criatura llorando sobre el cadÃ¡ver de su creador. En un Ãºltimo monÃ³logo lleno de desesperaciÃ³n, el ser confesÃ³ que su odio habÃ­a sido el resultado de una soledad que ningÃºn humano podÃ­a imaginar. AfirmÃ³ que su crimen mÃ¡s grande habÃ­a sido el asesinato de su propia alma. Sin nadie mÃ¡s en el mundo que le diera sentido a su existencia, la criatura le prometiÃ³ a Walton que se dirigirÃ­a al extremo mÃ¡s lejano del Ã­Ã‚Ârtico para construir una pira funeraria y arrojarse a las llamas, terminando asÃ­ con el sufrimiento de haber sido el Ãºnico de su especie. La criatura desapareciÃ³ en la oscuridad y la distancia, dejando tras de sÃ­ la advertencia eterna sobre la responsabilidad que conlleva dar vida a lo que no estamos dispuestos a amar.`
+La persecución terminó cuando un Victor exhausto y moribundo fue rescatado por el barco del capitán Robert Walton, un explorador que buscaba el paso del norte. Victor le confió su historia como una advertencia sobre los peligros de la ambición intelectual sin ética. Tras la muerte de Victor a bordo del barco, Walton encontró a la criatura llorando sobre el cadáver de su creador. En un último monólogo lleno de desesperación, el ser confesó que su odio había sido el resultado de una soledad que ningún humano podía imaginar. Afirmó que su crimen más grande había sido el asesinato de su propia alma. Sin nadie más en el mundo que le diera sentido a su existencia, la criatura le prometió a Walton que se dirigiría al extremo más lejano del Ártico para construir una pira funeraria y arrojarse a las llamas, terminando así con el sufrimiento de haber sido el único de su especie. La criatura desapareció en la oscuridad y la distancia, dejando tras de sí la advertencia eterna sobre la responsabilidad que conlleva dar vida a lo que no estamos dispuestos a amar.`
     },
     {
         session: 3,
         unit: 'Narrativa',
-        topic: 'Terror GÃ³tico: DrÃ¡cula',
-        videoTitle: 'Intertextualidad-Clase NÃ‚Â°16',
+        topic: 'Terror Gótico: Drácula',
+        videoTitle: 'Intertextualidad-Clase N°16',
         videoLink: 'https://www.youtube.com/watch?v=NBNdpV4AG1g',
-        readingTitle: 'DrÃ¡cula (Resumen y AnÃ¡lisis)',
-        readingContent: `La historia de la oscuridad mÃ¡s antigua comienza en las pÃ¡ginas del diario de Jonathan Harker, un joven y ambicioso abogado inglÃ©s que emprende un viaje agotador hacia los confines de Europa del Este. Su destino son los montes CÃ¡rpatos, en la regiÃ³n de Transilvania, donde debe cerrar un negocio inmobiliario con un noble local: el Conde DrÃ¡cula. A medida que el tren se interna en paisajes cada vez mÃ¡s salvajes y neblinosos, Jonathan percibe un cambio en la atmÃ³sfera. Los campesinos locales, al enterarse de su destino final, lo miran con una mezcla de lÃ¡stima y terror absoluto; le entregan crucifijos, rosarios y ramos de ajo, murmurando oraciones para protegerlo de algo que llaman el "Vurdalak". A pesar de su escepticismo inglÃ©s y su fe en la razÃ³n moderna, Jonathan empieza a sentir una inquietud creciente cuando, al llegar al desfiladero de Borgo en medio de una noche cerrada, es recogido por un carruaje conducido por un hombre cuya fuerza fÃ­sica parece sobrehumana y cuya mirada brilla con un fulgor rojizo bajo la luz de las antorchas.
+        readingTitle: 'Drácula (Resumen y Análisis)',
+        readingContent: `La historia de la oscuridad más antigua comienza en las páginas del diario de Jonathan Harker, un joven y ambicioso abogado inglés que emprende un viaje agotador hacia los confines de Europa del Este. Su destino son los montes Cárpatos, en la región de Transilvania, donde debe cerrar un negocio inmobiliario con un noble local: el Conde Drácula. A medida que el tren se interna en paisajes cada vez más salvajes y neblinosos, Jonathan percibe un cambio en la atmósfera. Los campesinos locales, al enterarse de su destino final, lo miran con una mezcla de lástima y terror absoluto; le entregan crucifijos, rosarios y ramos de ajo, murmurando oraciones para protegerlo de algo que llaman el "Vurdalak". A pesar de su escepticismo inglés y su fe en la razón moderna, Jonathan empieza a sentir una inquietud creciente cuando, al llegar al desfiladero de Borgo en medio de una noche cerrada, es recogido por un carruaje conducido por un hombre cuya fuerza física parece sobrehumana y cuya mirada brilla con un fulgor rojizo bajo la luz de las antorchas.
 
-Al llegar al imponente y ruinoso castillo de DrÃ¡cula, Jonathan es recibido por el mismo Conde, un hombre de edad avanzada, vestido de negro de pies a cabeza, con un rostro extremadamente pÃ¡lido, labios inusualmente rojos y dedos largos que terminan en uÃ±as afiladas. Los primeros dÃ­as transcurren bajo una cortesÃ­a aristocrÃ¡tica, pero pronto el abogado descubre que el castillo es una prisiÃ³n de piedra. Jonathan nota con horror que DrÃ¡cula no tiene reflejo en los espejos, que posee una fuerza capaz de doblar barras de hierro y que nunca se le ve comer ni beber. Una tarde, al observar por la ventana, ve al Conde trepar por los muros verticales del castillo como si fuera una lagartija gigante, lo que finalmente le confirma que estÃ¡ ante un ser que no pertenece al mundo de los vivos. Su terror alcanza el clÃ­max cuando, tras desobedecer las advertencias del Conde, es atacado por tres mujeres fantasmales de una belleza letal que habitan en las sombras de las salas prohibidas, seres sedientos de sangre que solo son detenidos por la intervenciÃ³n del propio DrÃ¡cula, quien les promete que Jonathan serÃ¡ de ellas una vez que sus negocios en Londres hayan concluido.
+Al llegar al imponente y ruinoso castillo de Drácula, Jonathan es recibido por el mismo Conde, un hombre de edad avanzada, vestido de negro de pies a cabeza, con un rostro extremadamente pálido, labios inusualmente rojos y dedos largos que terminan en uñas afiladas. Los primeros días transcurren bajo una cortesía aristocrática, pero pronto el abogado descubre que el castillo es una prisión de piedra. Jonathan nota con horror que Drácula no tiene reflejo en los espejos, que posee una fuerza capaz de doblar barras de hierro y que nunca se le ve comer ni beber. Una tarde, al observar por la ventana, ve al Conde trepar por los muros verticales del castillo como si fuera una lagartija gigante, lo que finalmente le confirma que está ante un ser que no pertenece al mundo de los vivos. Su terror alcanza el clímax cuando, tras desobedecer las advertencias del Conde, es atacado por tres mujeres fantasmales de una belleza letal que habitan en las sombras de las salas prohibidas, seres sedientos de sangre que solo son detenidos por la intervención del propio Drácula, quien les promete que Jonathan será de ellas una vez que sus negocios en Londres hayan concluido.
 
-Mientras Jonathan busca desesperadamente una salida de aquella fortaleza rodeada por el aullido constante de los lobos, la acciÃ³n se traslada a Inglaterra, especÃ­ficamente a la pintoresca costa de Whitby. AllÃ­, Mina Murray, la virtuosa prometida de Jonathan, espera noticias de su amado mientras acompaÃ±a a su mejor amiga, Lucy Westenra, una joven de gran belleza que acaba de recibir tres propuestas de matrimonio simultÃ¡neas. La calma se rompe durante una tormenta de proporciones apocalÃ­pticas que trae consigo al Demeter, un barco ruso que llega a puerto sin un solo tripulante vivo a bordo. El capitÃ¡n yace muerto, atado al timÃ³n con un rosario entre las manos, y un enorme perro negro salta desde la cubierta desapareciendo entre la niebla. Nadie sospecha que en las bodegas del barco viajan cincuenta cajas llenas de tierra sagrada de Transilvania, el sustento vital que el Conde DrÃ¡cula necesita para establecer su imperio de terror en la populosa Londres.
+Mientras Jonathan busca desesperadamente una salida de aquella fortaleza rodeada por el aullido constante de los lobos, la acción se traslada a Inglaterra, específicamente a la pintoresca costa de Whitby. Allí, Mina Murray, la virtuosa prometida de Jonathan, espera noticias de su amado mientras acompaña a su mejor amiga, Lucy Westenra, una joven de gran belleza que acaba de recibir tres propuestas de matrimonio simultáneas. La calma se rompe durante una tormenta de proporciones apocalípticas que trae consigo al Demeter, un barco ruso que llega a puerto sin un solo tripulante vivo a bordo. El capitán yace muerto, atado al timón con un rosario entre las manos, y un enorme perro negro salta desde la cubierta desapareciendo entre la niebla. Nadie sospecha que en las bodegas del barco viajan cincuenta cajas llenas de tierra sagrada de Transilvania, el sustento vital que el Conde Drácula necesita para establecer su imperio de terror en la populosa Londres.
 
-Poco despuÃ©s del desembarco, la salud de Lucy empieza a deteriorarse de una manera que desafÃ­a toda lÃ³gica mÃ©dica. Se vuelve sonÃ¡mbula y, una noche, Mina la encuentra desmayada en un banco del acantilado bajo la luz de la luna, con una figura oscura inclinada sobre ella. A partir de ese momento, Lucy se vuelve cada vez mÃ¡s pÃ¡lida y dÃ©bil, y en su cuello aparecen dos pequeÃ±as marcas rojas que parecen negarse a cicatrizar. Su prometido, Arthur Holmwood, ahora Lord Godalming, pide ayuda a su amigo el doctor John Seward, quien dirige un manicomio cercano. Seward, desconcertado por el caso de Lucy y por el extraÃ±o comportamiento de uno de sus pacientes, un hombre llamado Renfield que devora moscas y araÃ±as creyendo que asÃ­ absorbe su fuerza vital, decide convocar a su antiguo maestro en Ã­Ã‚Âmsterdam: el eminente profesor Abraham Van Helsing.
+Poco después del desembarco, la salud de Lucy empieza a deteriorarse de una manera que desafía toda lógica médica. Se vuelve sonámbula y, una noche, Mina la encuentra desmayada en un banco del acantilado bajo la luz de la luna, con una figura oscura inclinada sobre ella. A partir de ese momento, Lucy se vuelve cada vez más pálida y débil, y en su cuello aparecen dos pequeñas marcas rojas que parecen negarse a cicatrizar. Su prometido, Arthur Holmwood, ahora Lord Godalming, pide ayuda a su amigo el doctor John Seward, quien dirige un manicomio cercano. Seward, desconcertado por el caso de Lucy y por el extraño comportamiento de uno de sus pacientes, un hombre llamado Renfield que devora moscas y arañas creyendo que así absorbe su fuerza vital, decide convocar a su antiguo maestro en Ámsterdam: el eminente profesor Abraham Van Helsing.
 
-Van Helsing representa la sÃ­ntesis perfecta entre la ciencia moderna y el conocimiento de las tradiciones antiguas. Al examinar a Lucy, comprende de inmediato que no se enfrenta a una anemia comÃºn, sino a un depredador sobrenatural. A pesar de realizar mÃºltiples transfusiones de sangre de todos los hombres del grupo y de rodear la habitaciÃ³n de Lucy con flores de ajo y crucifijos, el Conde DrÃ¡cula logra burlar las defensas utilizando sus poderes para controlar a los animales y la niebla. Lucy muere, pero para Van Helsing su fallecimiento es solo el inicio de una transformaciÃ³n aterradora. El profesor debe convencer a Arthur, Seward y al aventurero estadounidense Quincey Morris de que Lucy se ha convertido en una "No-Muerta" que ahora acecha a los niÃ±os de la ciudad bajo el nombre de la "Dama de Blanco". En una de las escenas mÃ¡s intensas de la obra, el grupo desciende a la cripta de los Westenra, donde Arthur, guiado por la mano de Van Helsing, atraviesa el corazÃ³n de su amada con una estaca de madera para liberar su alma de la maldiciÃ³n del vampirismo.
+Van Helsing representa la síntesis perfecta entre la ciencia moderna y el conocimiento de las tradiciones antiguas. Al examinar a Lucy, comprende de inmediato que no se enfrenta a una anemia común, sino a un depredador sobrenatural. A pesar de realizar múltiples transfusiones de sangre de todos los hombres del grupo y de rodear la habitación de Lucy con flores de ajo y crucifijos, el Conde Drácula logra burlar las defensas utilizando sus poderes para controlar a los animales y la niebla. Lucy muere, pero para Van Helsing su fallecimiento es solo el inicio de una transformación aterradora. El profesor debe convencer a Arthur, Seward y al aventurero estadounidense Quincey Morris de que Lucy se ha convertido en una "No-Muerta" que ahora acecha a los niños de la ciudad bajo el nombre de la "Dama de Blanco". En una de las escenas más intensas de la obra, el grupo desciende a la cripta de los Westenra, donde Arthur, guiado por la mano de Van Helsing, atraviesa el corazón de su amada con una estaca de madera para liberar su alma de la maldición del vampirismo.
 
-Tras el descanso eterno de Lucy, el grupo de hombres se une a Jonathan Harker, quien ha logrado escapar de Transilvania, y a Mina, quien se convierte en el cerebro logÃ­stico del equipo. Mina organiza todos los diarios, cartas y recortes de prensa en un registro cronolÃ³gico que les permite entender los movimientos del Conde. Descubren que DrÃ¡cula ha comprado una propiedad llamada Carfax, justo al lado del manicomio de Seward, y que estÃ¡ ocultando allÃ­ sus cajas de tierra. El Conde, al sentirse acorralado por la inteligencia del grupo, decide atacar a su eslabÃ³n mÃ¡s fuerte: Mina. Entra en sus aposentos y, tras asesinar a Renfield por intentar protegerla, obliga a Mina a beber sangre de su propio pecho, creando un vÃ­nculo mÃ­stico y maldito. DrÃ¡cula le advierte que ahora ella es de su misma sangre y que, tras su muerte, se convertirÃ¡ en una de sus compaÃ±eras eternas.
+Tras el descanso eterno de Lucy, el grupo de hombres se une a Jonathan Harker, quien ha logrado escapar de Transilvania, y a Mina, quien se convierte en el cerebro logístico del equipo. Mina organiza todos los diarios, cartas y recortes de prensa en un registro cronológico que les permite entender los movimientos del Conde. Descubren que Drácula ha comprado una propiedad llamada Carfax, justo al lado del manicomio de Seward, y que está ocultando allí sus cajas de tierra. El Conde, al sentirse acorralado por la inteligencia del grupo, decide atacar a su eslabón más fuerte: Mina. Entra en sus aposentos y, tras asesinar a Renfield por intentar protegerla, obliga a Mina a beber sangre de su propio pecho, creando un vínculo místico y maldito. Drácula le advierte que ahora ella es de su misma sangre y que, tras su muerte, se convertirá en una de sus compañeras eternas.
 
-Este acto de crueldad se convierte en el mayor error del Conde. Van Helsing descubre que, debido al "bautismo de sangre", Mina puede entrar en un estado de hipnosis al amanecer y al anochecer, permitiÃ©ndole ver y oÃ­r lo que el Conde percibe. Con esta informaciÃ³n, el grupo comienza una frenÃ©tica cacerÃ­a por todo Londres, purificando con hostias consagradas cada una de las cajas de tierra de DrÃ¡cula, dejÃ¡ndolo sin refugios donde esconderse durante el dÃ­a. SintiÃ©ndose vulnerable en una tierra que ya no le es propicia, el Conde huye de regreso a Transilvania por mar, creyendo que su antiguo castillo le devolverÃ¡ la seguridad. Sin embargo, los cazadores inician una carrera contra el tiempo a travÃ©s de Europa, viajando por tierra y rÃ­o para interceptar el carromato de DrÃ¡cula antes de que el sol se ponga en las faldas de los CÃ¡rpatos.
+Este acto de crueldad se convierte en el mayor error del Conde. Van Helsing descubre que, debido al "bautismo de sangre", Mina puede entrar en un estado de hipnosis al amanecer y al anochecer, permitiéndole ver y oír lo que el Conde percibe. Con esta información, el grupo comienza una frenética cacería por todo Londres, purificando con hostias consagradas cada una de las cajas de tierra de Drácula, dejándolo sin refugios donde esconderse durante el día. Sintiéndose vulnerable en una tierra que ya no le es propicia, el Conde huye de regreso a Transilvania por mar, creyendo que su antiguo castillo le devolverá la seguridad. Sin embargo, los cazadores inician una carrera contra el tiempo a través de Europa, viajando por tierra y río para interceptar el carromato de Drácula antes de que el sol se ponga en las faldas de los Cárpatos.
 
-El clÃ­max de la novela ocurre bajo la sombra del imponente castillo de DrÃ¡cula, en medio de una tormenta de nieve. El grupo se ha dividido: Van Helsing y Mina viajan directamente al castillo, donde el profesor logra destruir a las tres mujeres vampiras en sus tumbas, mientras que Jonathan, Arthur, Seward y Quincey persiguen al carromato protegido por gitanos que transporta el ataÃºd del Conde. Justo cuando los Ãºltimos rayos del sol estÃ¡n por desaparecer y el poder de DrÃ¡cula alcanzarÃ­a su mÃ¡ximo esplendor, se desata una batalla feroz. Quincey Morris resulta herido de muerte, pero en un Ãºltimo esfuerzo de valentÃ­a, Jonathan Harker corta el cuello del Conde con su gran cuchillo mientras el puÃ±al de Quincey atraviesa el corazÃ³n del monstruo. En un suspiro de alivio absoluto, el cuerpo del Conde DrÃ¡cula se desintegra convirtiÃ©ndose en cenizas, y la marca roja de la maldiciÃ³n en la frente de Mina desaparece para siempre. La historia concluye con el sacrificio de Quincey y una reflexiÃ³n aÃ±os despuÃ©s sobre cÃ³mo el amor, la lealtad y la uniÃ³n de la ciencia con la fe lograron vencer a la oscuridad mÃ¡s profunda, dejando un legado de paz para las futuras generaciones.`
+El clímax de la novela ocurre bajo la sombra del imponente castillo de Drácula, en medio de una tormenta de nieve. El grupo se ha dividido: Van Helsing y Mina viajan directamente al castillo, donde el profesor logra destruir a las tres mujeres vampiras en sus tumbas, mientras que Jonathan, Arthur, Seward y Quincey persiguen al carromato protegido por gitanos que transporta el ataúd del Conde. Justo cuando los últimos rayos del sol están por desaparecer y el poder de Drácula alcanzaría su máximo esplendor, se desata una batalla feroz. Quincey Morris resulta herido de muerte, pero en un último esfuerzo de valentía, Jonathan Harker corta el cuello del Conde con su gran cuchillo mientras el puñal de Quincey atraviesa el corazón del monstruo. En un suspiro de alivio absoluto, el cuerpo del Conde Drácula se desintegra convirtiéndose en cenizas, y la marca roja de la maldición en la frente de Mina desaparece para siempre. La historia concluye con el sacrificio de Quincey y una reflexión años después sobre cómo el amor, la lealtad y la unión de la ciencia con la fe lograron vencer a la oscuridad más profunda, dejando un legado de paz para las futuras generaciones.`
     },
     {
         session: 4,
         unit: 'Narrativa',
         topic: 'Realismo Social: Subterra',
-        videoTitle: 'El gÃ©nero lÃ­rico-Hablante y Objeto',
+        videoTitle: 'El género lírico-Hablante y Objeto',
         videoLink: 'https://www.youtube.com/watch?v=ldjVCmsAfhM',
-        readingTitle: 'Subterra (Resumen y AnÃ¡lisis)',
-        readingContent: `En las entraÃ±as de la tierra, donde el sol es un recuerdo lejano y el aire se vuelve un enemigo pesado y denso, se desarrolla la crÃ³nica de una de las Ã©pocas mÃ¡s oscuras de la historia trabajadora: la vida en las minas de carbÃ³n de Lota, en Chile. La obra maestra de Baldomero Lillo, titulada Subterra, no es solo una colecciÃ³n de relatos, sino un grito de protesta y un retrato descarnado de la condiciÃ³n humana frente a la explotaciÃ³n industrial de principios del siglo XX. El escenario principal es la mina, un monstruo de piedra y sombras que devora hombres, jÃ³venes y niÃ±os por igual, devolviendo a cambio solo miseria, pulmones enfermos y corazones rotos. En este mundo subterrÃ¡neo, la oscuridad no es solo la ausencia de luz, sino una presencia tangible que envuelve la existencia de miles de familias que dependen del "oro negro" para no morir de hambre, aunque ese mismo carbÃ³n sea el que finalmente les robe la vida.
+        readingTitle: 'Subterra (Resumen y Análisis)',
+        readingContent: `En las entrañas de la tierra, donde el sol es un recuerdo lejano y el aire se vuelve un enemigo pesado y denso, se desarrolla la crónica de una de las épocas más oscuras de la historia trabajadora: la vida en las minas de carbón de Lota, en Chile. La obra maestra de Baldomero Lillo, titulada Subterra, no es solo una colección de relatos, sino un grito de protesta y un retrato descarnado de la condición humana frente a la explotación industrial de principios del siglo XX. El escenario principal es la mina, un monstruo de piedra y sombras que devora hombres, jóvenes y niños por igual, devolviendo a cambio solo miseria, pulmones enfermos y corazones rotos. En este mundo subterráneo, la oscuridad no es solo la ausencia de luz, sino una presencia tangible que envuelve la existencia de miles de familias que dependen del "oro negro" para no morir de hambre, aunque ese mismo carbón sea el que finalmente les robe la vida.
 
-La historia nos sumerge inicialmente en la desgarradora realidad de la infancia perdida a travÃ©s de uno de sus relatos mÃ¡s icÃ³nicos: "La compuerta nÃºmero 12". AquÃ­ conocemos a Pablo, un niÃ±o de apenas ocho aÃ±os, cuyo destino queda sellado cuando su padre, un minero envejecido prematuramente por el esfuerzo, lo lleva por primera vez a las galerÃ­as profundas. El padre sabe que estÃ¡ entregando a su hijo a una esclavitud moderna, pero la extrema pobreza y la necesidad de aumentar los ingresos familiares no le dejan otra opciÃ³n. El trabajo de Pablo consiste en ser un "atendedor" de compuerta, sentado en la oscuridad absoluta durante horas interminables, con la Ãºnica misiÃ³n de abrir y cerrar una puerta de madera cada vez que pasan los carros cargados de carbÃ³n. El llanto del niÃ±o al verse abandonado en aquel tÃºnel hÃºmedo y negro, donde el silencio solo es roto por el goteo del agua y el eco de las mÃ¡quinas, representa la inocencia triturada por un sistema econÃ³mico despiadado. El padre, al amarrar a su propio hijo para que no huya del miedo, simboliza la tragedia de una clase social que se ve obligada a sacrificar a sus propias semillas para asegurar un mendrugo de pan.
+La historia nos sumerge inicialmente en la desgarradora realidad de la infancia perdida a través de uno de sus relatos más icónicos: "La compuerta número 12". Aquí conocemos a Pablo, un niño de apenas ocho años, cuyo destino queda sellado cuando su padre, un minero envejecido prematuramente por el esfuerzo, lo lleva por primera vez a las galerías profundas. El padre sabe que está entregando a su hijo a una esclavitud moderna, pero la extrema pobreza y la necesidad de aumentar los ingresos familiares no le dejan otra opción. El trabajo de Pablo consiste en ser un "atendedor" de compuerta, sentado en la oscuridad absoluta durante horas interminables, con la única misión de abrir y cerrar una puerta de madera cada vez que pasan los carros cargados de carbón. El llanto del niño al verse abandonado en aquel túnel húmedo y negro, donde el silencio solo es roto por el goteo del agua y el eco de las máquinas, representa la inocencia triturada por un sistema económico despiadado. El padre, al amarrar a su propio hijo para que no huya del miedo, simboliza la tragedia de una clase social que se ve obligada a sacrificar a sus propias semillas para asegurar un mendrugo de pan.
 
-A medida que nos internamos mÃ¡s en la narraciÃ³n, la obra explora el concepto del "determinismo social", la idea de que quien nace en la mina estÃ¡ condenado a morir en ella. Lillo nos presenta el "ChiflÃ³n del Diablo", una de las galerÃ­as mÃ¡s peligrosas y temidas debido a su inestabilidad y a la frecuencia de los derrumbes. En este lugar, la muerte acecha en cada crujido de las vigas de madera. Conocemos la historia de los mineros que, por la falta de trabajo en otras secciones, se ven obligados a aceptar turnos en el ChiflÃ³n, sabiendo que las probabilidades de salir con vida son escasas. La tensiÃ³n se traslada tambiÃ©n a la superficie, donde las madres, esposas e hijas esperan con el corazÃ³n en un hilo el sonido de la sirena que anuncia un accidente. Cuando la tragedia finalmente ocurre, el autor describe con maestrÃ­a el desfile de cuerpos inertes y la desesperaciÃ³n de las mujeres que buscan entre los rostros cubiertos de hollÃ­n a sus seres queridos, evidenciando que el dolor de la mina se extiende mucho mÃ¡s allÃ¡ de las galerÃ­as subterrÃ¡neas, envenenando la vida de toda la comunidad.
+A medida que nos internamos más en la narración, la obra explora el concepto del "determinismo social", la idea de que quien nace en la mina está condenado a morir en ella. Lillo nos presenta el "Chiflón del Diablo", una de las galerías más peligrosas y temidas debido a su inestabilidad y a la frecuencia de los derrumbes. En este lugar, la muerte acecha en cada crujido de las vigas de madera. Conocemos la historia de los mineros que, por la falta de trabajo en otras secciones, se ven obligados a aceptar turnos en el Chiflón, sabiendo que las probabilidades de salir con vida son escasas. La tensión se traslada también a la superficie, donde las madres, esposas e hijas esperan con el corazón en un hilo el sonido de la sirena que anuncia un accidente. Cuando la tragedia finalmente ocurre, el autor describe con maestría el desfile de cuerpos inertes y la desesperación de las mujeres que buscan entre los rostros cubiertos de hollín a sus seres queridos, evidenciando que el dolor de la mina se extiende mucho más allá de las galerías subterráneas, envenenando la vida de toda la comunidad.
 
-Otro aspecto fundamental de la obra es la crÃ­tica feroz a la "pulperÃ­a" y al sistema de pago mediante fichas. En el relato "El pago", se detalla cÃ³mo el esfuerzo infrahumano de los mineros es recompensado con salarios miserables que apenas alcanzan para pagar las deudas contraÃ­das en los almacenes de la propia compaÃ±Ã­a minera. Los trabajadores viven atrapados en un cÃ­rculo vicioso de deuda eterna; el dinero nunca llega a sus manos de forma real, sino que es devuelto inmediatamente a los dueÃ±os de la mina a travÃ©s de precios inflados y multas arbitrarias. Lillo retrata a los capataces y administradores no solo como jefes, sino como verdugos que vigilan cada movimiento de los mineros, buscando cualquier excusa en "El registro" para confiscar sus pertenencias o humillarlos, demostrando que en Lota el minero no era considerado un ciudadano, sino una herramienta reemplazable, menos valiosa incluso que las mulas que arrastraban los carros.
+Otro aspecto fundamental de la obra es la crítica feroz a la "pulpería" y al sistema de pago mediante fichas. En el relato "El pago", se detalla cómo el esfuerzo infrahumano de los mineros es recompensado con salarios miserables que apenas alcanzan para pagar las deudas contraídas en los almacenes de la propia compañía minera. Los trabajadores viven atrapados en un círculo vicioso de deuda eterna; el dinero nunca llega a sus manos de forma real, sino que es devuelto inmediatamente a los dueños de la mina a través de precios inflados y multas arbitrarias. Lillo retrata a los capataces y administradores no solo como jefes, sino como verdugos que vigilan cada movimiento de los mineros, buscando cualquier excusa en "El registro" para confiscar sus pertenencias o humillarlos, demostrando que en Lota el minero no era considerado un ciudadano, sino una herramienta reemplazable, menos valiosa incluso que las mulas que arrastraban los carros.
 
-La atmÃ³sfera de peligro constante se eleva a su mÃ¡ximo punto con el relato de "El GrisÃº". El grisÃº es un gas invisible, inodoro y altamente explosivo que se acumula en las galerÃ­as mal ventiladas. Es el asesino silencioso de la mina. El autor utiliza este elemento para mostrar la negligencia de la administraciÃ³n, que prefiere arriesgar la vida de cientos de hombres antes que invertir en sistemas de seguridad adecuados. Cuando la explosiÃ³n ocurre, la descripciÃ³n es dantesca: el fuego recorre los tÃºneles como una bestia furiosa, calcinando todo a su paso. Este evento no solo elimina vidas fÃ­sicas, sino que destruye las esperanzas de las familias, dejando a viudas y huÃ©rfanos en la mÃ¡s absoluta desprotecciÃ³n, ya que la compaÃ±Ã­a minera rara vez asumÃ­a responsabilidad alguna por las muertes, culpando a menudo a la "imprudencia" de los propios trabajadores para evitar pagar indemnizaciones.
+La atmósfera de peligro constante se eleva a su máximo punto con el relato de "El Grisú". El grisú es un gas invisible, inodoro y altamente explosivo que se acumula en las galerías mal ventiladas. Es el asesino silencioso de la mina. El autor utiliza este elemento para mostrar la negligencia de la administración, que prefiere arriesgar la vida de cientos de hombres antes que invertir en sistemas de seguridad adecuados. Cuando la explosión ocurre, la descripción es dantesca: el fuego recorre los túneles como una bestia furiosa, calcinando todo a su paso. Este evento no solo elimina vidas físicas, sino que destruye las esperanzas de las familias, dejando a viudas y huérfanos en la más absoluta desprotección, ya que la compañía minera rara vez asumía responsabilidad alguna por las muertes, culpando a menudo a la "imprudencia" de los propios trabajadores para evitar pagar indemnizaciones.
 
-Sin embargo, en medio de tanta oscuridad, Lillo tambiÃ©n rescata destellos de humanidad y solidaridad. A travÃ©s de personajes como Juan FariÃ±a, en el relato "Juan FariÃ±a", el autor introduce elementos de misterio y leyenda. FariÃ±a es un minero con una fuerza y una capacidad de trabajo que parecen sobrenaturales, despertando el recelo y la admiraciÃ³n de sus compaÃ±eros. Se rumorea que tiene un pacto con el diablo, pero en realidad, su figura representa la resistencia fÃ­sica y espiritual del trabajador chileno. Su historia termina en un acto de rebeliÃ³n final contra la mina: se dice que inundÃ³ las galerÃ­as para detener la explotaciÃ³n, prefiriendo destruir la fuente de trabajo antes que permitir que siguiera devorando la dignidad de sus hermanos. Este tinte legendario sirve para elevar la lucha del minero a una dimensiÃ³n Ã©pica, donde el hombre se enfrenta a fuerzas que parecen divinas o demonÃ­acas.
+Sin embargo, en medio de tanta oscuridad, Lillo también rescata destellos de humanidad y solidaridad. A través de personajes como Juan Fariña, en el relato "Juan Fariña", el autor introduce elementos de misterio y leyenda. Fariña es un minero con una fuerza y una capacidad de trabajo que parecen sobrenaturales, despertando el recelo y la admiración de sus compañeros. Se rumorea que tiene un pacto con el diablo, pero en realidad, su figura representa la resistencia física y espiritual del trabajador chileno. Su historia termina en un acto de rebelión final contra la mina: se dice que inundó las galerías para detener la explotación, prefiriendo destruir la fuente de trabajo antes que permitir que siguiera devorando la dignidad de sus hermanos. Este tinte legendario sirve para elevar la lucha del minero a una dimensión épica, donde el hombre se enfrenta a fuerzas que parecen divinas o demoníacas.
 
-Hacia el final de la obra, queda una sensaciÃ³n de melancolÃ­a profunda pero tambiÃ©n de una urgente necesidad de cambio. Baldomero Lillo no ofrece finales felices porque la realidad de Lota no los permitÃ­a. Su objetivo era conmover la conciencia de la sociedad chilena de su tiempo, mostrando que el progreso industrial y la riqueza de unos pocos estaban construidos sobre el sufrimiento, la sangre y el sudor de miles de seres humanos enterrados vivos. Subterra concluye como un testimonio eterno de la lucha de clases, donde la mina es una metÃ¡fora de un sistema social que ciega a los hombres y les roba el futuro. La imagen final es la de un sol que brilla afuera, hermoso y cÃ¡lido, pero que para el minero es un extraÃ±o, pues su "vida simplemente" se ha convertido en una sombra perpetua bajo la tierra, esperando que algÃºn dÃ­a la justicia logre penetrar en las profundidades de la compuerta nÃºmero 12 y liberar a los hijos del carbÃ³n de su destino de hollÃ­n y silencio.`
+Hacia el final de la obra, queda una sensación de melancolía profunda pero también de una urgente necesidad de cambio. Baldomero Lillo no ofrece finales felices porque la realidad de Lota no los permitía. Su objetivo era conmover la conciencia de la sociedad chilena de su tiempo, mostrando que el progreso industrial y la riqueza de unos pocos estaban construidos sobre el sufrimiento, la sangre y el sudor de miles de seres humanos enterrados vivos. Subterra concluye como un testimonio eterno de la lucha de clases, donde la mina es una metáfora de un sistema social que ciega a los hombres y les roba el futuro. La imagen final es la de un sol que brilla afuera, hermoso y cálido, pero que para el minero es un extraño, pues su "vida simplemente" se ha convertido en una sombra perpetua bajo la tierra, esperando que algún día la justicia logre penetrar en las profundidades de la compuerta número 12 y liberar a los hijos del carbón de su destino de hollín y silencio.`
     },
     {
         session: 5,
-        unit: 'LÃ­rica',
-        topic: 'AlegorÃ­a PolÃ­tica: RebeliÃ³n en la granja',
+        unit: 'Lírica',
+        topic: 'Alegoría Política: Rebelión en la granja',
         videoTitle: 'Figuras literarias, parte III',
         videoLink: 'https://www.youtube.com/watch?v=YZqoA6dyqCc',
-        readingTitle: 'RebeliÃ³n en la granja (Resumen y AnÃ¡lisis)',
-        readingContent: `La historia comienza en la Granja Solariega, una propiedad rural en Inglaterra bajo el mando del seÃ±or Jones, un granjero que, sumido en el alcoholismo y la negligencia, ha dejado de preocuparse por el bienestar de sus animales. La chispa del cambio surge una noche cuando el Viejo Mayor, un cerdo premiado y respetado por todos, convoca a una reuniÃ³n secreta en el granero principal. En un discurso que cambiarÃ­a el destino de la granja, Mayor comparte un sueÃ±o que tuvo sobre un mundo donde los animales viven libres de la tiranÃ­a del hombre, sin lÃ¡tigos, sin cadenas y sin ser sacrificados para el beneficio humano. El Viejo Mayor les enseÃ±a una canciÃ³n revolucionaria titulada "Bestias de Inglaterra", que se convierte en el himno de su esperanza, y les explica que el hombre es el Ãºnico ser que consume sin producir, siendo la causa de todas sus miserias. Aunque Mayor muere pocos dÃ­as despuÃ©s, sus palabras germinan en la mente de los animales mÃ¡s inteligentes, especialmente en los cerdos, quienes empiezan a organizar un sistema de pensamiento llamado Animalismo.
+        readingTitle: 'Rebelión en la granja (Resumen y Análisis)',
+        readingContent: `La historia comienza en la Granja Solariega, una propiedad rural en Inglaterra bajo el mando del señor Jones, un granjero que, sumido en el alcoholismo y la negligencia, ha dejado de preocuparse por el bienestar de sus animales. La chispa del cambio surge una noche cuando el Viejo Mayor, un cerdo premiado y respetado por todos, convoca a una reunión secreta en el granero principal. En un discurso que cambiaría el destino de la granja, Mayor comparte un sueño que tuvo sobre un mundo donde los animales viven libres de la tiranía del hombre, sin látigos, sin cadenas y sin ser sacrificados para el beneficio humano. El Viejo Mayor les enseña una canción revolucionaria titulada "Bestias de Inglaterra", que se convierte en el himno de su esperanza, y les explica que el hombre es el único ser que consume sin producir, siendo la causa de todas sus miserias. Aunque Mayor muere pocos días después, sus palabras germinan en la mente de los animales más inteligentes, especialmente en los cerdos, quienes empiezan a organizar un sistema de pensamiento llamado Animalismo.
 
-La rebeliÃ³n ocurre de manera imprevista cuando el seÃ±or Jones, tras una borrachera monumental, olvida alimentar a los animales durante un dÃ­a entero. Impulsados por el hambre y la desesperaciÃ³n, los animales rompen los cierres de los depÃ³sitos de comida y, cuando Jones y sus peones intentan reprimirlos con lÃ¡tigos, los animales contraatacan con una furia incontenible, expulsando a los humanos de la propiedad. En un instante de jÃºbilo absoluto, la Granja Solariega pasa a llamarse Granja de los Animales. Bajo el liderazgo de dos cerdos jÃ³venes, Snowball y NapoleÃ³n, se establecen los Siete Mandamientos en la pared del granero, leyes sagradas que dictan que lo que camina sobre dos piernas es enemigo, lo que camina sobre cuatro piernas o tiene alas es amigo, y que ningÃºn animal debe usar ropa, dormir en camas, beber alcohol o matar a otro animal. El mandamiento final y mÃ¡s importante resume todo el espÃ­ritu de la revuelta: "Todos los animales son iguales".
+La rebelión ocurre de manera imprevista cuando el señor Jones, tras una borrachera monumental, olvida alimentar a los animales durante un día entero. Impulsados por el hambre y la desesperación, los animales rompen los cierres de los depósitos de comida y, cuando Jones y sus peones intentan reprimirlos con látigos, los animales contraatacan con una furia incontenible, expulsando a los humanos de la propiedad. En un instante de júbilo absoluto, la Granja Solariega pasa a llamarse Granja de los Animales. Bajo el liderazgo de dos cerdos jóvenes, Snowball y Napoleón, se establecen los Siete Mandamientos en la pared del granero, leyes sagradas que dictan que lo que camina sobre dos piernas es enemigo, lo que camina sobre cuatro piernas o tiene alas es amigo, y que ningún animal debe usar ropa, dormir en camas, beber alcohol o matar a otro animal. El mandamiento final y más importante resume todo el espíritu de la revuelta: "Todos los animales son iguales".
 
-Al principio, la granja prospera bajo una autogestiÃ³n ejemplar. Snowball, un lÃ­der brillante, elocuente y lleno de ideas innovadoras, organiza comitÃ©s para educar a los animales y diseÃ±a planes para mejorar la productividad. Por su parte, NapoleÃ³n es un personaje mÃ¡s silencioso, sombrÃ­o y calculador, que prefiere actuar en las sombras. La tensiÃ³n entre ambos crece constantemente, representando dos visiones opuestas del poder. Mientras Snowball propone la construcciÃ³n de un molino de viento para generar electricidad y reducir la jornada laboral, NapoleÃ³n se opone ferozmente, argumentando que lo importante es centrarse en la producciÃ³n de alimentos inmediata. Durante la defensa de la granja en la "Batalla del Establo", donde Jones intenta recuperar su propiedad por la fuerza, Snowball demuestra un heroÃ­smo asombroso liderando la carga, mientras que NapoleÃ³n apenas participa. Sin embargo, la rivalidad llega a su punto crÃ­tico cuando NapoleÃ³n utiliza a una jaurÃ­a de perros enormes y feroces, que Ã©l mismo habÃ­a criado en secreto, para expulsar a Snowball de la granja bajo amenaza de muerte.
+Al principio, la granja prospera bajo una autogestión ejemplar. Snowball, un líder brillante, elocuente y lleno de ideas innovadoras, organiza comités para educar a los animales y diseña planes para mejorar la productividad. Por su parte, Napoleón es un personaje más silencioso, sombrío y calculador, que prefiere actuar en las sombras. La tensión entre ambos crece constantemente, representando dos visiones opuestas del poder. Mientras Snowball propone la construcción de un molino de viento para generar electricidad y reducir la jornada laboral, Napoleón se opone ferozmente, argumentando que lo importante es centrarse en la producción de alimentos inmediata. Durante la defensa de la granja en la "Batalla del Establo", donde Jones intenta recuperar su propiedad por la fuerza, Snowball demuestra un heroísmo asombroso liderando la carga, mientras que Napoleón apenas participa. Sin embargo, la rivalidad llega a su punto crítico cuando Napoleón utiliza a una jauría de perros enormes y feroces, que él mismo había criado en secreto, para expulsar a Snowball de la granja bajo amenaza de muerte.
 
-Tras la expulsiÃ³n de Snowball, NapoleÃ³n asume el control absoluto y elimina las asambleas dominicales, declarando que todas las decisiones serÃ¡n tomadas por un comitÃ© de cerdos presidido por Ã©l mismo. Utiliza a Squealer, un cerdo con una habilidad extraordinaria para la manipulaciÃ³n verbal, para convencer al resto de los animales de que Snowball siempre fue un traidor y un agente secreto del seÃ±or Jones. Squealer es la pieza clave de la propaganda: es capaz de convencer a los animales de que sus recuerdos son falsos y de que la realidad es la que NapoleÃ³n dicta. El proyecto del molino de viento, al que NapoleÃ³n se habÃ­a opuesto, es retomado ahora como una idea propia de Ã©l, alegando que Snowball se la habÃ­a robado. Los animales comienzan a trabajar jornadas extenuantes, enfrentando el hambre y el frÃ­o, pero lo hacen con el consuelo de que ahora trabajan para sÃ­ mismos y no para un amo humano.
+Tras la expulsión de Snowball, Napoleón asume el control absoluto y elimina las asambleas dominicales, declarando que todas las decisiones serán tomadas por un comité de cerdos presidido por él mismo. Utiliza a Squealer, un cerdo con una habilidad extraordinaria para la manipulación verbal, para convencer al resto de los animales de que Snowball siempre fue un traidor y un agente secreto del señor Jones. Squealer es la pieza clave de la propaganda: es capaz de convencer a los animales de que sus recuerdos son falsos y de que la realidad es la que Napoleón dicta. El proyecto del molino de viento, al que Napoleón se había opuesto, es retomado ahora como una idea propia de él, alegando que Snowball se la había robado. Los animales comienzan a trabajar jornadas extenuantes, enfrentando el hambre y el frío, pero lo hacen con el consuelo de que ahora trabajan para sí mismos y no para un amo humano.
 
-La corrupciÃ³n del poder se vuelve evidente a medida que los cerdos comienzan a otorgarse privilegios especiales, como mudarse a la casa del seÃ±or Jones y dormir en camas. Cuando los animales notan que esto viola los mandamientos, descubren que las leyes en la pared han sido alteradas sutilmente; ahora el mandamiento dice que no se puede dormir en una cama "con sÃ¡banas". Esta tÃ¡ctica de modificaciÃ³n gradual se aplica a todas las leyes. La figura de NapoleÃ³n se vuelve cada vez mÃ¡s distante y sagrada, rodeado siempre por su guardia pretoriana de perros. Comienzan las purgas internas, donde animales confiesan crÃ­menes inexistentes bajo presiÃ³n y son ejecutados frente a todos, violando el mandamiento de no matar a otros animales, el cual ahora reza: "NingÃºn animal matarÃ¡ a otro animal sin causa". El terror se instala en la granja, y la canciÃ³n "Bestias de Inglaterra" es prohibida, sustituida por himnos que glorifican la figura de NapoleÃ³n como el "Padre de todos los animales".
+La corrupción del poder se vuelve evidente a medida que los cerdos comienzan a otorgarse privilegios especiales, como mudarse a la casa del señor Jones y dormir en camas. Cuando los animales notan que esto viola los mandamientos, descubren que las leyes en la pared han sido alteradas sutilmente; ahora el mandamiento dice que no se puede dormir en una cama "con sábanas". Esta táctica de modificación gradual se aplica a todas las leyes. La figura de Napoleón se vuelve cada vez más distante y sagrada, rodeado siempre por su guardia pretoriana de perros. Comienzan las purgas internas, donde animales confiesan crímenes inexistentes bajo presión y son ejecutados frente a todos, violando el mandamiento de no matar a otros animales, el cual ahora reza: "Ningún animal matará a otro animal sin causa". El terror se instala en la granja, y la canción "Bestias de Inglaterra" es prohibida, sustituida por himnos que glorifican la figura de Napoleón como el "Padre de todos los animales".
 
-El personaje de Boxer, el caballo de tiro, representa la tragedia de la clase trabajadora mÃ¡s noble y sacrificada. Su lema, "TrabajarÃ© mÃ¡s fuerte", es el motor que permite la construcciÃ³n del molino una y otra vez tras derrumbes y ataques externos. Sin embargo, cuando Boxer cae enfermo debido al agotamiento extremo, NapoleÃ³n promete enviarlo a un hospital humano para que lo curen. El horror estalla cuando los animales ven que el furgÃ³n que se lleva a Boxer tiene escrito en un costado "FÃ¡brica de Cola y Descuartizador de Caballos". Squealer logra calmar los Ã¡nimos con mÃ¡s mentiras, asegurando que el vehÃ­culo simplemente no habÃ­a sido repintado por el veterinario, pero la verdad es amarga: NapoleÃ³n vendiÃ³ al trabajador mÃ¡s leal de la granja para comprarse una caja de whisky.
+El personaje de Boxer, el caballo de tiro, representa la tragedia de la clase trabajadora más noble y sacrificada. Su lema, "Trabajaré más fuerte", es el motor que permite la construcción del molino una y otra vez tras derrumbes y ataques externos. Sin embargo, cuando Boxer cae enfermo debido al agotamiento extremo, Napoleón promete enviarlo a un hospital humano para que lo curen. El horror estalla cuando los animales ven que el furgón que se lleva a Boxer tiene escrito en un costado "Fábrica de Cola y Descuartizador de Caballos". Squealer logra calmar los ánimos con más mentiras, asegurando que el vehículo simplemente no había sido repintado por el veterinario, pero la verdad es amarga: Napoleón vendió al trabajador más leal de la granja para comprarse una caja de whisky.
 
-AÃ±os despuÃ©s, la granja es mÃ¡s rica que nunca, pero solo para los cerdos y los perros. Los Siete Mandamientos han desaparecido por completo, sustituidos por una Ãºnica y cÃ­nica sentencia: "Todos los animales son iguales, pero algunos animales son mÃ¡s iguales que otros". Los cerdos empiezan a caminar sobre dos patas, a usar ropa y a llevar lÃ¡tigos en sus manos para supervisar el trabajo. El clÃ­max de la historia ocurre cuando NapoleÃ³n invita a los granjeros humanos de los alrededores a una cena de celebraciÃ³n. Desde las ventanas, el resto de los animales observa con asombro cÃ³mo cerdos y hombres brindan por la prosperidad mutua y por el regreso de la disciplina fÃ©rrea en la granja, que vuelve a llamarse Granja Solariega. Mientras estalla una pelea por una trampa en una partida de cartas, los animales miran los rostros de los cerdos y luego los de los hombres, y se dan cuenta de algo aterrador: ya no pueden distinguir quiÃ©n es quiÃ©n. La revoluciÃ³n ha terminado convirtiÃ©ndose exactamente en aquello que jurÃ³ destruir, cerrando un cÃ­rculo de opresiÃ³n donde los cerdos han reemplazado a los humanos en su tiranÃ­a.`
+Años después, la granja es más rica que nunca, pero solo para los cerdos y los perros. Los Siete Mandamientos han desaparecido por completo, sustituidos por una única y cínica sentencia: "Todos los animales son iguales, pero algunos animales son más iguales que otros". Los cerdos empiezan a caminar sobre dos patas, a usar ropa y a llevar látigos en sus manos para supervisar el trabajo. El clímax de la historia ocurre cuando Napoleón invita a los granjeros humanos de los alrededores a una cena de celebración. Desde las ventanas, el resto de los animales observa con asombro cómo cerdos y hombres brindan por la prosperidad mutua y por el regreso de la disciplina férrea en la granja, que vuelve a llamarse Granja Solariega. Mientras estalla una pelea por una trampa en una partida de cartas, los animales miran los rostros de los cerdos y luego los de los hombres, y se dan cuenta de algo aterrador: ya no pueden distinguir quién es quién. La revolución ha terminado convirtiéndose exactamente en aquello que juró destruir, cerrando un círculo de opresión donde los cerdos han reemplazado a los humanos en su tiranía.`
     },
     {
         session: 6,
-        unit: 'LÃ­rica',
-        topic: 'Tragedia Griega: AntÃ­gona',
+        unit: 'Lírica',
+        topic: 'Tragedia Griega: Antígona',
         videoTitle: 'Post PAES Competencia Lectora',
         videoLink: 'https://www.youtube.com/watch?v=0KBmmhtwHlE',
-        readingTitle: 'AntÃ­gona (Resumen y AnÃ¡lisis)',
-        readingContent: `La tragedia de AntÃ­gona comienza en la mÃ­tica ciudad de Tebas, una ciudad que aÃºn sangra por las heridas de una guerra civil fratricida. Tras la caÃ­da y el exilio de Edipo, sus dos hijos varones, Eteocles y Polinices, acordaron turnarse en el trono de la ciudad. Sin embargo, la ambiciÃ³n rompiÃ³ el pacto: Eteocles se negÃ³ a ceder el poder al cumplirse su aÃ±o, lo que llevÃ³ a Polinices a buscar refugio en Argos y regresar con un ejÃ©rcito extranjero para reclamar su derecho por la fuerza. La batalla terminÃ³ en una tragedia simÃ©trica a las puertas de Tebas, donde los dos hermanos se dieron muerte el uno al otro en un combate singular. Con la lÃ­nea sucesoria masculina interrumpida por la sangre, el trono recae en Creonte, tÃ­o de los fallecidos, quien asume el mando con la firme intenciÃ³n de restaurar el orden y la autoridad del Estado en una ciudad devastada por el conflicto.
+        readingTitle: 'Antígona (Resumen y Análisis)',
+        readingContent: `La tragedia de Antígona comienza en la mítica ciudad de Tebas, una ciudad que aún sangra por las heridas de una guerra civil fratricida. Tras la caída y el exilio de Edipo, sus dos hijos varones, Eteocles y Polinices, acordaron turnarse en el trono de la ciudad. Sin embargo, la ambición rompió el pacto: Eteocles se negó a ceder el poder al cumplirse su año, lo que llevó a Polinices a buscar refugio en Argos y regresar con un ejército extranjero para reclamar su derecho por la fuerza. La batalla terminó en una tragedia simétrica a las puertas de Tebas, donde los dos hermanos se dieron muerte el uno al otro en un combate singular. Con la línea sucesoria masculina interrumpida por la sangre, el trono recae en Creonte, tío de los fallecidos, quien asume el mando con la firme intención de restaurar el orden y la autoridad del Estado en una ciudad devastada por el conflicto.
 
-El primer acto de Creonte como rey es promulgar un edicto que sacude los cimientos morales de la ciudad: Eteocles, defensor de Tebas, recibirÃ¡ todos los honores fÃºnebres correspondientes a un hÃ©roe; pero Polinices, el invasor, es declarado traidor y su cuerpo debe quedar a la intemperie, sin sepultura, para ser devorado por las aves y los perros. En la mentalidad griega, negar los ritos funerarios no era solo un insulto fÃ­sico, sino una condena espiritual eterna, ya que el alma del difunto no podrÃ­a encontrar descanso en el Hades. Es aquÃ­ donde surge la figura de AntÃ­gona, la hermana de los fallecidos, quien decide que no puede permitir que la ley de un hombre pase por encima de las leyes divinas y los lazos de sangre. La obra se abre con una tensa conversaciÃ³n entre AntÃ­gona y su hermana Ismene. Mientras AntÃ­gona personifica la valentÃ­a y el deber sagrado, Ismene representa la prudencia y el miedo frente al poder absoluto, negÃ¡ndose a participar en el entierro por temor a la ejecuciÃ³n pÃºblica decretada por Creonte.
+El primer acto de Creonte como rey es promulgar un edicto que sacude los cimientos morales de la ciudad: Eteocles, defensor de Tebas, recibirá todos los honores fúnebres correspondientes a un héroe; pero Polinices, el invasor, es declarado traidor y su cuerpo debe quedar a la intemperie, sin sepultura, para ser devorado por las aves y los perros. En la mentalidad griega, negar los ritos funerarios no era solo un insulto físico, sino una condena espiritual eterna, ya que el alma del difunto no podría encontrar descanso en el Hades. Es aquí donde surge la figura de Antígona, la hermana de los fallecidos, quien decide que no puede permitir que la ley de un hombre pase por encima de las leyes divinas y los lazos de sangre. La obra se abre con una tensa conversación entre Antígona y su hermana Ismene. Mientras Antígona personifica la valentía y el deber sagrado, Ismene representa la prudencia y el miedo frente al poder absoluto, negándose a participar en el entierro por temor a la ejecución pública decretada por Creonte.
 
-AntÃ­gona, solitaria en su resoluciÃ³n, acude al campo de batalla y cubre el cuerpo de Polinices con una fina capa de polvo y ritos simbÃ³licos. Poco despuÃ©s, un guardia aterrorizado informa a Creonte de lo sucedido. El rey, cuya psicologÃ­a estÃ¡ dominada por la inseguridad de un gobernante nuevo y el miedo a la anarquÃ­a, reacciona con paranoia, sospechando que sus enemigos polÃ­ticos han sobornado a los guardias. Sin embargo, AntÃ­gona es capturada cuando intenta realizar los ritos por segunda vez bajo la luz del dÃ­a. Al ser llevada ante Creonte, se produce uno de los debates mÃ¡s profundos de la literatura universal. AntÃ­gona no niega su acto; por el contrario, lo defiende con una altivez desafiante. Ella sostiene que el edicto de Creonte no tiene fuerza para anular las "leyes no escritas e inquebrantables de los dioses", que dictan el respeto a los muertos. Por su parte, Creonte argumenta que el bienestar de la ciudad depende de la obediencia ciega a la ley y que un traidor no puede ser tratado igual que un patriota, ni siquiera en la muerte.
+Antígona, solitaria en su resolución, acude al campo de batalla y cubre el cuerpo de Polinices con una fina capa de polvo y ritos simbólicos. Poco después, un guardia aterrorizado informa a Creonte de lo sucedido. El rey, cuya psicología está dominada por la inseguridad de un gobernante nuevo y el miedo a la anarquía, reacciona con paranoia, sospechando que sus enemigos políticos han sobornado a los guardias. Sin embargo, Antígona es capturada cuando intenta realizar los ritos por segunda vez bajo la luz del día. Al ser llevada ante Creonte, se produce uno de los debates más profundos de la literatura universal. Antígona no niega su acto; por el contrario, lo defiende con una altivez desafiante. Ella sostiene que el edicto de Creonte no tiene fuerza para anular las "leyes no escritas e inquebrantables de los dioses", que dictan el respeto a los muertos. Por su parte, Creonte argumenta que el bienestar de la ciudad depende de la obediencia ciega a la ley y que un traidor no puede ser tratado igual que un patriota, ni siquiera en la muerte.
 
-La ceguera de Creonte lo lleva a condenar a AntÃ­gona a ser encerrada viva en una tumba de piedra, un castigo que busca evitar que la ciudad se manche con su sangre directa, pero que en la prÃ¡ctica es un entierro en vida. En este punto aparece HemÃ³n, hijo de Creonte y prometido de AntÃ­gona. HemÃ³n intenta razonar con su padre, actuando como la voz del pueblo que admira el valor de la joven. Le advierte que un gobernante que no escucha y que cree ser el Ãºnico poseedor de la verdad termina por destruir el Estado que intenta salvar. La discusiÃ³n escala en violencia verbal: Creonte acusa a su hijo de estar esclavizado por una mujer, mientras HemÃ³n le advierte que la muerte de AntÃ­gona arrastrarÃ¡ consigo otra muerte. La obstinaciÃ³n de Creonte, conocida como hubris o orgullo excesivo, lo ciega ante las seÃ±ales de peligro.
+La ceguera de Creonte lo lleva a condenar a Antígona a ser encerrada viva en una tumba de piedra, un castigo que busca evitar que la ciudad se manche con su sangre directa, pero que en la práctica es un entierro en vida. En este punto aparece Hemón, hijo de Creonte y prometido de Antígona. Hemón intenta razonar con su padre, actuando como la voz del pueblo que admira el valor de la joven. Le advierte que un gobernante que no escucha y que cree ser el único poseedor de la verdad termina por destruir el Estado que intenta salvar. La discusión escala en violencia verbal: Creonte acusa a su hijo de estar esclavizado por una mujer, mientras Hemón le advierte que la muerte de Antígona arrastrará consigo otra muerte. La obstinación de Creonte, conocida como hubris o orgullo excesivo, lo ciega ante las señales de peligro.
 
-El giro trÃ¡gico final es desencadenado por el profeta ciego Tiresias, quien acude al palacio para advertir a Creonte que los dioses estÃ¡n furiosos. Las aves de rapiÃ±a, saciadas con la carne de Polinices, estÃ¡n contaminando los altares, y los sacrificios no son aceptados. Tiresias profetiza que, si Creonte no rectifica, pagarÃ¡ "cadÃ¡ver por cadÃ¡ver" de su propia estirpe. Solo ante la amenaza sobrenatural, Creonte cede y decide liberar a AntÃ­gona y enterrar a Polinices. Sin embargo, el destino ya estÃ¡ sellado. Cuando Creonte llega a la tumba de piedra, descubre que AntÃ­gona se ha ahorcado con su propio velo para evitar la lenta agonÃ­a de la inaniciÃ³n. HemÃ³n, destrozado por el dolor, intenta atacar a su padre y, al fallar, se suicida abrazando el cuerpo de su prometida.
+El giro trágico final es desencadenado por el profeta ciego Tiresias, quien acude al palacio para advertir a Creonte que los dioses están furiosos. Las aves de rapiña, saciadas con la carne de Polinices, están contaminando los altares, y los sacrificios no son aceptados. Tiresias profetiza que, si Creonte no rectifica, pagará "cadáver por cadáver" de su propia estirpe. Solo ante la amenaza sobrenatural, Creonte cede y decide liberar a Antígona y enterrar a Polinices. Sin embargo, el destino ya está sellado. Cuando Creonte llega a la tumba de piedra, descubre que Antígona se ha ahorcado con su propio velo para evitar la lenta agonía de la inanición. Hemón, destrozado por el dolor, intenta atacar a su padre y, al fallar, se suicida abrazando el cuerpo de su prometida.
 
-La noticia del suicidio de HemÃ³n llega al palacio y provoca la tragedia final: EurÃ­dice, la esposa de Creonte y madre de HemÃ³n, se quita la vida maldiciendo a su marido por ser el causante de la muerte de sus hijos. La obra termina con un Creonte devastado, quien ha pasado de ser un monarca autoritario que creÃ­a controlar el destino de Tebas a ser un hombre roto que suplica por su propia muerte, comprendiendo demasiado tarde que la sabidurÃ­a consiste en no desafiar las leyes sagradas ni los sentimientos humanos mÃ¡s bÃ¡sicos. El Coro cierra la tragedia reflexionando sobre cÃ³mo el orgullo de los hombres es castigado con grandes golpes de la fortuna, y cÃ³mo solo a travÃ©s del sufrimiento se aprende, finalmente, la sensatez. AntÃ­gona queda como el sÃ­mbolo eterno de la desobediencia civil y la primacÃ­a de la conciencia individual sobre la arbitrariedad del poder polÃ­tico.`
+La noticia del suicidio de Hemón llega al palacio y provoca la tragedia final: Eurídice, la esposa de Creonte y madre de Hemón, se quita la vida maldiciendo a su marido por ser el causante de la muerte de sus hijos. La obra termina con un Creonte devastado, quien ha pasado de ser un monarca autoritario que creía controlar el destino de Tebas a ser un hombre roto que suplica por su propia muerte, comprendiendo demasiado tarde que la sabiduría consiste en no desafiar las leyes sagradas ni los sentimientos humanos más básicos. El Coro cierra la tragedia reflexionando sobre cómo el orgullo de los hombres es castigado con grandes golpes de la fortuna, y cómo solo a través del sufrimiento se aprende, finalmente, la sensatez. Antígona queda como el símbolo eterno de la desobediencia civil y la primacía de la conciencia individual sobre la arbitrariedad del poder político.`
     },
     {
         session: 7,
-        unit: 'LÃ­rica',
-        topic: 'Drama Moderno: Casa de muÃ±ecas',
-        videoTitle: 'AnÃ¡lisis: La CanciÃ³n del Pirata',
+        unit: 'Lírica',
+        topic: 'Drama Moderno: Casa de muñecas',
+        videoTitle: 'Análisis: La Canción del Pirata',
         videoLink: 'https://www.youtube.com/watch?v=xtOya7BLCiY',
-        readingTitle: 'Casa de muÃ±ecas (Resumen y AnÃ¡lisis)',
-        readingContent: `La obra comienza en la calidez de un hogar burguÃ©s noruego a finales del siglo XIX, durante los preparativos para la celebraciÃ³n de la Navidad. El ambiente inicial destila una aparente felicidad y estabilidad financiera, marcada por el reciente ascenso de Torvald Helmer a la direcciÃ³n de un banco. Nora Helmer, su esposa, entra en escena cargada de paquetes y dulces, personificando la imagen de la mujer ideal de la Ã©poca: alegre, despreocupada y dedicada al consumo y al embellecimiento del hogar. Desde los primeros diÃ¡logos, se establece una dinÃ¡mica de poder desigual y paternalista; Torvald se dirige a Nora con apodos condescendientes como "alondra", "ardillita" o "pajarito", tratÃ¡ndola mÃ¡s como a una mascota o una posesiÃ³n preciada que como a una compaÃ±era intelectual. Nora acepta este papel con una mezcla de coqueterÃ­a y sumisiÃ³n, reforzando la idea de que su Ãºnica funciÃ³n es ser una fuente de entretenimiento y alegrÃ­a para su marido, una figura decorativa en lo que parece ser una vida perfecta.
+        readingTitle: 'Casa de muñecas (Resumen y Análisis)',
+        readingContent: `La obra comienza en la calidez de un hogar burgués noruego a finales del siglo XIX, durante los preparativos para la celebración de la Navidad. El ambiente inicial destila una aparente felicidad y estabilidad financiera, marcada por el reciente ascenso de Torvald Helmer a la dirección de un banco. Nora Helmer, su esposa, entra en escena cargada de paquetes y dulces, personificando la imagen de la mujer ideal de la época: alegre, despreocupada y dedicada al consumo y al embellecimiento del hogar. Desde los primeros diálogos, se establece una dinámica de poder desigual y paternalista; Torvald se dirige a Nora con apodos condescendientes como "alondra", "ardillita" o "pajarito", tratándola más como a una mascota o una posesión preciada que como a una compañera intelectual. Nora acepta este papel con una mezcla de coquetería y sumisión, reforzando la idea de que su única función es ser una fuente de entretenimiento y alegría para su marido, una figura decorativa en lo que parece ser una vida perfecta.
 
-Sin embargo, tras esta fachada de ligereza, Nora oculta un secreto que ha guardado con celo durante aÃ±os y que constituye el motor de la tragedia. AÃ±os atrÃ¡s, cuando Torvald cayÃ³ gravemente enfermo y los mÃ©dicos advirtieron que solo un viaje al sur podrÃ­a salvar su vida, Nora se vio en la desesperada necesidad de conseguir una gran suma de dinero. Dado que las leyes y las convenciones sociales de la Ã©poca impedÃ­an que una mujer solicitara un prÃ©stamo sin el consentimiento de su marido o su padre, Nora se vio obligada a actuar en la sombra. FalsificÃ³ la firma de su padre, que acababa de morir, para obtener un crÃ©dito del procurador Nils Krogstad. Desde entonces, Nora ha trabajado en secreto, ahorrando de su gasto domÃ©stico y realizando trabajos de copia manual para pagar las cuotas de la deuda, viendo este acto como una prueba de su amor heroico y sacrificio personal, convencida de que, si Torvald llegara a saberlo, lo verÃ­a como un gesto sublime de devociÃ³n.
+Sin embargo, tras esta fachada de ligereza, Nora oculta un secreto que ha guardado con celo durante años y que constituye el motor de la tragedia. Años atrás, cuando Torvald cayó gravemente enfermo y los médicos advirtieron que solo un viaje al sur podría salvar su vida, Nora se vio en la desesperada necesidad de conseguir una gran suma de dinero. Dado que las leyes y las convenciones sociales de la época impedían que una mujer solicitara un préstamo sin el consentimiento de su marido o su padre, Nora se vio obligada a actuar en la sombra. Falsificó la firma de su padre, que acababa de morir, para obtener un crédito del procurador Nils Krogstad. Desde entonces, Nora ha trabajado en secreto, ahorrando de su gasto doméstico y realizando trabajos de copia manual para pagar las cuotas de la deuda, viendo este acto como una prueba de su amor heroico y sacrificio personal, convencida de que, si Torvald llegara a saberlo, lo vería como un gesto sublime de devoción.
 
-La trama se complica con la llegada de Kristine Linde, una antigua amiga de Nora que ha enviudado recientemente y busca empleo. A travÃ©s de la conversaciÃ³n con Kristine, Nora revela su secreto, buscando reconocimiento por su valentÃ­a. Sin embargo, la realidad golpea con la apariciÃ³n de Krogstad, quien trabaja en el banco de Torvald y estÃ¡ a punto de ser despedido. Krogstad, consciente de que su reputaciÃ³n social estÃ¡ en juego, visita a Nora para chantajearla: si ella no logra convencer a Torvald de mantenerlo en su puesto, Ã©l revelarÃ¡ el fraude y la falsificaciÃ³n a su marido y a la justicia. Nora intenta interceder por Ã©l, pero Torvald, movido por un rÃ­gido sentido de la moralidad y un profundo desprecio por la falta de integridad de Krogstad, se niega rotundamente, argumentando que la presencia de un hombre deshonesto en el banco contaminarÃ­a el ambiente y la educaciÃ³n de sus propios hijos.
+La trama se complica con la llegada de Kristine Linde, una antigua amiga de Nora que ha enviudado recientemente y busca empleo. A través de la conversación con Kristine, Nora revela su secreto, buscando reconocimiento por su valentía. Sin embargo, la realidad golpea con la aparición de Krogstad, quien trabaja en el banco de Torvald y está a punto de ser despedido. Krogstad, consciente de que su reputación social está en juego, visita a Nora para chantajearla: si ella no logra convencer a Torvald de mantenerlo en su puesto, él revelará el fraude y la falsificación a su marido y a la justicia. Nora intenta interceder por él, pero Torvald, movido por un rígido sentido de la moralidad y un profundo desprecio por la falta de integridad de Krogstad, se niega rotundamente, argumentando que la presencia de un hombre deshonesto en el banco contaminaría el ambiente y la educación de sus propios hijos.
 
-A medida que el chantaje de Krogstad avanza, Nora experimenta un torbellino de angustia y desesperaciÃ³n. Considera diversas salidas, desde pedir dinero al Dr. Rank, un amigo cercano de la familia que estÃ¡ secretamente enamorado de ella y que sufre una enfermedad terminal, hasta el suicidio. Sin embargo, Nora se aferra a la esperanza de lo que ella llama "el milagro": la convicciÃ³n de que, cuando Torvald descubra la verdad, asumirÃ¡ toda la responsabilidad, se sacrificarÃ¡ por ella y la protegerÃ¡ frente al mundo, demostrando que su amor es tan grande como el de ella. Esta fe ciega en la nobleza de su marido es lo que la sostiene mientras ensaya frenÃ©ticamente la tarantela, un baile que simboliza su agitaciÃ³n interna y su lucha por mantener el control mientras el mundo que ha construido se desmorona bajo sus pies.
+A medida que el chantaje de Krogstad avanza, Nora experimenta un torbellino de angustia y desesperación. Considera diversas salidas, desde pedir dinero al Dr. Rank, un amigo cercano de la familia que está secretamente enamorado de ella y que sufre una enfermedad terminal, hasta el suicidio. Sin embargo, Nora se aferra a la esperanza de lo que ella llama "el milagro": la convicción de que, cuando Torvald descubra la verdad, asumirá toda la responsabilidad, se sacrificará por ella y la protegerá frente al mundo, demostrando que su amor es tan grande como el de ella. Esta fe ciega en la nobleza de su marido es lo que la sostiene mientras ensaya frenéticamente la tarantela, un baile que simboliza su agitación interna y su lucha por mantener el control mientras el mundo que ha construido se desmorona bajo sus pies.
 
-La tensiÃ³n alcanza su punto mÃ¡ximo durante la fiesta de disfraces en el piso superior. Tras el baile, Krogstad deja una carta detallando todo el asunto en el buzÃ³n cerrado de Torvald. Kristine Linde, quien tuvo una relaciÃ³n sentimental con Krogstad en el pasado, intenta interceder, logrando que el chantajista se arrepienta y decida devolver el documento de la deuda. Sin embargo, Kristine decide que es necesario que los Helmer se enfrenten a la verdad para que su matrimonio deje de ser una mentira. Cuando Torvald finalmente lee la carta, la reacciÃ³n no es el "milagro" que Nora esperaba. En lugar de protegerla, Torvald estalla en una furia egoÃ­sta y violenta. La acusa de criminal, de mentirosa y de haber destruido su reputaciÃ³n y su futuro. Le prohÃ­be educar a sus hijos, considerÃ¡ndola una presencia corruptora, y declara que su matrimonio ha terminado, aunque deben mantener las apariencias externas para salvar el prestigio social. En este momento, la venda cae de los ojos de Nora: comprende que el hombre con el que ha vivido ocho aÃ±os y con el que ha tenido tres hijos es un extraÃ±o que no la ama, sino que ama la imagen de ella que Ã©l ha creado.
+La tensión alcanza su punto máximo durante la fiesta de disfraces en el piso superior. Tras el baile, Krogstad deja una carta detallando todo el asunto en el buzón cerrado de Torvald. Kristine Linde, quien tuvo una relación sentimental con Krogstad en el pasado, intenta interceder, logrando que el chantajista se arrepienta y decida devolver el documento de la deuda. Sin embargo, Kristine decide que es necesario que los Helmer se enfrenten a la verdad para que su matrimonio deje de ser una mentira. Cuando Torvald finalmente lee la carta, la reacción no es el "milagro" que Nora esperaba. En lugar de protegerla, Torvald estalla en una furia egoísta y violenta. La acusa de criminal, de mentirosa y de haber destruido su reputación y su futuro. Le prohíbe educar a sus hijos, considerándola una presencia corruptora, y declara que su matrimonio ha terminado, aunque deben mantener las apariencias externas para salvar el prestigio social. En este momento, la venda cae de los ojos de Nora: comprende que el hombre con el que ha vivido ocho años y con el que ha tenido tres hijos es un extraño que no la ama, sino que ama la imagen de ella que él ha creado.
 
-El giro final de la obra ocurre cuando llega una segunda carta de Krogstad devolviendo el documento de la deuda. Al ver que el peligro ha pasado, la actitud de Torvald cambia instantÃ¡neamente. Recupera su tono paternal y "perdona" a Nora, atribuyendo sus actos a su "debilidad femenina" y expresando su deseo de volver a la normalidad de su "casa de muÃ±ecas". Pero Nora ya no es la misma. Se quita su disfraz de fiesta y, por primera vez en su vida, se sienta a hablar seriamente con su marido. Nora analiza su existencia y llega a la conclusiÃ³n de que siempre ha sido tratada como un objeto: primero por su padre, quien la llamaba su "muÃ±eca", y luego por Torvald, quien la ha mantenido en una minorÃ­a de edad perpetua. Se da cuenta de que ha pasado de manos de uno a otro sin haber desarrollado nunca una identidad propia, y que sus supuestos deberes hacia su esposo y sus hijos son secundarios frente a su deber mÃ¡s sagrado: el deber hacia sÃ­ misma.
+El giro final de la obra ocurre cuando llega una segunda carta de Krogstad devolviendo el documento de la deuda. Al ver que el peligro ha pasado, la actitud de Torvald cambia instantáneamente. Recupera su tono paternal y "perdona" a Nora, atribuyendo sus actos a su "debilidad femenina" y expresando su deseo de volver a la normalidad de su "casa de muñecas". Pero Nora ya no es la misma. Se quita su disfraz de fiesta y, por primera vez en su vida, se sienta a hablar seriamente con su marido. Nora analiza su existencia y llega a la conclusión de que siempre ha sido tratada como un objeto: primero por su padre, quien la llamaba su "muñeca", y luego por Torvald, quien la ha mantenido en una minoría de edad perpetua. Se da cuenta de que ha pasado de manos de uno a otro sin haber desarrollado nunca una identidad propia, y que sus supuestos deberes hacia su esposo y sus hijos son secundarios frente a su deber más sagrado: el deber hacia sí misma.
 
-Nora decide abandonar el hogar, a su marido y a sus hijos, comprendiendo que no estÃ¡ capacitada para educarlos si antes no se educa a sÃ­ misma y descubre quiÃ©n es en realidad. Torvald, desesperado, apela a la religiÃ³n, a la moral y a la ley, pero Nora rebate cada argumento con una lÃ³gica aplastante basada en su experiencia personal. Ella declara que no puede creer en lo que dicen los libros si su corazÃ³n y su razÃ³n le dicen algo distinto. La obra termina con una de las escenas mÃ¡s famosas de la historia del teatro: Nora sale de la casa y cierra la puerta tras de sÃ­ con un golpe seco, un sonido que resonÃ³ en toda Europa como el inicio de una nueva era para los derechos y la autonomÃ­a de la mujer. Nora deja atrÃ¡s la seguridad de la "casa de muÃ±ecas" para enfrentarse a un mundo incierto, pero libre, dejando a un Torvald devastado que solo puede quedarse preguntÃ¡ndose si algÃºn dÃ­a ocurrirÃ¡ "el milagro mÃ¡s grande": que ambos cambien tanto que su convivencia pueda convertirse en un verdadero matrimonio.`
+Nora decide abandonar el hogar, a su marido y a sus hijos, comprendiendo que no está capacitada para educarlos si antes no se educa a sí misma y descubre quién es en realidad. Torvald, desesperado, apela a la religión, a la moral y a la ley, pero Nora rebate cada argumento con una lógica aplastante basada en su experiencia personal. Ella declara que no puede creer en lo que dicen los libros si su corazón y su razón le dicen algo distinto. La obra termina con una de las escenas más famosas de la historia del teatro: Nora sale de la casa y cierra la puerta tras de sí con un golpe seco, un sonido que resonó en toda Europa como el inicio de una nueva era para los derechos y la autonomía de la mujer. Nora deja atrás la seguridad de la "casa de muñecas" para enfrentarse a un mundo incierto, pero libre, dejando a un Torvald devastado que solo puede quedarse preguntándose si algún día ocurrirá "el milagro más grande": que ambos cambien tanto que su convivencia pueda convertirse en un verdadero matrimonio.`
     },
     {
         session: 8,
-        unit: 'LÃ­rica',
+        unit: 'Lírica',
         topic: 'Tragedia Rural: Bodas de sangre',
         videoTitle: 'Repaso General PAES Lectura',
         videoLink: 'https://www.youtube.com/watch?v=ysWK6sbI4Dw',
-        readingTitle: 'Bodas de sangre (Resumen y AnÃ¡lisis)',
-        readingContent: `La tragedia de Federico GarcÃ­a Lorca comienza en el paisaje Ã¡rido y caluroso de la AndalucÃ­a rural, un entorno donde la tierra, el honor y la sangre dictan las leyes de la existencia. La obra se abre con una conversaciÃ³n cargada de presagios entre la Madre y su hijo, el Novio. Desde los primeros versos, la Madre se presenta como una figura marcada por el dolor y el luto perpetuo; ha perdido a su marido y a otro de sus hijos en una disputa violenta con la familia de los FÃ©lix. Para ella, la vida es una frÃ¡gil tregua que puede romperse con el brillo de una navaja, un objeto que desprecia y teme por su capacidad de segar la vida de "un hombre que es un sol". El Novio, ajeno a estos temores ancestrales, anuncia su deseo de casarse con una joven que vive en las lejanÃ­as de los secanos. Aunque la Madre acepta con resignaciÃ³n el deseo de su hijo de continuar la estirpe, la sombra de la muerte y el recuerdo de la familia enemiga planean sobre la escena como nubarrones negros.
+        readingTitle: 'Bodas de sangre (Resumen y Análisis)',
+        readingContent: `La tragedia de Federico García Lorca comienza en el paisaje árido y caluroso de la Andalucía rural, un entorno donde la tierra, el honor y la sangre dictan las leyes de la existencia. La obra se abre con una conversación cargada de presagios entre la Madre y su hijo, el Novio. Desde los primeros versos, la Madre se presenta como una figura marcada por el dolor y el luto perpetuo; ha perdido a su marido y a otro de sus hijos en una disputa violenta con la familia de los Félix. Para ella, la vida es una frágil tregua que puede romperse con el brillo de una navaja, un objeto que desprecia y teme por su capacidad de segar la vida de "un hombre que es un sol". El Novio, ajeno a estos temores ancestrales, anuncia su deseo de casarse con una joven que vive en las lejanías de los secanos. Aunque la Madre acepta con resignación el deseo de su hijo de continuar la estirpe, la sombra de la muerte y el recuerdo de la familia enemiga planean sobre la escena como nubarrones negros.
 
-El conflicto se profundiza cuando se revela el pasado de la Novia. A travÃ©s de las conversaciones de la vecindad y el servicio, nos enteramos de que la joven mantuvo hace aÃ±os una relaciÃ³n apasionada con Leonardo, un miembro de la familia FÃ©lix. Leonardo es el Ãºnico personaje de la obra que posee un nombre propio, lo que subraya su individualidad rebelde y su papel como motor de la tragedia. Actualmente, Leonardo estÃ¡ casado con la prima de la Novia y tiene un hijo, pero su fuego interno no se ha apagado. Lo vemos aparecer en escenas cargadas de tensiÃ³n, llegando a la casa de la Novia en su caballo, que corre hasta reventar, simbolizando una pasiÃ³n desbocada que no puede ser contenida por las convenciones sociales ni por los lazos del matrimonio. El caballo de Leonardo es un sÃ­mbolo lorquiano del deseo sexual y la fuerza instintiva que arrastra a los personajes hacia su destino.
+El conflicto se profundiza cuando se revela el pasado de la Novia. A través de las conversaciones de la vecindad y el servicio, nos enteramos de que la joven mantuvo hace años una relación apasionada con Leonardo, un miembro de la familia Félix. Leonardo es el único personaje de la obra que posee un nombre propio, lo que subraya su individualidad rebelde y su papel como motor de la tragedia. Actualmente, Leonardo está casado con la prima de la Novia y tiene un hijo, pero su fuego interno no se ha apagado. Lo vemos aparecer en escenas cargadas de tensión, llegando a la casa de la Novia en su caballo, que corre hasta reventar, simbolizando una pasión desbocada que no puede ser contenida por las convenciones sociales ni por los lazos del matrimonio. El caballo de Leonardo es un símbolo lorquiano del deseo sexual y la fuerza instintiva que arrastra a los personajes hacia su destino.
 
-La trama avanza hacia el dÃ­a de la boda, un evento que deberÃ­a ser de alegrÃ­a pero que estÃ¡ impregnado de una atmÃ³sfera asfixiante. La Novia se debate en una lucha interna desgarradora: por un lado, desea la estabilidad y el honor que le ofrece el Novio, un hombre bueno y trabajador; por otro lado, se siente irremediablemente atraÃ­da por la fuerza oscura y salvaje de Leonardo. En la maÃ±ana de la ceremonia, Leonardo visita a la Novia en su alcoba mientras ella se prepara, y en un diÃ¡logo lleno de reproches y deseo contenido, ambos reconocen que el fuego que los une sigue vivo a pesar de los aÃ±os y de la sangre derramada entre sus familias. La Novia intenta resistir, afirmando que se casarÃ¡ para encerrarse "con su marido" y levantar un muro contra el pasado, pero sus palabras carecen de la fuerza necesaria para convencerse a sÃ­ misma.
+La trama avanza hacia el día de la boda, un evento que debería ser de alegría pero que está impregnado de una atmósfera asfixiante. La Novia se debate en una lucha interna desgarradora: por un lado, desea la estabilidad y el honor que le ofrece el Novio, un hombre bueno y trabajador; por otro lado, se siente irremediablemente atraída por la fuerza oscura y salvaje de Leonardo. En la mañana de la ceremonia, Leonardo visita a la Novia en su alcoba mientras ella se prepara, y en un diálogo lleno de reproches y deseo contenido, ambos reconocen que el fuego que los une sigue vivo a pesar de los años y de la sangre derramada entre sus familias. La Novia intenta resistir, afirmando que se casará para encerrarse "con su marido" y levantar un muro contra el pasado, pero sus palabras carecen de la fuerza necesaria para convencerse a sí misma.
 
-La boda se celebra con toda la pompa rural, entre cantos de azahar y bailes, pero la tensiÃ³n es palpable. Tras la ceremonia, mientras los invitados festejan, la tragedia estalla: la Novia y Leonardo huyen juntos a lomos del caballo, escapando hacia el bosque. Este acto de rebeliÃ³n mÃ¡xima rompe todas las leyes de la honra y desata la furia de las dos familias. La Madre, al enterarse de la fuga y de que el hombre involucrado es un FÃ©lix, instiga a su hijo a la persecuciÃ³n, transformando su miedo inicial en una sed de justicia y sangre. "Ha llegado otra vez la hora de la sangre", exclama, marcando el inicio de una cacerÃ­a humana en la que el Novio debe defender su honor y el de su linaje en una tierra que no perdona la traiciÃ³n.
+La boda se celebra con toda la pompa rural, entre cantos de azahar y bailes, pero la tensión es palpable. Tras la ceremonia, mientras los invitados festejan, la tragedia estalla: la Novia y Leonardo huyen juntos a lomos del caballo, escapando hacia el bosque. Este acto de rebelión máxima rompe todas las leyes de la honra y desata la furia de las dos familias. La Madre, al enterarse de la fuga y de que el hombre involucrado es un Félix, instiga a su hijo a la persecución, transformando su miedo inicial en una sed de justicia y sangre. "Ha llegado otra vez la hora de la sangre", exclama, marcando el inicio de una cacería humana en la que el Novio debe defender su honor y el de su linaje en una tierra que no perdona la traición.
 
-El tercer acto de la obra se traslada a un bosque nocturno y mÃ¡gico, donde Lorca abandona el realismo para introducir elementos simbÃ³licos y poÃ©ticos. Aparecen los LeÃ±adores, que actÃºan como un coro griego comentando el destino de los fugitivos, y dos figuras sobrenaturales: la Luna y la Mendiga (que representa a la Muerte). La Luna, personificada como un joven leÃ±ador de cara blanca, anhela sangre para calentar su luz frÃ­a y se convierte en cÃ³mplice de la tragedia al iluminar el camino de los perseguidores. La Mendiga, por su parte, guÃ­a al Novio hacia su rival, asegurÃ¡ndose de que el encuentro sea fatal. En este bosque, el tiempo parece detenerse y la pasiÃ³n de Leonardo y la Novia alcanza su cÃ©nit lÃ­rico; ambos saben que su amor es una condena a muerte, pero aceptan su destino con una entrega absoluta, afirmando que "la culpa es de la tierra" y de la fuerza de la sangre que corre por sus venas.
+El tercer acto de la obra se traslada a un bosque nocturno y mágico, donde Lorca abandona el realismo para introducir elementos simbólicos y poéticos. Aparecen los Leñadores, que actúan como un coro griego comentando el destino de los fugitivos, y dos figuras sobrenaturales: la Luna y la Mendiga (que representa a la Muerte). La Luna, personificada como un joven leñador de cara blanca, anhela sangre para calentar su luz fría y se convierte en cómplice de la tragedia al iluminar el camino de los perseguidores. La Mendiga, por su parte, guía al Novio hacia su rival, asegurándose de que el encuentro sea fatal. En este bosque, el tiempo parece detenerse y la pasión de Leonardo y la Novia alcanza su cénit lírico; ambos saben que su amor es una condena a muerte, pero aceptan su destino con una entrega absoluta, afirmando que "la culpa es de la tierra" y de la fuerza de la sangre que corre por sus venas.
 
-El clÃ­max ocurre fuera de escena, pero su impacto es devastador. Leonardo y el Novio se encuentran y se dan muerte mutuamente con navajas, cumpliendo el temor inicial de la Madre. La obra termina con un cuadro de dolor universal. La Novia regresa a la casa de la Madre, con el vestido blanco manchado de sangre y el alma destrozada, pidiendo ser sacrificada para demostrar que, aunque huyÃ³, su cuerpo sigue siendo "puro" porque fue arrastrada por una fuerza superior a su voluntad. La Madre, sin embargo, ya no tiene espacio para el odio o el perdÃ³n; se queda sola en su casa, rodeada de las mujeres de luto, aceptando que ya no tiene hijos que perder y que su Ãºnica compaÃ±Ã­a serÃ¡ el recuerdo de "ese pequeÃ±o cuchillo que apenas cabe en la mano, pero que penetra frÃ­o por las carnes asombradas". Bodas de sangre concluye asÃ­ como una reflexiÃ³n sobre el ciclo inevitable de la violencia, la imposibilidad de escapar al destino y la fuerza de una pasiÃ³n que, como un rÃ­o de sangre, termina por desbordar y destruir todo a su paso.`
+El clímax ocurre fuera de escena, pero su impacto es devastador. Leonardo y el Novio se encuentran y se dan muerte mutuamente con navajas, cumpliendo el temor inicial de la Madre. La obra termina con un cuadro de dolor universal. La Novia regresa a la casa de la Madre, con el vestido blanco manchado de sangre y el alma destrozada, pidiendo ser sacrificada para demostrar que, aunque huyó, su cuerpo sigue siendo "puro" porque fue arrastrada por una fuerza superior a su voluntad. La Madre, sin embargo, ya no tiene espacio para el odio o el perdón; se queda sola en su casa, rodeada de las mujeres de luto, aceptando que ya no tiene hijos que perder y que su única compañía será el recuerdo de "ese pequeño cuchillo que apenas cabe en la mano, pero que penetra frío por las carnes asombradas". Bodas de sangre concluye así como una reflexión sobre el ciclo inevitable de la violencia, la imposibilidad de escapar al destino y la fuerza de una pasión que, como un río de sangre, termina por desbordar y destruir todo a su paso.`
     },
     {
         session: 9,
         unit: 'Narrativa',
-        topic: 'Narrativa ContemporÃ¡nea: El curioso incidente...',
+        topic: 'Narrativa Contemporánea: El curioso incidente...',
         videoTitle: 'El texto argumentativo',
         videoLink: 'https://www.youtube.com/watch?v=5bZ42hoiYh8',
-        readingTitle: 'El curioso incidente del perro a medianoche (Resumen y AnÃ¡lisis)',
-        readingContent: `La historia comienza en una calle tranquila de Swindon, Inglaterra, durante una medianoche que cambiarÃ­a para siempre la percepciÃ³n del mundo de Christopher John Francis Boone. Christopher es un joven de quince aÃ±os con una mente prodigiosa para las matemÃ¡ticas y la lÃ³gica, pero que experimenta el mundo de una manera radicalmente distinta a la mayorÃ­a de las personas debido a un trastorno del espectro autista, probablemente sÃ­ndrome de Asperger, aunque nunca se menciona explÃ­citamente en el texto. Para Christopher, el mundo es un caos de estÃ­mulos sensoriales que debe ser ordenado meticulosamente a travÃ©s de reglas, nÃºmeros primos y hechos comprobables. Esa noche, Christopher descubre el cadÃ¡ver de Wellington, el caniche de su vecina la seÃ±ora Shears, atravesado por una horca de jardÃ­n en medio del cÃ©sped. Este evento, que para otros podrÃ­a ser un incidente lamentable pero menor, se convierte para Christopher en el punto de partida de un enigma que debe resolver, decidiendo escribir un libro sobre su investigaciÃ³n, al estilo de sus admiradas historias de Sherlock Holmes.
+        readingTitle: 'El curioso incidente del perro a medianoche (Resumen y Análisis)',
+        readingContent: `La historia comienza en una calle tranquila de Swindon, Inglaterra, durante una medianoche que cambiaría para siempre la percepción del mundo de Christopher John Francis Boone. Christopher es un joven de quince años con una mente prodigiosa para las matemáticas y la lógica, pero que experimenta el mundo de una manera radicalmente distinta a la mayoría de las personas debido a un trastorno del espectro autista, probablemente síndrome de Asperger, aunque nunca se menciona explícitamente en el texto. Para Christopher, el mundo es un caos de estímulos sensoriales que debe ser ordenado meticulosamente a través de reglas, números primos y hechos comprobables. Esa noche, Christopher descubre el cadáver de Wellington, el caniche de su vecina la señora Shears, atravesado por una horca de jardín en medio del césped. Este evento, que para otros podría ser un incidente lamentable pero menor, se convierte para Christopher en el punto de partida de un enigma que debe resolver, decidiendo escribir un libro sobre su investigación, al estilo de sus admiradas historias de Sherlock Holmes.
 
-La vida de Christopher estÃ¡ regida por una estructura rÃ­gida diseÃ±ada para protegerlo del abrumador ruido del mundo exterior. No soporta que lo toquen, no comprende las metÃ¡foras Ã³Ã‚Âporque las considera mentirasÃ³Ã‚Â y juzga la calidad de su dÃ­a basÃ¡ndose en el color de los coches que ve desde el autobÃºs escolar: cuatro coches rojos seguidos significan un "Buen DÃ­a", mientras que cuatro coches amarillos presagian un "DÃ­a Negro" en el que no hablarÃ¡ con nadie. Su principal apoyo es Siobhan, su tutora en la escuela, quien le enseÃ±a a descifrar las complejas emociones humanas a travÃ©s de dibujos de caras y le anima a seguir escribiendo su crÃ³nica detectivesca. Sin embargo, su padre, Ed Boone, reacciona con una furia desproporcionada y angustiante cuando descubre que su hijo estÃ¡ haciendo preguntas sobre la muerte del perro, prohibiÃ©ndole terminantemente continuar con su investigaciÃ³n y exigiÃ©ndole que deje de meter las narices en los asuntos de los vecinos.
+La vida de Christopher está regida por una estructura rígida diseñada para protegerlo del abrumador ruido del mundo exterior. No soporta que lo toquen, no comprende las metáforas óporque las considera mentirasó y juzga la calidad de su día basándose en el color de los coches que ve desde el autobús escolar: cuatro coches rojos seguidos significan un "Buen Día", mientras que cuatro coches amarillos presagian un "Día Negro" en el que no hablará con nadie. Su principal apoyo es Siobhan, su tutora en la escuela, quien le enseña a descifrar las complejas emociones humanas a través de dibujos de caras y le anima a seguir escribiendo su crónica detectivesca. Sin embargo, su padre, Ed Boone, reacciona con una furia desproporcionada y angustiante cuando descubre que su hijo está haciendo preguntas sobre la muerte del perro, prohibiéndole terminantemente continuar con su investigación y exigiéndole que deje de meter las narices en los asuntos de los vecinos.
 
-A pesar de la prohibiciÃ³n de su padre, la curiosidad lÃ³gica de Christopher lo lleva a desobedecer. Durante sus pesquisas, descubre verdades que los adultos a su alrededor han intentado ocultar bajo capas de silencio y engaÃ±o. La mÃ¡s devastadora de estas verdades se revela cuando Christopher, buscando su libro de notas que su padre le habÃ­a confiscado, encuentra una caja con cartas escondidas en el armario de Ed. Al leerlas, su mundo lÃ³gico se colapsa: las cartas estÃ¡n escritas por su madre, Judy, y tienen fechas posteriores al momento en que su padre le dijo que ella habÃ­a muerto de un ataque al corazÃ³n en el hospital. Christopher descubre que su madre no estÃ¡ muerta, sino que vive en Londres con el seÃ±or Shears, el exmarido de su vecina. La revelaciÃ³n de que su padre le ha mentido durante aÃ±os sobre el hecho mÃ¡s fundamental de su vida rompe el Ãºnico vÃ­nculo de confianza que Christopher poseÃ­a, llevÃ¡ndolo a un estado de pÃ¡nico y parÃ¡lisis emocional.
+A pesar de la prohibición de su padre, la curiosidad lógica de Christopher lo lleva a desobedecer. Durante sus pesquisas, descubre verdades que los adultos a su alrededor han intentado ocultar bajo capas de silencio y engaño. La más devastadora de estas verdades se revela cuando Christopher, buscando su libro de notas que su padre le había confiscado, encuentra una caja con cartas escondidas en el armario de Ed. Al leerlas, su mundo lógico se colapsa: las cartas están escritas por su madre, Judy, y tienen fechas posteriores al momento en que su padre le dijo que ella había muerto de un ataque al corazón en el hospital. Christopher descubre que su madre no está muerta, sino que vive en Londres con el señor Shears, el exmarido de su vecina. La revelación de que su padre le ha mentido durante años sobre el hecho más fundamental de su vida rompe el único vínculo de confianza que Christopher poseía, llevándolo a un estado de pánico y parálisis emocional.
 
-La situaciÃ³n alcanza un punto de no retorno cuando Ed, en un intento desesperado de reconciliaciÃ³n y honestidad tras ser descubierto, confiesa a Christopher que fue Ã©l quien matÃ³ a Wellington. La confesiÃ³n de su padre no es recibida como un acto de redenciÃ³n, sino como una amenaza mortal para Christopher. En su lÃ³gica binaria, si su padre es capaz de matar a un perro, tambiÃ©n es capaz de matarlo a Ã©l porque Ã©l tambiÃ©n es un ser vivo que puede ser impredecible. Aterrorizado y sintiÃ©ndose inseguro en su propio hogar, Christopher toma una decisiÃ³n que desafÃ­a todas sus limitaciones: viajar solo a Londres para encontrar a su madre. Este viaje representa una odisea Ã©pica para alguien que nunca ha ido mÃ¡s allÃ¡ de su propia calle sin compaÃ±Ã­a y que se desorienta en lugares desconocidos y ruidosos.
+La situación alcanza un punto de no retorno cuando Ed, en un intento desesperado de reconciliación y honestidad tras ser descubierto, confiesa a Christopher que fue él quien mató a Wellington. La confesión de su padre no es recibida como un acto de redención, sino como una amenaza mortal para Christopher. En su lógica binaria, si su padre es capaz de matar a un perro, también es capaz de matarlo a él porque él también es un ser vivo que puede ser impredecible. Aterrorizado y sintiéndose inseguro en su propio hogar, Christopher toma una decisión que desafía todas sus limitaciones: viajar solo a Londres para encontrar a su madre. Este viaje representa una odisea épica para alguien que nunca ha ido más allá de su propia calle sin compañía y que se desorienta en lugares desconocidos y ruidosos.
 
-El viaje a Londres es una de las partes mÃ¡s intensas y detalladas de la narraciÃ³n. Christopher debe enfrentarse a la estaciÃ³n de tren, un lugar que describe como un ataque masivo a sus sentidos, donde los anuncios, la multitud y el movimiento constante lo obligan a sentarse en el suelo y taparse los oÃ­dos para no "explotar". A travÃ©s de un esfuerzo intelectual sobrehumano, utiliza sus conocimientos de matemÃ¡ticas y su capacidad para crear mapas mentales para navegar por el metro de Londres, enfrentÃ¡ndose a la policÃ­a y al agotamiento. Esta parte de la historia permite al lector experimentar la angustia y la valentÃ­a silenciosa de Christopher, quien a pesar de su terror paralizante, sigue adelante porque su lÃ³gica le dice que es la Ãºnica forma de sobrevivir.
+El viaje a Londres es una de las partes más intensas y detalladas de la narración. Christopher debe enfrentarse a la estación de tren, un lugar que describe como un ataque masivo a sus sentidos, donde los anuncios, la multitud y el movimiento constante lo obligan a sentarse en el suelo y taparse los oídos para no "explotar". A través de un esfuerzo intelectual sobrehumano, utiliza sus conocimientos de matemáticas y su capacidad para crear mapas mentales para navegar por el metro de Londres, enfrentándose a la policía y al agotamiento. Esta parte de la historia permite al lector experimentar la angustia y la valentía silenciosa de Christopher, quien a pesar de su terror paralizante, sigue adelante porque su lógica le dice que es la única forma de sobrevivir.
 
-Al llegar finalmente al apartamento de su madre, el encuentro provoca un caos emocional en la vida de Judy y del seÃ±or Shears. Judy, que se sentÃ­a incapaz de cuidar a Christopher aÃ±os atrÃ¡s debido a sus propias crisis de ansiedad y a la dificultad de manejar el comportamiento de su hijo, se ve inundada por la culpa y el amor. El regreso de Christopher a su vida fuerza la ruptura de su relaciÃ³n con el seÃ±or Shears y la obliga a regresar a Swindon para asegurar el bienestar de su hijo. La tensiÃ³n entre Ed y Judy es constante y dolorosa, reflejando el impacto que tiene en una pareja la crianza de un niÃ±o con necesidades especiales cuando no existe la comunicaciÃ³n adecuada.
+Al llegar finalmente al apartamento de su madre, el encuentro provoca un caos emocional en la vida de Judy y del señor Shears. Judy, que se sentía incapaz de cuidar a Christopher años atrás debido a sus propias crisis de ansiedad y a la dificultad de manejar el comportamiento de su hijo, se ve inundada por la culpa y el amor. El regreso de Christopher a su vida fuerza la ruptura de su relación con el señor Shears y la obliga a regresar a Swindon para asegurar el bienestar de su hijo. La tensión entre Ed y Judy es constante y dolorosa, reflejando el impacto que tiene en una pareja la crianza de un niño con necesidades especiales cuando no existe la comunicación adecuada.
 
-El final de la obra muestra a un Christopher que ha crecido internamente a travÃ©s del trauma. A pesar de la inestabilidad que lo rodea, logra cumplir uno de sus mayores sueÃ±os: presentarse al examen de Bachillerato de MatemÃ¡ticas de Nivel A, obteniendo la calificaciÃ³n mÃ¡xima. Este logro acadÃ©mico es para Ã©l la prueba de que puede hacer cualquier cosa, incluso vivir solo y convertirse en un cientÃ­fico. Su padre, Ed, intenta recuperar su confianza poco a poco, regalÃ¡ndole un cachorro de Golden Retriever llamado Sandy para reemplazar la pÃ©rdida de Wellington y demostrando su compromiso de no volver a mentirle. Aunque la relaciÃ³n familiar no se repara de forma mÃ¡gica y el futuro de Christopher sigue presentando desafÃ­os significativos, la novela termina con una nota de esperanza basada en la autonomÃ­a. Christopher ha resuelto el misterio, ha sobrevivido a un viaje aterrador y ha descubierto la verdad sobre su familia, concluyendo que su mente Ãºnica, lejos de ser una limitaciÃ³n, es la herramienta que le permitirÃ¡ conquistar su propio destino.`
+El final de la obra muestra a un Christopher que ha crecido internamente a través del trauma. A pesar de la inestabilidad que lo rodea, logra cumplir uno de sus mayores sueños: presentarse al examen de Bachillerato de Matemáticas de Nivel A, obteniendo la calificación máxima. Este logro académico es para él la prueba de que puede hacer cualquier cosa, incluso vivir solo y convertirse en un científico. Su padre, Ed, intenta recuperar su confianza poco a poco, regalándole un cachorro de Golden Retriever llamado Sandy para reemplazar la pérdida de Wellington y demostrando su compromiso de no volver a mentirle. Aunque la relación familiar no se repara de forma mágica y el futuro de Christopher sigue presentando desafíos significativos, la novela termina con una nota de esperanza basada en la autonomía. Christopher ha resuelto el misterio, ha sobrevivido a un viaje aterrador y ha descubierto la verdad sobre su familia, concluyendo que su mente única, lejos de ser una limitación, es la herramienta que le permitirá conquistar su propio destino.`
     },
     {
         session: 10,
         unit: 'Narrativa',
-        topic: 'Narrativa/CrÃ³nica: CrÃ³nica de una muerte anunciada',
-        videoTitle: 'Hecho y opiniÃ³n',
+        topic: 'Narrativa/Crónica: Crónica de una muerte anunciada',
+        videoTitle: 'Hecho y opinión',
         videoLink: 'https://www.youtube.com/watch?v=UsiqUeoyIaw',
-        readingTitle: 'CrÃ³nica de una muerte anunciada (Resumen y AnÃ¡lisis)',
-        readingContent: `El dÃ­a en que lo iban a matar, Santiago Nasar se levantÃ³ a las cinco y media de la maÃ±ana para esperar el buque en que llegaba el obispo. HabÃ­a tenido un sueÃ±o confuso sobre Ã¡rboles de higuerÃ³n y una llovizna tierna, un presagio que su madre, PlÃ¡cida Linero, experta en interpretar sueÃ±os ajenos, no alcanzÃ³ a descifrar como una seÃ±al de peligro. Santiago era un joven apuesto, heredero de una fortuna considerable y con un talento natural para el manejo de las armas y la cetrerÃ­a, rasgos que habÃ­a aprendido de su padre Ã¡rabe, Ibrahim Nasar. Aquella maÃ±ana fatÃ­dica, el pueblo entero estaba conmocionado por la visita del obispo, pero bajo esa capa de fervor religioso se gestaba una tragedia de honor que ya era de dominio pÃºblico, menos para el propio Santiago. La fatalidad comenzÃ³ meses atrÃ¡s con la llegada de Bayardo San RomÃ¡n, un hombre de aspecto galante y recursos ilimitados que llegÃ³ al pueblo con el Ãºnico propÃ³sito de casarse. Bayardo eligiÃ³ a Ã­Ã‚Ângela Vicario, la hija menor de una familia de escasos recursos pero de honor rÃ­gido, y tras un cortejo ostentoso que incluyÃ³ la compra de la casa mÃ¡s hermosa del pueblo a un viudo reacio, se celebrÃ³ la boda mÃ¡s grande que la regiÃ³n recordara.
+        readingTitle: 'Crónica de una muerte anunciada (Resumen y Análisis)',
+        readingContent: `El día en que lo iban a matar, Santiago Nasar se levantó a las cinco y media de la mañana para esperar el buque en que llegaba el obispo. Había tenido un sueño confuso sobre árboles de higuerón y una llovizna tierna, un presagio que su madre, Plácida Linero, experta en interpretar sueños ajenos, no alcanzó a descifrar como una señal de peligro. Santiago era un joven apuesto, heredero de una fortuna considerable y con un talento natural para el manejo de las armas y la cetrería, rasgos que había aprendido de su padre árabe, Ibrahim Nasar. Aquella mañana fatídica, el pueblo entero estaba conmocionado por la visita del obispo, pero bajo esa capa de fervor religioso se gestaba una tragedia de honor que ya era de dominio público, menos para el propio Santiago. La fatalidad comenzó meses atrás con la llegada de Bayardo San Román, un hombre de aspecto galante y recursos ilimitados que llegó al pueblo con el único propósito de casarse. Bayardo eligió a Ángela Vicario, la hija menor de una familia de escasos recursos pero de honor rígido, y tras un cortejo ostentoso que incluyó la compra de la casa más hermosa del pueblo a un viudo reacio, se celebró la boda más grande que la región recordara.
 
-Sin embargo, la noche de bodas terminÃ³ en un escÃ¡ndalo que marcarÃ­a el destino de todos. Bayardo San RomÃ¡n descubriÃ³ que Ã­Ã‚Ângela Vicario no era virgen y, siguiendo las leyes del honor de la Ã©poca, la devolviÃ³ a la casa de sus padres en la madrugada. Bajo la presiÃ³n de los golpes de su madre y el interrogatorio desesperado de sus hermanos gemelos, Pedro y Pablo Vicario, Ã­Ã‚Ângela pronunciÃ³ un nombre: Santiago Nasar. Nunca se supo con certeza si Santiago era realmente el responsable, pues Ã­Ã‚Ângela siempre mantuvo su versiÃ³n pero las pruebas circunstanciales sugerÃ­an que podrÃ­a estar protegiendo a alguien a quien realmente amaba. Para los gemelos Vicario, la respuesta fue inmediata y obligatoria segÃºn los cÃ³digos sociales que regÃ­an su mundo: debÃ­an matar a Santiago Nasar para lavar la honra de su hermana. Lo que siguiÃ³ fue una secuencia de eventos absurdos donde la voluntad humana pareciÃ³ disolverse frente a un destino que se negaba a ser evitado.
+Sin embargo, la noche de bodas terminó en un escándalo que marcaría el destino de todos. Bayardo San Román descubrió que Ángela Vicario no era virgen y, siguiendo las leyes del honor de la época, la devolvió a la casa de sus padres en la madrugada. Bajo la presión de los golpes de su madre y el interrogatorio desesperado de sus hermanos gemelos, Pedro y Pablo Vicario, Ángela pronunció un nombre: Santiago Nasar. Nunca se supo con certeza si Santiago era realmente el responsable, pues Ángela siempre mantuvo su versión pero las pruebas circunstanciales sugerían que podría estar protegiendo a alguien a quien realmente amaba. Para los gemelos Vicario, la respuesta fue inmediata y obligatoria según los códigos sociales que regían su mundo: debían matar a Santiago Nasar para lavar la honra de su hermana. Lo que siguió fue una secuencia de eventos absurdos donde la voluntad humana pareció disolverse frente a un destino que se negaba a ser evitado.
 
-Los gemelos Vicario no eran asesinos por naturaleza; eran hombres de paz que se sintieron empujados por el deber. Por esta razÃ³n, hicieron todo lo posible para que alguien los detuviera. Durante horas, anunciaron sus intenciones a voz en cuello en el mercado y en la tienda de leche de Clotilde Armenta. Afilaban sus cuchillos de destazar cerdos a la vista de todos, esperando que la autoridad o algÃºn vecino les impidiera cometer el crimen. El pueblo, sin embargo, reaccionÃ³ con una mezcla de incredulidad, morbo y negligencia. Algunos pensaron que era una bravuconada de borrachos; otros creyeron que Santiago Nasar ya sabÃ­a y estaba protegido, y hubo quienes simplemente consideraron que los asuntos de honor eran privados y no debÃ­an interferir. El coronel LÃ¡zaro Aponte les quitÃ³ los cuchillos una vez, creyendo que con eso bastaba, pero los gemelos regresaron con otros nuevos, reafirmando que su compromiso no era con la muerte, sino con su propia dignidad.
+Los gemelos Vicario no eran asesinos por naturaleza; eran hombres de paz que se sintieron empujados por el deber. Por esta razón, hicieron todo lo posible para que alguien los detuviera. Durante horas, anunciaron sus intenciones a voz en cuello en el mercado y en la tienda de leche de Clotilde Armenta. Afilaban sus cuchillos de destazar cerdos a la vista de todos, esperando que la autoridad o algún vecino les impidiera cometer el crimen. El pueblo, sin embargo, reaccionó con una mezcla de incredulidad, morbo y negligencia. Algunos pensaron que era una bravuconada de borrachos; otros creyeron que Santiago Nasar ya sabía y estaba protegido, y hubo quienes simplemente consideraron que los asuntos de honor eran privados y no debían interferir. El coronel Lázaro Aponte les quitó los cuchillos una vez, creyendo que con eso bastaba, pero los gemelos regresaron con otros nuevos, reafirmando que su compromiso no era con la muerte, sino con su propia dignidad.
 
-A medida que avanzaba la maÃ±ana, la red de advertencias fallidas se volvÃ­a mÃ¡s compleja. Santiago Nasar saliÃ³ de su casa por la puerta principal, la cual solÃ­a estar cerrada pero que ese dÃ­a estaba abierta por la visita del obispo. CaminÃ³ por el pueblo saludando a la gente, ajeno al hecho de que los gemelos lo esperaban frente a la tienda de Clotilde. Hubo mensajes que nunca llegaron, personas que intentaron advertirle pero se cruzaron en el camino equivocado, y puertas que se cerraron en el momento menos oportuno. Incluso su novia, Flora Miguel, despechada por los rumores del escÃ¡ndalo, lo recibiÃ³ con ira en lugar de protegerlo. Cuando Santiago finalmente comprendiÃ³ que lo buscaban para matarlo, entrÃ³ en un estado de confusiÃ³n total, corriendo hacia su casa mientras el pueblo observaba la persecuciÃ³n como si fuera una funciÃ³n de teatro.
+A medida que avanzaba la mañana, la red de advertencias fallidas se volvía más compleja. Santiago Nasar salió de su casa por la puerta principal, la cual solía estar cerrada pero que ese día estaba abierta por la visita del obispo. Caminó por el pueblo saludando a la gente, ajeno al hecho de que los gemelos lo esperaban frente a la tienda de Clotilde. Hubo mensajes que nunca llegaron, personas que intentaron advertirle pero se cruzaron en el camino equivocado, y puertas que se cerraron en el momento menos oportuno. Incluso su novia, Flora Miguel, despechada por los rumores del escándalo, lo recibió con ira en lugar de protegerlo. Cuando Santiago finalmente comprendió que lo buscaban para matarlo, entró en un estado de confusión total, corriendo hacia su casa mientras el pueblo observaba la persecución como si fuera una función de teatro.
 
-El clÃ­max de la tragedia ocurriÃ³ frente a la puerta de su propia casa. Su madre, PlÃ¡cida Linero, creyendo que Santiago ya estaba adentro, cerrÃ³ la puerta principal justo cuando Ã©l intentaba entrar huyendo de los cuchillos de los gemelos. Los hermanos Vicario lo alcanzaron contra la madera de la puerta y lo apuÃ±alaron con una saÃ±a que parecÃ­a dictada por una fuerza externa. Santiago Nasar, con las vÃ­sceras en las manos, logrÃ³ caminar un corto trecho, entrÃ³ por la puerta de la cocina y cayÃ³ muerto en el centro de su hogar. El asesinato no fue solo un acto de los Vicario, sino una ejecuciÃ³n colectiva permitida por la pasividad de una comunidad que aceptaba el sacrificio humano como una forma de mantener el equilibrio moral. La autopsia, realizada de manera rÃºstica por el pÃ¡rroco debido a la ausencia del mÃ©dico, fue un segundo ultraje al cuerpo de Santiago, convirtiendo su cadÃ¡ver en una carnicerÃ­a tÃ©cnica que solo aumentÃ³ el horror de los testigos.
+El clímax de la tragedia ocurrió frente a la puerta de su propia casa. Su madre, Plácida Linero, creyendo que Santiago ya estaba adentro, cerró la puerta principal justo cuando él intentaba entrar huyendo de los cuchillos de los gemelos. Los hermanos Vicario lo alcanzaron contra la madera de la puerta y lo apuñalaron con una saña que parecía dictada por una fuerza externa. Santiago Nasar, con las vísceras en las manos, logró caminar un corto trecho, entró por la puerta de la cocina y cayó muerto en el centro de su hogar. El asesinato no fue solo un acto de los Vicario, sino una ejecución colectiva permitida por la pasividad de una comunidad que aceptaba el sacrificio humano como una forma de mantener el equilibrio moral. La autopsia, realizada de manera rústica por el párroco debido a la ausencia del médico, fue un segundo ultraje al cuerpo de Santiago, convirtiendo su cadáver en una carnicería técnica que solo aumentó el horror de los testigos.
 
-Los aÃ±os siguientes no trajeron paz al pueblo. Los gemelos Vicario fueron absueltos por la justicia bajo el argumento del honor, pero sus vidas quedaron marcadas por el insomnio y la culpa. Bayardo San RomÃ¡n desapareciÃ³ en un estado de postraciÃ³n, convertido en un fantasma de su antigua gloria. Ã­Ã‚Ângela Vicario, exiliada en un pueblo remoto, descubriÃ³ que su amor por Bayardo naciÃ³ precisamente en el momento del rechazo. Durante dÃ©cadas, le escribiÃ³ miles de cartas que Ã©l nunca contestÃ³, hasta que un dÃ­a, ya ancianos, Bayardo regresÃ³ a ella con todas las cartas sin abrir, demostrando que el destino, aunque cruel, tambiÃ©n tiene formas extraÃ±as de cerrar sus ciclos. La crÃ³nica de la muerte de Santiago Nasar quedÃ³ grabada en la memoria colectiva no como un misterio por resolver, sino como la prueba de que, en ocasiones, todos somos cÃ³mplices de las tragedias que vemos venir y que nadie tiene la voluntad suficiente para detener.`
+Los años siguientes no trajeron paz al pueblo. Los gemelos Vicario fueron absueltos por la justicia bajo el argumento del honor, pero sus vidas quedaron marcadas por el insomnio y la culpa. Bayardo San Román desapareció en un estado de postración, convertido en un fantasma de su antigua gloria. Ángela Vicario, exiliada en un pueblo remoto, descubrió que su amor por Bayardo nació precisamente en el momento del rechazo. Durante décadas, le escribió miles de cartas que él nunca contestó, hasta que un día, ya ancianos, Bayardo regresó a ella con todas las cartas sin abrir, demostrando que el destino, aunque cruel, también tiene formas extrañas de cerrar sus ciclos. La crónica de la muerte de Santiago Nasar quedó grabada en la memoria colectiva no como un misterio por resolver, sino como la prueba de que, en ocasiones, todos somos cómplices de las tragedias que vemos venir y que nadie tiene la voluntad suficiente para detener.`
     },
     {
         session: 11,
@@ -382,40 +383,40 @@ Los aÃ±os siguientes no trajeron paz al pueblo. Los gemelos Vicario fueron abs
         videoTitle: 'El narrador y el conflicto',
         videoLink: '',
         readingTitle: 'El gato negro (Edgar Allan Poe)',
-        readingContent: 'Ni espero ni solicito que crean el relato muy salvaje, y sin embargo muy hogareÃ±o, que voy a escribir. EstarÃ­a loco si lo esperase, en un caso donde mis propios sentidos rechazan su propio testimonio. No obstante, no estoy loco, y con toda seguridad no sueÃ±o. Pero maÃ±ana morirÃ©, y hoy quiero aliviar mi alma...',
+        readingContent: 'Ni espero ni solicito que crean el relato muy salvaje, y sin embargo muy hogareño, que voy a escribir. Estaría loco si lo esperase, en un caso donde mis propios sentidos rechazan su propio testimonio. No obstante, no estoy loco, y con toda seguridad no sueño. Pero mañana moriré, y hoy quiero aliviar mi alma...',
         pages: 18,
         examDate: '2026-02-15'
     },
     {
         session: 12,
-        unit: 'LÃ­rica',
-        topic: 'Romanticismo: Gustavo Adolfo BÃ©cquer',
-        videoTitle: 'El lenguaje figurado y los sÃ­mbolos',
+        unit: 'Lírica',
+        topic: 'Romanticismo: Gustavo Adolfo Bécquer',
+        videoTitle: 'El lenguaje figurado y los símbolos',
         videoLink: '',
-        readingTitle: 'Rimas y Leyendas (SelecciÃ³n)',
-        readingContent: 'VolverÃ¡n las oscuras golondrinas/en tu balcÃ³n sus nidos a colgar,/y otra vez con el ala a sus cristales/jugando llamarÃ¡n./Pero aquellas que el vuelo refrenaron/tu hermosura y mi dicha a contemplar,/aquellas que aprendieron nuestros nombres.../Â¡esas... no volverÃ¡n!',
+        readingTitle: 'Rimas y Leyendas (Selección)',
+        readingContent: 'Volverán las oscuras golondrinas/en tu balcón sus nidos a colgar,/y otra vez con el ala a sus cristales/jugando llamarán./Pero aquellas que el vuelo refrenaron/tu hermosura y mi dicha a contemplar,/aquellas que aprendieron nuestros nombres.../¡esas... no volverán!',
         pages: 25,
         examDate: '2026-03-01'
     },
     {
         session: 13,
-        unit: 'ArgumentaciÃ³n',
-        topic: 'Prensa y OpiniÃ³n: Cartas al Director',
-        videoTitle: 'Veracidad y consistencia de la informaciÃ³n',
+        unit: 'Argumentación',
+        topic: 'Prensa y Opinión: Cartas al Director',
+        videoTitle: 'Veracidad y consistencia de la información',
         videoLink: '',
-        readingTitle: 'SelecciÃ³n de Columnas (Libertad y CiudadanÃ­a)',
-        readingContent: 'SeÃ±or Director: La libertad de expresiÃ³n no es un cheque en blanco para la desinformaciÃ³n. En tiempos de crisis, la ciudadanÃ­a requiere certezas, no rumores esparcidos por redes sociales...',
+        readingTitle: 'Selección de Columnas (Libertad y Ciudadanía)',
+        readingContent: 'Señor Director: La libertad de expresión no es un cheque en blanco para la desinformación. En tiempos de crisis, la ciudadanía requiere certezas, no rumores esparcidos por redes sociales...',
         pages: 12,
         examDate: '2026-03-15'
     },
     {
         session: 14,
-        unit: 'DramÃ¡tico',
+        unit: 'Dramático',
         topic: 'Tragedia Griega: Edipo Rey',
         videoTitle: 'Fragmentos de tragedias griegas',
         videoLink: '',
         readingTitle: 'Edipo Rey (Fragmento)',
-        readingContent: 'EDIPO: Â¡Oh hijos, descendencia nueva del antiguo Cadmo! Â¿Por quÃ© estÃ¡is en actitud suplicante ante mis altares, coronados con ramos de olivo? La ciudad estÃ¡ llena de incienso, y a la vez de peanes y de lamentos...',
+        readingContent: 'EDIPO: ¡Oh hijos, descendencia nueva del antiguo Cadmo! ¿Por qué estáis en actitud suplicante ante mis altares, coronados con ramos de olivo? La ciudad está llena de incienso, y a la vez de peanes y de lamentos...',
         pages: 35,
         examDate: '2026-04-01'
     },
@@ -426,41 +427,41 @@ Los aÃ±os siguientes no trajeron paz al pueblo. Los gemelos Vicario fueron abs
         videoTitle: 'Recursos audiovisuales y multimodales',
         videoLink: '',
         readingTitle: 'La identidad latinoamericana (Ensayo)',
-        readingContent: 'Â¿Existe una sola identidad en AmÃ©rica Latina o somos un mosaico de culturas superpuestas? Desde la llegada de los barcos europeos hasta la globalizaciÃ³n digital, nuestra regiÃ³n ha sido un laboratorio de mestizaje...',
+        readingContent: '¿Existe una sola identidad en América Latina o somos un mosaico de culturas superpuestas? Desde la llegada de los barcos europeos hasta la globalización digital, nuestra región ha sido un laboratorio de mestizaje...',
         pages: 20,
         examDate: '2026-04-15'
     },
     { session: 16, unit: 'Repaso', topic: 'Deep Review Semestral', videoTitle: 'Estrategias de Lectura PAES', videoLink: 'https://www.youtube.com/watch?v=D-r_y4b4BO8' },
-    { session: 17, unit: 'Teatro', topic: 'Estructura DramÃ¡tica', videoTitle: 'Estructura interna obra dramÃ¡tica', videoLink: 'https://www.youtube.com/watch?v=Tn4XSVX5Ais' },
-    { session: 18, unit: 'Teatro', topic: 'VisiÃ³n de Mundo (Tragedia)', videoTitle: 'GÃ©nero DramÃ¡tico: Tragedia', videoLink: 'https://www.youtube.com/watch?v=tXWk5TcEAAc' },
-    { session: 19, unit: 'Teatro', topic: 'EvoluciÃ³n de Personajes', videoTitle: 'El lenguaje dramÃ¡tico', videoLink: 'https://www.youtube.com/watch?v=NhHbymnMAR0' },
-    { session: 20, unit: 'Teatro', topic: 'CrÃ­tica de Obra', videoTitle: 'Puesta en Escena y Virtualidad', videoLink: 'https://www.youtube.com/watch?v=_PB3SSNzwCQ' },
-    { session: 21, unit: 'Medios', topic: 'Hecho vs OpiniÃ³n', videoTitle: 'Diferencia Hecho y OpiniÃ³n', videoLink: 'https://www.youtube.com/watch?v=UsiqUeoyIaw' },
-    { session: 22, unit: 'ArgumentaciÃ³n', topic: 'Estructura Argumentativa', videoTitle: 'Texto Argumentativo', videoLink: 'https://www.youtube.com/watch?v=5bZ42hoiYh8' },
-    { session: 23, unit: 'ArgumentaciÃ³n', topic: 'Falacias Argumentativas I', videoTitle: 'Falacias LÃ³gicas', videoLink: 'https://www.youtube.com/watch?v=qY0e9dYp1kM' },
-    { session: 24, unit: 'ArgumentaciÃ³n', topic: 'Falacias Argumentativas II', videoTitle: 'MÃ¡s Falacias', videoLink: 'https://www.youtube.com/watch?v=qY0e9dYp1kM' },
-    { session: 25, unit: 'ArgumentaciÃ³n', topic: 'Debate: TÃ©cnicas y Estructura', videoTitle: 'El Debate', videoLink: 'https://www.youtube.com/watch?v=TxkM_8M_b2U' },
-    { session: 26, unit: 'Medios', topic: 'Lectura CrÃ­tica de Prensa', videoTitle: 'GÃ©neros PeriodÃ­sticos', videoLink: 'https://www.youtube.com/watch?v=6rXJp1a0W2k' },
+    { session: 17, unit: 'Teatro', topic: 'Estructura Dramática', videoTitle: 'Estructura interna obra dramática', videoLink: 'https://www.youtube.com/watch?v=Tn4XSVX5Ais' },
+    { session: 18, unit: 'Teatro', topic: 'Visión de Mundo (Tragedia)', videoTitle: 'Género Dramático: Tragedia', videoLink: 'https://www.youtube.com/watch?v=tXWk5TcEAAc' },
+    { session: 19, unit: 'Teatro', topic: 'Evolución de Personajes', videoTitle: 'El lenguaje dramático', videoLink: 'https://www.youtube.com/watch?v=NhHbymnMAR0' },
+    { session: 20, unit: 'Teatro', topic: 'Crítica de Obra', videoTitle: 'Puesta en Escena y Virtualidad', videoLink: 'https://www.youtube.com/watch?v=_PB3SSNzwCQ' },
+    { session: 21, unit: 'Medios', topic: 'Hecho vs Opinión', videoTitle: 'Diferencia Hecho y Opinión', videoLink: 'https://www.youtube.com/watch?v=UsiqUeoyIaw' },
+    { session: 22, unit: 'Argumentación', topic: 'Estructura Argumentativa', videoTitle: 'Texto Argumentativo', videoLink: 'https://www.youtube.com/watch?v=5bZ42hoiYh8' },
+    { session: 23, unit: 'Argumentación', topic: 'Falacias Argumentativas I', videoTitle: 'Falacias Lógicas', videoLink: 'https://www.youtube.com/watch?v=qY0e9dYp1kM' },
+    { session: 24, unit: 'Argumentación', topic: 'Falacias Argumentativas II', videoTitle: 'Más Falacias', videoLink: 'https://www.youtube.com/watch?v=qY0e9dYp1kM' },
+    { session: 25, unit: 'Argumentación', topic: 'Debate: Técnicas y Estructura', videoTitle: 'El Debate', videoLink: 'https://www.youtube.com/watch?v=TxkM_8M_b2U' },
+    { session: 26, unit: 'Medios', topic: 'Lectura Crítica de Prensa', videoTitle: 'Géneros Periodísticos', videoLink: 'https://www.youtube.com/watch?v=6rXJp1a0W2k' },
     { session: 27, unit: 'Medios', topic: 'Publicidad y Propaganda', videoTitle: 'Publicidad vs Propaganda', videoLink: 'https://www.youtube.com/watch?v=Xw8om9x1i1M' },
-    { session: 28, unit: 'Medios', topic: 'Estereotipos en Medios', videoTitle: 'Estereotipos de GÃ©nero', videoLink: 'https://www.youtube.com/watch?v=3X9z1X1X1X1' },
-    { session: 29, unit: 'Medios', topic: 'Fake News y DesinformaciÃ³n', videoTitle: 'CÃ³mo detectar Fake News', videoLink: 'https://www.youtube.com/watch?v=4X9z1X1X1X1' },
-    { session: 30, unit: 'Escritura', topic: 'Ensayo: La Tesis', videoTitle: 'CÃ³mo escribir una Tesis', videoLink: 'https://www.youtube.com/watch?v=5X9z1X1X1X1' },
+    { session: 28, unit: 'Medios', topic: 'Estereotipos en Medios', videoTitle: 'Estereotipos de Género', videoLink: 'https://www.youtube.com/watch?v=3X9z1X1X1X1' },
+    { session: 29, unit: 'Medios', topic: 'Fake News y Desinformación', videoTitle: 'Cómo detectar Fake News', videoLink: 'https://www.youtube.com/watch?v=4X9z1X1X1X1' },
+    { session: 30, unit: 'Escritura', topic: 'Ensayo: La Tesis', videoTitle: 'Cómo escribir una Tesis', videoLink: 'https://www.youtube.com/watch?v=5X9z1X1X1X1' },
     { session: 31, unit: 'Escritura', topic: 'Ensayo: Argumentos', videoTitle: 'Tipos de Argumentos', videoLink: 'https://www.youtube.com/watch?v=6X9z1X1X1X1' },
-    { session: 32, unit: 'EvaluaciÃ³n', topic: 'EvaluaciÃ³n ArgumentaciÃ³n', videoTitle: 'Repaso ArgumentaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=7X9z1X1X1X1' },
+    { session: 32, unit: 'Evaluación', topic: 'Evaluación Argumentación', videoTitle: 'Repaso Argumentación', videoLink: 'https://www.youtube.com/watch?v=7X9z1X1X1X1' },
     { session: 33, unit: 'Literatura', topic: 'Boom Latinoamericano', videoTitle: 'El Boom Latinoamericano', videoLink: 'https://www.youtube.com/watch?v=8X9z1X1X1X1' },
-    { session: 34, unit: 'Literatura', topic: 'Realismo MÃ¡gico', videoTitle: 'QuÃ© es el Realismo MÃ¡gico', videoLink: 'https://www.youtube.com/watch?v=9X9z1X1X1X1' },
-    { session: 35, unit: 'Literatura', topic: 'Literatura DistÃ³pica', videoTitle: 'DistopÃ­as Literarias', videoLink: 'https://www.youtube.com/watch?v=0X9z1X1X1X1' },
-    { session: 36, unit: 'Literatura', topic: 'Ciencia FicciÃ³n', videoTitle: 'Historia de la Ciencia FicciÃ³n', videoLink: 'https://www.youtube.com/watch?v=1X9z1X1X1X1' },
-    { session: 37, unit: 'Literatura', topic: 'Cine y Literatura', videoTitle: 'Adaptaciones CinematogrÃ¡ficas', videoLink: 'https://www.youtube.com/watch?v=2X9z1X1X1X1' },
+    { session: 34, unit: 'Literatura', topic: 'Realismo Mágico', videoTitle: 'Qué es el Realismo Mágico', videoLink: 'https://www.youtube.com/watch?v=9X9z1X1X1X1' },
+    { session: 35, unit: 'Literatura', topic: 'Literatura Distópica', videoTitle: 'Distopías Literarias', videoLink: 'https://www.youtube.com/watch?v=0X9z1X1X1X1' },
+    { session: 36, unit: 'Literatura', topic: 'Ciencia Ficción', videoTitle: 'Historia de la Ciencia Ficción', videoLink: 'https://www.youtube.com/watch?v=1X9z1X1X1X1' },
+    { session: 37, unit: 'Literatura', topic: 'Cine y Literatura', videoTitle: 'Adaptaciones Cinematográficas', videoLink: 'https://www.youtube.com/watch?v=2X9z1X1X1X1' },
     { session: 38, unit: 'Literatura', topic: 'Intertextualidad Pop', videoTitle: 'Intertextualidad en los Simpson', videoLink: 'https://www.youtube.com/watch?v=3X9z1X1X1X1' },
-    { session: 39, unit: 'PoesÃ­a', topic: 'PoesÃ­a Visual (Parra)', videoTitle: 'Nicanor Parra y AntipoesÃ­a', videoLink: 'https://www.youtube.com/watch?v=4X9z1X1X1X1' },
-    { session: 40, unit: 'Medios', topic: 'Narrativa GrÃ¡fica', videoTitle: 'Lenguaje del CÃ³mic', videoLink: 'https://www.youtube.com/watch?v=5X9z1X1X1X1' },
-    { session: 41, unit: 'Escritura', topic: 'Taller Microcuentos', videoTitle: 'CÃ³mo escribir Microcuentos', videoLink: 'https://www.youtube.com/watch?v=6X9z1X1X1X1' },
-    { session: 42, unit: 'Oralidad', topic: 'Taller de Oratoria', videoTitle: 'TÃ©cnicas de Oratoria', videoLink: 'https://www.youtube.com/watch?v=7X9z1X1X1X1' },
+    { session: 39, unit: 'Poesía', topic: 'Poesía Visual (Parra)', videoTitle: 'Nicanor Parra y Antipoesía', videoLink: 'https://www.youtube.com/watch?v=4X9z1X1X1X1' },
+    { session: 40, unit: 'Medios', topic: 'Narrativa Gráfica', videoTitle: 'Lenguaje del Cómic', videoLink: 'https://www.youtube.com/watch?v=5X9z1X1X1X1' },
+    { session: 41, unit: 'Escritura', topic: 'Taller Microcuentos', videoTitle: 'Cómo escribir Microcuentos', videoLink: 'https://www.youtube.com/watch?v=6X9z1X1X1X1' },
+    { session: 42, unit: 'Oralidad', topic: 'Taller de Oratoria', videoTitle: 'Técnicas de Oratoria', videoLink: 'https://www.youtube.com/watch?v=7X9z1X1X1X1' },
     { session: 43, unit: 'PAES', topic: 'Estrategias Lectura PAES', videoTitle: 'Tips PAES Lectura', videoLink: 'https://www.youtube.com/watch?v=8X9z1X1X1X1' },
     { session: 44, unit: 'PAES', topic: 'Vocabulario Contextual', videoTitle: 'Ejercicios Vocabulario', videoLink: 'https://www.youtube.com/watch?v=9X9z1X1X1X1' },
-    { session: 45, unit: 'PAES', topic: 'Ensayo Final Lectura', videoTitle: 'ResoluciÃ³n Ensayo PAES', videoLink: 'https://www.youtube.com/watch?v=0X9z1X1X1X1' },
-    { session: 46, unit: 'Cierre', topic: 'Cierre AÃ±o Escolar', videoTitle: 'ReflexiÃ³n Final', videoLink: 'https://www.youtube.com/watch?v=1X9z1X1X1X1' }
+    { session: 45, unit: 'PAES', topic: 'Ensayo Final Lectura', videoTitle: 'Resolución Ensayo PAES', videoLink: 'https://www.youtube.com/watch?v=0X9z1X1X1X1' },
+    { session: 46, unit: 'Cierre', topic: 'Cierre Año Escolar', videoTitle: 'Reflexión Final', videoLink: 'https://www.youtube.com/watch?v=1X9z1X1X1X1' }
 ];
 
 // --- COMPONENTS ---
@@ -520,13 +521,7 @@ const repairText = (value = '') => {
 };
 
 const normalizeUiText = (value = '') => {
-    const fixed = repairText(value);
-    return fixed
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^\x20-\x7E]/g, '')
-        .replace(/\s{2,}/g, ' ')
-        .trim();
+    return repairText(value).replace(/\s{2,}/g, ' ').trim();
 };
 const clayInset = 'bg-[#F7F7F7] rounded-2xl border-transparent shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]';
 
@@ -541,42 +536,42 @@ const MATH_SYLLABUS = [
     { session: 8, unit: 'Números', topic: 'Raíces Enésimas', videoTitle: 'Prueba de Transición-Raíces', videoLink: 'https://www.youtube.com/watch?v=xMYFzXcFYns' },
     { session: 9, unit: 'Números', topic: 'Operatoria con Raíces', videoTitle: 'Capsule-Roots', videoLink: 'https://www.youtube.com/watch?v=HwxfKSq0lh8' },
     { session: 10, unit: 'Números', topic: 'Porcentajes', videoTitle: 'PAES M1-Porcentaje', videoLink: 'https://www.youtube.com/watch?v=YJ9l1Ew_rns' },
-    { session: 11, unit: 'Ã­Ã‚Âlgebra', topic: 'Lenguaje Algebraico', videoTitle: 'EXPRESIONES ALGEBRAICAS Clase NÃ­ÃƒÂ¢Ã‚Â¬Ã³aÃƒâ€™Ã³Ã‚Âº3', videoLink: 'https://www.youtube.com/watch?v=lojCGXH4Odk' },
-    { session: 12, unit: 'Ã­Ã‚Âlgebra', topic: 'Cuadrado de Binomio', videoTitle: 'Cuadrado de binomio', videoLink: 'https://www.youtube.com/watch?v=IjL5zOyxs20' },
-    { session: 13, unit: 'Ã­Ã‚Âlgebra', topic: 'Suma por Diferencia', videoTitle: 'Suma por diferencia', videoLink: 'https://www.youtube.com/watch?v=-w_lg-r7pDg' },
-    { session: 14, unit: 'Ã­Ã‚Âlgebra', topic: 'Binomio con TÃ©rmino ComÃºn', videoTitle: 'Clase 6: Ã­Ã‚Âlgebra y funciones', videoLink: 'https://www.youtube.com/watch?v=CvgRtkMJ7ao' },
-    { session: 15, unit: 'Ã­Ã‚Âlgebra', topic: 'FactorizaciÃ³n: Factor ComÃºn', videoTitle: 'FactorizaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=JpYUEEqYxbU' },
-    { session: 16, unit: 'Ã­Ã‚Âlgebra', topic: 'FactorizaciÃ³n de Trinomios', videoTitle: 'Mathematical Factorization Criteria', videoLink: 'https://www.youtube.com/watch?v=pKwJBMHSeAY' },
-    { session: 17, unit: 'Ã­Ã‚Âlgebra', topic: 'Ecuaciones Lineales', videoTitle: 'PAES M1-Ecuaciones lineales', videoLink: 'https://www.youtube.com/watch?v=vnjowqDBGB8' },
-    { session: 18, unit: 'Ã­Ã‚Âlgebra', topic: 'Sistemas Ecuaciones (Intro)', videoTitle: 'Sistemas de ecuaciones (Casos)', videoLink: 'https://www.youtube.com/watch?v=AFKpBTCc6oU' },
-    { session: 19, unit: 'Ã­Ã‚Âlgebra', topic: 'MÃ©todo de SustituciÃ³n', videoTitle: 'Sistemas de ecuaciones-SustituciÃ³n', videoLink: 'https://www.youtube.com/watch?v=aBmuYyKeWaE' },
-    { session: 20, unit: 'Ã­Ã‚Âlgebra', topic: 'MÃ©todo de ReducciÃ³n', videoTitle: 'INTENSIVO SISTEMAS DE ECUACIONES', videoLink: 'https://www.youtube.com/watch?v=J2dRZ2iM3sY' },
-    { session: 21, unit: 'Ã­Ã‚Âlgebra', topic: 'MÃ©todo de IgualaciÃ³n', videoTitle: 'METODO DE IGUALACIÃ³N', videoLink: 'https://www.youtube.com/watch?v=tr78m4H9BIw' },
-    { session: 22, unit: 'Ã­Ã‚Âlgebra', topic: 'Problemas de Planteo', videoTitle: 'PLANTEO DE PROBLEMAS', videoLink: 'https://www.youtube.com/watch?v=780RStmengs' },
-    { session: 23, unit: 'Ã­Ã‚Âlgebra', topic: 'FunciÃ³n Lineal', videoTitle: 'FUNCIÃ³N LINEAL Y AFÃ­Ã‚ÂN', videoLink: 'https://www.youtube.com/watch?v=XC6VLf8pOVg' },
-    { session: 24, unit: 'Ã­Ã‚Âlgebra', topic: 'FunciÃ³n AfÃ­n', videoTitle: 'FunciÃ³n lineal y afÃ­n (Parte 2)', videoLink: 'https://www.youtube.com/watch?v=TU0NMpLS88U' },
-    { session: 25, unit: 'GeometrÃ­a', topic: 'Vectores', videoTitle: 'Vectores en el plano cartesiano', videoLink: 'https://www.youtube.com/watch?v=fjKr9TnAKYs' },
-    { session: 26, unit: 'GeometrÃ­a', topic: 'Transformaciones IsomÃ©tricas', videoTitle: 'TRANSFORMACIONES ISOMÃ­Ã³ Ã³Ãƒâ€™Ã‚Â¢ÃƒÂ¢Ã³Ã‚Â¬Ã‚Â°TRICAS', videoLink: 'https://www.youtube.com/watch?v=_tIaG3tmVgI' },
-    { session: 27, unit: 'GeometrÃ­a', topic: 'Homotecia: Concepto', videoTitle: 'Homotecia', videoLink: 'https://www.youtube.com/watch?v=_rJoKG8MLg8' },
-    { session: 28, unit: 'GeometrÃ­a', topic: 'Homotecia: Propiedades', videoTitle: 'Homotecia de figuras planas', videoLink: 'https://www.youtube.com/watch?v=OTGPT5AG2ww' },
-    { session: 29, unit: 'GeometrÃ­a', topic: 'Congruencia de TriÃ¡ngulos', videoTitle: 'Congruencia de triÃ¡ngulos', videoLink: 'https://www.youtube.com/watch?v=PX9FjNz7yR8' },
-    { session: 30, unit: 'GeometrÃ­a', topic: 'Criterios de Congruencia', videoTitle: 'GuÃ­a de ejercicios Congruencia', videoLink: 'https://www.youtube.com/watch?v=uuQ31qlYNaQ' },
-    { session: 31, unit: 'GeometrÃ­a', topic: 'Semejanza de TriÃ¡ngulos', videoTitle: 'Estudia para la PSU-Semejanza', videoLink: 'https://www.youtube.com/watch?v=S8RVnQG2q3I' },
-    { session: 32, unit: 'GeometrÃ­a', topic: 'Teorema de Thales', videoTitle: 'TEOREMA DE THALES Clase NÃ‚Â°27', videoLink: 'https://www.youtube.com/watch?v=2ExAmja3378' },
-    { session: 33, unit: 'GeometrÃ­a', topic: 'AplicaciÃ³n de Thales', videoTitle: 'Prueba de TransiciÃ³n-Teorema Thales', videoLink: 'https://www.youtube.com/watch?v=AhUyh4IZmHI' },
-    { session: 34, unit: 'GeometrÃ­a', topic: 'EcuaciÃ³n de la Recta', videoTitle: 'EcuaciÃ³n de la recta', videoLink: 'https://www.youtube.com/watch?v=-_MUgcyh3Ig' },
-    { session: 35, unit: 'Datos', topic: 'Tablas de Frecuencia', videoTitle: 'Tablas de Frecuencia-Clase NÃ‚Â°24', videoLink: 'https://www.youtube.com/watch?v=1EZyGLlUQGw' },
+    { session: 11, unit: 'Álgebra', topic: 'Lenguaje Algebraico', videoTitle: 'EXPRESIONES ALGEBRAICAS Clase N°3', videoLink: 'https://www.youtube.com/watch?v=lojCGXH4Odk' },
+    { session: 12, unit: 'Álgebra', topic: 'Cuadrado de Binomio', videoTitle: 'Cuadrado de binomio', videoLink: 'https://www.youtube.com/watch?v=IjL5zOyxs20' },
+    { session: 13, unit: 'Álgebra', topic: 'Suma por Diferencia', videoTitle: 'Suma por diferencia', videoLink: 'https://www.youtube.com/watch?v=-w_lg-r7pDg' },
+    { session: 14, unit: 'Álgebra', topic: 'Binomio con Término Común', videoTitle: 'Clase 6: Álgebra y funciones', videoLink: 'https://www.youtube.com/watch?v=CvgRtkMJ7ao' },
+    { session: 15, unit: 'Álgebra', topic: 'Factorización: Factor Común', videoTitle: 'Factorización', videoLink: 'https://www.youtube.com/watch?v=JpYUEEqYxbU' },
+    { session: 16, unit: 'Álgebra', topic: 'Factorización de Trinomios', videoTitle: 'Mathematical Factorization Criteria', videoLink: 'https://www.youtube.com/watch?v=pKwJBMHSeAY' },
+    { session: 17, unit: 'Álgebra', topic: 'Ecuaciones Lineales', videoTitle: 'PAES M1-Ecuaciones lineales', videoLink: 'https://www.youtube.com/watch?v=vnjowqDBGB8' },
+    { session: 18, unit: 'Álgebra', topic: 'Sistemas Ecuaciones (Intro)', videoTitle: 'Sistemas de ecuaciones (Casos)', videoLink: 'https://www.youtube.com/watch?v=AFKpBTCc6oU' },
+    { session: 19, unit: 'Álgebra', topic: 'Método de Sustitución', videoTitle: 'Sistemas de ecuaciones-Sustitución', videoLink: 'https://www.youtube.com/watch?v=aBmuYyKeWaE' },
+    { session: 20, unit: 'Álgebra', topic: 'Método de Reducción', videoTitle: 'INTENSIVO SISTEMAS DE ECUACIONES', videoLink: 'https://www.youtube.com/watch?v=J2dRZ2iM3sY' },
+    { session: 21, unit: 'Álgebra', topic: 'Método de Igualación', videoTitle: 'METODO DE IGUALACIóN', videoLink: 'https://www.youtube.com/watch?v=tr78m4H9BIw' },
+    { session: 22, unit: 'Álgebra', topic: 'Problemas de Planteo', videoTitle: 'PLANTEO DE PROBLEMAS', videoLink: 'https://www.youtube.com/watch?v=780RStmengs' },
+    { session: 23, unit: 'Álgebra', topic: 'Función Lineal', videoTitle: 'FUNCIóN LINEAL Y AFÍN', videoLink: 'https://www.youtube.com/watch?v=XC6VLf8pOVg' },
+    { session: 24, unit: 'Álgebra', topic: 'Función Afín', videoTitle: 'Función lineal y afín (Parte 2)', videoLink: 'https://www.youtube.com/watch?v=TU0NMpLS88U' },
+    { session: 25, unit: 'Geometría', topic: 'Vectores', videoTitle: 'Vectores en el plano cartesiano', videoLink: 'https://www.youtube.com/watch?v=fjKr9TnAKYs' },
+    { session: 26, unit: 'Geometría', topic: 'Transformaciones Isométricas', videoTitle: 'TRANSFORMACIONES ISOMÉTRICAS', videoLink: 'https://www.youtube.com/watch?v=_tIaG3tmVgI' },
+    { session: 27, unit: 'Geometría', topic: 'Homotecia: Concepto', videoTitle: 'Homotecia', videoLink: 'https://www.youtube.com/watch?v=_rJoKG8MLg8' },
+    { session: 28, unit: 'Geometría', topic: 'Homotecia: Propiedades', videoTitle: 'Homotecia de figuras planas', videoLink: 'https://www.youtube.com/watch?v=OTGPT5AG2ww' },
+    { session: 29, unit: 'Geometría', topic: 'Congruencia de Triángulos', videoTitle: 'Congruencia de triángulos', videoLink: 'https://www.youtube.com/watch?v=PX9FjNz7yR8' },
+    { session: 30, unit: 'Geometría', topic: 'Criterios de Congruencia', videoTitle: 'Guía de ejercicios Congruencia', videoLink: 'https://www.youtube.com/watch?v=uuQ31qlYNaQ' },
+    { session: 31, unit: 'Geometría', topic: 'Semejanza de Triángulos', videoTitle: 'Estudia para la PSU-Semejanza', videoLink: 'https://www.youtube.com/watch?v=S8RVnQG2q3I' },
+    { session: 32, unit: 'Geometría', topic: 'Teorema de Thales', videoTitle: 'TEOREMA DE THALES Clase N°27', videoLink: 'https://www.youtube.com/watch?v=2ExAmja3378' },
+    { session: 33, unit: 'Geometría', topic: 'Aplicación de Thales', videoTitle: 'Prueba de Transición-Teorema Thales', videoLink: 'https://www.youtube.com/watch?v=AhUyh4IZmHI' },
+    { session: 34, unit: 'Geometría', topic: 'Ecuación de la Recta', videoTitle: 'Ecuación de la recta', videoLink: 'https://www.youtube.com/watch?v=-_MUgcyh3Ig' },
+    { session: 35, unit: 'Datos', topic: 'Tablas de Frecuencia', videoTitle: 'Tablas de Frecuencia-Clase N°24', videoLink: 'https://www.youtube.com/watch?v=1EZyGLlUQGw' },
     { session: 36, unit: 'Datos', topic: 'Medidas Tendencia Central', videoTitle: 'Medidas tendencia central y rango', videoLink: 'https://www.youtube.com/watch?v=Vb5AzDzQcwo' },
-    { session: 37, unit: 'Datos', topic: 'Medidas de PosiciÃ³n', videoTitle: 'Medidas de posiciÃ³n Clase NÃ‚Â°28', videoLink: 'https://www.youtube.com/watch?v=jCfQjycgwdM' },
-    { session: 38, unit: 'Datos', topic: 'Diagrama de CajÃ³n', videoTitle: 'Diagrama de cajÃ³n y bigotes', videoLink: 'https://www.youtube.com/watch?v=GBNpyyApgdA' },
-    { session: 39, unit: 'Datos', topic: 'Medidas de DispersiÃ³n', videoTitle: 'Medidas de dispersiÃ³n', videoLink: 'https://www.youtube.com/watch?v=uwHz-WYYVpQ' },
+    { session: 37, unit: 'Datos', topic: 'Medidas de Posición', videoTitle: 'Medidas de posición Clase N°28', videoLink: 'https://www.youtube.com/watch?v=jCfQjycgwdM' },
+    { session: 38, unit: 'Datos', topic: 'Diagrama de Cajón', videoTitle: 'Diagrama de cajón y bigotes', videoLink: 'https://www.youtube.com/watch?v=GBNpyyApgdA' },
+    { session: 39, unit: 'Datos', topic: 'Medidas de Dispersión', videoTitle: 'Medidas de dispersión', videoLink: 'https://www.youtube.com/watch?v=uwHz-WYYVpQ' },
     { session: 40, unit: 'Datos', topic: 'Probabilidad (Laplace)', videoTitle: 'Regla de Laplace', videoLink: 'https://www.youtube.com/watch?v=bazKrpT91kY' },
-    { session: 41, unit: 'Datos', topic: 'Regla Aditiva', videoTitle: 'Probabilidades (UniÃ³n)', videoLink: 'https://www.youtube.com/watch?v=zI6Aly68P0Q' },
+    { session: 41, unit: 'Datos', topic: 'Regla Aditiva', videoTitle: 'Probabilidades (Unión)', videoLink: 'https://www.youtube.com/watch?v=zI6Aly68P0Q' },
     { session: 42, unit: 'Datos', topic: 'Regla Multiplicativa', videoTitle: 'Probabilidad condicional', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
-    { session: 43, unit: 'Datos', topic: 'TÃ©cnicas de Conteo', videoTitle: 'TÃ­Ã³ Ã³Ãƒâ€™Ã‚Â¢ÃƒÂ¢Ã³Ã‚Â¬Ã‚Â°CNICAS DE CONTEO', videoLink: 'https://www.youtube.com/watch?v=klUzWXgLBRM' },
+    { session: 43, unit: 'Datos', topic: 'Técnicas de Conteo', videoTitle: 'TÉCNICAS DE CONTEO', videoLink: 'https://www.youtube.com/watch?v=klUzWXgLBRM' },
     { session: 44, unit: 'Datos', topic: 'Probabilidad Condicional', videoTitle: 'Probabilidad Condicional Intro', videoLink: 'https://www.youtube.com/watch?v=ZyF6TtT6hwo' },
-    { session: 45, unit: 'Datos', topic: 'Proyecto EstadÃ­stica', videoTitle: 'EstadÃ­stica en la Vida Real', videoLink: 'https://www.youtube.com/watch?v=GBNpyyApgdA' },
-    { session: 46, unit: 'Cierre', topic: 'Gran DesafÃ­o Final', videoTitle: 'Ensayo General MatemÃ¡tica', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' }
+    { session: 45, unit: 'Datos', topic: 'Proyecto Estadística', videoTitle: 'Estadística en la Vida Real', videoLink: 'https://www.youtube.com/watch?v=GBNpyyApgdA' },
+    { session: 46, unit: 'Cierre', topic: 'Gran Desafío Final', videoTitle: 'Ensayo General Matemática', videoLink: 'https://www.youtube.com/watch?v=1-vOmO4Ss5Y' }
 ];
 
 // ---------------------------------------------------
@@ -597,87 +592,87 @@ const DEFAULT_DAILY_ROUTE = {
 
 const DEFAULT_LANG_ROUTE = {
     sujeto: 'Lenguaje',
-    oa_title: 'S1: NivelaciÃ³n y DiagnÃ³stico',
+    oa_title: 'S1: Nivelación y Diagnóstico',
     color: '#FF9F43',
     icon: BookOpen,
     video_link: 'https://youtube.com',
     daily_route_steps: [
-        { step: '1. Video AnÃ¡lisis', action: 'video', icon: 'Play', isComplete: false },
-        { step: '2. CrÃ­tica Literaria IA', action: 'start_route', icon: 'BookOpen', isComplete: false },
-        { step: '3. RedacciÃ³n/Quiz', action: 'quiz', icon: 'Star', isComplete: false }
+        { step: '1. Video Análisis', action: 'video', icon: 'Play', isComplete: false },
+        { step: '2. Crítica Literaria IA', action: 'start_route', icon: 'BookOpen', isComplete: false },
+        { step: '3. Redacción/Quiz', action: 'quiz', icon: 'Star', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÃƒÂLISIS HISTÃ³RICO"
+    recommended_action_text: "INICIAR ANÁLISIS HISTóRICO"
 };
 
 
 const CHEMISTRY_SYLLABUS = [
     // UNIDAD 1: REACCIONES (Sesiones 1-10)
-    { session: 1, unit: 'Reacciones', topic: 'Transformaciones FÃ­sicas vs. QuÃ­micas', videoTitle: 'Cambios FÃ­sicos y QuÃ­micos', videoLink: 'https://www.youtube.com/watch?v=Zz0xuNCpAQc' },
-    { session: 2, unit: 'Reacciones', topic: 'Evidencias EmpÃ­ricas de ReacciÃ³n', videoTitle: 'Reacciones cotidianas', videoLink: 'https://www.curriculumnacional.cl/docente/629/w3-article-34461.html' },
-    { session: 3, unit: 'Reacciones', topic: 'TeorÃ­a de las Colisiones', videoTitle: 'TeorÃ­a de Colisiones', videoLink: 'https://www.youtube.com/watch?v=-RQIfEefAzg' },
-    { session: 4, unit: 'Reacciones', topic: 'EnergÃ­a de ActivaciÃ³n', videoTitle: 'Perfil de EnergÃ­a', videoLink: 'https://www.youtube.com/watch?v=vkNZKYPfBss' },
-    { session: 5, unit: 'Reacciones', topic: 'La EcuaciÃ³n QuÃ­mica', videoTitle: 'AnatomÃ­a de la EcuaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=G4kiAaLiigI' },
-    { session: 6, unit: 'Reacciones', topic: 'SÃ­ntesis y DescomposiciÃ³n', videoTitle: 'Tipos de ReacciÃ³n I', videoLink: 'https://www.youtube.com/shorts/hsWclMOU6Hs' },
-    { session: 7, unit: 'Reacciones', topic: 'SustituciÃ³n y Desplazamiento', videoTitle: 'Tipos de ReacciÃ³n II', videoLink: 'https://www.youtube.com/watch?v=Qz0ipe5qc8I' },
-    { session: 8, unit: 'Reacciones', topic: 'NeutralizaciÃ³n Ãƒâ€™Ã‚Âcido-Base', videoTitle: 'NeutralizaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=mHJsc1tnAnk' },
-    { session: 9, unit: 'Reacciones', topic: 'ExotÃ©rmicas y EndotÃ©rmicas', videoTitle: 'TermodinÃ¡mica BÃ¡sica', videoLink: 'https://www.youtube.com/watch?v=G7TFOnQoU8w' },
-    { session: 10, unit: 'Reacciones', topic: 'Taller de ClasificaciÃ³n', videoTitle: 'Ejercicios Tipos de ReacciÃ³n', videoLink: 'https://www.youtube.com/watch?v=rTzSYDg2NU4' },
+    { session: 1, unit: 'Reacciones', topic: 'Transformaciones Físicas vs. Químicas', videoTitle: 'Cambios Físicos y Químicos', videoLink: 'https://www.youtube.com/watch?v=Zz0xuNCpAQc' },
+    { session: 2, unit: 'Reacciones', topic: 'Evidencias Empíricas de Reacción', videoTitle: 'Reacciones cotidianas', videoLink: 'https://www.curriculumnacional.cl/docente/629/w3-article-34461.html' },
+    { session: 3, unit: 'Reacciones', topic: 'Teoría de las Colisiones', videoTitle: 'Teoría de Colisiones', videoLink: 'https://www.youtube.com/watch?v=-RQIfEefAzg' },
+    { session: 4, unit: 'Reacciones', topic: 'Energía de Activación', videoTitle: 'Perfil de Energía', videoLink: 'https://www.youtube.com/watch?v=vkNZKYPfBss' },
+    { session: 5, unit: 'Reacciones', topic: 'La Ecuación Química', videoTitle: 'Anatomía de la Ecuación', videoLink: 'https://www.youtube.com/watch?v=G4kiAaLiigI' },
+    { session: 6, unit: 'Reacciones', topic: 'Síntesis y Descomposición', videoTitle: 'Tipos de Reacción I', videoLink: 'https://www.youtube.com/shorts/hsWclMOU6Hs' },
+    { session: 7, unit: 'Reacciones', topic: 'Sustitución y Desplazamiento', videoTitle: 'Tipos de Reacción II', videoLink: 'https://www.youtube.com/watch?v=Qz0ipe5qc8I' },
+    { session: 8, unit: 'Reacciones', topic: 'Neutralización Ñcido-Base', videoTitle: 'Neutralización', videoLink: 'https://www.youtube.com/watch?v=mHJsc1tnAnk' },
+    { session: 9, unit: 'Reacciones', topic: 'Exotérmicas y Endotérmicas', videoTitle: 'Termodinámica Básica', videoLink: 'https://www.youtube.com/watch?v=G7TFOnQoU8w' },
+    { session: 10, unit: 'Reacciones', topic: 'Taller de Clasificación', videoTitle: 'Ejercicios Tipos de Reacción', videoLink: 'https://www.youtube.com/watch?v=rTzSYDg2NU4' },
 
     // UNIDAD 2: LEYES Y BALANCEO (Sesiones 11-22)
-    { session: 11, unit: 'Leyes Ponderales', topic: 'Ley de Lavoisier', videoTitle: 'ConservaciÃ³n de la Masa', videoLink: 'https://www.youtube.com/watch?v=kJpWo_KNH3s' },
+    { session: 11, unit: 'Leyes Ponderales', topic: 'Ley de Lavoisier', videoTitle: 'Conservación de la Masa', videoLink: 'https://www.youtube.com/watch?v=kJpWo_KNH3s' },
     { session: 12, unit: 'Leyes Ponderales', topic: 'Ley de Proust', videoTitle: 'Proporciones Definidas', videoLink: 'https://www.youtube.com/watch?v=X3p48ApI0hg' },
-    { session: 13, unit: 'Leyes Ponderales', topic: 'ResoluciÃ³n de Problemas', videoTitle: 'Ejercicios Leyes Ponderales', videoLink: 'https://www.youtube.com/watch?v=s0F71jI-Qq0' },
+    { session: 13, unit: 'Leyes Ponderales', topic: 'Resolución de Problemas', videoTitle: 'Ejercicios Leyes Ponderales', videoLink: 'https://www.youtube.com/watch?v=s0F71jI-Qq0' },
     { session: 14, unit: 'Balanceo', topic: 'Fundamentos del Balanceo', videoTitle: 'Intro al Balanceo', videoLink: 'https://www.youtube.com/watch?v=XfEZQ8ens80' },
-    { session: 15, unit: 'Balanceo', topic: 'MÃ©todo de Tanteo', videoTitle: 'Balanceo por Tanteo', videoLink: 'https://www.youtube.com/watch?v=OQ4mjedkr0M' },
-    { session: 16, unit: 'Balanceo', topic: 'PrÃ¡ctica Intensiva Tanteo', videoTitle: 'Ejercicios Tanteo', videoLink: 'https://www.youtube.com/watch?v=AteEPYCMGDE' },
-    { session: 17, unit: 'Balanceo', topic: 'MÃ©todo Algebraico Intro', videoTitle: 'Intro Algebraico', videoLink: 'https://www.youtube.com/watch?v=VxgyhjojvGI' },
-    { session: 18, unit: 'Balanceo', topic: 'Sistemas de Ecuaciones QuÃ­micas', videoTitle: 'ResoluciÃ³n Algebraica', videoLink: 'https://www.youtube.com/watch?v=ZYUMX1DO4tY' },
+    { session: 15, unit: 'Balanceo', topic: 'Método de Tanteo', videoTitle: 'Balanceo por Tanteo', videoLink: 'https://www.youtube.com/watch?v=OQ4mjedkr0M' },
+    { session: 16, unit: 'Balanceo', topic: 'Práctica Intensiva Tanteo', videoTitle: 'Ejercicios Tanteo', videoLink: 'https://www.youtube.com/watch?v=AteEPYCMGDE' },
+    { session: 17, unit: 'Balanceo', topic: 'Método Algebraico Intro', videoTitle: 'Intro Algebraico', videoLink: 'https://www.youtube.com/watch?v=VxgyhjojvGI' },
+    { session: 18, unit: 'Balanceo', topic: 'Sistemas de Ecuaciones Químicas', videoTitle: 'Resolución Algebraica', videoLink: 'https://www.youtube.com/watch?v=ZYUMX1DO4tY' },
     { session: 19, unit: 'Balanceo', topic: 'Balanceo Complejo', videoTitle: 'Algebraico Avanzado', videoLink: 'https://www.youtube.com/watch?v=MCEc0e-bDt4' },
-    { session: 20, unit: 'Nomenclatura', topic: 'Ã³xidos BÃ¡sicos y Ãƒâ€™Ã‚Âcidos', videoTitle: 'Nomenclatura Ã³xidos', videoLink: 'https://www.youtube.com/watch?v=pH9acFVTlM8' },
+    { session: 20, unit: 'Nomenclatura', topic: 'óxidos Básicos y Ñcidos', videoTitle: 'Nomenclatura óxidos', videoLink: 'https://www.youtube.com/watch?v=pH9acFVTlM8' },
     { session: 21, unit: 'Nomenclatura', topic: 'Hidruros y Sales Binarias', videoTitle: 'Binarios', videoLink: 'https://www.youtube.com/watch?v=OUvUaQE8G8Q' },
-    { session: 22, unit: 'Nomenclatura', topic: 'Compuestos Ternarios', videoTitle: 'HidrÃ³xidos y OxÃ¡cidos', videoLink: 'https://www.youtube.com/watch?v=-L-g5vR1gV0' },
+    { session: 22, unit: 'Nomenclatura', topic: 'Compuestos Ternarios', videoTitle: 'Hidróxidos y Oxácidos', videoLink: 'https://www.youtube.com/watch?v=-L-g5vR1gV0' },
 
     // UNIDAD 3: EL MOL (Sesiones 23-34)
-    { session: 23, unit: 'EstequiometrÃ­a', topic: 'Concepto de Mol', videoTitle: 'Â¿QuÃ© es un Mol?', videoLink: 'https://www.youtube.com/watch?v=zzUBFrHYNu4' },
-    { session: 24, unit: 'EstequiometrÃ­a', topic: 'NÃºmero de Avogadro', videoTitle: 'Dimensionando el Mol', videoLink: 'https://www.youtube.com/watch?v=Ds8cSbdXghs' },
-    { session: 25, unit: 'EstequiometrÃ­a', topic: 'Masa AtÃ³mica', videoTitle: 'Tabla PeriÃ³dica y Masa', videoLink: 'https://www.youtube.com/watch?v=A8qq0U9LkTE' },
-    { session: 26, unit: 'EstequiometrÃ­a', topic: 'Masa Molar Compuestos', videoTitle: 'CÃ¡lculo Masa Molar', videoLink: 'https://www.youtube.com/watch?v=kBXSRIm8uBc' },
-    { session: 27, unit: 'EstequiometrÃ­a', topic: 'ConversiÃ³n Gramos a Moles', videoTitle: 'Conversiones BÃ¡sicas', videoLink: 'https://www.youtube.com/watch?v=TwRQUj8cEBw' },
-    { session: 28, unit: 'EstequiometrÃ­a', topic: 'ConversiÃ³n Masa-Mol-Ãƒâ€™Ã‚Âtomos', videoTitle: 'Conversiones Avanzadas', videoLink: 'https://www.youtube.com/watch?v=7bxHKDtW5tQ' },
-    { session: 29, unit: 'EstequiometrÃ­a', topic: 'Compuestos Hidratados', videoTitle: 'Masa Molar Compleja', videoLink: 'https://www.youtube.com/watch?v=3pamhajW65s' },
-    { session: 30, unit: 'EstequiometrÃ­a', topic: 'ComposiciÃ³n Porcentual', videoTitle: 'Porcentaje en Masa', videoLink: 'https://www.youtube.com/watch?v=ni4KlRkBoVg' },
-    { session: 31, unit: 'EstequiometrÃ­a', topic: 'FÃ³rmula EmpÃ­rica y Molecular', videoTitle: 'DeducciÃ³n de FÃ³rmulas', videoLink: 'https://www.youtube.com/watch?v=MnafInl0GQw' },
-    { session: 32, unit: 'EstequiometrÃ­a', topic: 'Relaciones Molares', videoTitle: 'EstequiometrÃ­a Mol-Mol', videoLink: 'https://www.youtube.com/watch?v=lx_Rahu3sVw' },
-    { session: 33, unit: 'EstequiometrÃ­a', topic: 'CÃ¡lculo Masa-Masa', videoTitle: 'EstequiometrÃ­a Masa-Masa', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
-    { session: 34, unit: 'EstequiometrÃ­a', topic: 'Taller EstequiometrÃ­a', videoTitle: 'Ejercicios Mixtos', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
+    { session: 23, unit: 'Estequiometría', topic: 'Concepto de Mol', videoTitle: '¿Qué es un Mol?', videoLink: 'https://www.youtube.com/watch?v=zzUBFrHYNu4' },
+    { session: 24, unit: 'Estequiometría', topic: 'Número de Avogadro', videoTitle: 'Dimensionando el Mol', videoLink: 'https://www.youtube.com/watch?v=Ds8cSbdXghs' },
+    { session: 25, unit: 'Estequiometría', topic: 'Masa Atómica', videoTitle: 'Tabla Periódica y Masa', videoLink: 'https://www.youtube.com/watch?v=A8qq0U9LkTE' },
+    { session: 26, unit: 'Estequiometría', topic: 'Masa Molar Compuestos', videoTitle: 'Cálculo Masa Molar', videoLink: 'https://www.youtube.com/watch?v=kBXSRIm8uBc' },
+    { session: 27, unit: 'Estequiometría', topic: 'Conversión Gramos a Moles', videoTitle: 'Conversiones Básicas', videoLink: 'https://www.youtube.com/watch?v=TwRQUj8cEBw' },
+    { session: 28, unit: 'Estequiometría', topic: 'Conversión Masa-Mol-Ñtomos', videoTitle: 'Conversiones Avanzadas', videoLink: 'https://www.youtube.com/watch?v=7bxHKDtW5tQ' },
+    { session: 29, unit: 'Estequiometría', topic: 'Compuestos Hidratados', videoTitle: 'Masa Molar Compleja', videoLink: 'https://www.youtube.com/watch?v=3pamhajW65s' },
+    { session: 30, unit: 'Estequiometría', topic: 'Composición Porcentual', videoTitle: 'Porcentaje en Masa', videoLink: 'https://www.youtube.com/watch?v=ni4KlRkBoVg' },
+    { session: 31, unit: 'Estequiometría', topic: 'Fórmula Empírica y Molecular', videoTitle: 'Deducción de Fórmulas', videoLink: 'https://www.youtube.com/watch?v=MnafInl0GQw' },
+    { session: 32, unit: 'Estequiometría', topic: 'Relaciones Molares', videoTitle: 'Estequiometría Mol-Mol', videoLink: 'https://www.youtube.com/watch?v=lx_Rahu3sVw' },
+    { session: 33, unit: 'Estequiometría', topic: 'Cálculo Masa-Masa', videoTitle: 'Estequiometría Masa-Masa', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
+    { session: 34, unit: 'Estequiometría', topic: 'Taller Estequiometría', videoTitle: 'Ejercicios Mixtos', videoLink: 'https://www.youtube.com/watch?v=oAG6uyyVKEg' },
 
-    // UNIDAD 4: SOLUCIONES Y CINÃƒâ€™Ã³0TICA (Sesiones 35-46)
-    { session: 35, unit: 'EstequiometrÃ­a Real', topic: 'Reactivo Limitante Concepto', videoTitle: 'Intro Reactivo Limitante', videoLink: 'https://www.youtube.com/watch?v=_rts32wOiv0' },
-    { session: 36, unit: 'EstequiometrÃ­a Real', topic: 'CÃ¡lculo Reactivo Limitante', videoTitle: 'CÃ¡lculo RL', videoLink: 'https://www.youtube.com/watch?v=bOrVhbELagw' },
-    { session: 37, unit: 'EstequiometrÃ­a Real', topic: 'Rendimiento de ReacciÃ³n', videoTitle: 'Porcentaje de Rendimiento', videoLink: 'https://www.youtube.com/watch?v=iAATyWldpqs' },
-    { session: 38, unit: 'EstequiometrÃ­a Real', topic: 'Pureza de Reactivos', videoTitle: 'Ejercicios con Pureza', videoLink: 'https://www.youtube.com/watch?v=urHXCP2gUf8' },
-    { session: 39, unit: 'Soluciones', topic: 'IntroducciÃ³n Soluciones', videoTitle: 'Soluto y Solvente', videoLink: 'https://www.youtube.com/watch?v=stzzdORx1vM' },
-    { session: 40, unit: 'Soluciones', topic: 'Unidades FÃ­sicas', videoTitle: 'ConcentraciÃ³n %', videoLink: 'https://www.youtube.com/watch?v=stzzdORx1vM' },
-    { session: 41, unit: 'Soluciones', topic: 'Molaridad', videoTitle: 'ConcentraciÃ³n Molar', videoLink: 'https://www.youtube.com/watch?v=LDs8dhIIr-g' },
-    { session: 42, unit: 'CinÃ©tica', topic: 'Factores de Velocidad I', videoTitle: 'Temp y Superficie', videoLink: 'https://www.youtube.com/watch?v=HROvz_OQnx8' },
-    { session: 43, unit: 'CinÃ©tica', topic: 'Factores de Velocidad II', videoTitle: 'Catalizadores', videoLink: 'https://www.youtube.com/watch?v=vJ7bk49kA9g' },
-    { session: 44, unit: 'CinÃ©tica', topic: 'Exp. Virtual CinÃ©tica', videoTitle: 'Laboratorio Virtual', videoLink: 'https://www.youtube.com/watch?v=TuA_8006jCM' },
-    { session: 45, unit: 'IntegraciÃ³n', topic: 'Lluvia Ãƒâ€™Ã‚Âcida', videoTitle: 'QuÃ­mica Ambiental', videoLink: 'https://www.youtube.com/watch?v=YsEqU2TuvaI' },
-    { session: 46, unit: 'Cierre', topic: 'SÃ­ntesis Final', videoTitle: 'Resumen PAES', videoLink: 'https://www.youtube.com/watch?v=Zz0xuNCpAQc' }
+    // UNIDAD 4: SOLUCIONES Y CINÑó0TICA (Sesiones 35-46)
+    { session: 35, unit: 'Estequiometría Real', topic: 'Reactivo Limitante Concepto', videoTitle: 'Intro Reactivo Limitante', videoLink: 'https://www.youtube.com/watch?v=_rts32wOiv0' },
+    { session: 36, unit: 'Estequiometría Real', topic: 'Cálculo Reactivo Limitante', videoTitle: 'Cálculo RL', videoLink: 'https://www.youtube.com/watch?v=bOrVhbELagw' },
+    { session: 37, unit: 'Estequiometría Real', topic: 'Rendimiento de Reacción', videoTitle: 'Porcentaje de Rendimiento', videoLink: 'https://www.youtube.com/watch?v=iAATyWldpqs' },
+    { session: 38, unit: 'Estequiometría Real', topic: 'Pureza de Reactivos', videoTitle: 'Ejercicios con Pureza', videoLink: 'https://www.youtube.com/watch?v=urHXCP2gUf8' },
+    { session: 39, unit: 'Soluciones', topic: 'Introducción Soluciones', videoTitle: 'Soluto y Solvente', videoLink: 'https://www.youtube.com/watch?v=stzzdORx1vM' },
+    { session: 40, unit: 'Soluciones', topic: 'Unidades Físicas', videoTitle: 'Concentración %', videoLink: 'https://www.youtube.com/watch?v=stzzdORx1vM' },
+    { session: 41, unit: 'Soluciones', topic: 'Molaridad', videoTitle: 'Concentración Molar', videoLink: 'https://www.youtube.com/watch?v=LDs8dhIIr-g' },
+    { session: 42, unit: 'Cinética', topic: 'Factores de Velocidad I', videoTitle: 'Temp y Superficie', videoLink: 'https://www.youtube.com/watch?v=HROvz_OQnx8' },
+    { session: 43, unit: 'Cinética', topic: 'Factores de Velocidad II', videoTitle: 'Catalizadores', videoLink: 'https://www.youtube.com/watch?v=vJ7bk49kA9g' },
+    { session: 44, unit: 'Cinética', topic: 'Exp. Virtual Cinética', videoTitle: 'Laboratorio Virtual', videoLink: 'https://www.youtube.com/watch?v=TuA_8006jCM' },
+    { session: 45, unit: 'Integración', topic: 'Lluvia Ñcida', videoTitle: 'Química Ambiental', videoLink: 'https://www.youtube.com/watch?v=YsEqU2TuvaI' },
+    { session: 46, unit: 'Cierre', topic: 'Síntesis Final', videoTitle: 'Resumen PAES', videoLink: 'https://www.youtube.com/watch?v=Zz0xuNCpAQc' }
 ];
 
 const DEFAULT_CHEM_ROUTE = {
-    sujeto: 'QuÃ­mica',
-    oa_title: 'S1: Transformaciones FÃ­sicas vs. QuÃ­micas',
+    sujeto: 'Química',
+    oa_title: 'S1: Transformaciones Físicas vs. Químicas',
     color: '#E84393',
     icon: FlaskConical,
     video_link: 'https://youtube.com',
     daily_route_steps: [
-        { step: '1. Video AnÃ¡lisis', action: 'video', icon: 'Play', isComplete: false },
+        { step: '1. Video Análisis', action: 'video', icon: 'Play', isComplete: false },
         { step: '2. Laboratorio Virtual', action: 'start_route', icon: 'FlaskConical', isComplete: false },
         { step: '3. Quiz de Reacciones', action: 'quiz', icon: 'Atom', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÃƒÂLISIS HISTÃ³RICO"
+    recommended_action_text: "INICIAR ANÁLISIS HISTóRICO"
 };
 
 
@@ -887,7 +882,7 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
             // Check if we have an auto-captured image
             if (initialContext?.image) {
                 setPastedImage(initialContext.image);
-                setQuestion("ExplÃ­came paso a paso este ejercicio que aparece en el video.");
+                setQuestion("Explícame paso a paso este ejercicio que aparece en el video.");
                 setTimestamp(initialContext.timestamp === 'captured' ? "Detectado (Captura)" : "");
             } else {
                 setQuestion("");
@@ -936,7 +931,7 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
 
                 <h3 className="font-black text-[#2B2E4A] text-xl mb-2 flex items-center gap-2">
                     <HelpCircle className="w-6 h-6 text-[#FF9F43]" />
-                    Â¿Tienes alguna duda?
+                    ¿Tienes alguna duda?
                 </h3>
 
                 {isVideoContext && (
@@ -963,7 +958,7 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
                 <p className="text-[#9094A6] text-sm mb-4 font-bold">
                     {isVideoContext
                         ? "Pega un pantallazo (Ctrl+V) del video y describe tu duda."
-                        : "PregÃºntale a Matico sobre cualquier concepto."}
+                        : "Pregúntale a Matico sobre cualquier concepto."}
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -973,7 +968,7 @@ const QuestionModal = ({ isOpen, onClose, onSubmit, isCallingN8N, initialContext
                             onChange={(e) => setQuestion(e.target.value)}
                             onPaste={handlePaste}
                             className={`${clayInset} w-full h-32 p-4 text-[#2B2E4A] font-bold resize-none focus:outline-none focus:ring-2 focus:ring-[#4D96FF]/50`}
-                            placeholder={isVideoContext ? "Describe el ejercicio o pega una imagen..." : "Ej: Â¿Por quÃ© todo nÃºmero elevado a 0 es 1?"}
+                            placeholder={isVideoContext ? "Describe el ejercicio o pega una imagen..." : "Ej: ¿Por qué todo número elevado a 0 es 1?"}
                             disabled={isCallingN8N}
                         />
                     </div>
@@ -1156,11 +1151,11 @@ const AnnualRaceBar = ({ currentDay, totalDays }) => {
         <div className={`${clayCard} py-4 px-6 relative overflow-visible mt-6 mb-2 animate-fade-in-up`}>
             <div className="flex justify-between items-end mb-2">
                 <h3 className="font-black text-[#2B2E4A] uppercase text-xs tracking-widest flex items-center gap-2">
-                    <Flag className="w-4 h-4 text-[#FF6B6B] animate-wiggle" /> La Gran Carrera (Meta {totalDays} DÃ­as)
+                    <Flag className="w-4 h-4 text-[#FF6B6B] animate-wiggle" /> La Gran Carrera (Meta {totalDays} Días)
                 </h3>
                 <div className="text-right">
                     <span className="font-black text-2xl text-[#4D96FF]">{currentDay}</span>
-                    <span className="font-bold text-[#9094A6] text-xs">/ {totalDays} DÃ­as</span>
+                    <span className="font-bold text-[#9094A6] text-xs">/ {totalDays} Días</span>
                 </div>
             </div>
             <div className="relative h-4 w-full bg-[#E0E5EC] rounded-full shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff]">
@@ -1428,7 +1423,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                     {apiJson && apiJson.question && (
                         <div className="mt-8 pt-6 border-t border-gray-300/50">
                             <h5 className="font-black text-[#2B2E4A] mb-4 flex items-center gap-2">
-                                <span className="text-xl">Ã³aÃ³</span> DesafÃ­o RÃ¡pido:
+                                <span className="text-xl">óaó</span> Desafío Rápido:
                             </h5>
                             <div className="font-bold text-[#2B2E4A] mb-4">
                                 <MathRenderer text={apiJson.question} />
@@ -1494,7 +1489,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                             {showExplanation && (
                                 <div className="mt-6 p-4 bg-[#FFD93D]/20 border-2 border-[#FFD93D] rounded-2xl animate-fade-in relative">
                                     <h6 className="font-black text-[#C7A005] mb-2 flex items-center gap-2">
-                                        <Lightbulb className="w-5 h-5" /> ExplicaciÃ³n:
+                                        <Lightbulb className="w-5 h-5" /> Explicación:
                                     </h6>
                                     <MathRenderer text={apiJson.explanation} />
 
@@ -1504,7 +1499,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             onClick={onAskDoubt}
                                             className="px-4 py-2 bg-white/50 text-[#FF9F43] font-bold rounded-xl text-xs flex items-center gap-1 hover:bg-white transition-colors"
                                         >
-                                            <HelpCircle className="w-4 h-4" /> Â¿PREGUNTAS? Ã³xÃ³
+                                            <HelpCircle className="w-4 h-4" /> ¿PREGUNTAS? óxó
                                         </button>
 
                                         <button
@@ -1512,7 +1507,7 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                                             className={`${clayBtnAction} w-auto px-6 py-2 text-xs`}
                                             disabled={isCallingN8N}
                                         >
-                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? 'Â¡Siguiente! Ã³xaÃ³' : 'Refuerzo Ã³xÃ³')}
+                                            {isCallingN8N ? 'Pensando...' : (isCorrect ? '¡Siguiente! óxaó' : 'Refuerzo óxó')}
                                         </button>
                                     </div>
                                 </div>
@@ -1545,10 +1540,10 @@ const sanitizeExplanation = (text, options) => {
         if (options[index]) {
             const cleanOptionContent = options[index].replace(/^[A-Z]\)\s*/, '');
             // MATCH: "alternativa correcta es la D", "la respuesta es D", "D)", etc
-            const regex = new RegExp(`\\b(alternativa|opciÃ³n|opcion|letra|respuesta|soluciÃ³n)(?:\\s+(?:correcta|incorrecta|es|la|el|que|sea))*\\s+\${label}(?:\\))?\\b`, 'gi');
-            newText = newText.replace(regex, `la opciÃ³n "${cleanOptionContent}"`);
+            const regex = new RegExp(`\\b(alternativa|opción|opcion|letra|respuesta|solución)(?:\\s+(?:correcta|incorrecta|es|la|el|que|sea))*\\s+\${label}(?:\\))?\\b`, 'gi');
+            newText = newText.replace(regex, `la opción "${cleanOptionContent}"`);
             const regex2 = new RegExp(`\\b(es|son|sea)\\s+la\\s+\${label}(?:\\))?\\b`, 'gi');
-            newText = newText.replace(regex2, `es la opciÃ³n "${cleanOptionContent}"`);
+            newText = newText.replace(regex2, `es la opción "${cleanOptionContent}"`);
         }
     });
     return newText;
@@ -1572,212 +1567,212 @@ const shuffleQuizData = (data) => {
 
 const PHYSICS_SYLLABUS = [
     // FASE 1: ONDAS Y SONIDO
-    { session: 1, unit: 'Ondas y Sonido', topic: 'IntroducciÃ³n a las Ondas: Materia vs EnergÃ­a', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
-    { session: 2, unit: 'Ondas y Sonido', topic: 'ClasificaciÃ³n I: MecÃ¡nicas vs ElectromagnÃ©ticas', videoLink: 'https://www.youtube.com/watch?v=fbY_p2MoykA' },
-    { session: 3, unit: 'Ondas y Sonido', topic: 'ClasificaciÃ³n II: Transversales vs Longitudinales', videoLink: 'https://www.youtube.com/watch?v=P-kbPkWC8CI' },
-    { session: 4, unit: 'Ondas y Sonido', topic: 'AnatomÃ­a de la Onda', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
+    { session: 1, unit: 'Ondas y Sonido', topic: 'Introducción a las Ondas: Materia vs Energía', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
+    { session: 2, unit: 'Ondas y Sonido', topic: 'Clasificación I: Mecánicas vs Electromagnéticas', videoLink: 'https://www.youtube.com/watch?v=fbY_p2MoykA' },
+    { session: 3, unit: 'Ondas y Sonido', topic: 'Clasificación II: Transversales vs Longitudinales', videoLink: 'https://www.youtube.com/watch?v=P-kbPkWC8CI' },
+    { session: 4, unit: 'Ondas y Sonido', topic: 'Anatomía de la Onda', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
     { session: 5, unit: 'Ondas y Sonido', topic: 'Concepto de Ciclo', videoLink: 'https://www.youtube.com/watch?v=fbY_p2MoykA' },
-    { session: 6, unit: 'Ondas y Sonido', topic: 'Periodo y Frecuencia (TeorÃ­a)', videoLink: 'https://www.youtube.com/watch?v=P-kbPkWC8CI' },
-    { session: 7, unit: 'Ondas y Sonido', topic: 'Periodo y Frecuencia (CÃ¡lculo)', videoLink: 'https://www.youtube.com/watch?v=Q9kKWQa9Trs' },
+    { session: 6, unit: 'Ondas y Sonido', topic: 'Periodo y Frecuencia (Teoría)', videoLink: 'https://www.youtube.com/watch?v=P-kbPkWC8CI' },
+    { session: 7, unit: 'Ondas y Sonido', topic: 'Periodo y Frecuencia (Cálculo)', videoLink: 'https://www.youtube.com/watch?v=Q9kKWQa9Trs' },
     { session: 8, unit: 'Ondas y Sonido', topic: 'Longitud de Onda', videoLink: 'https://www.youtube.com/watch?v=Q9kKWQa9Trs' },
-    { session: 9, unit: 'Ondas y Sonido', topic: 'Rapidez de PropagaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=Q9kKWQa9Trs' },
+    { session: 9, unit: 'Ondas y Sonido', topic: 'Rapidez de Propagación', videoLink: 'https://www.youtube.com/watch?v=Q9kKWQa9Trs' },
     { session: 10, unit: 'Ondas y Sonido', topic: 'El Sonido y sus Propiedades', videoLink: 'https://www.youtube.com/watch?v=n9O6IBVkBMM' },
-    { session: 11, unit: 'Ondas y Sonido', topic: 'FenÃ³menos: ReflexiÃ³n y DifracciÃ³n', videoLink: 'https://www.youtube.com/watch?v=PFdowtChLCY' },
-    { session: 12, unit: 'Ondas y Sonido', topic: 'FenÃ³menos: RefracciÃ³n y Doppler', videoLink: 'https://www.youtube.com/watch?v=-MK8v4rRMA8' },
-    { session: 13, unit: 'Ondas y Sonido', topic: 'EvaluaciÃ³n Fase 1: Ondas', videoLink: 'https://www.youtube.com/watch?v=P-kbPkWC8CI' },
+    { session: 11, unit: 'Ondas y Sonido', topic: 'Fenómenos: Reflexión y Difracción', videoLink: 'https://www.youtube.com/watch?v=PFdowtChLCY' },
+    { session: 12, unit: 'Ondas y Sonido', topic: 'Fenómenos: Refracción y Doppler', videoLink: 'https://www.youtube.com/watch?v=-MK8v4rRMA8' },
+    { session: 13, unit: 'Ondas y Sonido', topic: 'Evaluación Fase 1: Ondas', videoLink: 'https://www.youtube.com/watch?v=P-kbPkWC8CI' },
 
     // FASE 2: LUZ Y OPTICA
-    { session: 14, unit: 'Luz y Ã³ptica', topic: 'Dualidad Onda-PartÃ­cula y Espectro', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 15, unit: 'Luz y Ã³ptica', topic: 'PropagaciÃ³n y Velocidad de la Luz', videoLink: 'https://www.youtube.com/shorts/tvIQhjn6nm8' },
-    { session: 16, unit: 'Luz y Ã³ptica', topic: 'ReflexiÃ³n en Espejos Planos', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
-    { session: 17, unit: 'Luz y Ã³ptica', topic: 'Espejos CÃ³ncavos (Foco Real)', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
-    { session: 18, unit: 'Luz y Ã³ptica', topic: 'Espejos Convexos (Foco Virtual)', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
-    { session: 19, unit: 'Luz y Ã³ptica', topic: 'RefracciÃ³n y Ley de Snell', videoLink: 'https://www.youtube.com/watch?v=JfDw0jRjllo' },
-    { session: 20, unit: 'Luz y Ã³ptica', topic: 'ReflexiÃ³n Total Interna', videoLink: 'https://www.youtube.com/watch?v=uKfGqD-2rAs' },
-    { session: 21, unit: 'Luz y Ã³ptica', topic: 'Lentes Convergentes y el Ojo', videoLink: 'https://www.youtube.com/watch?v=5hTXt8SsgBw' },
-    { session: 22, unit: 'Luz y Ã³ptica', topic: 'Lentes Divergentes y MiopÃ­a', videoLink: 'https://www.youtube.com/watch?v=5hTXt8SsgBw' },
-    { session: 23, unit: 'Luz y Ã³ptica', topic: 'El Ojo Humano y Defectos', videoLink: 'https://www.youtube.com/watch?v=Z6GsrLQ6H3M' },
-    { session: 24, unit: 'Luz y Ã³ptica', topic: 'DispersiÃ³n CromÃ¡tica (Prisma)', videoLink: 'https://www.youtube.com/watch?v=JZt8EJH146k' },
-    { session: 25, unit: 'Luz y Ã³ptica', topic: 'EvaluaciÃ³n Fase 2: Luz', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 14, unit: 'Luz y óptica', topic: 'Dualidad Onda-Partícula y Espectro', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 15, unit: 'Luz y óptica', topic: 'Propagación y Velocidad de la Luz', videoLink: 'https://www.youtube.com/shorts/tvIQhjn6nm8' },
+    { session: 16, unit: 'Luz y óptica', topic: 'Reflexión en Espejos Planos', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
+    { session: 17, unit: 'Luz y óptica', topic: 'Espejos Cóncavos (Foco Real)', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
+    { session: 18, unit: 'Luz y óptica', topic: 'Espejos Convexos (Foco Virtual)', videoLink: 'https://www.youtube.com/watch?v=6nsIQW3kByo' },
+    { session: 19, unit: 'Luz y óptica', topic: 'Refracción y Ley de Snell', videoLink: 'https://www.youtube.com/watch?v=JfDw0jRjllo' },
+    { session: 20, unit: 'Luz y óptica', topic: 'Reflexión Total Interna', videoLink: 'https://www.youtube.com/watch?v=uKfGqD-2rAs' },
+    { session: 21, unit: 'Luz y óptica', topic: 'Lentes Convergentes y el Ojo', videoLink: 'https://www.youtube.com/watch?v=5hTXt8SsgBw' },
+    { session: 22, unit: 'Luz y óptica', topic: 'Lentes Divergentes y Miopía', videoLink: 'https://www.youtube.com/watch?v=5hTXt8SsgBw' },
+    { session: 23, unit: 'Luz y óptica', topic: 'El Ojo Humano y Defectos', videoLink: 'https://www.youtube.com/watch?v=Z6GsrLQ6H3M' },
+    { session: 24, unit: 'Luz y óptica', topic: 'Dispersión Cromática (Prisma)', videoLink: 'https://www.youtube.com/watch?v=JZt8EJH146k' },
+    { session: 25, unit: 'Luz y óptica', topic: 'Evaluación Fase 2: Luz', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
 
     // FASE 3: SISMOS
-    { session: 26, unit: 'DinÃ¡mica Terrestre', topic: 'Estructura Interna de la Tierra', videoLink: 'https://www.youtube.com/watch?v=IaZfi4RitGU' },
-    { session: 27, unit: 'DinÃ¡mica Terrestre', topic: 'TectÃ³nica de Placas', videoLink: 'https://www.youtube.com/watch?v=rrlwHnG3hPA' },
-    { session: 28, unit: 'DinÃ¡mica Terrestre', topic: 'LÃ­mites Convergentes y Divergentes', videoLink: 'https://www.youtube.com/watch?v=rrlwHnG3hPA' },
-    { session: 29, unit: 'DinÃ¡mica Terrestre', topic: 'Origen de los Sismos: Hipocentro', videoLink: 'https://www.youtube.com/watch?v=myeotjlSDkc' },
-    { session: 30, unit: 'DinÃ¡mica Terrestre', topic: 'Ondas P y S (Cuerpo)', videoLink: 'https://www.youtube.com/watch?v=myeotjlSDkc' },
-    { session: 31, unit: 'DinÃ¡mica Terrestre', topic: 'Ondas Superficiales (Rayleigh/Love)', videoLink: 'https://www.youtube.com/watch?v=myeotjlSDkc' },
-    { session: 32, unit: 'DinÃ¡mica Terrestre', topic: 'Escalas: Richter vs Mercalli', videoLink: 'https://www.youtube.com/watch?v=NlGb3SvyBpI' },
-    { session: 33, unit: 'DinÃ¡mica Terrestre', topic: 'EvaluaciÃ³n Fase 3: Sismos', videoLink: 'https://www.youtube.com/watch?v=vQ6NzZh0SNg' },
+    { session: 26, unit: 'Dinámica Terrestre', topic: 'Estructura Interna de la Tierra', videoLink: 'https://www.youtube.com/watch?v=IaZfi4RitGU' },
+    { session: 27, unit: 'Dinámica Terrestre', topic: 'Tectónica de Placas', videoLink: 'https://www.youtube.com/watch?v=rrlwHnG3hPA' },
+    { session: 28, unit: 'Dinámica Terrestre', topic: 'Límites Convergentes y Divergentes', videoLink: 'https://www.youtube.com/watch?v=rrlwHnG3hPA' },
+    { session: 29, unit: 'Dinámica Terrestre', topic: 'Origen de los Sismos: Hipocentro', videoLink: 'https://www.youtube.com/watch?v=myeotjlSDkc' },
+    { session: 30, unit: 'Dinámica Terrestre', topic: 'Ondas P y S (Cuerpo)', videoLink: 'https://www.youtube.com/watch?v=myeotjlSDkc' },
+    { session: 31, unit: 'Dinámica Terrestre', topic: 'Ondas Superficiales (Rayleigh/Love)', videoLink: 'https://www.youtube.com/watch?v=myeotjlSDkc' },
+    { session: 32, unit: 'Dinámica Terrestre', topic: 'Escalas: Richter vs Mercalli', videoLink: 'https://www.youtube.com/watch?v=NlGb3SvyBpI' },
+    { session: 33, unit: 'Dinámica Terrestre', topic: 'Evaluación Fase 3: Sismos', videoLink: 'https://www.youtube.com/watch?v=vQ6NzZh0SNg' },
 
     // FASE 4: UNIVERSO
-    { session: 34, unit: 'El Universo', topic: 'Estructuras CÃ³smicas y Escalas', videoLink: 'https://www.youtube.com/watch?v=h5rS1Lfahsk' },
-    { session: 35, unit: 'El Universo', topic: 'Big Bang y ExpansiÃ³n', videoLink: 'https://www.youtube.com/watch?v=h5rS1Lfahsk' },
+    { session: 34, unit: 'El Universo', topic: 'Estructuras Cósmicas y Escalas', videoLink: 'https://www.youtube.com/watch?v=h5rS1Lfahsk' },
+    { session: 35, unit: 'El Universo', topic: 'Big Bang y Expansión', videoLink: 'https://www.youtube.com/watch?v=h5rS1Lfahsk' },
     { session: 36, unit: 'El Universo', topic: 'Sistema Solar: Rocosos vs Gaseosos', videoLink: 'https://www.youtube.com/watch?v=idZGB2T5EPE' },
     { session: 37, unit: 'El Universo', topic: 'Leyes de Kepler (I y II)', videoLink: 'https://www.youtube.com/watch?v=a3-gU4tpjWc' },
-    { session: 38, unit: 'El Universo', topic: '3ra Ley de Kepler y GravitaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=a3-gU4tpjWc' },
+    { session: 38, unit: 'El Universo', topic: '3ra Ley de Kepler y Gravitación', videoLink: 'https://www.youtube.com/watch?v=a3-gU4tpjWc' },
     { session: 39, unit: 'Repaso Integral', topic: 'Repaso Ondas y Sonido', videoLink: 'https://www.youtube.com/watch?v=fbY_p2MoykA' },
-    { session: 40, unit: 'Repaso Integral', topic: 'Repaso Ã³ptica GeomÃ©trica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 40, unit: 'Repaso Integral', topic: 'Repaso óptica Geométrica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
     { session: 41, unit: 'Repaso Integral', topic: 'Repaso Sismos y Universo', videoLink: 'https://www.youtube.com/watch?v=jalVd4_I3jM' },
-    { session: 42, unit: 'Cierre', topic: 'ENSAYO FINAL SIMULACIÃ³N', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 43, unit: 'Cierre', topic: 'AnÃ¡lisis de Errores y Cierre', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 44, unit: 'Cierre', topic: 'FÃ­sica Moderna', videoTitle: 'IntroducciÃ³n a FÃ­sica CuÃ¡ntica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 45, unit: 'Cierre', topic: 'FÃ­sica y TecnologÃ­a', videoTitle: 'Aplicaciones de la FÃ­sica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
-    { session: 46, unit: 'Cierre', topic: 'Gran DesafÃ­o Final', videoTitle: 'EvaluaciÃ³n Final FÃ­sica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' }
+    { session: 42, unit: 'Cierre', topic: 'ENSAYO FINAL SIMULACIóN', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 43, unit: 'Cierre', topic: 'Análisis de Errores y Cierre', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 44, unit: 'Cierre', topic: 'Física Moderna', videoTitle: 'Introducción a Física Cuántica', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 45, unit: 'Cierre', topic: 'Física y Tecnología', videoTitle: 'Aplicaciones de la Física', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' },
+    { session: 46, unit: 'Cierre', topic: 'Gran Desafío Final', videoTitle: 'Evaluación Final Física', videoLink: 'https://www.youtube.com/watch?v=qy5j64ebAYQ' }
 ];
 
 
 const BIOLOGY_SYLLABUS = [
-    // UNIDAD 1: EVOLUCIÃ³N Y BIODIVERSIDAD
-    { session: 1, unit: 'EvoluciÃ³n', topic: 'TeorÃ­as Pre-Darwinianas', videoLink: 'https://www.youtube.com/watch?v=c1oJKMtVLYQ' },
-    { session: 2, unit: 'EvoluciÃ³n', topic: 'Darwin y Wallace', videoLink: 'https://www.youtube.com/watch?v=J7fsT_85Ld0' },
-    { session: 3, unit: 'EvoluciÃ³n', topic: 'TeorÃ­a SintÃ©tica', videoLink: 'https://www.youtube.com/watch?v=6QfDA44028s' },
-    { session: 4, unit: 'EvoluciÃ³n', topic: 'Registro FÃ³sil', videoLink: 'https://www.youtube.com/watch?v=aBrypvwLLpg' },
-    { session: 5, unit: 'EvoluciÃ³n', topic: 'AnatomÃ­a Comparada', videoLink: 'https://www.youtube.com/watch?v=DXlVOxWzdwQ' },
-    { session: 6, unit: 'EvoluciÃ³n', topic: 'EmbriologÃ­a y BiogeografÃ­a', videoLink: 'https://www.youtube.com/watch?v=lZUX9Kv6y7s' },
-    { session: 7, unit: 'EvoluciÃ³n', topic: 'EvoluciÃ³n Humana y HominizaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=9oY_Q5Gf_v4' },
-    { session: 8, unit: 'EvoluciÃ³n', topic: 'Taller de IntegraciÃ³n', videoLink: 'https://www.youtube.com/watch?v=bPr6duAHk4I' },
-    { session: 9, unit: 'EvoluciÃ³n', topic: 'EspeciaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=CBAwcRaVzA4' },
-    { session: 10, unit: 'EvoluciÃ³n', topic: 'TaxonomÃ­a y SistemÃ¡tica', videoLink: 'https://www.youtube.com/watch?v=Ji5aYL0KQoY' },
-    { session: 11, unit: 'EvoluciÃ³n', topic: 'SÃ­ntesis de la Unidad: El Origen de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=UqQ_u5qS5r4' },
-    { session: 12, unit: 'EvoluciÃ³n', topic: 'Protista y Fungi', videoLink: 'https://www.youtube.com/watch?v=6tttZ_7Q9a8' },
-    { session: 13, unit: 'EvoluciÃ³n', topic: 'Atributos de una PoblaciÃ³n (Densidad y DistribuciÃ³n)', videoLink: 'https://www.youtube.com/watch?v=S0T0E9y_H0c' },
+    // UNIDAD 1: EVOLUCIóN Y BIODIVERSIDAD
+    { session: 1, unit: 'Evolución', topic: 'Teorías Pre-Darwinianas', videoLink: 'https://www.youtube.com/watch?v=c1oJKMtVLYQ' },
+    { session: 2, unit: 'Evolución', topic: 'Darwin y Wallace', videoLink: 'https://www.youtube.com/watch?v=J7fsT_85Ld0' },
+    { session: 3, unit: 'Evolución', topic: 'Teoría Sintética', videoLink: 'https://www.youtube.com/watch?v=6QfDA44028s' },
+    { session: 4, unit: 'Evolución', topic: 'Registro Fósil', videoLink: 'https://www.youtube.com/watch?v=aBrypvwLLpg' },
+    { session: 5, unit: 'Evolución', topic: 'Anatomía Comparada', videoLink: 'https://www.youtube.com/watch?v=DXlVOxWzdwQ' },
+    { session: 6, unit: 'Evolución', topic: 'Embriología y Biogeografía', videoLink: 'https://www.youtube.com/watch?v=lZUX9Kv6y7s' },
+    { session: 7, unit: 'Evolución', topic: 'Evolución Humana y Hominización', videoLink: 'https://www.youtube.com/watch?v=9oY_Q5Gf_v4' },
+    { session: 8, unit: 'Evolución', topic: 'Taller de Integración', videoLink: 'https://www.youtube.com/watch?v=bPr6duAHk4I' },
+    { session: 9, unit: 'Evolución', topic: 'Especiación', videoLink: 'https://www.youtube.com/watch?v=CBAwcRaVzA4' },
+    { session: 10, unit: 'Evolución', topic: 'Taxonomía y Sistemática', videoLink: 'https://www.youtube.com/watch?v=Ji5aYL0KQoY' },
+    { session: 11, unit: 'Evolución', topic: 'Síntesis de la Unidad: El Origen de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=UqQ_u5qS5r4' },
+    { session: 12, unit: 'Evolución', topic: 'Protista y Fungi', videoLink: 'https://www.youtube.com/watch?v=6tttZ_7Q9a8' },
+    { session: 13, unit: 'Evolución', topic: 'Atributos de una Población (Densidad y Distribución)', videoLink: 'https://www.youtube.com/watch?v=S0T0E9y_H0c' },
 
     // UNIDAD 2: ORGANISMOS EN ECOSISTEMAS
-    { session: 14, unit: 'EcologÃ­a', topic: 'OrganizaciÃ³n EcolÃ³gica', videoLink: 'https://www.youtube.com/watch?v=18gqzWCPDMU' },
-    { session: 15, unit: 'EcologÃ­a', topic: 'DistribuciÃ³n Espacial', videoLink: 'https://www.youtube.com/watch?v=MIiIIrZKggI' },
-    { session: 16, unit: 'EcologÃ­a', topic: 'Crecimiento Poblacional: Modelos J y S', videoLink: 'https://www.youtube.com/watch?v=KzX6yK8jC8U' },
-    { session: 17, unit: 'EcologÃ­a', topic: 'Crecimiento LogÃ­stico', videoLink: 'https://www.youtube.com/watch?v=2IFEZUEL7DQ' },
-    { session: 18, unit: 'EcologÃ­a', topic: 'Interacciones BiolÃ³gicas (Competencia, DepredaciÃ³n)', videoLink: 'https://www.youtube.com/watch?v=XF3P8K7XpLc' },
-    { session: 19, unit: 'EcologÃ­a', topic: 'RegulaciÃ³n Poblacional', videoLink: 'https://www.youtube.com/watch?v=F1_W1qRBV5M' },
-    { session: 20, unit: 'EcologÃ­a', topic: 'Competencia y DepredaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=1Pqr7RVMx4A' },
-    { session: 21, unit: 'EcologÃ­a', topic: 'Simbiosis', videoLink: 'https://www.youtube.com/watch?v=GJnXQjFnyxo' },
-    { session: 22, unit: 'EcologÃ­a', topic: 'EcologÃ­a Humana', videoLink: 'https://www.youtube.com/watch?v=xqHjtAFuuc4' },
+    { session: 14, unit: 'Ecología', topic: 'Organización Ecológica', videoLink: 'https://www.youtube.com/watch?v=18gqzWCPDMU' },
+    { session: 15, unit: 'Ecología', topic: 'Distribución Espacial', videoLink: 'https://www.youtube.com/watch?v=MIiIIrZKggI' },
+    { session: 16, unit: 'Ecología', topic: 'Crecimiento Poblacional: Modelos J y S', videoLink: 'https://www.youtube.com/watch?v=KzX6yK8jC8U' },
+    { session: 17, unit: 'Ecología', topic: 'Crecimiento Logístico', videoLink: 'https://www.youtube.com/watch?v=2IFEZUEL7DQ' },
+    { session: 18, unit: 'Ecología', topic: 'Interacciones Biológicas (Competencia, Depredación)', videoLink: 'https://www.youtube.com/watch?v=XF3P8K7XpLc' },
+    { session: 19, unit: 'Ecología', topic: 'Regulación Poblacional', videoLink: 'https://www.youtube.com/watch?v=F1_W1qRBV5M' },
+    { session: 20, unit: 'Ecología', topic: 'Competencia y Depredación', videoLink: 'https://www.youtube.com/watch?v=1Pqr7RVMx4A' },
+    { session: 21, unit: 'Ecología', topic: 'Simbiosis', videoLink: 'https://www.youtube.com/watch?v=GJnXQjFnyxo' },
+    { session: 22, unit: 'Ecología', topic: 'Ecología Humana', videoLink: 'https://www.youtube.com/watch?v=xqHjtAFuuc4' },
 
-    // UNIDAD 3: MATERIA Y ENERGÃƒÂA
-    { session: 23, unit: 'EnergÃ­a', topic: 'Metabolismo y ATP', videoLink: 'https://www.youtube.com/watch?v=q2y_0wDcTDM' },
-    { session: 24, unit: 'EnergÃ­a', topic: 'FotosÃ­ntesis: Intro', videoLink: 'https://www.youtube.com/watch?v=XTVmIME0XOs' },
-    { session: 25, unit: 'EnergÃ­a', topic: 'Fase Dependiente de Luz', videoLink: 'https://www.youtube.com/watch?v=y-HglExruMI' },
-    { session: 26, unit: 'EnergÃ­a', topic: 'Ciclo de Calvin', videoLink: 'https://www.youtube.com/watch?v=d2DB-kWxg-w' },
-    { session: 27, unit: 'EnergÃ­a', topic: 'Cadenas y Tramas TrÃ³ficas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
-    { session: 28, unit: 'EnergÃ­a', topic: 'RespiraciÃ³n Celular', videoLink: 'https://www.youtube.com/watch?v=YefwfJ8IpEI' },
-    { session: 29, unit: 'EnergÃ­a', topic: 'IntegraciÃ³n MetabÃ³lica', videoLink: 'https://www.youtube.com/watch?v=JYSm79-IIHw' },
-    { session: 30, unit: 'EnergÃ­a', topic: 'Tramas TrÃ³ficas', videoLink: 'https://www.youtube.com/watch?v=UMrU2peVKcU' },
-    { session: 31, unit: 'EnergÃ­a', topic: 'Flujo de EnergÃ­a (10%)', videoLink: 'https://www.youtube.com/watch?v=6sUR80wigsU' },
-    { session: 32, unit: 'EnergÃ­a', topic: 'PirÃ¡mides EcolÃ³gicas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
-    { session: 33, unit: 'EnergÃ­a', topic: 'Ciclos BiogeoquÃ­micos (Carbono, NitrÃ³geno, Agua)', videoLink: 'https://www.youtube.com/watch?v=hUQoF16DmNk' },
-    { session: 34, unit: 'EnergÃ­a', topic: 'Ciclo del Carbono', videoLink: 'https://www.youtube.com/watch?v=6YE42IePPjM' },
-    { session: 35, unit: 'EnergÃ­a', topic: 'Ciclo del NitrÃ³geno', videoLink: 'https://www.youtube.com/watch?v=iH3AI-XtNS8' },
-    { session: 36, unit: 'EnergÃ­a', topic: 'Impacto AntropogÃ©nico en los Ecosistemas', videoLink: 'https://www.youtube.com/watch?v=BKS_rQbalGQ' },
+    // UNIDAD 3: MATERIA Y ENERGÍA
+    { session: 23, unit: 'Energía', topic: 'Metabolismo y ATP', videoLink: 'https://www.youtube.com/watch?v=q2y_0wDcTDM' },
+    { session: 24, unit: 'Energía', topic: 'Fotosíntesis: Intro', videoLink: 'https://www.youtube.com/watch?v=XTVmIME0XOs' },
+    { session: 25, unit: 'Energía', topic: 'Fase Dependiente de Luz', videoLink: 'https://www.youtube.com/watch?v=y-HglExruMI' },
+    { session: 26, unit: 'Energía', topic: 'Ciclo de Calvin', videoLink: 'https://www.youtube.com/watch?v=d2DB-kWxg-w' },
+    { session: 27, unit: 'Energía', topic: 'Cadenas y Tramas Tróficas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
+    { session: 28, unit: 'Energía', topic: 'Respiración Celular', videoLink: 'https://www.youtube.com/watch?v=YefwfJ8IpEI' },
+    { session: 29, unit: 'Energía', topic: 'Integración Metabólica', videoLink: 'https://www.youtube.com/watch?v=JYSm79-IIHw' },
+    { session: 30, unit: 'Energía', topic: 'Tramas Tróficas', videoLink: 'https://www.youtube.com/watch?v=UMrU2peVKcU' },
+    { session: 31, unit: 'Energía', topic: 'Flujo de Energía (10%)', videoLink: 'https://www.youtube.com/watch?v=6sUR80wigsU' },
+    { session: 32, unit: 'Energía', topic: 'Pirámides Ecológicas', videoLink: 'https://www.youtube.com/watch?v=cgmfiqWGLxI' },
+    { session: 33, unit: 'Energía', topic: 'Ciclos Biogeoquímicos (Carbono, Nitrógeno, Agua)', videoLink: 'https://www.youtube.com/watch?v=hUQoF16DmNk' },
+    { session: 34, unit: 'Energía', topic: 'Ciclo del Carbono', videoLink: 'https://www.youtube.com/watch?v=6YE42IePPjM' },
+    { session: 35, unit: 'Energía', topic: 'Ciclo del Nitrógeno', videoLink: 'https://www.youtube.com/watch?v=iH3AI-XtNS8' },
+    { session: 36, unit: 'Energía', topic: 'Impacto Antropogénico en los Ecosistemas', videoLink: 'https://www.youtube.com/watch?v=BKS_rQbalGQ' },
 
     // UNIDAD 4: SUSTENTABILIDAD
     { session: 37, unit: 'Sustentabilidad', topic: 'Efecto Invernadero', videoLink: 'https://www.youtube.com/watch?v=K7MzGe6OSs0' },
-    { session: 38, unit: 'Sustentabilidad', topic: 'Cambio ClimÃ¡tico', videoLink: 'https://www.youtube.com/watch?v=VoQYVGy45HY' },
-    { session: 39, unit: 'Sustentabilidad', topic: 'Huella EcolÃ³gica', videoLink: 'https://www.youtube.com/watch?v=chh0sAmfCwo' },
-    { session: 40, unit: 'Sustentabilidad', topic: 'ContaminaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=PH3H1x5CN5I' },
-    { session: 41, unit: 'Sustentabilidad', topic: 'Matriz EnergÃ©tica', videoLink: 'https://www.youtube.com/watch?v=YWds9hX3g7c' },
-    { session: 42, unit: 'Sustentabilidad', topic: 'Huella EcolÃ³gica y ConservaciÃ³n de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=Z6z_V9XN8S4' },
+    { session: 38, unit: 'Sustentabilidad', topic: 'Cambio Climático', videoLink: 'https://www.youtube.com/watch?v=VoQYVGy45HY' },
+    { session: 39, unit: 'Sustentabilidad', topic: 'Huella Ecológica', videoLink: 'https://www.youtube.com/watch?v=chh0sAmfCwo' },
+    { session: 40, unit: 'Sustentabilidad', topic: 'Contaminación', videoLink: 'https://www.youtube.com/watch?v=PH3H1x5CN5I' },
+    { session: 41, unit: 'Sustentabilidad', topic: 'Matriz Energética', videoLink: 'https://www.youtube.com/watch?v=YWds9hX3g7c' },
+    { session: 42, unit: 'Sustentabilidad', topic: 'Huella Ecológica y Conservación de la Biodiversidad', videoLink: 'https://www.youtube.com/watch?v=Z6z_V9XN8S4' },
     { session: 43, unit: 'Sustentabilidad', topic: 'Biodiversidad Norte/Centro', videoLink: 'https://www.youtube.com/watch?v=US074D5Y_MY' },
     { session: 44, unit: 'Sustentabilidad', topic: 'Biodiversidad Sur', videoLink: 'https://www.youtube.com/watch?v=SJeRsE9TyBk' },
-    { session: 45, unit: 'Sustentabilidad', topic: 'ConservaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=KcIHCEFKloo' },
-    { session: 46, unit: 'Sustentabilidad', topic: 'Cierre y ReflexiÃ³n', videoLink: 'https://www.youtube.com/watch?v=lzYAXu7Om4s' }
+    { session: 45, unit: 'Sustentabilidad', topic: 'Conservación', videoLink: 'https://www.youtube.com/watch?v=KcIHCEFKloo' },
+    { session: 46, unit: 'Sustentabilidad', topic: 'Cierre y Reflexión', videoLink: 'https://www.youtube.com/watch?v=lzYAXu7Om4s' }
 ];
 
 
 const HISTORY_SYLLABUS = [
-    // UNIDAD 1: LA CONSTRUCCIÃ³N DEL ESTADO NACIÃ³N (Sesiones 1-12)
+    // UNIDAD 1: LA CONSTRUCCIóN DEL ESTADO NACIóN (Sesiones 1-12)
     {
         session: 1,
-        unit: 'ConstrucciÃ³n Estado NaciÃ³n',
-        topic: 'El Ideario Liberal y la ReconfiguraciÃ³n de Europa',
+        unit: 'Construcción Estado Nación',
+        topic: 'El Ideario Liberal y la Reconfiguración de Europa',
         videoTitle: 'Liberalismo y Nacionalismo - Europa Siglo XIX',
         videoLink: 'https://www.youtube.com/watch?v=YcneJFUC47s',
-        readingTitle: 'SÃ­ntesis: Liberalismo y Nacionalismo',
-        readingContent: `El siglo XIX europeo no puede entenderse sin la influencia de la "Doble RevoluciÃ³n". El liberalismo emergiÃ³ como la ideologÃ­a de una burguesÃ­a ascendente que demandaba libertad individual, igualdad ante la ley, separaciÃ³n de poderes y soberanÃ­a nacional. Sin embargo, es crucial problematizar que este "liberalismo clÃ¡sico" a menudo excluÃ­a a las masas populares y a las mujeres. La sesiÃ³n explora cÃ³mo estas ideas, plasmadas en textos constitucionales, socavaron la legitimidad de las monarquÃ­as absolutas. El video de Puntaje Nacional desglosa la definiciÃ³n de naciÃ³n como un acto de voluntad polÃ­tica frente a la concepciÃ³n orgÃ¡nica.`
+        readingTitle: 'Síntesis: Liberalismo y Nacionalismo',
+        readingContent: `El siglo XIX europeo no puede entenderse sin la influencia de la "Doble Revolución". El liberalismo emergió como la ideología de una burguesía ascendente que demandaba libertad individual, igualdad ante la ley, separación de poderes y soberanía nacional. Sin embargo, es crucial problematizar que este "liberalismo clásico" a menudo excluía a las masas populares y a las mujeres. La sesión explora cómo estas ideas, plasmadas en textos constitucionales, socavaron la legitimidad de las monarquías absolutas. El video de Puntaje Nacional desglosa la definición de nación como un acto de voluntad política frente a la concepción orgánica.`
     },
     {
         session: 2,
-        unit: 'ConstrucciÃ³n Estado NaciÃ³n',
+        unit: 'Construcción Estado Nación',
         topic: 'La Cultura Burguesa y el Mito del Progreso',
         videoTitle: 'La cultura burguesa y el progreso',
         videoLink: 'https://www.youtube.com/watch?v=yUmJIvZdknw',
-        readingTitle: 'SÃ­ntesis: Cultura Burguesa',
-        readingContent: `La burguesÃ­a no solo transformÃ³ la polÃ­tica, sino que impuso una hegemonÃ­a cultural. Valores como el esfuerzo individual, el ahorro, la familia nuclear patriarcal y el orden pÃºblico se convirtieron en el estÃ¡ndar moral. Esta clase social abrazÃ³ el positivismo y la fe ciega en el progreso indefinido. Es fundamental discutir cÃ³mo esta visiÃ³n optimista ocultaba las profundas desigualdades sociales. El video permite visualizar los espacios de sociabilidad burguesa.`
+        readingTitle: 'Síntesis: Cultura Burguesa',
+        readingContent: `La burguesía no solo transformó la política, sino que impuso una hegemonía cultural. Valores como el esfuerzo individual, el ahorro, la familia nuclear patriarcal y el orden público se convirtieron en el estándar moral. Esta clase social abrazó el positivismo y la fe ciega en el progreso indefinido. Es fundamental discutir cómo esta visión optimista ocultaba las profundas desigualdades sociales. El video permite visualizar los espacios de sociabilidad burguesa.`
     },
-    { session: 3, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'Nacionalismos Europeos: UnificaciÃ³n y FragmentaciÃ³n', videoTitle: 'OrÃ­genes del nacionalismo polÃ­tico europeo', videoLink: 'https://www.youtube.com/watch?v=BgYbxwNcqkc' },
-    { session: 4, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'La FormaciÃ³n del Estado en AmÃ©rica', videoTitle: 'ConformaciÃ³n Estado NaciÃ³n en AmÃ©rica', videoLink: 'https://www.youtube.com/watch?v=ALA4hfPAgXM' },
-    { session: 5, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'Conflictos Territoriales y Caudillismo', videoTitle: 'ConsolidaciÃ³n de Estados en CentroamÃ©rica', videoLink: 'https://www.youtube.com/watch?v=OzR6f6YI9SQ' },
-    { session: 6, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'Ensayos Constitucionales en Chile (1823-1830)', videoTitle: 'Ensayos Constitucionales Chile (1823-1830)', videoLink: 'https://www.youtube.com/watch?v=pT0q2HaozEw' },
-    { session: 7, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'La Guerra Civil de 1829', videoTitle: 'Crisis de 1829 y Guerra Civil', videoLink: 'https://www.youtube.com/watch?v=pwndHH_0ex8' },
-    { session: 8, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'Pensamiento de Portales y ConstituciÃ³n de 1833', videoTitle: 'Pensamiento de Diego Portales', videoLink: 'https://www.youtube.com/watch?v=NVB458I4Mj4' },
-    { session: 9, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'La RepÃºblica Conservadora', videoTitle: 'RepÃºblica Conservadora y Liberal', videoLink: 'https://www.youtube.com/watch?v=hf-DFfoSZOw' },
-    { session: 10, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'La TransiciÃ³n Liberal y Reformas', videoTitle: 'Las Transformaciones Liberales', videoLink: 'https://www.youtube.com/watch?v=M1acYUUSLhg' },
-    { session: 11, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'La Guerra contra EspaÃ±a', videoTitle: 'Guerra contra EspaÃ±a 1865', videoLink: 'https://www.youtube.com/watch?v=bU9WmMmwVgg' },
-    { session: 12, unit: 'ConstrucciÃ³n Estado NaciÃ³n', topic: 'EducaciÃ³n y Cultura Siglo XIX', videoTitle: 'Desarrollo educaciÃ³n y cultura Chile siglo XIX', videoLink: 'https://www.youtube.com/watch?v=Wpu4giF84Yg' },
+    { session: 3, unit: 'Construcción Estado Nación', topic: 'Nacionalismos Europeos: Unificación y Fragmentación', videoTitle: 'Orígenes del nacionalismo político europeo', videoLink: 'https://www.youtube.com/watch?v=BgYbxwNcqkc' },
+    { session: 4, unit: 'Construcción Estado Nación', topic: 'La Formación del Estado en América', videoTitle: 'Conformación Estado Nación en América', videoLink: 'https://www.youtube.com/watch?v=ALA4hfPAgXM' },
+    { session: 5, unit: 'Construcción Estado Nación', topic: 'Conflictos Territoriales y Caudillismo', videoTitle: 'Consolidación de Estados en Centroamérica', videoLink: 'https://www.youtube.com/watch?v=OzR6f6YI9SQ' },
+    { session: 6, unit: 'Construcción Estado Nación', topic: 'Ensayos Constitucionales en Chile (1823-1830)', videoTitle: 'Ensayos Constitucionales Chile (1823-1830)', videoLink: 'https://www.youtube.com/watch?v=pT0q2HaozEw' },
+    { session: 7, unit: 'Construcción Estado Nación', topic: 'La Guerra Civil de 1829', videoTitle: 'Crisis de 1829 y Guerra Civil', videoLink: 'https://www.youtube.com/watch?v=pwndHH_0ex8' },
+    { session: 8, unit: 'Construcción Estado Nación', topic: 'Pensamiento de Portales y Constitución de 1833', videoTitle: 'Pensamiento de Diego Portales', videoLink: 'https://www.youtube.com/watch?v=NVB458I4Mj4' },
+    { session: 9, unit: 'Construcción Estado Nación', topic: 'La República Conservadora', videoTitle: 'República Conservadora y Liberal', videoLink: 'https://www.youtube.com/watch?v=hf-DFfoSZOw' },
+    { session: 10, unit: 'Construcción Estado Nación', topic: 'La Transición Liberal y Reformas', videoTitle: 'Las Transformaciones Liberales', videoLink: 'https://www.youtube.com/watch?v=M1acYUUSLhg' },
+    { session: 11, unit: 'Construcción Estado Nación', topic: 'La Guerra contra España', videoTitle: 'Guerra contra España 1865', videoLink: 'https://www.youtube.com/watch?v=bU9WmMmwVgg' },
+    { session: 12, unit: 'Construcción Estado Nación', topic: 'Educación y Cultura Siglo XIX', videoTitle: 'Desarrollo educación y cultura Chile siglo XIX', videoLink: 'https://www.youtube.com/watch?v=Wpu4giF84Yg' },
 
-    // UNIDAD 2: PROGRESO, INDUSTRIALIZACIÃ³N Y CRISIS (Sesiones 13-23)
+    // UNIDAD 2: PROGRESO, INDUSTRIALIZACIóN Y CRISIS (Sesiones 13-23)
     {
         session: 13,
         unit: 'Progreso y Crisis',
-        topic: 'RevoluciÃ³n Industrial: Transformaciones Productivas',
-        videoTitle: 'RevoluciÃ³n Industrial y sus caracterÃ­sticas',
+        topic: 'Revolución Industrial: Transformaciones Productivas',
+        videoTitle: 'Revolución Industrial y sus características',
         videoLink: 'https://www.youtube.com/watch?v=GlLW9oB8fEQ',
-        readingTitle: 'SÃ­ntesis: RevoluciÃ³n Industrial',
-        readingContent: `La industrializaciÃ³n marcÃ³ el paso de una economÃ­a agraria y artesanal a una dominada por la industria mecanizada. Se distinguen dos fases: la del carbÃ³n/vapor y la del petrÃ³leo/electricidad. Este proceso cambiÃ³ irreversiblemente la relaciÃ³n del ser humano con el medio ambiente y el tiempo, consolidando el capitalismo global. Explica los factores que permitieron el despegue industrial en Inglaterra.`
+        readingTitle: 'Síntesis: Revolución Industrial',
+        readingContent: `La industrialización marcó el paso de una economía agraria y artesanal a una dominada por la industria mecanizada. Se distinguen dos fases: la del carbón/vapor y la del petróleo/electricidad. Este proceso cambió irreversiblemente la relación del ser humano con el medio ambiente y el tiempo, consolidando el capitalismo global. Explica los factores que permitieron el despegue industrial en Inglaterra.`
     },
-    { session: 14, unit: 'Progreso y Crisis', topic: 'Sociedad Industrial: BurguesÃ­a y Proletariado', videoTitle: 'Impacto social y surgimiento del proletariado', videoLink: 'https://www.youtube.com/watch?v=WMtHe2b--xU' },
-    { session: 15, unit: 'Progreso y Crisis', topic: 'IdeologÃ­as y Movimiento Obrero', videoTitle: 'La CuestiÃ³n Social y el Despertar del Mundo Obrero', videoLink: 'https://www.youtube.com/watch?v=M1acYUUSLhg' },
+    { session: 14, unit: 'Progreso y Crisis', topic: 'Sociedad Industrial: Burguesía y Proletariado', videoTitle: 'Impacto social y surgimiento del proletariado', videoLink: 'https://www.youtube.com/watch?v=WMtHe2b--xU' },
+    { session: 15, unit: 'Progreso y Crisis', topic: 'Ideologías y Movimiento Obrero', videoTitle: 'La Cuestión Social y el Despertar del Mundo Obrero', videoLink: 'https://www.youtube.com/watch?v=M1acYUUSLhg' },
     { session: 16, unit: 'Progreso y Crisis', topic: 'Imperialismo Europeo: Motivaciones', videoTitle: 'Imperialismo y colonialismo - Causas', videoLink: 'https://www.youtube.com/watch?v=7Q_GLFvPWoE' },
     { session: 17, unit: 'Progreso y Crisis', topic: 'El Reparto del Mundo', videoTitle: 'Imperialismo y colonialismo - Mapas', videoLink: 'https://www.youtube.com/watch?v=esTiZrPGXTU' },
-    { session: 18, unit: 'Progreso y Crisis', topic: 'Impacto en Pueblos Colonizados', videoTitle: 'ReflexiÃ³n sobre el imperialismo', videoLink: 'https://www.youtube.com/watch?v=suD9G7DVpBw' },
+    { session: 18, unit: 'Progreso y Crisis', topic: 'Impacto en Pueblos Colonizados', videoTitle: 'Reflexión sobre el imperialismo', videoLink: 'https://www.youtube.com/watch?v=suD9G7DVpBw' },
     { session: 19, unit: 'Progreso y Crisis', topic: 'Paz Armada y Alianzas', videoTitle: 'Rivalidades imperialistas y alianzas', videoLink: 'https://www.youtube.com/watch?v=XScsA5Pyf0w' },
-    { session: 20, unit: 'Progreso y Crisis', topic: 'Primera Guerra Mundial: Guerra Industrial', videoTitle: 'Primera Guerra Mundial (ContinuaciÃ³n)', videoLink: 'https://www.youtube.com/watch?v=XScsA5Pyf0w' },
+    { session: 20, unit: 'Progreso y Crisis', topic: 'Primera Guerra Mundial: Guerra Industrial', videoTitle: 'Primera Guerra Mundial (Continuación)', videoLink: 'https://www.youtube.com/watch?v=XScsA5Pyf0w' },
     { session: 21, unit: 'Progreso y Crisis', topic: 'Ciclo del Salitre: Auge y Dependencia', videoTitle: 'Chile a finales del siglo XIX', videoLink: 'https://www.youtube.com/watch?v=v2dRu-yy-Nw' },
-    { session: 22, unit: 'Progreso y Crisis', topic: 'CuestiÃ³n Social: Pampa y Ciudad', videoTitle: 'Ciclo del salitre y cuestiÃ³n social', videoLink: 'https://www.youtube.com/watch?v=vp9D91ZcP7A' },
-    { session: 23, unit: 'Progreso y Crisis', topic: 'MovilizaciÃ³n Obrera y RepresiÃ³n', videoTitle: 'Matanza de Santa MarÃ­a de Iquique', videoLink: 'https://www.youtube.com/watch?v=K5n5VhyzYcc' },
+    { session: 22, unit: 'Progreso y Crisis', topic: 'Cuestión Social: Pampa y Ciudad', videoTitle: 'Ciclo del salitre y cuestión social', videoLink: 'https://www.youtube.com/watch?v=vp9D91ZcP7A' },
+    { session: 23, unit: 'Progreso y Crisis', topic: 'Movilización Obrera y Represión', videoTitle: 'Matanza de Santa María de Iquique', videoLink: 'https://www.youtube.com/watch?v=K5n5VhyzYcc' },
 
-    // UNIDAD 3: CONFORMACIÃ³N DEL TERRITORIO CHILENO (Sesiones 24-34)
+    // UNIDAD 3: CONFORMACIóN DEL TERRITORIO CHILENO (Sesiones 24-34)
     {
         session: 24,
         unit: 'Territorio Nacional',
-        topic: 'ExploraciÃ³n CientÃ­fica y Reconocimiento',
-        videoTitle: 'ExploraciÃ³n geogrÃ¡fica siglo XIX',
+        topic: 'Exploración Científica y Reconocimiento',
+        videoTitle: 'Exploración geográfica siglo XIX',
         videoLink: 'https://www.youtube.com/watch?v=tuPwi15_5Wc',
-        readingTitle: 'SÃ­ntesis: Ciencia y SoberanÃ­a',
-        readingContent: `El Estado chileno del siglo XIX necesitaba "conocer para gobernar". ContratÃ³ a cientÃ­ficos extranjeros (Claudio Gay, Pissis, Philippi) para cartografiar el territorio y descubrir sus recursos mineros y agrÃ­colas. Estas exploraciones fuer la avanzada de la ocupaciÃ³n estatal efectiva.`
+        readingTitle: 'Síntesis: Ciencia y Soberanía',
+        readingContent: `El Estado chileno del siglo XIX necesitaba "conocer para gobernar". Contrató a científicos extranjeros (Claudio Gay, Pissis, Philippi) para cartografiar el territorio y descubrir sus recursos mineros y agrícolas. Estas exploraciones fuer la avanzada de la ocupación estatal efectiva.`
     },
-    { session: 25, unit: 'Territorio Nacional', topic: 'Estrategias de OcupaciÃ³n Territorial', videoTitle: 'Mecanismos de ocupaciÃ³n territorial', videoLink: 'https://www.youtube.com/watch?v=N0mdAjzdVl0' },
-    { session: 26, unit: 'Territorio Nacional', topic: 'ColonizaciÃ³n Alemana en el Sur', videoTitle: 'ColonizaciÃ³n alemana en el sur', videoLink: 'https://www.youtube.com/watch?v=RFsumviRmlc' },
-    { session: 27, unit: 'Territorio Nacional', topic: 'Guerra del PacÃ­fico: Causas', videoTitle: 'Guerra del PacÃ­fico: Causas', videoLink: 'https://www.youtube.com/watch?v=PQodJNKpgwg' },
-    { session: 28, unit: 'Territorio Nacional', topic: 'CampaÃ±as de la Guerra del PacÃ­fico', videoTitle: 'CampaÃ±a Naval y Terrestre', videoLink: 'https://www.youtube.com/watch?v=kUmB00qBq8w' },
-    { session: 29, unit: 'Territorio Nacional', topic: 'Consecuencias de la Guerra', videoTitle: 'Consecuencias Guerra del PacÃ­fico', videoLink: 'https://www.youtube.com/watch?v=o4wA_w9vQFU' },
-    { session: 30, unit: 'Territorio Nacional', topic: 'OcupaciÃ³n de la AraucanÃ­a', videoTitle: 'OcupaciÃ³n de la AraucanÃ­a', videoLink: 'https://www.youtube.com/watch?v=RMbFKYd-LLI' },
+    { session: 25, unit: 'Territorio Nacional', topic: 'Estrategias de Ocupación Territorial', videoTitle: 'Mecanismos de ocupación territorial', videoLink: 'https://www.youtube.com/watch?v=N0mdAjzdVl0' },
+    { session: 26, unit: 'Territorio Nacional', topic: 'Colonización Alemana en el Sur', videoTitle: 'Colonización alemana en el sur', videoLink: 'https://www.youtube.com/watch?v=RFsumviRmlc' },
+    { session: 27, unit: 'Territorio Nacional', topic: 'Guerra del Pacífico: Causas', videoTitle: 'Guerra del Pacífico: Causas', videoLink: 'https://www.youtube.com/watch?v=PQodJNKpgwg' },
+    { session: 28, unit: 'Territorio Nacional', topic: 'Campañas de la Guerra del Pacífico', videoTitle: 'Campaña Naval y Terrestre', videoLink: 'https://www.youtube.com/watch?v=kUmB00qBq8w' },
+    { session: 29, unit: 'Territorio Nacional', topic: 'Consecuencias de la Guerra', videoTitle: 'Consecuencias Guerra del Pacífico', videoLink: 'https://www.youtube.com/watch?v=o4wA_w9vQFU' },
+    { session: 30, unit: 'Territorio Nacional', topic: 'Ocupación de la Araucanía', videoTitle: 'Ocupación de la Araucanía', videoLink: 'https://www.youtube.com/watch?v=RMbFKYd-LLI' },
     { session: 31, unit: 'Territorio Nacional', topic: 'Reducciones y Pueblo Mapuche', videoTitle: 'Tierras y Reducciones Mapuche', videoLink: 'https://www.youtube.com/watch?v=RMbFKYd-LLI' },
-    { session: 32, unit: 'Territorio Nacional', topic: 'ColonizaciÃ³n de Magallanes y Selk\'nam', videoTitle: 'Conflicto en Magallanes y Selk\'nam', videoLink: 'https://www.youtube.com/watch?v=o5MRPdSSddU' },
-    { session: 33, unit: 'Territorio Nacional', topic: 'IncorporaciÃ³n de Rapa Nui', videoTitle: 'Historia de la anexiÃ³n de Rapa Nui', videoLink: 'https://www.youtube.com/watch?v=90RzhcA0b0g' },
+    { session: 32, unit: 'Territorio Nacional', topic: 'Colonización de Magallanes y Selk\'nam', videoTitle: 'Conflicto en Magallanes y Selk\'nam', videoLink: 'https://www.youtube.com/watch?v=o5MRPdSSddU' },
+    { session: 33, unit: 'Territorio Nacional', topic: 'Incorporación de Rapa Nui', videoTitle: 'Historia de la anexión de Rapa Nui', videoLink: 'https://www.youtube.com/watch?v=90RzhcA0b0g' },
     { session: 34, unit: 'Territorio Nacional', topic: 'Tratado de 1881 con Argentina', videoTitle: 'Tratado de 1881 Chile-Argentina', videoLink: 'https://www.youtube.com/watch?v=3jypb_mjLyA' },
 
-    // UNIDAD 4: ECONOMÃƒÂA Y CIUDADANÃƒÂA (Sesiones 35-46)
+    // UNIDAD 4: ECONOMÍA Y CIUDADANÍA (Sesiones 35-46)
     {
         session: 35,
-        unit: 'EconomÃ­a y CiudadanÃ­a',
-        topic: 'El Problema EconÃ³mico: Escasez',
-        videoTitle: 'Problema econÃ³mico y escasez',
+        unit: 'Economía y Ciudadanía',
+        topic: 'El Problema Económico: Escasez',
+        videoTitle: 'Problema económico y escasez',
         videoLink: 'https://www.youtube.com/watch?v=Y7yv3EfVpLs',
-        readingTitle: 'SÃ­ntesis: EconomÃ­a y Escasez',
-        readingContent: `La economÃ­a surge de una contradicciÃ³n: necesidades ilimitadas vs. recursos limitados. Esto obliga a elegir (costo de oportunidad). Es fundamental desmitificar que la escasez es solo pobreza; es una condiciÃ³n universal. El video usa ejemplos diarios para ilustrar la asignaciÃ³n de recursos.`
+        readingTitle: 'Síntesis: Economía y Escasez',
+        readingContent: `La economía surge de una contradicción: necesidades ilimitadas vs. recursos limitados. Esto obliga a elegir (costo de oportunidad). Es fundamental desmitificar que la escasez es solo pobreza; es una condición universal. El video usa ejemplos diarios para ilustrar la asignación de recursos.`
     },
-    { session: 36, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'Agentes EconÃ³micos y Flujo Circular', videoTitle: 'Agentes econÃ³micos', videoLink: 'https://www.youtube.com/watch?v=Y7yv3EfVpLs' },
-    { session: 37, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'Bienes, Servicios y Factores Productivos', videoTitle: 'Factores productivos y tipos de bienes', videoLink: 'https://www.youtube.com/watch?v=sdEraaf7iyk' },
-    { session: 38, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'Ley de Oferta y Demanda', videoTitle: 'CÃ³mo funciona la oferta y la demanda', videoLink: 'https://www.youtube.com/watch?v=QdYya8wR3m4' },
-    { session: 39, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'FenÃ³menos MacroeconÃ³micos: InflaciÃ³n', videoTitle: 'InflaciÃ³n y DeflaciÃ³n', videoLink: 'https://www.youtube.com/watch?v=tzkL7GalXH0' },
-    { session: 40, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'Fallas de Mercado: Monopolios', videoTitle: 'Monopolio y ColusiÃ³n', videoLink: 'https://www.youtube.com/watch?v=nJHRFv6UDLE' },
-    { session: 41, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'Instrumentos de Ahorro e InversiÃ³n', videoTitle: 'Instrumentos para invertir (DAP)', videoLink: 'https://www.youtube.com/watch?v=D1CIp63Zw40' },
-    { session: 42, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'CrÃ©dito y Endeudamiento Responsable', videoTitle: 'EducaciÃ³n financiera para jÃ³venes', videoLink: 'https://www.youtube.com/watch?v=uZX6o2Ty63w' },
-    { session: 43, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'Derechos del Consumidor', videoTitle: 'Derechos del consumidor - GarantÃ­a Legal', videoLink: 'https://www.youtube.com/watch?v=6eYv1jHRuY4' },
-    { session: 44, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'Consumo Sostenible', videoTitle: 'Acciones sustentables desde casa', videoLink: 'https://www.youtube.com/watch?v=irwnImaQCNA' },
-    { session: 45, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'Desarrollo Sustentable', videoTitle: 'Desarrollo sustentable y economÃ­a ambiental', videoLink: 'https://www.youtube.com/watch?v=4y3hnYt5Zi8' },
-    { session: 46, unit: 'EconomÃ­a y CiudadanÃ­a', topic: 'SÃ­ntesis Final: Historia y CiudadanÃ­a', videoTitle: 'SÃ­ntesis Historia y EconomÃ­a', videoLink: 'https://www.youtube.com/watch?v=lI5BlkzwAcA' }
+    { session: 36, unit: 'Economía y Ciudadanía', topic: 'Agentes Económicos y Flujo Circular', videoTitle: 'Agentes económicos', videoLink: 'https://www.youtube.com/watch?v=Y7yv3EfVpLs' },
+    { session: 37, unit: 'Economía y Ciudadanía', topic: 'Bienes, Servicios y Factores Productivos', videoTitle: 'Factores productivos y tipos de bienes', videoLink: 'https://www.youtube.com/watch?v=sdEraaf7iyk' },
+    { session: 38, unit: 'Economía y Ciudadanía', topic: 'Ley de Oferta y Demanda', videoTitle: 'Cómo funciona la oferta y la demanda', videoLink: 'https://www.youtube.com/watch?v=QdYya8wR3m4' },
+    { session: 39, unit: 'Economía y Ciudadanía', topic: 'Fenómenos Macroeconómicos: Inflación', videoTitle: 'Inflación y Deflación', videoLink: 'https://www.youtube.com/watch?v=tzkL7GalXH0' },
+    { session: 40, unit: 'Economía y Ciudadanía', topic: 'Fallas de Mercado: Monopolios', videoTitle: 'Monopolio y Colusión', videoLink: 'https://www.youtube.com/watch?v=nJHRFv6UDLE' },
+    { session: 41, unit: 'Economía y Ciudadanía', topic: 'Instrumentos de Ahorro e Inversión', videoTitle: 'Instrumentos para invertir (DAP)', videoLink: 'https://www.youtube.com/watch?v=D1CIp63Zw40' },
+    { session: 42, unit: 'Economía y Ciudadanía', topic: 'Crédito y Endeudamiento Responsable', videoTitle: 'Educación financiera para jóvenes', videoLink: 'https://www.youtube.com/watch?v=uZX6o2Ty63w' },
+    { session: 43, unit: 'Economía y Ciudadanía', topic: 'Derechos del Consumidor', videoTitle: 'Derechos del consumidor - Garantía Legal', videoLink: 'https://www.youtube.com/watch?v=6eYv1jHRuY4' },
+    { session: 44, unit: 'Economía y Ciudadanía', topic: 'Consumo Sostenible', videoTitle: 'Acciones sustentables desde casa', videoLink: 'https://www.youtube.com/watch?v=irwnImaQCNA' },
+    { session: 45, unit: 'Economía y Ciudadanía', topic: 'Desarrollo Sustentable', videoTitle: 'Desarrollo sustentable y economía ambiental', videoLink: 'https://www.youtube.com/watch?v=4y3hnYt5Zi8' },
+    { session: 46, unit: 'Economía y Ciudadanía', topic: 'Síntesis Final: Historia y Ciudadanía', videoTitle: 'Síntesis Historia y Economía', videoLink: 'https://www.youtube.com/watch?v=lI5BlkzwAcA' }
 ];
 
 const DEFAULT_HISTORY_ROUTE = {
@@ -1788,11 +1783,11 @@ const DEFAULT_HISTORY_ROUTE = {
     video_link: 'https://youtube.com',
     daily_route_steps: [
         { step: '1. Video Documental', action: 'video', icon: 'Play', isComplete: false },
-        { step: '2. AnÃ¡lisis HistÃ³rico', action: 'start_route', icon: 'Globe', isComplete: false },
+        { step: '2. Análisis Histórico', action: 'start_route', icon: 'Globe', isComplete: false },
         { step: '3. Quiz Ciudadano', action: 'quiz', icon: 'Brain', isComplete: false },
         { step: '4. Debate', action: 'doubt', icon: 'MessageCircle', isComplete: false }
     ],
-    recommended_action_text: "INICIAR ANÃƒÂLISIS HISTÃ³RICO"
+    recommended_action_text: "INICIAR ANÁLISIS HISTóRICO"
 };
 
 const getSyllabusForSubject = (subject) => {
@@ -1816,12 +1811,12 @@ const distributePrepSessions = (sessions, totalQuestions) => {
 };
 
 const PREP_EXAM_SUBJECT_OPTIONS = [
-    { value: 'MATEMATICA', label: 'MatemÃ¡tica' },
+    { value: 'MATEMATICA', label: 'Matemática' },
     { value: 'LENGUAJE', label: 'Lenguaje' },
     { value: 'HISTORIA', label: 'Historia' },
-    { value: 'FISICA', label: 'FÃ­sica' },
-    { value: 'QUIMICA', label: 'QuÃ­mica' },
-    { value: 'BIOLOGIA', label: 'BiologÃ­a' }
+    { value: 'FISICA', label: 'Física' },
+    { value: 'QUIMICA', label: 'Química' },
+    { value: 'BIOLOGIA', label: 'Biología' }
 ];
 
 const PREP_EXAM_COUNT_OPTIONS = [15, 30, 45];
@@ -1950,6 +1945,8 @@ const PrepExamSetupModal = ({
 const OraclePrepModal = ({
     isOpen,
     onClose,
+    userId,
+    userEmail,
     subject,
     onChangeSubject,
     session,
@@ -1959,11 +1956,13 @@ const OraclePrepModal = ({
     questionCount,
     onChangeQuestionCount,
     onStart,
+    onStartFromNotebook,
     isLoading
 }) => {
-    if (!isOpen) return null;
-
+    const [mode, setMode] = useState('manual');
     const promptReady = Number(session) > 0 && String(subject || '').trim().length > 0;
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[181] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md">
@@ -1972,7 +1971,7 @@ const OraclePrepModal = ({
                     <div>
                         <h3 className="text-2xl font-black text-[#2B2E4A]">Oráculo Matico</h3>
                         <p className="text-sm font-bold text-[#9094A6]">
-                            Prueba libre por materia, sesiÃ³n o libro. La IA llena los vacÃ­os si no hay banco.
+                            Prueba libre por materia, sesión o libro. La IA llena los vacíos si no hay banco.
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -1981,49 +1980,27 @@ const OraclePrepModal = ({
                 </div>
 
                 <div className="p-6 space-y-5">
-                    <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
-                                Materia
-                            </label>
-                            <select
-                                value={subject}
-                                onChange={(e) => onChangeSubject(e.target.value)}
-                                className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED]"
-                            >
-                                {PREP_EXAM_SUBJECT_OPTIONS.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
-                                Sesión base
-                            </label>
-                            <input
-                                type="number"
-                                min="1"
-                                value={session}
-                                onChange={(e) => onChangeSession(Number(e.target.value) || 1)}
-                                className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED]"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
-                            Tema, libro o capítulo
-                        </label>
-                        <textarea
-                            value={prompt}
-                            onChange={(e) => onChangePrompt(e.target.value)}
-                            rows={5}
-                            className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED] resize-none"
-                            placeholder="Ej: El Principito, capítulos 1 al 4. Quiero preguntas de comprensión, inferencia y vocabulario."
-                        />
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setMode('manual')}
+                            className={`rounded-2xl border-2 px-3 py-3 font-black text-sm transition-all ${mode === 'manual'
+                                ? 'bg-[#7C3AED] text-white border-[#7C3AED]'
+                                : 'bg-white text-[#64748B] border-gray-200'
+                                }`}
+                        >
+                            Modo manual
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMode('notebook')}
+                            className={`rounded-2xl border-2 px-3 py-3 font-black text-sm transition-all ${mode === 'notebook'
+                                ? 'bg-[#4D96FF] text-white border-[#4D96FF]'
+                                : 'bg-white text-[#64748B] border-gray-200'
+                                }`}
+                        >
+                            Foto/screenshot cuaderno
+                        </button>
                     </div>
 
                     <div className="bg-[#F8FAFF] rounded-2xl p-4 border border-[#E5ECFF]">
@@ -2044,19 +2021,77 @@ const OraclePrepModal = ({
                         </div>
                     </div>
 
-                    <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4">
-                        <p className="text-sm text-violet-900 leading-relaxed">
-                            Tip: escribe un libro, un capítulo o un tema concreto. Si el banco no alcanza, el Oráculo usa IA para completar la prueba.
-                        </p>
-                    </div>
+                    {mode === 'manual' ? (
+                        <>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
+                                        Materia
+                                    </label>
+                                    <select
+                                        value={subject}
+                                        onChange={(e) => onChangeSubject(e.target.value)}
+                                        className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED]"
+                                    >
+                                        {PREP_EXAM_SUBJECT_OPTIONS.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                    <button
-                        onClick={onStart}
-                        disabled={!promptReady || isLoading}
-                        className={`${clayBtnAction} ${!promptReady || isLoading ? '!bg-gray-300 !border-gray-400 hover:!scale-100 hover:!translate-y-0 cursor-not-allowed' : '!bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9]'}`}
-                    >
-                        {isLoading ? 'ARMANDO ORÁCULO...' : 'CREAR PRUEBA ORÁCULO'}
-                    </button>
+                                <div>
+                                    <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
+                                        Sesión base
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={session}
+                                        onChange={(e) => onChangeSession(Number(e.target.value) || 1)}
+                                        className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
+                                    Tema, libro o capítulo
+                                </label>
+                                <textarea
+                                    value={prompt}
+                                    onChange={(e) => onChangePrompt(e.target.value)}
+                                    rows={5}
+                                    className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED] resize-none"
+                                    placeholder="Ej: El Principito, capítulos 1 al 4. Quiero preguntas de comprensión, inferencia y vocabulario."
+                                />
+                            </div>
+
+                            <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4">
+                                <p className="text-sm text-violet-900 leading-relaxed">
+                                    Tip: escribe un libro, un capítulo o un tema concreto. Si el banco no alcanza, el Oráculo usa IA para completar la prueba.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={onStart}
+                                disabled={!promptReady || isLoading}
+                                className={`${clayBtnAction} ${!promptReady || isLoading ? '!bg-gray-300 !border-gray-400 hover:!scale-100 hover:!translate-y-0 cursor-not-allowed' : '!bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9]'}`}
+                            >
+                                {isLoading ? 'ARMANDO ORÁCULO...' : 'CREAR PRUEBA ORÁCULO'}
+                            </button>
+                        </>
+                    ) : (
+                        <OracleNotebookExamBuilder
+                            defaultSubject={subject}
+                            defaultSession={session}
+                            questionCount={questionCount}
+                            userId={userId}
+                            userEmail={userEmail}
+                            onExamReady={onStartFromNotebook}
+                        />
+                    )}
                 </div>
             </div>
         </div>
@@ -2179,7 +2214,7 @@ const PrepExamResultsModal = ({ isOpen, onClose, report, onReview }) => {
                             GENERAR REPASO GUIADO
                         </button>
                         <button onClick={onClose} className={`${clayBtnAction} !bg-[#2B2E4A] !border-[#1E293B] hover:!bg-[#1E293B]`}>
-                            CERRAR DIAGNÃ³STICO
+                            CERRAR DIAGNóSTICO
                         </button>
                     </div>
                 </div>
@@ -2233,7 +2268,7 @@ const AdminNotebookFilesModal = ({
                     ) : files.length === 0 ? (
                         <div className="py-16 text-center text-[#9094A6]">
                             <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                            <p className="font-bold">No hay PDFs guardados todavÃ­a.</p>
+                            <p className="font-bold">No hay PDFs guardados todavía.</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -2340,8 +2375,8 @@ const AdminGeneratedQuestionsModal = ({
                     ) : items.length === 0 ? (
                         <div className="py-16 text-center text-[#9094A6]">
                             <Database className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                            <p className="font-bold">No hay preguntas generadas todavÃ­a.</p>
-                            <p className="text-sm mt-2">Cuando Matico cree quizzes o pruebas, aparecerÃ¡n aquÃ­ para descargarlas o borrarlas.</p>
+                            <p className="font-bold">No hay preguntas generadas todavía.</p>
+                            <p className="text-sm mt-2">Cuando Matico cree quizzes o pruebas, aparecerán aquí para descargarlas o borrarlas.</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -2395,8 +2430,8 @@ const AdminGeneratedQuestionsModal = ({
                                         <div className="rounded-2xl bg-[#F8FAFF] border border-[#E2E8F0] p-4">
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Respuesta correcta</p>
                                             <p className="text-sm font-bold text-[#2B2E4A]">{item.correct_answer || 'A'}</p>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-3 mb-1">ExplicaciÃ³n</p>
-                                            <p className="text-sm text-[#4B5563] whitespace-pre-wrap">{item.explanation || 'Sin explicaciÃ³n.'}</p>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-3 mb-1">Explicación</p>
+                                            <p className="text-sm text-[#4B5563] whitespace-pre-wrap">{item.explanation || 'Sin explicación.'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -2574,7 +2609,7 @@ const App = () => {
     const fetchProfile = async () => {
         if (!USER_ID) return;
         
-        // TIMEOUT: Abortar si tarda mÃ¡s de 3 segundos
+        // TIMEOUT: Abortar si tarda más de 3 segundos
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
         
@@ -2697,7 +2732,7 @@ const App = () => {
         callAgent(
             currentSubject,
             'answer_doubts',
-            `[CONTEXTO LECTURA]: ${TODAYS_SESSION.readingTitle}\n\n${TODAYS_SESSION.readingContent}\n\nGenera 3 preguntas de comprensiÃ³n lectora sobre este texto para el estudiante.`,
+            `[CONTEXTO LECTURA]: ${TODAYS_SESSION.readingTitle}\n\n${TODAYS_SESSION.readingContent}\n\nGenera 3 preguntas de comprensión lectora sobre este texto para el estudiante.`,
             null,
             null,
             `Generar control de lectura para: "${TODAYS_SESSION.readingTitle}"`
@@ -2756,7 +2791,7 @@ const App = () => {
     const [showInteractiveQuiz, setShowInteractiveQuiz] = useState(false);
     const [quizQuestions, setQuizQuestions] = useState([]);
 
-    // PROGRESSIVE QUIZ STATE - SISTEMA JAPONÃ³0S/KAIZEN (3 FASES Ã³ 15 PREGUNTAS = 45 TOTAL)
+    // PROGRESSIVE QUIZ STATE - SISTEMA JAPONó0S/KAIZEN (3 FASES ó 15 PREGUNTAS = 45 TOTAL)
     const [currentQuizPhase, setCurrentQuizPhase] = useState(1); // 1, 2, or 3 (Fase actual)
     const [backgroundQuestionsQueue, setBackgroundQuestionsQueue] = useState([]);
     const [isLoadingNextBatch, setIsLoadingNextBatch] = useState(false);
@@ -2769,14 +2804,14 @@ const App = () => {
     });
     const [allWrongAnswers, setAllWrongAnswers] = useState([]); // Acumula errores de las 3 fases
 
-    // THEORY STATE - TEORÃƒÂA LÃ³aDICA ANTES DE CADA SUB-NIVEL
+    // THEORY STATE - TEORÍA LóaDICA ANTES DE CADA SUB-NIVEL
     const [showTheoryModal, setShowTheoryModal] = useState(false);
     const [theoryContent, _setTheoryContent] = useState("");
     const [theoryTitle, _setTheoryTitle] = useState("");
     const [showTheoryNotebookMission, setShowTheoryNotebookMission] = useState(false);
     const [isTheoryNotebookMandatory, setIsTheoryNotebookMandatory] = useState(false);
-    const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando despuÃ©s de la teorÃ­a
-    const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al dÃ­a"
+    const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
+    const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al día"
     const [showPrepExamSetup, setShowPrepExamSetup] = useState(false);
     const [showOraclePrepModal, setShowOraclePrepModal] = useState(false);
     const [selectedPrepSessions, setSelectedPrepSessions] = useState([]);
@@ -2811,7 +2846,7 @@ const App = () => {
         }
 
         if (isMissed) {
-            const days = ['Domingo', 'Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado'];
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             const todayDayName = days[new Date().getDay()];
             setMissedSessionAlert({
                 subject: missedSubject,
@@ -2827,7 +2862,7 @@ const App = () => {
         const fetchProgress = async () => {
             if (!USER_ID) return;
             
-            // TIMEOUT: Abortar si tarda mÃ¡s de 4 segundos
+            // TIMEOUT: Abortar si tarda más de 4 segundos
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 8000);
             
@@ -2870,7 +2905,7 @@ const App = () => {
 
                     const existing = JSON.parse(localStorage.getItem(quizProgressStorageKey) || '{}');
 
-                    // Solo restaurar si localStorage no tiene datos para esta sesiÃ³n
+                    // Solo restaurar si localStorage no tiene datos para esta sesión
                     if (!existing[key] || !existing[key].completedPhases || existing[key].completedPhases.length < phase) {
                         const completedPhases = [];
                         for (let i = 1; i <= phase; i++) completedPhases.push(i);
@@ -2884,7 +2919,7 @@ const App = () => {
                         };
 
                         localStorage.setItem(quizProgressStorageKey, JSON.stringify(existing));
-                        console.log(`[SYNC] Ã³x Progreso restaurado desde servidor: ${key} Ã³  Fase ${phase} completada, siguiente: ${phase + 1}`);
+                        console.log(`[SYNC] óx Progreso restaurado desde servidor: ${key} ó  Fase ${phase} completada, siguiente: ${phase + 1}`);
                     }
                 }
 
@@ -2937,7 +2972,7 @@ const App = () => {
 
                     if (changed) {
                         localStorage.setItem(completedKey, JSON.stringify(completed));
-                        console.log(`[SYNC] Ã³x Sesiones completadas sincronizadas:`, completed);
+                        console.log(`[SYNC] óx Sesiones completadas sincronizadas:`, completed);
                     }
                 }
             } catch (error) {
@@ -2992,7 +3027,7 @@ const App = () => {
     const adaptiveSnapshot = userProfile?.adaptive || null;
     const adaptiveWeakSessions = Array.isArray(adaptiveSnapshot?.weakSessions) ? adaptiveSnapshot.weakSessions : [];
     const adaptiveNextAction = adaptiveSnapshot?.nextAction || 'Sigue con la ruta de hoy para ir construyendo dominio.';
-    const adaptiveGradeLabel = userProfile?.curriculum_context?.grade_label || '1Ã‚Â° medio';
+    const adaptiveGradeLabel = userProfile?.curriculum_context?.grade_label || '1° medio';
     const getAdaptiveWeakSessionTopic = (item) => {
         const topic = repairText(item?.topic || item?.source_topic || '');
         return topic || `Sesion ${item?.session || ''}`;
@@ -3004,19 +3039,19 @@ const App = () => {
 
         if (!primaryTopic) return baseLabel;
         if (baseLabel.toLowerCase().includes(primaryTopic.toLowerCase())) return baseLabel;
-        if (/^reforzar sesi[oÃ³]n\s+\d+:?$/i.test(baseLabel)) {
+        if (/^reforzar sesi[oó]n\s+\d+:?$/i.test(baseLabel)) {
             return `${baseLabel.replace(/:?$/, ':')} ${primaryTopic}`;
         }
         return baseLabel;
     })();
 
     const adaptiveWeakTopicsDescription = (() => {
-        if (adaptiveWeakSessions.length === 0) return 'Todas las sesiones estÃ¡n al dÃ­a. Â¡Sigue asÃ­!';
+        if (adaptiveWeakSessions.length === 0) return 'Todas las sesiones están al día. ¡Sigue así!';
         const topics = adaptiveWeakSessions.slice(0, 3).map(item => {
             const topic = getAdaptiveWeakSessionTopic(item);
             return topic || `Sesión ${item?.session || '?'}`;
         }).filter(Boolean);
-        if (topics.length === 0) return 'La app recuerda quÃ© sesiones le cuestan mÃ¡s y arma el prÃ³ximo repaso desde ahÃ­.';
+        if (topics.length === 0) return 'La app recuerda qué sesiones le cuestan más y arma el próximo repaso desde ahí.';
         return `Debes repasar: ${topics.join(', ')}. Completa estas sesiones para avanzar sin huecos.`;
     })();
 
@@ -3033,8 +3068,8 @@ const App = () => {
     const todaysSessionCtaLabel = isCallingN8N
         ? 'CARGANDO...'
         : (isTodaysSessionCompleted
-            ? `REPASAR SESIÃƒâ€œN ${TODAYS_SESSION.session}`
-            : `COMPLETAR SESIÃƒâ€œN ${TODAYS_SESSION.session}`);
+            ? `REPASAR SESIÓN ${TODAYS_SESSION.session}`
+            : `COMPLETAR SESIÓN ${TODAYS_SESSION.session}`);
 
     const openPrepExamSetup = (seedSessions = []) => {
         setPrepExamReport(null);
@@ -3114,15 +3149,15 @@ const App = () => {
         const accuracy = questions.length > 0 ? Math.round((totalCorrect / questions.length) * 100) : 0;
 
         const summary = weakSessions.length > 0
-            ? `Las mayores dificultades quedaron concentradas en ${weakSessions.map(item => `la sesiÃ³n ${item.session}`).join(', ')}. Conviene volver a esos contenidos antes de la prueba y luego repetir un mini ensayo corto.`
-            : 'El ensayo saliÃ³ muy sÃ³lido. Solo conviene una pasada rÃ¡pida de repaso antes de la evaluaciÃ³n real.';
+            ? `Las mayores dificultades quedaron concentradas en ${weakSessions.map(item => `la sesión ${item.session}`).join(', ')}. Conviene volver a esos contenidos antes de la prueba y luego repetir un mini ensayo corto.`
+            : 'El ensayo salió muy sólido. Solo conviene una pasada rápida de repaso antes de la evaluación real.';
 
         const reviewPlan = (weakSessions.length > 0 ? weakSessions : breakdown.slice(0, 2)).map((item) => ({
             session: item.session,
             topic: item.topic,
             action: item.incorrect > 0
-                ? `Volver a la sesiÃ³n, releer la teorÃ­a y resolver 5 preguntas extra centradas en ${item.topic}.`
-                : `Mantener fresca esta sesiÃ³n con un repaso breve de conceptos clave.`
+                ? `Volver a la sesión, releer la teoría y resolver 5 preguntas extra centradas en ${item.topic}.`
+                : `Mantener fresca esta sesión con un repaso breve de conceptos clave.`
         }));
 
         return {
@@ -3148,7 +3183,7 @@ const App = () => {
         const questionCount = Number(overrides.questionCount) || 45;
 
         if (selectedDetails.length === 0) {
-            alert('Selecciona al menos una sesiÃ³n para preparar la prueba.');
+            alert('Selecciona al menos una sesión para preparar la prueba.');
             return;
         }
 
@@ -3212,7 +3247,7 @@ const App = () => {
             }));
 
             if (!firstBatchQuestions.length) {
-                throw new Error('La IA no devolviÃ³ preguntas vÃ¡lidas para la primera tanda.');
+                throw new Error('La IA no devolvió preguntas válidas para la primera tanda.');
             }
 
             prepExamDiagnostics.finish({
@@ -3293,6 +3328,66 @@ const App = () => {
                 topic,
                 readingContent: prompt
             }]
+        });
+    };
+
+    const startOracleNotebookExam = async (payload = {}) => {
+        const questions = Array.isArray(payload.questions) ? payload.questions : [];
+        if (!questions.length) {
+            alert('No se generaron preguntas válidas desde el cuaderno.');
+            return;
+        }
+
+        const subject = String(payload.subject || prepExamOracleSubject || currentSubject || 'MATEMATICA').toUpperCase();
+        const session = Math.max(1, Number(payload.session_base || prepExamOracleSession || 1) || 1);
+        const topic = String(payload.topic || payload.detected_topics?.[0] || prepExamOraclePrompt || `Cuaderno ${subject}`).trim();
+        const questionCount = Number(payload.question_count || questions.length) || questions.length;
+        const normalizedQuestions = questions.map((question, index) => ({
+            ...question,
+            source_session: Number(question.source_session) || session,
+            source_topic: question.source_topic || topic || `Bloque ${index + 1}`
+        }));
+
+        const config = {
+            subject,
+            sessions: [session],
+            questionCount,
+            totalBatches: 1,
+            topics: [topic],
+            sessionDetails: [{
+                session,
+                topic,
+                readingContent: payload.practice_guide || ''
+            }]
+        };
+
+        setCurrentSubject(subject);
+        setPrepExamConfig(config);
+        setPrepExamQuestions(normalizedQuestions);
+        setPrepExamLoadedCount(normalizedQuestions.length);
+        setPrepExamReport(null);
+        setShowOraclePrepModal(false);
+        setIsPrepExamMode(true);
+        setQuizQuestions(normalizedQuestions);
+        setShowInteractiveQuiz(true);
+
+        if (payload.practice_guide) {
+            setAiContent(payload.practice_guide);
+        }
+
+        prepExamBatchRef.current = 1;
+        prepExamNextBatchPromiseRef.current = null;
+        prepExamBackgroundLoadRef.current = false;
+
+        await saveProgress('prep_exam_started', {
+            subject,
+            grade: ACTIVE_GRADE,
+            session: String(session),
+            selected_sessions: String(session),
+            topic,
+            question_count: questionCount,
+            source_mode: 'oracle_notebook',
+            xp_reward: 0
         });
     };
 
@@ -3456,7 +3551,7 @@ const App = () => {
 
     const deleteAdminNotebookFile = async (file) => {
         if (!file?.fileName) return;
-        if (!confirm(`Â¿Eliminar este PDF?\n\n${file.fileName}`)) return;
+        if (!confirm(`¿Eliminar este PDF?\n\n${file.fileName}`)) return;
 
         try {
             const response = await fetch(activeWebhookUrl, {
@@ -3518,7 +3613,7 @@ const App = () => {
 
     const deleteAdminGeneratedQuestion = async (item) => {
         if (!item?.id) return;
-        if (!confirm(`Â¿Eliminar esta pregunta generada?\n\n${item.question?.slice(0, 180) || item.id}`)) return;
+        if (!confirm(`¿Eliminar esta pregunta generada?\n\n${item.question?.slice(0, 180) || item.id}`)) return;
 
         try {
             const response = await fetch(activeWebhookUrl, {
@@ -3558,7 +3653,7 @@ const App = () => {
 
             console.log("[CALENDAR] Resolving plan for today. Completed:", completed);
 
-            // 1. CATCH-UP (PRIORIDAD ABSOLUTA): Escaneamos desde el primer dÃ­a hasta AYER
+            // 1. CATCH-UP (PRIORIDAD ABSOLUTA): Escaneamos desde el primer día hasta AYER
             for (let d = 0; d < diffDays; d++) {
                 const dateOfD = new Date(COURSE_START_DATE);
                 dateOfD.setDate(dateOfD.getDate() + d);
@@ -3571,13 +3666,13 @@ const App = () => {
                     const sessionKey = `${subject}_${weekNumber + 1}`;
 
                     if (!(completed || []).includes(sessionKey)) {
-                        console.log(`[CALENDAR] BLOQUEO: SesiÃ³n pendiente detectada: ${sessionKey}`);
+                        console.log(`[CALENDAR] BLOQUEO: Sesión pendiente detectada: ${sessionKey}`);
                         return { subject, index: weekNumber, isMissed: true, missedSubject: subject };
                     }
                 }
             }
 
-            // 2. LO DE HOY: Si todo lo anterior estÃ¡ listo, vemos quÃ© toca hoy
+            // 2. LO DE HOY: Si todo lo anterior está listo, vemos qué toca hoy
             const todaysDayOfWeek = today.getDay();
             const todaysPlan = WEEKLY_PLAN.find(p => p.day === todaysDayOfWeek);
             const currentWeekNumber = Math.floor(diffDays / 7);
@@ -3591,7 +3686,7 @@ const App = () => {
                 }
             }
 
-            // 3. FALLBACK: Todo al dÃ­a
+            // 3. FALLBACK: Todo al día
             return {
                 subject: todaysPlan ? todaysPlan.subject : 'MATEMATICA',
                 index: Math.max(0, currentWeekNumber),
@@ -3615,7 +3710,7 @@ const App = () => {
             localStorage.setItem(completedSessionsStorageKey, JSON.stringify(newCompleted));
             console.log(`[MATICO] Marked ${key} as complete!`);
 
-            // Re-calcular inmediatamente para saltar a la siguiente materia/sesiÃ³n
+            // Re-calcular inmediatamente para saltar a la siguiente materia/sesión
             const { subject: nextSubject, index: nextIndex } = resolveMaticoPlan();
             console.log(`[MATICO] Next up: ${nextSubject} (Session Index ${nextIndex})`);
             setCurrentSubject(nextSubject);
@@ -3726,7 +3821,7 @@ const App = () => {
         }
 
         if (!Array.isArray(nextQuestions) || nextQuestions.length === 0) {
-            console.warn(`[QUIZ] Lote ${batchState.nextBatchIndex + 1} vacÃ­o. Reintentando fetch directo...`);
+            console.warn(`[QUIZ] Lote ${batchState.nextBatchIndex + 1} vacío. Reintentando fetch directo...`);
             nextQuestions = await generateQuizSubset(batchState.level, batchState.nextBatchIndex, false);
         }
 
@@ -3839,7 +3934,7 @@ const App = () => {
                 sujeto: currentSubject,
                 accion: 'Generar Quiz de Validacion',
                 tema: subsetPrompt,
-                nivel_estudiante: '1Ã‚Â° Medio Chile',
+                nivel_estudiante: '1° Medio Chile',
                 user_id: USER_ID,
                 session: TODAYS_SESSION.session,
                 phase: level,
@@ -3981,7 +4076,7 @@ const App = () => {
         });
     };
 
-    // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS (SISTEMA KAIZEN - 3 NIVELES Ã³ 15 PREGUNTAS)
+    // QUIZ PHASE PROGRESS - PERSISTENCE HELPERS (SISTEMA KAIZEN - 3 NIVELES ó 15 PREGUNTAS)
     const saveQuizPhaseProgress = (phase, score) => {
         const key = `${currentSubject}_session_${TODAYS_SESSION.session}`;
         const existing = JSON.parse(localStorage.getItem(quizProgressStorageKey) || '{}');
@@ -4133,7 +4228,7 @@ const App = () => {
         console.log(`[PROGRESS] Progreso limpiado para ${key}`);
     };
 
-    // START FULL MULTI-STAGE QUIZ - SISTEMA KAIZEN (3 FASES Ã³ 15 PREGUNTAS)
+    // START FULL MULTI-STAGE QUIZ - SISTEMA KAIZEN (3 FASES ó 15 PREGUNTAS)
     const openTheoryForCurrentPhase = async ({ mandatory = false } = {}) => {
         const protocol = getSessionProtocolState();
         const phaseToUse = protocol.currentPhase;
@@ -4200,7 +4295,7 @@ const App = () => {
                 setIsCallingN8N(false);
                 setLoadingMessage("");
 
-                console.log(`[QUIZ] Preguntas iniciales cargadas. Iniciando sesiÃ³n interactiva.`);
+                console.log(`[QUIZ] Preguntas iniciales cargadas. Iniciando sesión interactiva.`);
                 prefetchNextPhaseBatch(startingPhase);
             } else {
                 throw new Error("No se pudo obtener la primera tanda del quiz.");
@@ -4208,13 +4303,13 @@ const App = () => {
 
         } catch (e) {
             console.error("Error iniciando quiz:", e);
-            alert("Error de conexiÃ³n. Por favor intenta nuevamente.");
+            alert("Error de conexión. Por favor intenta nuevamente.");
             setIsCallingN8N(false);
             setAiModalOpen(true);
         }
     };
 
-    // HANDLE "CONTINUAR AL QUIZ" BUTTON - Cerrar teorÃ­a y mostrar quiz
+    // HANDLE "CONTINUAR AL QUIZ" BUTTON - Cerrar teoría y mostrar quiz
     const launchQuizAfterTheoryNotebook = async () => {
         console.log('[THEORY] Cuaderno completado. Preparando quiz progresivo...');
         setIsCallingN8N(true);
@@ -4256,39 +4351,39 @@ const App = () => {
         }
     };
 
-    // --- NOTIFICACIÃ³N DE RESULTADOS ESTILO SALÃ³N ---
+    // --- NOTIFICACIóN DE RESULTADOS ESTILO SALóN ---
     const sendFinalSessionReport = async (stats, wrongAnswers = []) => {
-        console.log("[REPORT] Generando reporte final con anÃ¡lisis IA de", wrongAnswers.length, "errores...");
+        console.log("[REPORT] Generando reporte final con análisis IA de", wrongAnswers.length, "errores...");
 
-        // Calcular porcentaje de Ã©xito basado en 45 preguntas (3 fases de 15)
+        // Calcular porcentaje de éxito basado en 45 preguntas (3 fases de 15)
         const successRate = Math.round((stats.correct / 45) * 100);
         const wrongQuestionDetails = serializeWrongQuestionDetails(wrongAnswers);
         const weakness = buildWeaknessSummary(wrongAnswers);
         const improvementPlan = buildImprovementPlan(wrongAnswers);
 
-        const reportPrompt = `[INSTRUCCIÃ³N AGENTE DE REPORTES MATICO]:
-Eres el Agente de Ã³0xito AcadÃ©mico de Matico. Tu trabajo es tomar los resultados finales de una sesiÃ³n de 45 preguntas y generar una notificaciÃ³n de confirmaciÃ³n de logros, similar al estilo profesional de 'Glow & Grace Salon'.
+        const reportPrompt = `[INSTRUCCIóN AGENTE DE REPORTES MATICO]:
+Eres el Agente de ó0xito Académico de Matico. Tu trabajo es tomar los resultados finales de una sesión de 45 preguntas y generar una notificación de confirmación de logros, similar al estilo profesional de 'Glow & Grace Salon'.
 
 DATOS DEL ESTUDIANTE:
 - Nombre: ${currentUser?.username || userProfile?.username || 'Estudiante'}
 - Email: ${currentUser?.email || 'N/A'}
 - Asignatura: ${currentSubject}
-- SesiÃ³n: ${TODAYS_SESSION.session} - ${TODAYS_SESSION.topic}
+- Sesión: ${TODAYS_SESSION.session} - ${TODAYS_SESSION.topic}
 - Resultado: ${stats.correct} de 45 correctas (${successRate}%)
 
 SALIDA REQUERIDA (JSON ESTRICTO):
 {
   "email": {
     "to": "${currentUser?.email || 'hola@matico.ai'}",
-    "subject": "Â¡SesiÃ³n Completada! Tus logros en ${currentSubject} - SesiÃ³n ${TODAYS_SESSION.session}",
+    "subject": "¡Sesión Completada! Tus logros en ${currentSubject} - Sesión ${TODAYS_SESSION.session}",
     "html_body": "Contenido HTML profesional con tabla de resultados y feedback personalizado", 
-    "description": "Reporte de SesiÃ³n Matico: ${TODAYS_SESSION.topic}"
+    "description": "Reporte de Sesión Matico: ${TODAYS_SESSION.topic}"
   }
 }`;
 
         try {
             // 1. Enviar Reporte Detallado al Alumno y Apoderado (IA)
-            // Nota: El servidor ya se encarga de enviarlo a ambos si estÃ¡n configurados
+            // Nota: El servidor ya se encarga de enviarlo a ambos si están configurados
             await fetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -4307,7 +4402,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                     improvement_plan: improvementPlan
                 })
             });
-            console.log("[REPORT] Ã³xÃ³ Reporte de sesiÃ³n enviado");
+            console.log("[REPORT] óxó Reporte de sesión enviado");
 
         } catch (err) {
             console.error("[REPORT] Error en flujo de notificaciones:", err);
@@ -4329,7 +4424,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
     const handleContinueToQuiz = async () => {
         if (isTheoryNotebookMandatory) {
-            console.log('[THEORY] Primera entrada de la sesiÃ³n. Abriendo cuaderno obligatorio antes del quiz...');
+            console.log('[THEORY] Primera entrada de la sesión. Abriendo cuaderno obligatorio antes del quiz...');
             setShowTheoryModal(false);
             setShowTheoryNotebookMission(true);
             return;
@@ -4477,7 +4572,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             });
             console.log("[SAVE] 'session_completed' guardado en Google Sheets correctamente");
 
-            alert('SESIÃ³N COMPLETA\\n\\nHaz dominado: ' + TODAYS_SESSION.topic + '\\n\\nPuntaje Final: ' + finalStats.correct + '/' + QUIZ_TOTAL_QUESTIONS + '\\n\\n+300 XP');
+            alert('SESIóN COMPLETA\\n\\nHaz dominado: ' + TODAYS_SESSION.topic + '\\n\\nPuntaje Final: ' + finalStats.correct + '/' + QUIZ_TOTAL_QUESTIONS + '\\n\\n+300 XP');
 
             clearQuizProgress();
             setCurrentQuizPhase(1);
@@ -4557,9 +4652,9 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             });
         }
 
-        let n8nAction = 'Generar TeorÃ­a LÃºdica';
-        if (action === 'start_route') n8nAction = 'Generar TeorÃ­a LÃºdica'; // Explicit
-        if (action === 'generate_quiz') n8nAction = 'Generar Quiz de ValidaciÃ³n';
+        let n8nAction = 'Generar Teoría Lúdica';
+        if (action === 'start_route') n8nAction = 'Generar Teoría Lúdica'; // Explicit
+        if (action === 'generate_quiz') n8nAction = 'Generar Quiz de Validación';
         if (action === 'deepen_knowledge') n8nAction = 'Profundizar y Desafiar';
         if (action === 'remedial_explanation') n8nAction = 'Explicar y Simplificar';
         if (action === 'answer_doubts') n8nAction = 'Responder Duda';
@@ -4567,17 +4662,17 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         // NEW: INJECT DIFFICULTY INSTRUCTIONS INTO TOPIC
         let difficultyPrompt = "";
         if (action === 'deepen_knowledge' || action === 'generate_quiz') {
-            if (quizLevel === 1) difficultyPrompt = " [INSTRUCCIÃ³N: Genera una pregunta de nivel 1 (MEMORIZAR/COMPRENDER). EnfÃ³cate en definiciones claras y conceptos bÃ¡sicos. Estilo directo y sencillo.]";
-            if (quizLevel === 2) difficultyPrompt = " [INSTRUCCIÃ³N: Genera una pregunta de nivel 2 (APLICAR). El estudiante debe aplicar el concepto en una situaciÃ³n prÃ¡ctica o ejemplo cotidiano. Dificultad media.]";
-            if (quizLevel >= 3) difficultyPrompt = " [INSTRUCCIÃ³N: Genera una pregunta de nivel 3 (ANALIZAR/EVALUAR). Requiere pensamiento crÃ­tico, contrastar ideas o inferir conclusiones complejas. Â¡DesafÃ­a al estudiante!]";
+            if (quizLevel === 1) difficultyPrompt = " [INSTRUCCIóN: Genera una pregunta de nivel 1 (MEMORIZAR/COMPRENDER). Enfócate en definiciones claras y conceptos básicos. Estilo directo y sencillo.]";
+            if (quizLevel === 2) difficultyPrompt = " [INSTRUCCIóN: Genera una pregunta de nivel 2 (APLICAR). El estudiante debe aplicar el concepto en una situación práctica o ejemplo cotidiano. Dificultad media.]";
+            if (quizLevel >= 3) difficultyPrompt = " [INSTRUCCIóN: Genera una pregunta de nivel 3 (ANALIZAR/EVALUAR). Requiere pensamiento crítico, contrastar ideas o inferir conclusiones complejas. ¡Desafía al estudiante!]";
         }
 
         // Fix: Don't append question number for THEORY generation
         let questionSuffix = "";
-        if (action !== 'start_route' && n8nAction !== 'Generar TeorÃ­a LÃºdica') {
+        if (action !== 'start_route' && n8nAction !== 'Generar Teoría Lúdica') {
             questionSuffix = questionNumberOverride ? ` [PREGUNTA NRO ${questionNumberOverride}]` : ` [PREGUNTA NRO ${quizQuestionNumber}]`;
         } else {
-            difficultyPrompt = " [INSTRUCCIÃ³N: GENERAR SOLO TEORÃƒÂA EXPLICATIVA LÃ³aDICA. NO GENERAR PREGUNTAS.]";
+            difficultyPrompt = " [INSTRUCCIóN: GENERAR SOLO TEORÍA EXPLICATIVA LóaDICA. NO GENERAR PREGUNTAS.]";
         }
 
         const finalTopic = topic + difficultyPrompt + questionSuffix;
@@ -4590,7 +4685,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 sujeto: subject,
                 accion: n8nAction,
                 tema: finalTopic, // Use modified topic
-                nivel_estudiante: "1Ã‚Â° Medio Chile",
+                nivel_estudiante: "1° Medio Chile",
                 numero_pregunta: questionNumberOverride || quizQuestionNumber,
                 session: sessionForRequest,
                 phase: phaseForRequest
@@ -4612,7 +4707,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 sujeto: subject,
                 accion: n8nAction,
                 tema: finalTopic, // Use modified topic
-                nivel_estudiante: "1Ã‚Â° Medio Chile",
+                nivel_estudiante: "1° Medio Chile",
                 session: String(sessionForRequest),
                 phase: String(phaseForRequest)
             });
@@ -4634,13 +4729,13 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             let content = "";
 
             if (textResponse.trim() === "") {
-                content = "Ã³aÃ³Ã¯Â¸Â MODO OFFLINE";
+                content = "óaó MODO OFFLINE";
             } else {
                 try {
                     let jsonData = parseN8NResponse(textResponse);
 
                     if (jsonData.refusal) {
-                        content = `Ã³aÃ³Ã¯Â¸Â **No pudimos iniciar:**\n\n${jsonData.refusal}`;
+                        content = `óaó **No pudimos iniciar:**\n\n${jsonData.refusal}`;
                         setApiJson(null);
                     } else {
 
@@ -4731,7 +4826,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
 
                         if (isBatchQuiz || isSingleQuiz) {
                             // AUTO-LAUNCH QUIZ
-                            console.log("Ã³xaÃ³ Auto-launching Quiz!");
+                            console.log("óxaó Auto-launching Quiz!");
                             const questionsToLoad = isBatchQuiz ? finalData.questions : [finalData];
 
                             setQuizQuestions(questionsToLoad);
@@ -4890,7 +4985,7 @@ ${finalData.capsule}`;
                     onFinish={handleReadingFinish}
                 />
 
-                {/* THEORY MODAL - TeorÃ­a LÃºdica antes de cada sub-nivel */}
+                {/* THEORY MODAL - Teoría Lúdica antes de cada sub-nivel */}
                 <ReadingModal
                     isOpen={showTheoryModal}
                     onClose={() => setShowTheoryModal(false)}
@@ -4905,7 +5000,7 @@ ${finalData.capsule}`;
                         sessionId={TODAYS_SESSION.session}
                         phase={currentQuizPhase}
                         subject={currentSubject}
-                        topic={theoryTitle || TODAYS_SUBJECT.oa_title || 'TeorÃ­a lÃºdica'}
+                        topic={theoryTitle || TODAYS_SUBJECT.oa_title || 'Teoría lúdica'}
                         readingContent={theoryContent || aiContent || TODAYS_SESSION.readingContent || ''}
                         onComplete={handleTheoryNotebookComplete}
                         onSkip={isTheoryNotebookMandatory ? null : handleTheoryNotebookSkip}
@@ -5380,6 +5475,8 @@ ${finalData.capsule}`;
                 <OraclePrepModal
                     isOpen={showOraclePrepModal}
                     onClose={() => setShowOraclePrepModal(false)}
+                    userId={USER_ID}
+                    userEmail={currentUser?.email || ''}
                     subject={prepExamOracleSubject}
                     onChangeSubject={setPrepExamOracleSubject}
                     session={prepExamOracleSession}
@@ -5389,6 +5486,7 @@ ${finalData.capsule}`;
                     questionCount={prepExamOracleQuestionCount}
                     onChangeQuestionCount={setPrepExamOracleQuestionCount}
                     onStart={startOraclePrepExam}
+                    onStartFromNotebook={startOracleNotebookExam}
                     isLoading={isCallingN8N}
                 />
 
@@ -5616,8 +5714,3 @@ ${finalData.capsule}`;
 };
 
 export default App;
-
-
-
-
-

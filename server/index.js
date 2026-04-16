@@ -73,6 +73,8 @@ const EXAM_REMINDER_HEADERS = [
     'last_sent_at',
     'notes'
 ];
+const ORACLE_NOTEBOOK_DRAFT_TTL_MS = 30 * 60 * 1000;
+const oracleNotebookDrafts = new Map();
 
 // ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n DeepSeek
 const FORCED_AI_PROVIDER = String(process.env.AI_PROVIDER || '').trim().toLowerCase();
@@ -1106,6 +1108,144 @@ app.get('/api/exams/list', async (req, res) => {
         return res.status(500).json({ success: false, error: error.message || 'No se pudo listar eventos' });
     }
 });
+
+app.post('/api/oracle/exam-from-notebook/intake', async (req, res) => {
+    try {
+        cleanupOracleNotebookDrafts();
+        const {
+            user_id = '',
+            email = '',
+            image_base64 = '',
+            image_mime_type = 'image/png',
+            subject_hint = 'MATEMATICA',
+            session_hint = 1,
+            question_count = 15
+        } = req.body || {};
+
+        if (!user_id) {
+            return res.status(400).json({ success: false, error: 'Falta user_id' });
+        }
+        if (!image_base64) {
+            return res.status(400).json({ success: false, error: 'Falta image_base64' });
+        }
+
+        const preview = await analyzeNotebookForOracle({
+            imageBase64: image_base64,
+            imageMimeType: image_mime_type || 'image/png',
+            subjectHint: subject_hint,
+            sessionHint: session_hint
+        });
+
+        const draftId = `ORACLE_NOTEBOOK_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        oracleNotebookDrafts.set(draftId, {
+            createdAt: Date.now(),
+            user_id: String(user_id || '').trim(),
+            email: String(email || '').trim(),
+            question_count: Math.max(5, Math.min(45, Number(question_count || 15) || 15)),
+            preview
+        });
+
+        return res.json({
+            success: true,
+            draft_id: draftId,
+            confidence: preview.confidence,
+            needs_confirmation: true,
+            detected_topics: [preview.topic, ...preview.subtopics].filter(Boolean).slice(0, 8),
+            event_preview: {
+                subject: preview.subject,
+                topic: preview.topic,
+                subtopics: preview.subtopics,
+                keywords: preview.keywords,
+                grade: preview.grade,
+                session_base: preview.session_base
+            }
+        });
+    } catch (error) {
+        console.error('[ORACLE_NOTEBOOK_INTAKE] Error:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo analizar el cuaderno' });
+    }
+});
+
+app.post('/api/oracle/exam-from-notebook/generate', async (req, res) => {
+    try {
+        cleanupOracleNotebookDrafts();
+        const {
+            draft_id = '',
+            user_id = '',
+            question_count = 15,
+            confirmed_data = {}
+        } = req.body || {};
+
+        if (!draft_id) {
+            return res.status(400).json({ success: false, error: 'Falta draft_id' });
+        }
+
+        const draft = oracleNotebookDrafts.get(String(draft_id || '').trim());
+        if (!draft) {
+            return res.status(404).json({ success: false, error: 'Draft no encontrado o expirado' });
+        }
+        if (user_id && draft.user_id && String(user_id).trim() !== String(draft.user_id).trim()) {
+            return res.status(403).json({ success: false, error: 'El draft no pertenece a este usuario' });
+        }
+
+        const sourcePreview = draft.preview || {};
+        const subject = normalizeSheetText(confirmed_data?.subject || sourcePreview.subject || 'MATEMATICA').toUpperCase() || 'MATEMATICA';
+        const topic = String(confirmed_data?.topic || sourcePreview.topic || '').trim();
+        const subtopics = normalizeStringList(confirmed_data?.subtopics || sourcePreview.subtopics || [], 12);
+        const keywords = normalizeStringList(confirmed_data?.keywords || sourcePreview.keywords || [], 15);
+        const grade = String(confirmed_data?.grade || sourcePreview.grade || '1medio').trim() || '1medio';
+        const sessionBase = Math.max(1, Number(confirmed_data?.session_base || sourcePreview.session_base || 1) || 1);
+        const questionCount = Math.max(5, Math.min(45, Number(question_count || draft.question_count || 15) || 15));
+        const notebookExcerpt = String(sourcePreview.notebook_excerpt || '').trim();
+
+        if (!topic) {
+            return res.status(400).json({ success: false, error: 'Debes confirmar el tema principal antes de generar' });
+        }
+
+        const webQueries = [topic, ...subtopics.slice(0, 2), `${subject} ${topic}`];
+        const webContext = await fetchWikipediaEducationalContext(webQueries);
+        const questions = await generateOracleExamFromNotebook({
+            subject,
+            topic,
+            subtopics,
+            keywords,
+            grade,
+            questionCount,
+            notebookExcerpt,
+            sessionBase,
+            webContext
+        });
+        const practiceGuide = await generateOraclePracticeGuide({
+            subject,
+            topic,
+            subtopics,
+            questionCount,
+            grade
+        });
+
+        const sourceMixSet = new Set(questions.map((item) => item.source_type).filter(Boolean));
+        if (webContext.length > 0) sourceMixSet.add('web');
+        sourceMixSet.add('notebook');
+        sourceMixSet.add('ai');
+        const sourceMix = Array.from(sourceMixSet);
+
+        return res.json({
+            success: true,
+            subject,
+            topic,
+            session_base: sessionBase,
+            question_count: questions.length,
+            confidence: sourcePreview.confidence || 0,
+            detected_topics: [topic, ...subtopics].filter(Boolean).slice(0, 8),
+            questions,
+            practice_guide: practiceGuide,
+            source_mix: sourceMix
+        });
+    } catch (error) {
+        console.error('[ORACLE_NOTEBOOK_GENERATE] Error:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo generar la prueba del cuaderno' });
+    }
+});
 // --- HELPER: Subir imagen a Google Drive ---
 const uploadToDrive = async (base64File, fileName, folderId, mimeType = 'image/jpeg') => {
     try {
@@ -1945,6 +2085,356 @@ Reglas:
 
     const parsed = parseExamAnalysisResponse(rawText);
     return normalizeExamEventPreview(parsed);
+};
+
+const cleanupOracleNotebookDrafts = () => {
+    const now = Date.now();
+    for (const [draftId, draft] of oracleNotebookDrafts.entries()) {
+        if (!draft?.createdAt || (now - draft.createdAt) > ORACLE_NOTEBOOK_DRAFT_TTL_MS) {
+            oracleNotebookDrafts.delete(draftId);
+        }
+    }
+};
+
+const normalizeStringList = (items = [], maxItems = 10) => {
+    return (Array.isArray(items) ? items : [])
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .slice(0, maxItems);
+};
+
+const normalizeOracleNotebookPreview = (parsed = {}, fallbackSubject = 'MATEMATICA', fallbackSession = 1) => {
+    const confidenceRaw = Number(parsed?.confidence ?? parsed?.score_confianza ?? 0) || 0;
+    const confidence = Math.max(0, Math.min(100, Math.round(confidenceRaw)));
+    const subject = normalizeSheetText(parsed?.subject || parsed?.materia || fallbackSubject).toUpperCase() || 'MATEMATICA';
+    const topic = String(parsed?.topic || parsed?.tema || parsed?.title || '').trim();
+    const subtopics = normalizeStringList(parsed?.subtopics || parsed?.subtemas || [], 12);
+    const keywords = normalizeStringList(parsed?.keywords || parsed?.palabras_clave || [], 15);
+    const grade = String(parsed?.grade || parsed?.nivel || '1medio').trim() || '1medio';
+    const sessionBase = Math.max(1, Number(parsed?.session_base || fallbackSession || 1) || 1);
+    const notebookExcerpt = String(parsed?.notebook_excerpt || parsed?.extracto || '').trim();
+
+    return {
+        subject,
+        topic,
+        subtopics,
+        keywords,
+        grade,
+        session_base: sessionBase,
+        confidence,
+        notebook_excerpt: notebookExcerpt,
+        needs_confirmation: true
+    };
+};
+
+const analyzeNotebookForOracle = async ({
+    imageBase64 = '',
+    imageMimeType = 'image/png',
+    subjectHint = 'MATEMATICA',
+    sessionHint = 1
+} = {}) => {
+    const trimmed = String(imageBase64 || '').trim();
+    if (!trimmed) throw new Error('No se recibio imagen para analizar');
+
+    const prompt = `Analiza una foto/screenshot de un cuaderno escolar y extrae el contenido para crear una prueba.
+
+Responde SOLO en JSON valido:
+{
+  "subject": "MATERIA",
+  "topic": "tema principal",
+  "subtopics": ["subtema 1", "subtema 2"],
+  "keywords": ["palabra 1", "palabra 2"],
+  "grade": "1medio",
+  "session_base": 1,
+  "notebook_excerpt": "extracto breve de lo que se ve",
+  "confidence": 0
+}
+
+Reglas:
+- subject en mayusculas.
+- confidence entero 0-100.
+- session_base numero >= 1.
+- Si falta informacion, usa arreglos vacios o string vacio y baja confidence.
+- Contexto sugerido: Materia ${subjectHint || 'MATEMATICA'}, Sesion ${sessionHint || 1}.`;
+
+    let rawText = '';
+
+    if (process.env.NVIDIA_API_KEY) {
+        const nvidiaResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'moonshotai/kimi-k2.5',
+                messages: [{
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: prompt },
+                        { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                    ]
+                }],
+                max_tokens: 1400,
+                temperature: 0.1
+            })
+        });
+
+        if (!nvidiaResponse.ok) {
+            const errText = await nvidiaResponse.text();
+            throw new Error(`NVIDIA API error: ${nvidiaResponse.status} - ${errText.substring(0, 160)}`);
+        }
+
+        const responseJson = await nvidiaResponse.json();
+        rawText = responseJson.choices?.[0]?.message?.content || '';
+    } else if (openaiVisionClient) {
+        const openaiResponse = await openaiVisionClient.chat.completions.create({
+            model: OPENAI_VISION_MODEL,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: prompt },
+                    { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                ]
+            }],
+            max_tokens: 1400,
+            temperature: 0.1
+        });
+        rawText = openaiResponse.choices?.[0]?.message?.content || '';
+    } else if (kimiVisionClient) {
+        const kimiResponse = await kimiVisionClient.chat.completions.create({
+            model: NOTEBOOK_VISION_MODEL,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: prompt },
+                    { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                ]
+            }],
+            max_tokens: 1400,
+            temperature: 0.1
+        });
+        rawText = kimiResponse.choices?.[0]?.message?.content || '';
+    } else {
+        throw new Error('No hay proveedor visual configurado para analizar el cuaderno.');
+    }
+
+    const parsed = parseExamAnalysisResponse(rawText);
+    return normalizeOracleNotebookPreview(parsed, subjectHint, sessionHint);
+};
+
+const fetchWithTimeout = async (url, timeoutMs = 7000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { signal: controller.signal });
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
+
+const fetchWikipediaEducationalContext = async (queries = []) => {
+    const cleanedQueries = normalizeStringList(queries, 4);
+    const snippets = [];
+
+    for (const query of cleanedQueries) {
+        try {
+            const searchUrl = `https://es.wikipedia.org/w/rest.php/v1/search/title?q=${encodeURIComponent(query)}&limit=1`;
+            const searchResponse = await fetchWithTimeout(searchUrl, 6500);
+            if (!searchResponse.ok) continue;
+            const searchJson = await searchResponse.json();
+            const firstPage = searchJson?.pages?.[0];
+            if (!firstPage?.key) continue;
+
+            const summaryUrl = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(firstPage.key)}`;
+            const summaryResponse = await fetchWithTimeout(summaryUrl, 6500);
+            if (!summaryResponse.ok) continue;
+            const summaryJson = await summaryResponse.json();
+            const extract = String(summaryJson?.extract || '').trim();
+            if (!extract) continue;
+
+            snippets.push({
+                title: String(summaryJson?.title || query),
+                source_ref: String(summaryJson?.content_urls?.desktop?.page || ''),
+                text: extract
+            });
+        } catch (error) {
+            console.warn('[ORACLE_NOTEBOOK] Web context warn:', error.message);
+        }
+    }
+
+    return snippets.slice(0, 3);
+};
+
+const normalizeOptionsObject = (options = {}) => {
+    if (Array.isArray(options)) {
+        const letters = ['A', 'B', 'C', 'D'];
+        return options.slice(0, 4).reduce((acc, option, index) => {
+            acc[letters[index]] = String(option || '').trim();
+            return acc;
+        }, {});
+    }
+
+    return ['A', 'B', 'C', 'D'].reduce((acc, letter) => {
+        if (options?.[letter] !== undefined) acc[letter] = String(options[letter] || '').trim();
+        return acc;
+    }, {});
+};
+
+const inferCorrectLetter = (rawValue = '', options = {}) => {
+    const raw = String(rawValue || '').trim();
+    const explicit = raw.match(/\b([ABCD])\b/i);
+    if (explicit?.[1] && options[explicit[1].toUpperCase()]) return explicit[1].toUpperCase();
+    const matches = Object.entries(options).find(([, option]) => String(option || '').trim() === raw);
+    if (matches?.[0]) return matches[0];
+    return '';
+};
+
+const sanitizeOracleQuestions = (items = [], fallbackSession = 1, fallbackTopic = '') => {
+    return (Array.isArray(items) ? items : [])
+        .map((item) => {
+            const options = normalizeOptionsObject(item?.options || {});
+            const inferred = inferCorrectLetter(item?.correct_answer || '', options);
+            const correct = inferred || String(item?.correct_answer || 'A').trim().toUpperCase().slice(0, 1);
+            const sourceType = ['notebook', 'web', 'ai'].includes(String(item?.source_type || '').trim().toLowerCase())
+                ? String(item?.source_type || '').trim().toLowerCase()
+                : 'ai';
+
+            return {
+                question: String(item?.question || '').trim(),
+                options,
+                correct_answer: ['A', 'B', 'C', 'D'].includes(correct) ? correct : 'A',
+                explanation: String(item?.explanation || '').trim(),
+                source_type: sourceType,
+                source_ref: String(item?.source_ref || '').trim(),
+                source_session: Math.max(1, Number(item?.source_session || fallbackSession || 1) || 1),
+                source_topic: String(item?.source_topic || fallbackTopic || '').trim()
+            };
+        })
+        .filter((item) => item.question && Object.keys(item.options).length >= 2);
+};
+
+const buildOracleNotebookQuestionPrompt = ({
+    subject = 'MATEMATICA',
+    topic = '',
+    subtopics = [],
+    keywords = [],
+    grade = '1medio',
+    questionCount = 15,
+    notebookExcerpt = '',
+    webContext = []
+} = {}) => {
+    const webBlock = (webContext || [])
+        .map((item, index) => `${index + 1}. ${item.title}\nResumen: ${item.text}\nFuente: ${item.source_ref || 'sin URL'}`)
+        .join('\n\n');
+
+    return `Genera una prueba para estudiante chileno (${grade}) basada en cuaderno + apoyo web.
+
+MATERIA: ${subject}
+TEMA PRINCIPAL: ${topic}
+SUBTEMAS: ${(subtopics || []).join(', ') || 'No especificados'}
+PALABRAS CLAVE: ${(keywords || []).join(', ') || 'No especificadas'}
+PREGUNTAS SOLICITADAS: ${questionCount}
+
+EXTRACTO CUADERNO:
+${notebookExcerpt || 'Sin extracto visible'}
+
+CONTEXTO WEB EDUCATIVO:
+${webBlock || 'No disponible (usa solo cuaderno + IA)'}
+
+Devuelve SOLO JSON valido:
+{
+  "questions": [
+    {
+      "question": "texto",
+      "options": { "A":"", "B":"", "C":"", "D":"" },
+      "correct_answer": "A",
+      "explanation": "explicacion corta",
+      "source_type": "notebook|web|ai",
+      "source_ref": "url opcional",
+      "source_session": 1,
+      "source_topic": "tema"
+    }
+  ]
+}
+
+Reglas:
+- Mezcla fuentes: intenta balancear cuaderno + web + ai.
+- Preguntas claras, una sola correcta, nivel ${grade}.
+- No inventes fuentes web si no hay contexto web.`;
+};
+
+const generateOraclePracticeGuide = async ({
+    subject = '',
+    topic = '',
+    subtopics = [],
+    questionCount = 15,
+    grade = '1medio'
+} = {}) => {
+    const fallback = `## Practica guiada\n1. Resume el tema "${topic || subject}" en 5 lineas.\n2. Escribe 3 conceptos clave y un ejemplo por cada uno.\n3. Resuelve 3 ejercicios tipo prueba y revisa tus errores.\n\n## Cierre rapido\n- Repite los subtemas: ${(subtopics || []).slice(0, 4).join(', ') || 'tema principal'}.\n- Tiempo sugerido: 30-40 minutos para ${questionCount} preguntas (${grade}).`;
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model: AI_MODELS.fast,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'Eres tutor academico chileno. Responde solo markdown breve con secciones "Practica guiada" y "Errores comunes".'
+                },
+                {
+                    role: 'user',
+                    content: `Materia: ${subject}\nTema: ${topic}\nSubtemas: ${(subtopics || []).join(', ')}\nNivel: ${grade}\nPreguntas: ${questionCount}\n\nGenera una practica guiada breve para preparar esta prueba.`
+                }
+            ],
+            temperature: 0.4
+        });
+
+        return String(completion.choices?.[0]?.message?.content || '').trim() || fallback;
+    } catch (error) {
+        console.error('[ORACLE_NOTEBOOK] Error practica guiada:', error.message);
+        return fallback;
+    }
+};
+
+const generateOracleExamFromNotebook = async ({
+    subject = 'MATEMATICA',
+    topic = '',
+    subtopics = [],
+    keywords = [],
+    grade = '1medio',
+    questionCount = 15,
+    notebookExcerpt = '',
+    sessionBase = 1,
+    webContext = []
+} = {}) => {
+    const prompt = buildOracleNotebookQuestionPrompt({
+        subject,
+        topic,
+        subtopics,
+        keywords,
+        grade,
+        questionCount,
+        notebookExcerpt,
+        webContext
+    });
+
+    const completion = await openai.chat.completions.create({
+        model: AI_MODELS.fast,
+        messages: [
+            {
+                role: 'system',
+                content: 'Eres Matico, creador de evaluaciones escolares. Responde unicamente JSON valido.'
+            },
+            { role: 'user', content: prompt }
+        ],
+        temperature: 0.5
+    });
+
+    const raw = String(completion.choices?.[0]?.message?.content || '').trim();
+    const parsed = parseExamAnalysisResponse(raw);
+    const questions = sanitizeOracleQuestions(parsed?.questions || [], sessionBase, topic);
+    if (!questions.length) throw new Error('La IA no devolvio preguntas validas desde el cuaderno');
+    return questions.slice(0, Math.max(5, Math.min(45, Number(questionCount || 15) || 15)));
 };
 
 const autoAppendMissingSessionCompleted = async (sheets, rows = [], userId = '', subject = '', grade = '1medio') => {
