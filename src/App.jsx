@@ -521,9 +521,11 @@ const repairText = (value = '') => {
         .replace(/ÃƒÂ±/g, 'ñ')
         .replace(/Ãƒâ€˜/g, 'Ñ')
         .replace(/ÃƒÂ¼/g, 'ü')
+        .replace(/Ã­Ã‚Â/g, 'Á')
         // Cleanup
         .replace(/ï¿½/g, '')
         .replace(/Ã³x[^\s]*/g, '')
+        .replace(/[\u0080-\u009F]/g, '')
         .replace(/\s{2,}/g, ' ')
         .trim();
 };
@@ -1852,7 +1854,7 @@ const PrepExamSetupModal = ({
                     <div>
                         <h3 className="text-2xl font-black text-[#2B2E4A]">Prueba preparatoria</h3>
                         <p className="text-sm font-bold text-[#9094A6]">
-                            {repairText(subject)} · 45 preguntas · generación rápida de 5 en 5
+                            {repairText(`${subject} · 45 preguntas · generación rápida de 5 en 5`)}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -1884,7 +1886,7 @@ const PrepExamSetupModal = ({
                                         <div className="flex items-start justify-between gap-4">
                                             <div>
                                                 <p className="text-xs font-black uppercase tracking-widest text-[#9094A6]">
-                                                    Sesión {item.session} · {repairText(item.unit || 'Unidad')}
+                                                    {repairText(`Sesión ${item.session} · ${item.unit || 'Unidad'}`)}
                                                 </p>
                                                 <p className="text-sm md:text-base font-black text-[#2B2E4A] mt-1">
                                                     {repairText(item.topic)}
