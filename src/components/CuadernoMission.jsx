@@ -158,6 +158,8 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     const pollRef = useRef(null);
     const mountedRef = useRef(true);
     const autoImportingRef = useRef(false);
+    const uploadInputRef = useRef(null);
+    const extraUploadInputRef = useRef(null);
 
     useEffect(() => () => {
         mountedRef.current = false;
@@ -318,6 +320,14 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
             event.target.value = '';
         };
         img.src = URL.createObjectURL(file);
+    };
+
+    const openUploadPicker = () => {
+        uploadInputRef.current?.click();
+    };
+
+    const openExtraUploadPicker = () => {
+        extraUploadInputRef.current?.click();
     };
 
     const handlePaste = (event) => {
@@ -635,10 +645,10 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                 <button onClick={openCamera} className="flex-1 bg-[#2B2E4A] text-white px-4 py-4 rounded-xl font-bold hover:bg-[#3d426b] flex items-center justify-center gap-2">
                                     <Video size={20} /> Abrir cámara
                                 </button>
-                                <label className="flex-1 cursor-pointer bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                                <button type="button" onClick={openUploadPicker} className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-4 rounded-xl font-bold flex items-center justify-center gap-2">
                                     <UploadCloud size={20} /> Subir foto
-                                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
-                                </label>
+                                </button>
+                                <input ref={uploadInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 {/* Solo en web/desktop: en Android nativo muestra dialogo confuso */}
@@ -744,10 +754,10 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                         <button onClick={openCamera} className="flex-1 bg-[#2B2E4A] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
                                             <Camera size={18} /> Agregar otra página
                                         </button>
-                                        <label className="flex-1 cursor-pointer bg-slate-100 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                                        <button type="button" onClick={openExtraUploadPicker} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
                                             <UploadCloud size={18} /> Subir otra página
-                                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
-                                        </label>
+                                        </button>
+                                        <input ref={extraUploadInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
                                     </div>
                                 )}
 
