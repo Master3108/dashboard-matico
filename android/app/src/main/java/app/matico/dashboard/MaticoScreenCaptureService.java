@@ -8,8 +8,8 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.drawable.GradientDrawable;
 import android.graphics.PixelFormat;
+import android.graphics.drawable.GradientDrawable;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.Image;
@@ -47,6 +47,8 @@ public class MaticoScreenCaptureService extends Service {
 
     private static final String CHANNEL_ID = "matico_capture_channel";
     private static final int NOTIFICATION_ID = 44221;
+    private static final int OVERLAY_RETRY_MS = 450;
+    private static final int OVERLAY_MAX_ATTEMPTS = 4;
 
     private MediaProjection mediaProjection;
     private MediaProjectionManager projectionManager;
@@ -78,11 +80,11 @@ public class MaticoScreenCaptureService extends Service {
             return START_STICKY;
         }
         if (ACTION_CAPTURE_NOW.equals(action)) {
-            captureNow();
+            captureNow(false);
             return START_STICKY;
         }
         if (ACTION_CAPTURE_ONE_SHOT.equals(action)) {
-            captureNow();
+            captureNow(false);
             return START_STICKY;
         }
         if (ACTION_STOP_SESSION.equals(action)) {
@@ -120,7 +122,7 @@ public class MaticoScreenCaptureService extends Service {
 
         startForeground(NOTIFICATION_ID, buildNotification());
         MaticoScreenCaptureStore.setActive(true);
-        showOverlay();
+        showOverlayWithRetry(0);
     }
 
     private Notification buildNotification() {
@@ -167,13 +169,18 @@ public class MaticoScreenCaptureService extends Service {
         }
     }
 
-    private void showOverlay() {
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private void showOverlayWithRetry(int attempt) {
         if (windowManager == null || overlayView != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
         if (!android.provider.Settings.canDrawOverlays(this)) {
-            Log.w("MaticoOverlay", "canDrawOverlays=false: burbuja no puede mostrarse. Ve a Ajustes -> Permisos -> Aparecer encima de otras apps.");
+            Log.w("MaticoOverlay", "canDrawOverlays=false: burbuja no puede mostrarse.");
             Toast.makeText(this, "Permiso 'Aparecer encima de apps' requerido para la burbuja CAP", Toast.LENGTH_LONG).show();
             return;
         }
+
         mainHandler.postDelayed(() -> {
             if (overlayView != null || windowManager == null) return;
             try {
@@ -194,7 +201,6 @@ public class MaticoScreenCaptureService extends Service {
                 button.setTextColor(0xFFFFFFFF);
                 button.setTextSize(12f);
                 button.setGravity(Gravity.CENTER);
-                button.setPadding(0, 0, 0, 0);
                 GradientDrawable circle = new GradientDrawable();
                 circle.setShape(GradientDrawable.OVAL);
                 circle.setColor(0xFF2563EB);
@@ -204,29 +210,36 @@ public class MaticoScreenCaptureService extends Service {
                 buttonParams.gravity = Gravity.CENTER;
                 container.addView(button, buttonParams);
 
-                button.setOnClickListener(v -> captureNow());
+                button.setOnClickListener(v -> captureNow(true));
                 overlayView = container;
+
+                final int overlayType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                    ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                    : WindowManager.LayoutParams.TYPE_PHONE;
 
                 WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                     170,
                     170,
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    overlayType,
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT
                 );
-                params.gravity = Gravity.CENTER_VERTICAL | Gravity.END;
-                params.x = 16;
-                params.y = 0;
+                params.gravity = Gravity.TOP | Gravity.END;
+                params.x = dp(12);
+                params.y = dp(160);
                 windowManager.addView(overlayView, params);
                 Log.d("MaticoOverlay", "Burbuja CAP mostrada correctamente.");
             } catch (Exception e) {
-                Log.e("MaticoOverlay", "showOverlay falló: " + e.getMessage(), e);
-                Toast.makeText(MaticoScreenCaptureService.this, "Error burbuja: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Log.e("MaticoOverlay", "showOverlay fallo: " + e.getMessage(), e);
                 overlayView = null;
+                if (attempt + 1 < OVERLAY_MAX_ATTEMPTS) {
+                    showOverlayWithRetry(attempt + 1);
+                    return;
+                }
+                Toast.makeText(MaticoScreenCaptureService.this, "No se pudo mostrar burbuja CAP. Usa la notificacion para capturar.", Toast.LENGTH_LONG).show();
             }
-        }, 400);
+        }, OVERLAY_RETRY_MS);
     }
 
     private void hideOverlay() {
@@ -240,7 +253,18 @@ public class MaticoScreenCaptureService extends Service {
         overlayView = null;
     }
 
-    private void captureNow() {
+    private void bringAppToFront() {
+        try {
+            Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+            if (launchIntent == null) return;
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(launchIntent);
+        } catch (Exception ignored) {
+            // no-op
+        }
+    }
+
+    private void captureNow(boolean returnToApp) {
         if (imageReader == null || width <= 0 || height <= 0) return;
         AtomicBoolean done = new AtomicBoolean(false);
         imageReader.setOnImageAvailableListener(reader -> {
@@ -272,6 +296,10 @@ public class MaticoScreenCaptureService extends Service {
                 String base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
                 MaticoScreenCaptureStore.push(base64Image, "image/jpeg");
                 done.set(true);
+
+                if (returnToApp) {
+                    mainHandler.postDelayed(this::bringAppToFront, 220);
+                }
             } catch (Exception ignored) {
                 done.set(true);
             } finally {

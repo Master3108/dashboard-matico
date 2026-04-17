@@ -157,6 +157,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     const streamRef = useRef(null);
     const pollRef = useRef(null);
     const mountedRef = useRef(true);
+    const autoImportingRef = useRef(false);
 
     useEffect(() => () => {
         mountedRef.current = false;
@@ -192,6 +193,20 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         }, 2500);
         return () => clearInterval(interval);
     }, [nativeSessionActive]);
+
+    useEffect(() => {
+        if (!nativeCaptureSupported) return undefined;
+        const handleReturnToApp = () => {
+            if (typeof document !== 'undefined' && document.visibilityState && document.visibilityState !== 'visible') return;
+            importNativeQueue({ silent: true, autoSubmit: true });
+        };
+        window.addEventListener('focus', handleReturnToApp);
+        document.addEventListener('visibilitychange', handleReturnToApp);
+        return () => {
+            window.removeEventListener('focus', handleReturnToApp);
+            document.removeEventListener('visibilitychange', handleReturnToApp);
+        };
+    }, [nativeCaptureSupported, scanAssets?.pages?.length]);
 
     const clearPolling = () => {
         if (pollRef.current) {
@@ -372,12 +387,14 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         }
     };
 
-    const importNativeQueue = async () => {
+    const importNativeQueue = async ({ silent = false, autoSubmit = false } = {}) => {
+        if (autoImportingRef.current) return;
+        autoImportingRef.current = true;
         try {
             const queued = await listNativeQueuedCaptures();
             const rows = Array.isArray(queued?.items) ? queued.items : [];
             if (!rows.length) {
-                setFeedback('No hay capturas en cola para importar.');
+                if (!silent) setFeedback('No hay capturas en cola para importar.');
                 return;
             }
 
@@ -417,16 +434,21 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                 return;
             }
 
-            await rebuildAssets(nextPages, scanAssets?.scanId || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+            const builtAssets = await rebuildAssets(nextPages, scanAssets?.scanId || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
             await clearNativeQueuedCaptures();
             await refreshNativeState();
-            setFeedback(`Importadas ${nextPages.length - existingPages.length} capturas desde celular.`);
+            const importedCount = nextPages.length - existingPages.length;
+            setFeedback(`Importadas ${importedCount} capturas desde celular.`);
             setStatus('preview');
+            if (autoSubmit && importedCount > 0) {
+                setTimeout(() => submitScan(builtAssets), 240);
+            }
         } catch {
-            setFeedback('No se pudo importar la cola de captura celular.');
+            if (!silent) setFeedback('No se pudo importar la cola de captura celular.');
             setStatus(scanAssets?.pages?.length ? 'preview' : 'idle');
         } finally {
             setIsGeneratingPdf(false);
+            autoImportingRef.current = false;
         }
     };
 
@@ -520,8 +542,9 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         }
     };
 
-    const submitScan = async () => {
-        if (!scanAssets?.pages?.length) return;
+    const submitScan = async (assetsOverride = null) => {
+        const targetAssets = assetsOverride || scanAssets;
+        if (!targetAssets?.pages?.length) return;
 
         clearPolling();
         setStatus('waiting');
@@ -539,18 +562,18 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                     phase: phase || '',
                     topic,
                     reading_content: readingContent?.substring(0, 4000) || '',
-                    pdf_base64: scanAssets.pdfBase64,
-                    pdf_file_name: scanAssets.pdfFileName,
-                    preview_images_base64: scanAssets.pages.map((page) => page.imageBase64),
-                    evidences: scanAssets.pages.map((page, index) => ({
+                    pdf_base64: targetAssets.pdfBase64,
+                    pdf_file_name: targetAssets.pdfFileName,
+                    preview_images_base64: targetAssets.pages.map((page) => page.imageBase64),
+                    evidences: targetAssets.pages.map((page, index) => ({
                         image_base64: page.imageBase64,
                         image_mime_type: page.imageMimeType || 'image/jpeg',
                         source_type: 'notebook',
                         page_number: index + 1
                     })),
-                    image_mime_type: scanAssets.pages[0]?.imageMimeType || 'image/jpeg',
-                    scan_id: scanAssets.scanId,
-                    page_count: scanAssets.pages.length
+                    image_mime_type: targetAssets.pages[0]?.imageMimeType || 'image/jpeg',
+                    scan_id: targetAssets.scanId,
+                    page_count: targetAssets.pages.length
                 })
             });
 
