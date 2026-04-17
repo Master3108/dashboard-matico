@@ -158,6 +158,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     const pollRef = useRef(null);
     const mountedRef = useRef(true);
     const autoImportingRef = useRef(false);
+    const submitTapLockRef = useRef(false);
     const uploadInputRef = useRef(null);
     const extraUploadInputRef = useRef(null);
 
@@ -600,6 +601,15 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         }
     };
 
+    const handleSubmitTap = () => {
+        if (submitTapLockRef.current) return;
+        submitTapLockRef.current = true;
+        submitScan();
+        setTimeout(() => {
+            submitTapLockRef.current = false;
+        }, 600);
+    };
+
     const restartFlow = () => {
         clearPolling();
         stopCamera();
@@ -762,7 +772,14 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                 )}
 
                                 {status === 'preview' ? (
-                                    <button onClick={submitScan} className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleSubmitTap}
+                                        onPointerUp={(e) => { e.preventDefault(); handleSubmitTap(); }}
+                                        onTouchEnd={(e) => { e.preventDefault(); handleSubmitTap(); }}
+                                        style={{ touchAction: 'manipulation' }}
+                                        className="w-full relative z-10 pointer-events-auto bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
+                                    >
                                         <Sparkles size={18} /> Enviar a Profe Matico
                                     </button>
                                 ) : (
