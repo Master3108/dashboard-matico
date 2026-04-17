@@ -1,16 +1,68 @@
-# React + Vite
+# Dashboard Matico
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Proyecto principal de Matico (frontend React + backend Node + deploy Docker en VPS Hostinger).
 
-Currently, two official plugins are available:
+## Reference First
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Before deploying or updating production, read:
 
-## React Compiler
+- `README-DEPLOY.md`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+That file contains the official command order:
 
-## Expanding the ESLint configuration
+1. Update local machine.
+2. Update VPS Docker containers.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Quick Commands
+
+### Local build
+
+```powershell
+cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico
+npm install
+npm run build
+```
+
+### Run local dev
+
+```powershell
+cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico
+npm run dev
+```
+
+### Android sync/build (Capacitor)
+
+```powershell
+cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico
+npx cap sync android
+cd android
+.\gradlew.bat assembleDebug
+```
+
+APK debug path:
+
+- `android\app\build\outputs\apk\debug\app-debug.apk`
+
+## Captura Celular (Android)
+
+- Flujo oficial: sesion persistente + burbuja flotante + cola de capturas.
+- Ya no se usa captura one-shot en modulos moviles de cuaderno.
+- Secuencia de uso:
+  1. Pulsa `Captura de pantalla celular`.
+  2. Acepta permiso de captura y selecciona pantalla completa.
+  3. Navega por el celular y usa la burbuja azul `CAP`.
+  4. Vuelve a Matico y pulsa `Importar cola`.
+
+## Main Files (Feature Map)
+
+- Universal evidence intake: `src/components/EvidenceIntake.jsx`
+- Oracle notebook flow: `src/components/OracleNotebookExamBuilder.jsx`
+- Exam screenshot/scan flow: `src/components/ExamCaptureModal.jsx`
+- Notebook mission flow: `src/components/CuadernoMission.jsx`
+- Main app wiring (prep/weak sessions): `src/App.jsx`
+- Backend APIs and OCR/oracle logic: `server/index.js`
+- Mobile native bridge: `src/mobile/screenCaptureBridge.js`
+- Android native capture components:
+  - `android/app/src/main/java/app/matico/dashboard/MaticoScreenCapturePlugin.java`
+  - `android/app/src/main/java/app/matico/dashboard/MaticoScreenCaptureService.java`
+  - `android/app/src/main/java/app/matico/dashboard/MaticoScreenCaptureStore.java`

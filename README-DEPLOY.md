@@ -2,12 +2,126 @@
 
 This file documents the current production setup for `dashboard-matico` so any developer or AI can verify how the project is actually deployed.
 
+## April 2026 - Saved Commands and Locations (Official)
+
+This section is the permanent reference for the latest requested workflow:
+
+1. Update local machine.
+2. Update VPS Hostinger (Docker).
+3. Rebuild Android app when mobile native capture changes.
+
+### Main feature locations (latest)
+
+- Universal evidence intake (`max 10`): `src/components/EvidenceIntake.jsx`
+- Oracle from notebook (multi-evidence): `src/components/OracleNotebookExamBuilder.jsx`
+- Exam capture modal (multi-evidence): `src/components/ExamCaptureModal.jsx`
+- Notebook daily flow (`max 10`): `src/components/CuadernoMission.jsx`
+- Prep/weak sessions evidence wiring: `src/App.jsx`
+- Backend multi-evidence + compatibility: `server/index.js`
+- Mobile bridge methods: `src/mobile/screenCaptureBridge.js`
+- Android native capture plugin/service:
+  - `android/app/src/main/java/app/matico/dashboard/MaticoScreenCapturePlugin.java`
+  - `android/app/src/main/java/app/matico/dashboard/MaticoScreenCaptureService.java`
+  - `android/app/src/main/java/app/matico/dashboard/MaticoScreenCaptureStore.java`
+  - `android/app/src/main/AndroidManifest.xml`
+
+### Local machine update (required first)
+
+```powershell
+cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico
+git add .
+git commit -m "feat: evidencia universal max 10 + captura celular"
+git push origin main
+```
+
+### VPS Hostinger update (required second)
+
+```bash
+cd /var/www/dashboard-matico
+git fetch origin
+git checkout main
+git pull origin main
+docker compose down
+docker compose up -d --build --force-recreate
+docker compose ps
+```
+
+### Quick verification after deploy
+
+```bash
+cd /var/www/dashboard-matico
+git rev-parse --short HEAD
+docker compose ps
+curl -I https://srv1048418.hstgr.cloud
+curl https://srv1048418.hstgr.cloud/api/health
+```
+
+### Android app rebuild (when mobile capture changes)
+
+```powershell
+cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico
+npm run build
+npx cap sync android
+cd android
+$env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+.\gradlew.bat assembleDebug
+```
+
+APK output:
+
+- `android\app\build\outputs\apk\debug\app-debug.apk`
+
+### Android troubleshooting (licenses / SDK)
+
+If Gradle fails with SDK license/platform messages, open Android Studio and install/accept:
+
+- Android SDK Platform 36
+- Android SDK Build-Tools 35
+- Accept all SDK licenses
+
+Then rebuild:
+
+```powershell
+cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico\android
+.\gradlew.bat assembleDebug
+```
+
 ## Owner Deployment Protocol (Required)
 
 From now on, always deliver deployment commands in this exact order:
 
 1. Update local machine (commit and push).
 2. Update Hostinger VPS (Docker containers).
+
+## Confirmed Working Process (Official)
+
+Use this exact sequence when updating production.
+
+### 1) Local machine (commit and push)
+
+```powershell
+cd C:\Users\Usuario\.gemini\antigravity\scratch\dashboard-matico
+git add .
+git commit -m "fix: <mensaje>"
+git push origin main
+```
+
+Note:
+- If the change is specific to one file, you can stage only that file (example: `git add src/App.jsx`).
+
+### 2) Hostinger VPS (Docker containers)
+
+```bash
+cd /var/www/dashboard-matico
+git pull origin main
+docker compose down
+docker compose up --build -d
+docker compose ps
+docker compose logs --tail=120
+```
+
+This is the baseline flow to follow before trying any alternative deploy steps.
 
 ## Official one-command flow (recommended)
 

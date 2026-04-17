@@ -5660,4 +5660,111 @@ ${finalData.capsule}`;
                                             <label className="relative inline-flex items-center cursor-pointer">
                                                 <input
                                                     type="checkbox"
-                                                    className="sr-only pee
+                                                    className="sr-only peer"
+                                                    checked={progressReportsEnabled}
+                                                    onChange={(e) => updateNotificationPrefs('progress_reports', e.target.checked)}
+                                                />
+                                                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500 shadow-inner"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* SYSTEM & ENVIRONMENT */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Server className="w-3 h-3" /> Sistema y Entorno
+                                    </h4>
+                                    <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-bold text-gray-700">Modo de Conexion</span>
+                                            <button
+                                                onClick={() => setActiveWebhookUrl(prev => prev === N8N_URLS.test ? N8N_URLS.production : N8N_URLS.test)}
+                                                className={`text-[10px] font-black px-4 py-1.5 rounded-full transition-all border-2 ${activeWebhookUrl === N8N_URLS.test
+                                                    ? 'bg-gray-100 text-gray-500 border-gray-200'
+                                                    : 'bg-red-50 text-red-600 border-red-100 animate-pulse'
+                                                    }`}
+                                            >
+                                                {activeWebhookUrl === N8N_URLS.test ? 'TEST MODE' : 'PRODUCTION'}
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const fiveDaysAgo = new Date();
+                                                fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+                                                localStorage.setItem('MATICO_START_DATE', fiveDaysAgo.toISOString());
+                                                localStorage.removeItem(completedSessionsStorageKey);
+                                                localStorage.removeItem(quizProgressStorageKey);
+                                                alert("Simulacion: inicio hace 5 dias. Debes ponerte al dia.");
+                                                window.location.reload();
+                                            }}
+                                            className="w-full text-[10px] font-black text-blue-500 uppercase tracking-widest py-2 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
+                                        >
+                                            SIMULAR ATRASO (5 DIAS)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {isAdminUser && (
+                                    <div className="space-y-2">
+                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Shield className="w-3 h-3" /> Administrador
+                                        </h4>
+                                        <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm flex flex-col gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center border border-amber-100">
+                                                    <FileText className="w-4 h-4 text-amber-600" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">PDFs del cuaderno</span>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Ver y borrar archivos del VPS</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={openAdminFilesModal}
+                                                className={`${clayBtnAction} !bg-[#E67E22] !border-[#D35400] hover:!bg-[#D35400]`}
+                                            >
+                                                VER PDFS DEL VPS <FileText className="w-5 h-5" />
+                                            </button>
+
+                                            <div className="h-px bg-gray-100" />
+
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
+                                                    <Database className="w-4 h-4 text-blue-600" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">Banco de preguntas IA</span>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Descargar o eliminar preguntas generadas</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={openAdminGeneratedQuestionsModal}
+                                                className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
+                                            >
+                                                VER BANCO IA <Database className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* LOGOUT */}
+                                <button
+                                    onClick={() => {
+                                        handleLogout();
+                                    }}
+                                    className="w-full py-4 bg-red-50 text-red-600 font-black rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <XCircle className="w-5 h-5" />
+                                    Cerrar Sesion
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default App;

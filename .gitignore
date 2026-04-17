@@ -25,3 +25,11 @@ dist-ssr
 .env
 server/node_modules
 server/.env
+
+# Local Android temp dirs (do not commit)
+android/.android-home/
+android/.android-user/
+android/.gradle-user/
+
+# Local backup artifacts
+src/App.jsx.backup_encoding

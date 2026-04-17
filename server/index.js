@@ -809,6 +809,7 @@ const createNotebookSubmission = async ({
     reading_content,
     pdf_base64,
     pdf_file_name,
+    evidences,
     preview_image_base64,
     preview_images_base64,
     image_mime_type,
@@ -820,9 +821,13 @@ const createNotebookSubmission = async ({
         throw new Error('Falta pdf_base64');
     }
 
-    const normalizedImages = (Array.isArray(preview_images_base64) ? preview_images_base64 : [])
-        .map((item) => String(item || '').trim())
-        .filter(Boolean);
+    const normalizedEvidenceItems = normalizeEvidencePayload({
+        evidences,
+        images_base64: preview_images_base64,
+        image_base64: preview_image_base64,
+        image_mime_type
+    }).slice(0, MAX_EVIDENCE_ITEMS);
+    const normalizedImages = normalizedEvidenceItems.map((item) => String(item.image_base64 || '').trim()).filter(Boolean);
     if (!normalizedImages.length && preview_image_base64) {
         normalizedImages.push(String(preview_image_base64).trim());
     }
@@ -869,7 +874,7 @@ const createNotebookSubmission = async ({
             await analyzeNotebookSubmission(submission, {
                 previewImageBase64: preview_image_base64,
                 previewImagesBase64: normalizedImages,
-                imageMimeType: image_mime_type || 'image/jpeg',
+                imageMimeType: normalizedEvidenceItems[0]?.image_mime_type || image_mime_type || 'image/jpeg',
                 readingContent: reading_content || '',
                 grade: grade || '1medio'
             });
@@ -968,24 +973,22 @@ app.post('/api/exams/intake', async (req, res) => {
         const {
             user_id = '',
             email = '',
-            source_type = 'screenshot',
-            image_base64 = '',
-            image_mime_type = 'image/png'
+            source_type = 'screenshot'
         } = req.body || {};
 
         if (!user_id) {
             return res.status(400).json({ success: false, error: 'Falta user_id' });
         }
 
-        if (!image_base64) {
+        const evidences = normalizeEvidencePayload(req.body || {});
+        if (!evidences.length) {
             return res.status(400).json({ success: false, error: 'Falta image_base64 para analizar la prueba' });
         }
 
         const sheets = await getSheetsClient();
         const userData = await getUserFromSheet(sheets, user_id).catch(() => null);
         const preview = await analyzeExamEvidence({
-            imageBase64: image_base64,
-            imageMimeType: image_mime_type || 'image/png'
+            evidences
         });
 
         const eventId = `EXAM_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -1016,6 +1019,7 @@ app.post('/api/exams/intake', async (req, res) => {
             event_id: eventId,
             needs_confirmation: preview.needs_confirmation,
             confidence: preview.confidence,
+            evidence_count_used: evidences.length,
             event_preview: {
                 exam_date: preview.exam_date,
                 subject: preview.subject,
@@ -1115,8 +1119,6 @@ app.post('/api/oracle/exam-from-notebook/intake', async (req, res) => {
         const {
             user_id = '',
             email = '',
-            image_base64 = '',
-            image_mime_type = 'image/png',
             subject_hint = 'MATEMATICA',
             session_hint = 1,
             question_count = 15
@@ -1125,13 +1127,13 @@ app.post('/api/oracle/exam-from-notebook/intake', async (req, res) => {
         if (!user_id) {
             return res.status(400).json({ success: false, error: 'Falta user_id' });
         }
-        if (!image_base64) {
+        const evidences = normalizeEvidencePayload(req.body || {});
+        if (!evidences.length) {
             return res.status(400).json({ success: false, error: 'Falta image_base64' });
         }
 
         const preview = await analyzeNotebookForOracle({
-            imageBase64: image_base64,
-            imageMimeType: image_mime_type || 'image/png',
+            evidences,
             subjectHint: subject_hint,
             sessionHint: session_hint
         });
@@ -1149,6 +1151,7 @@ app.post('/api/oracle/exam-from-notebook/intake', async (req, res) => {
             success: true,
             draft_id: draftId,
             confidence: preview.confidence,
+            evidence_count_used: evidences.length,
             needs_confirmation: true,
             detected_topics: [preview.topic, ...preview.subtopics].filter(Boolean).slice(0, 8),
             event_preview: {
@@ -1236,6 +1239,7 @@ app.post('/api/oracle/exam-from-notebook/generate', async (req, res) => {
             session_base: sessionBase,
             question_count: questions.length,
             confidence: sourcePreview.confidence || 0,
+            evidence_count_used: Number(sourcePreview.evidence_count_used || 1) || 1,
             detected_topics: [topic, ...subtopics].filter(Boolean).slice(0, 8),
             questions,
             practice_guide: practiceGuide,
@@ -1997,12 +2001,64 @@ const buildExamReminderEmailHtml = ({
     `;
 };
 
-const analyzeExamEvidence = async ({
-    imageBase64 = '',
-    imageMimeType = 'image/png'
+const MAX_EVIDENCE_ITEMS = 10;
+
+const normalizeEvidencePayload = ({
+    evidences = [],
+    images_base64 = [],
+    images_mime_types = [],
+    image_base64 = '',
+    image_mime_type = 'image/png',
+    source_type = 'screenshot'
 } = {}) => {
-    const trimmed = String(imageBase64 || '').trim();
-    if (!trimmed) throw new Error('No se recibio imagen para analizar');
+    const normalized = [];
+
+    const pushEvidence = (imageBase64 = '', imageMimeType = 'image/png', itemSource = source_type, pageNumber = null) => {
+        const trimmed = String(imageBase64 || '').trim();
+        if (!trimmed) return;
+        normalized.push({
+            image_base64: trimmed,
+            image_mime_type: String(imageMimeType || 'image/png').trim() || 'image/png',
+            source_type: String(itemSource || source_type || 'screenshot').trim() || 'screenshot',
+            page_number: Number(pageNumber || normalized.length + 1) || (normalized.length + 1)
+        });
+    };
+
+    if (Array.isArray(evidences)) {
+        evidences.forEach((item, index) => {
+            if (!item || typeof item !== 'object') return;
+            pushEvidence(
+                item.image_base64 || item.imageBase64 || '',
+                item.image_mime_type || item.imageMimeType || item.mime_type || image_mime_type,
+                item.source_type || item.sourceType || source_type,
+                item.page_number || item.pageNumber || (index + 1)
+            );
+        });
+    }
+
+    if (!normalized.length && Array.isArray(images_base64)) {
+        images_base64.forEach((img, index) => {
+            pushEvidence(
+                img,
+                images_mime_types?.[index] || image_mime_type,
+                source_type,
+                index + 1
+            );
+        });
+    }
+
+    if (!normalized.length && image_base64) {
+        pushEvidence(image_base64, image_mime_type, source_type, 1);
+    }
+
+    return normalized.slice(0, MAX_EVIDENCE_ITEMS);
+};
+
+const analyzeExamEvidence = async ({
+    evidences = []
+} = {}) => {
+    const normalized = normalizeEvidencePayload({ evidences }).slice(0, MAX_EVIDENCE_ITEMS);
+    if (!normalized.length) throw new Error('No se recibio imagen para analizar');
 
     const prompt = `Analiza una captura/foto de calendario o app escolar y extrae datos de una evaluacion.
 
@@ -2036,7 +2092,10 @@ Reglas:
                     role: 'user',
                     content: [
                         { type: 'text', text: prompt },
-                        { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                        ...normalized.map((item) => ({
+                            type: 'image_url',
+                            image_url: { url: `data:${item.image_mime_type};base64,${item.image_base64}` }
+                        }))
                     ]
                 }],
                 max_tokens: 1200,
@@ -2058,7 +2117,10 @@ Reglas:
                 role: 'user',
                 content: [
                     { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                    ...normalized.map((item) => ({
+                        type: 'image_url',
+                        image_url: { url: `data:${item.image_mime_type};base64,${item.image_base64}` }
+                    }))
                 ]
             }],
             max_tokens: 1200,
@@ -2072,7 +2134,10 @@ Reglas:
                 role: 'user',
                 content: [
                     { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                    ...normalized.map((item) => ({
+                        type: 'image_url',
+                        image_url: { url: `data:${item.image_mime_type};base64,${item.image_base64}` }
+                    }))
                 ]
             }],
             max_tokens: 1200,
@@ -2128,13 +2193,12 @@ const normalizeOracleNotebookPreview = (parsed = {}, fallbackSubject = 'MATEMATI
 };
 
 const analyzeNotebookForOracle = async ({
-    imageBase64 = '',
-    imageMimeType = 'image/png',
+    evidences = [],
     subjectHint = 'MATEMATICA',
     sessionHint = 1
 } = {}) => {
-    const trimmed = String(imageBase64 || '').trim();
-    if (!trimmed) throw new Error('No se recibio imagen para analizar');
+    const normalized = normalizeEvidencePayload({ evidences }).slice(0, MAX_EVIDENCE_ITEMS);
+    if (!normalized.length) throw new Error('No se recibio imagen para analizar');
 
     const prompt = `Analiza una foto/screenshot de un cuaderno escolar y extrae el contenido para crear una prueba.
 
@@ -2172,7 +2236,10 @@ Reglas:
                     role: 'user',
                     content: [
                         { type: 'text', text: prompt },
-                        { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                        ...normalized.map((item) => ({
+                            type: 'image_url',
+                            image_url: { url: `data:${item.image_mime_type};base64,${item.image_base64}` }
+                        }))
                     ]
                 }],
                 max_tokens: 1400,
@@ -2194,7 +2261,10 @@ Reglas:
                 role: 'user',
                 content: [
                     { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                    ...normalized.map((item) => ({
+                        type: 'image_url',
+                        image_url: { url: `data:${item.image_mime_type};base64,${item.image_base64}` }
+                    }))
                 ]
             }],
             max_tokens: 1400,
@@ -2208,7 +2278,10 @@ Reglas:
                 role: 'user',
                 content: [
                     { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${trimmed}` } }
+                    ...normalized.map((item) => ({
+                        type: 'image_url',
+                        image_url: { url: `data:${item.image_mime_type};base64,${item.image_base64}` }
+                    }))
                 ]
             }],
             max_tokens: 1400,
@@ -2220,7 +2293,9 @@ Reglas:
     }
 
     const parsed = parseExamAnalysisResponse(rawText);
-    return normalizeOracleNotebookPreview(parsed, subjectHint, sessionHint);
+    const normalizedPreview = normalizeOracleNotebookPreview(parsed, subjectHint, sessionHint);
+    normalizedPreview.evidence_count_used = normalized.length;
+    return normalizedPreview;
 };
 
 const fetchWithTimeout = async (url, timeoutMs = 7000) => {

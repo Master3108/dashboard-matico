@@ -8,9 +8,16 @@
     "build": "vite build",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "theory:backfill": "node scripts/backfill-theory-ludica.mjs"
+    "theory:backfill": "node scripts/backfill-theory-ludica.mjs",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap sync android && npx cap open android",
+    "apk:debug": "cd android && gradlew.bat assembleDebug",
+    "apk:release": "cd android && gradlew.bat assembleRelease"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
     "canvas-confetti": "^1.9.4",
     "jspdf": "^4.2.1",
     "katex": "^0.16.27",

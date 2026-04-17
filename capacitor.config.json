@@ -1,0 +1,12 @@
+{
+  "appId": "app.matico.dashboard",
+  "appName": "Matico",
+  "webDir": "dist",
+  "server": {
+    "url": "https://srv1048418.hstgr.cloud",
+    "cleartext": false,
+    "allowNavigation": [
+      "srv1048418.hstgr.cloud"
+    ]
+  }
+}
