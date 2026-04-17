@@ -619,7 +619,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     const canBypassProviderFailure = status === 'error' && isVisualProviderFailure(feedback) && typeof onComplete === 'function';
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onPaste={handlePaste}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[260] p-4" onPaste={handlePaste}>
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden max-h-[90vh] overflow-y-auto">
                 <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white">
                     <div className="flex items-center gap-3">
@@ -850,7 +850,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
             </div>
 
             {status === 'camera' && (
-                <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center">
+                <div className="fixed inset-0 z-[270] bg-black flex flex-col items-center justify-center">
                     <button
                         onClick={() => { stopCamera(); setStatus(scanAssets?.pages?.length ? 'preview' : 'idle'); }}
                         className="absolute top-4 right-4 text-white p-2 bg-white/20 rounded-full hover:bg-white/40 z-10"
