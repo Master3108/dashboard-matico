@@ -6,6 +6,7 @@ import {
     getNativeCaptureSessionState,
     isNativeScreenCaptureAvailable,
     listNativeQueuedCaptures,
+    onNativeCaptureSessionFinalized,
     startNativeCaptureSession,
     stopNativeCaptureSession
 } from '../mobile/screenCaptureBridge';
@@ -56,6 +57,19 @@ const scoreToStars = (score = 0) => {
 };
 
 const isVisualProviderFailure = (message = '') => /invalid authentication|401|proveedor visual|kimi_api_key|nvidia_api_key|moonshot|analizar el cuaderno/i.test(String(message || ''));
+const normalizeNativeCaptureError = (error, fallbackMessage) => {
+    const raw = String(error?.message || '').toLowerCase();
+    if (raw.includes('overlay_permission_required')) {
+        return 'Debes activar "mostrar sobre otras apps" para ver el marco azul y el boton de captura.';
+    }
+    if (raw.includes('screen_capture_permission_denied')) {
+        return 'Permiso de captura denegado. Debes aceptar "grabar o compartir pantalla".';
+    }
+    if (raw.includes('session_not_active')) {
+        return 'Primero inicia la sesion de captura celular.';
+    }
+    return fallbackMessage;
+};
 
 const buildPageAsset = (source, pageNumber) => {
     const canvas = document.createElement('canvas');
@@ -203,9 +217,15 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
             if (typeof document !== 'undefined' && document.visibilityState && document.visibilityState !== 'visible') return;
             importNativeQueue({ silent: true, autoSubmit: true });
         };
+        // Evento directo desde el overlay nativo cuando el usuario toca "Finalizar":
+        // dispara el import+submit sin depender del ciclo focus/visibilitychange.
+        const unsubscribe = onNativeCaptureSessionFinalized(() => {
+            importNativeQueue({ silent: true, autoSubmit: true });
+        });
         window.addEventListener('focus', handleReturnToApp);
         document.addEventListener('visibilitychange', handleReturnToApp);
         return () => {
+            if (typeof unsubscribe === 'function') unsubscribe();
             window.removeEventListener('focus', handleReturnToApp);
             document.removeEventListener('visibilitychange', handleReturnToApp);
         };
@@ -374,13 +394,9 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         try {
             await startNativeCaptureSession();
             await refreshNativeState();
-            setFeedback('Permiso activado. Navega en tu celular y usa la burbuja flotante azul para capturar.');
+            setFeedback('Permiso activado. Navega con el marco azul y usa el boton inferior "Capturar pantalla".');
         } catch (error) {
-            if (String(error?.message || '').toLowerCase().includes('overlay_permission_required')) {
-                setFeedback('Debes activar "mostrar sobre otras apps" para ver la burbuja.');
-                return;
-            }
-            setFeedback('No se pudo iniciar la captura de pantalla celular.');
+            setFeedback(normalizeNativeCaptureError(error, 'No se pudo iniciar la captura de pantalla celular.'));
         }
     };
 
@@ -388,13 +404,9 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         try {
             await captureNowNativeSession();
             await refreshNativeState();
-            setFeedback('Captura enviada a cola. Vuelve a Matico y pulsa "Importar cola".');
+            setFeedback('Captura guardada. Volviste a Matico automaticamente; ahora pulsa "Importar cola".');
         } catch (error) {
-            if (String(error?.message || '').toLowerCase().includes('session_not_active')) {
-                setFeedback('Primero inicia la sesion de captura celular.');
-                return;
-            }
-            setFeedback('No se pudo capturar en la sesion celular.');
+            setFeedback(normalizeNativeCaptureError(error, 'No se pudo capturar en la sesion celular.'));
         }
     };
 
@@ -667,52 +679,20 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                         <Monitor size={18} /> Capturar pantalla
                                     </button>
                                 )}
-                                <button onClick={startNativeSession} disabled={!nativeCaptureSupported} className={`flex-1 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${nativeCaptureSupported ? 'bg-green-700 text-white hover:bg-green-800' : 'bg-slate-200 text-slate-500'}`}>
-                                    <Smartphone size={18} /> Captura de pantalla celular
+                                {nativeCaptureSupported && (
+                                    <button onClick={startNativeSession} className="flex-1 bg-green-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-green-800 flex items-center justify-center gap-2">
+                                        <Smartphone size={18} /> Captura de pantalla celular
+                                    </button>
+                                )}
+                            </div>
+                            {nativeCaptureSupported && nativeQueueCount > 0 && (
+                                <button
+                                    onClick={() => importNativeQueue({ silent: false, autoSubmit: true })}
+                                    className="w-full rounded-xl bg-[#4D96FF] text-white px-4 py-3 text-sm font-black flex items-center justify-center gap-2"
+                                >
+                                    Importar cola ({nativeQueueCount})
                                 </button>
-                            </div>
-                            {nativeCaptureSupported && (
-                                <div className="bg-green-50 border border-green-200 rounded-xl p-3 space-y-3">
-                                    <p className="text-xs font-bold text-green-800">
-                                        Estado captura celular: sesion {nativeSessionActive ? 'activa' : 'inactiva'} � cola {nativeQueueCount}
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={nativeCaptureNow}
-                                            disabled={!nativeSessionActive}
-                                            className={`px-3 py-2 rounded-lg text-xs font-black ${nativeSessionActive ? 'bg-[#15803D] text-white' : 'bg-slate-200 text-slate-500'}`}
-                                        >
-                                            Capturar ahora
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={importNativeQueue}
-                                            disabled={nativeQueueCount <= 0}
-                                            className={`px-3 py-2 rounded-lg text-xs font-black ${nativeQueueCount > 0 ? 'bg-[#2563EB] text-white' : 'bg-slate-200 text-slate-500'}`}
-                                        >
-                                            Importar cola
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={stopNativeSession}
-                                            className="px-3 py-2 rounded-lg text-xs font-black bg-slate-700 text-white"
-                                        >
-                                            Cerrar sesion
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={refreshNativeState}
-                                            className="px-3 py-2 rounded-lg text-xs font-black bg-white border border-slate-200 text-slate-700"
-                                        >
-                                            Actualizar estado
-                                        </button>
-                                    </div>
-                                </div>
                             )}
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-600 flex items-center gap-2">
-                                <Clipboard size={14} /> También puedes pegar screenshot (Ctrl+V).
-                            </div>
                             {onSkip && <button onClick={onSkip} className="w-full text-sm text-slate-400 hover:text-slate-600 py-2">Saltar por ahora</button>}
                         </div>
                     )}

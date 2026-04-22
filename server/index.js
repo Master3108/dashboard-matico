@@ -357,6 +357,98 @@ const writeNotebookSubmissions = async (submissions) => {
 
 const clampNumber = (value, min, max) => Math.min(max, Math.max(min, value));
 
+const NOTEBOOK_STOPWORDS = new Set([
+    'a', 'al', 'algo', 'ante', 'como', 'con', 'contra', 'cual', 'cuando', 'de', 'del', 'desde',
+    'donde', 'el', 'ella', 'ellas', 'ellos', 'en', 'entre', 'era', 'eramos', 'es', 'esa', 'ese',
+    'eso', 'esta', 'estaba', 'estamos', 'este', 'esto', 'estos', 'fue', 'ha', 'hace', 'hacia',
+    'han', 'hasta', 'hay', 'la', 'las', 'le', 'les', 'lo', 'los', 'mas', 'me', 'mi', 'mis',
+    'muy', 'no', 'nos', 'nosotros', 'o', 'para', 'pero', 'por', 'porque', 'que', 'se', 'segun',
+    'ser', 'si', 'sin', 'sobre', 'son', 'su', 'sus', 'tambien', 'te', 'tiene', 'todo', 'tu',
+    'tus', 'un', 'una', 'uno', 'unos', 'y', 'ya'
+]);
+
+const normalizeNotebookText = (value = '') => String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const tokenizeNotebookText = (value = '', { minLength = 3, skipStopwords = true } = {}) => {
+    const normalized = normalizeNotebookText(value);
+    if (!normalized) return [];
+    return normalized
+        .split(' ')
+        .map((token) => token.trim())
+        .filter(Boolean)
+        .filter((token) => token.length >= minLength)
+        .filter((token) => !skipStopwords || !NOTEBOOK_STOPWORDS.has(token));
+};
+
+const uniqueTokens = (tokens = []) => Array.from(new Set(tokens.filter(Boolean)));
+
+const computeNotebookStrictScore = ({
+    isHandwritten = false,
+    aiScore = 0,
+    ocrText = '',
+    theoryText = '',
+    pageCount = 1,
+    detectedConcepts = [],
+    missingConcepts = []
+} = {}) => {
+    const safePageCount = Math.max(1, Number(pageCount) || 1);
+    const safeAiScore = clampNumber(Number(aiScore) || 0, 0, 100);
+    if (!isHandwritten) {
+        return {
+            finalScore: 0,
+            strictScore: 0,
+            aiScore: safeAiScore,
+            ocrWordCount: 0,
+            theoryCoverage: 0,
+            expectedWordsByPages: safePageCount * 75
+        };
+    }
+
+    const ocrTokens = tokenizeNotebookText(ocrText, { minLength: 2, skipStopwords: false });
+    const ocrWordCount = ocrTokens.length;
+    const ocrSignalTokens = uniqueTokens(tokenizeNotebookText(ocrText, { minLength: 4, skipStopwords: true }));
+    const theorySignalTokens = uniqueTokens(tokenizeNotebookText(theoryText, { minLength: 4, skipStopwords: true }))
+        .slice(0, 140);
+
+    const theoryTokenSet = new Set(theorySignalTokens);
+    const overlapCount = ocrSignalTokens.reduce((count, token) => (theoryTokenSet.has(token) ? count + 1 : count), 0);
+    const theoryCoverage = theorySignalTokens.length
+        ? clampNumber(overlapCount / theorySignalTokens.length, 0, 1)
+        : 0;
+
+    const expectedWordsByPages = safePageCount * 75;
+    const lengthScore = clampNumber(ocrWordCount / expectedWordsByPages, 0, 1);
+
+    const detectedCount = Array.isArray(detectedConcepts) ? detectedConcepts.length : 0;
+    const missingCount = Array.isArray(missingConcepts) ? missingConcepts.length : 0;
+    const conceptScore = (detectedCount + missingCount) > 0
+        ? clampNumber(detectedCount / (detectedCount + missingCount), 0, 1)
+        : 0.5;
+
+    let strictScore = Math.round((theoryCoverage * 0.55 + lengthScore * 0.25 + conceptScore * 0.20) * 100);
+
+    if (ocrWordCount < 25) strictScore = Math.min(strictScore, 40);
+    if (safePageCount === 1 && ocrWordCount < 40) strictScore = Math.min(strictScore, 60);
+    if (theoryCoverage < 0.2) strictScore = Math.min(strictScore, 65);
+
+    const finalScore = clampNumber(Math.min(safeAiScore, strictScore), 0, 100);
+
+    return {
+        finalScore,
+        strictScore: clampNumber(strictScore, 0, 100),
+        aiScore: safeAiScore,
+        ocrWordCount,
+        theoryCoverage: Number(theoryCoverage.toFixed(3)),
+        expectedWordsByPages
+    };
+};
+
 const resolveNotebookTier = (score = 0, isHandwritten = false) => {
     if (!isHandwritten || score < NOTEBOOK_QUIZ_THRESHOLD) return 'insuficiente';
     if (score >= 85) return 'oro';
@@ -395,9 +487,13 @@ const buildNotebookDefaultSuggestion = ({ isHandwritten, interpretationScore }) 
     return 'Parte desde cero con 3 ideas clave, una explicaciÃ³n simple y, si puedes, flechas o esquemas.';
 };
 
-const normalizeNotebookAnalysisResult = (rawResult = {}, { topic = '' } = {}) => {
+const normalizeNotebookAnalysisResult = (rawResult = {}, {
+    topic = '',
+    expectedTheory = '',
+    pageCount = 1
+} = {}) => {
     const isHandwritten = Boolean(rawResult.is_handwritten ?? rawResult.es_manuscrito);
-    const interpretationScore = clampNumber(
+    const aiInterpretationScore = clampNumber(
         Number(rawResult.interpretation_score ?? rawResult.nivel_comprension ?? 0) || 0,
         0,
         100
@@ -409,7 +505,21 @@ const normalizeNotebookAnalysisResult = (rawResult = {}, { topic = '' } = {}) =>
         ? rawResult.missing_concepts
         : (Array.isArray(rawResult.conceptos_faltantes) ? rawResult.conceptos_faltantes : []);
     const ocrText = String(rawResult.ocr_text ?? rawResult.transcripcion_ocr ?? '').trim();
-    const reasoningSummary = String(rawResult.reasoning_summary ?? rawResult.analisis_escritura ?? '').trim();
+    const scoreMetrics = computeNotebookStrictScore({
+        isHandwritten,
+        aiScore: aiInterpretationScore,
+        ocrText,
+        theoryText: expectedTheory,
+        pageCount,
+        detectedConcepts,
+        missingConcepts
+    });
+    const interpretationScore = scoreMetrics.finalScore;
+    const originalReasoning = String(rawResult.reasoning_summary ?? rawResult.analisis_escritura ?? '').trim();
+    const strictReasoning = `Control estricto: AI=${scoreMetrics.aiScore}, estricto=${scoreMetrics.strictScore}, OCR=${scoreMetrics.ocrWordCount} palabras, cobertura teoria=${Math.round(scoreMetrics.theoryCoverage * 100)}%, paginas=${Math.max(1, Number(pageCount) || 1)}.`;
+    const reasoningSummary = originalReasoning
+        ? `${originalReasoning} ${strictReasoning}`.trim()
+        : strictReasoning;
     const quizReady = isHandwritten && interpretationScore >= NOTEBOOK_QUIZ_THRESHOLD;
     const tier = resolveNotebookTier(interpretationScore, isHandwritten);
     const xpReward = tier === 'oro' ? 50 : (tier === 'plata' ? 30 : 0);
@@ -423,6 +533,7 @@ const normalizeNotebookAnalysisResult = (rawResult = {}, { topic = '' } = {}) =>
         feedback: String(rawResult.feedback || '').trim() || buildNotebookDefaultFeedback({ isHandwritten, interpretationScore, topic }),
         suggestion: String(rawResult.suggestion || '').trim() || buildNotebookDefaultSuggestion({ isHandwritten, interpretationScore }),
         reasoning_summary: reasoningSummary,
+        score_breakdown: scoreMetrics,
         quiz_ready: quizReady,
         tier,
         xp_reward: xpReward
@@ -762,7 +873,11 @@ RESPONDE SOLO JSON VALIDO CON ESTA FORMA:
     }
 
     const parsed = parseNotebookAnalysisResponse(rawText);
-    const normalized = normalizeNotebookAnalysisResult(parsed, { topic: submission.topic });
+    const normalized = normalizeNotebookAnalysisResult(parsed, {
+        topic: submission.topic,
+        expectedTheory: resolvedTheoryForComparison || readingContent || '',
+        pageCount: submission.page_count || normalizedImages.length || 1
+    });
 
     await updateNotebookSubmission(submission.id, (current) => ({
         ...current,

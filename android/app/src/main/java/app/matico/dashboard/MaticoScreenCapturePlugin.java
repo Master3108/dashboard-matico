@@ -40,6 +40,24 @@ public class MaticoScreenCapturePlugin extends Plugin {
     private MediaProjectionManager oneShotProjectionManager;
     private final Handler oneShotHandler = new Handler(Looper.getMainLooper());
 
+    @Override
+    public void load() {
+        super.load();
+        // El service avisa al plugin cuando el usuario toca "Finalizar" en el overlay.
+        MaticoScreenCaptureService.setSessionFinalizedListener(queueCount -> {
+            JSObject payload = new JSObject();
+            payload.put("queueCount", queueCount);
+            payload.put("active", false);
+            notifyListeners("captureSessionFinalized", payload);
+        });
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        MaticoScreenCaptureService.setSessionFinalizedListener(null);
+        super.handleOnDestroy();
+    }
+
     @PluginMethod
     public void captureScreenshot(PluginCall call) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
@@ -218,15 +236,21 @@ public class MaticoScreenCapturePlugin extends Plugin {
             return;
         }
 
-        Intent serviceIntent = new Intent(getContext(), MaticoScreenCaptureService.class);
-        serviceIntent.setAction(MaticoScreenCaptureService.ACTION_START_SESSION);
-        serviceIntent.putExtra(MaticoScreenCaptureService.EXTRA_RESULT_CODE, result.getResultCode());
-        serviceIntent.putExtra(MaticoScreenCaptureService.EXTRA_RESULT_DATA, result.getData());
+        try {
+            Intent serviceIntent = new Intent(getContext(), MaticoScreenCaptureService.class);
+            serviceIntent.setAction(MaticoScreenCaptureService.ACTION_START_SESSION);
+            serviceIntent.putExtra(MaticoScreenCaptureService.EXTRA_RESULT_CODE, result.getResultCode());
+            serviceIntent.putExtra(MaticoScreenCaptureService.EXTRA_RESULT_DATA, result.getData());
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            getContext().startForegroundService(serviceIntent);
-        } else {
-            getContext().startService(serviceIntent);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                getContext().startForegroundService(serviceIntent);
+            } else {
+                getContext().startService(serviceIntent);
+            }
+        } catch (Throwable error) {
+            Exception ex = (error instanceof Exception) ? (Exception) error : new Exception(error);
+            call.reject("screen_capture_service_start_failed", ex);
+            return;
         }
 
         try {

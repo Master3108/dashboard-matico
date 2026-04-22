@@ -76,3 +76,29 @@ export const clearNativeQueuedCaptures = async () => {
     if (!plugin?.clearQueuedCaptures) return { cleared: 0 };
     return plugin.clearQueuedCaptures();
 };
+
+// Se dispara cuando el usuario toca "Finalizar" en el overlay del celular.
+// Retorna una funcion unsubscribe (o null si no hay plugin nativo).
+export const onNativeCaptureSessionFinalized = (callback) => {
+    const plugin = getPlugin();
+    if (!plugin?.addListener || typeof callback !== 'function') return null;
+
+    let handlePromise;
+    try {
+        // En Capacitor, addListener puede devolver un handle o una promesa de handle.
+        handlePromise = Promise.resolve(plugin.addListener('captureSessionFinalized', (payload) => {
+            try { callback(payload || {}); } catch { /* no-op */ }
+        }));
+    } catch {
+        return null;
+    }
+
+    let disposed = false;
+    return () => {
+        if (disposed) return;
+        disposed = true;
+        handlePromise.then((handle) => {
+            try { handle?.remove?.(); } catch { /* no-op */ }
+        }).catch(() => { /* no-op */ });
+    };
+};

@@ -145,7 +145,8 @@ const OracleNotebookExamBuilder = ({
                 onChange={setEvidences}
                 onError={setErrorMsg}
                 showNativeCapture
-                showPasteHint
+                showPasteHint={false}
+                nativeQueueOnly
             />
 
             <div className="grid md:grid-cols-2 gap-3">

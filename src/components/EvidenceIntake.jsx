@@ -6,6 +6,7 @@ import {
     getNativeCaptureSessionState,
     isNativeScreenCaptureAvailable,
     listNativeQueuedCaptures,
+    onNativeCaptureSessionFinalized,
     startNativeCaptureSession,
     stopNativeCaptureSession
 } from '../mobile/screenCaptureBridge';
@@ -77,6 +78,19 @@ const normalizeEvidenceAsset = (item = {}, index = 0) => ({
 });
 
 const reindexEvidence = (items = []) => items.map((item, index) => ({ ...item, pageNumber: index + 1 }));
+const normalizeNativeCaptureError = (error, fallbackMessage) => {
+    const raw = String(error?.message || '').toLowerCase();
+    if (raw.includes('overlay_permission_required')) {
+        return 'Debes activar "mostrar sobre otras apps" para ver el marco azul y el boton de captura.';
+    }
+    if (raw.includes('screen_capture_permission_denied')) {
+        return 'Permiso de captura denegado. Debes aceptar "grabar o compartir pantalla".';
+    }
+    if (raw.includes('session_not_active')) {
+        return 'Primero inicia la sesion de captura celular.';
+    }
+    return fallbackMessage;
+};
 
 const EvidenceIntake = ({
     maxEvidence = DEFAULT_MAX_EVIDENCE,
@@ -84,7 +98,8 @@ const EvidenceIntake = ({
     onChange,
     onError,
     showNativeCapture = true,
-    showPasteHint = true
+    showPasteHint = true,
+    nativeQueueOnly = false
 }) => {
     // Detecta si está corriendo como app nativa Android (Capacitor)
     const isNativePlatform = Boolean(window?.Capacitor?.isNativePlatform?.());
@@ -98,6 +113,8 @@ const EvidenceIntake = ({
 
     const streamRef = useRef(null);
     const videoRef = useRef(null);
+    const importNativeQueueRef = useRef(() => {});
+    const autoImportingRef = useRef(false);
 
     const publish = (nextItems) => {
         const normalized = reindexEvidence(nextItems).slice(0, maxEvidence);
@@ -264,12 +281,12 @@ const EvidenceIntake = ({
             if (!nativeSessionActive) {
                 await startNativeCaptureSession();
                 await refreshNativeState();
-                setErrorMsg('Permiso activado. Ahora navega por tu celular y usa la burbuja flotante para capturar.');
+                setErrorMsg('Permiso activado. Ahora navega con el marco azul y usa el boton inferior "Capturar pantalla".');
                 return;
             }
             await captureNowNativeSession();
             await refreshNativeState();
-            setErrorMsg('Captura enviada a cola. Pulsa "Importar cola" al volver a Matico.');
+            setErrorMsg('Captura guardada. Volviste a Matico automaticamente; ahora pulsa "Importar cola".');
         } catch (error) {
             if (error?.message === 'native_not_available') {
                 handleError('Captura de pantalla celular requiere app movil nativa. En web movil usa "Subir archivo".');
@@ -280,7 +297,7 @@ const EvidenceIntake = ({
                 return;
             }
             if (String(error?.message || '').toLowerCase().includes('overlay_permission_required')) {
-                handleError('Debes activar "mostrar sobre otras apps" para ver la burbuja flotante.');
+                handleError('Debes activar "mostrar sobre otras apps" para ver el marco azul y el boton de captura.');
                 return;
             }
             handleError('No se pudo iniciar la sesion de captura en app movil.');
@@ -291,9 +308,9 @@ const EvidenceIntake = ({
         try {
             await startNativeCaptureSession();
             await refreshNativeState();
-            setErrorMsg('Permiso activado. En Android selecciona "Pantalla completa" y luego navega con la burbuja azul.');
+            setErrorMsg('Permiso activado. En Android selecciona "Pantalla completa" y luego navega con el marco azul y boton inferior.');
         } catch (error) {
-            handleError(error?.message || 'No se pudo iniciar el modo captura celular.');
+            handleError(normalizeNativeCaptureError(error, 'No se pudo iniciar el modo captura celular.'));
         }
     };
 
@@ -311,37 +328,70 @@ const EvidenceIntake = ({
             await captureNowNativeSession();
             await refreshNativeState();
         } catch (error) {
-            handleError(error?.message || 'No se pudo capturar en la sesion nativa.');
+            handleError(normalizeNativeCaptureError(error, 'No se pudo capturar en la sesion nativa.'));
         }
     };
 
-    const importNativeQueue = async () => {
+    const importNativeQueue = async ({ silent = false } = {}) => {
+        if (autoImportingRef.current) return;
+        autoImportingRef.current = true;
         try {
             const queued = await listNativeQueuedCaptures();
             const rows = Array.isArray(queued?.items) ? queued.items : [];
             if (!rows.length) {
-                handleError('No hay capturas en cola para importar.');
+                if (!silent) handleError('No hay capturas en cola para importar.');
                 return;
             }
+            const currentItems = Array.isArray(items) ? items : [];
+            const nextItems = [...currentItems];
             for (const row of rows) {
-                if ((items.length + 1) > maxEvidence) break;
+                if (nextItems.length >= maxEvidence) break;
                 const base64 = String(row?.imageBase64 || row?.image_base64 || '').trim();
                 const mimeType = String(row?.imageMimeType || row?.image_mime_type || 'image/jpeg').trim() || 'image/jpeg';
                 if (!base64) continue;
-                addAsset({
+                nextItems.push(normalizeEvidenceAsset({
                     previewUrl: `data:${mimeType};base64,${base64}`,
                     imageBase64: base64,
                     imageMimeType: mimeType,
                     sourceType: 'native_queue'
-                });
+                }, nextItems.length));
             }
+            if (nextItems.length === currentItems.length) {
+                if (!silent) handleError('No se pudo importar ninguna captura.');
+                return;
+            }
+            publish(nextItems);
             await clearNativeQueuedCaptures();
             await refreshNativeState();
             setErrorMsg('');
         } catch (error) {
-            handleError(error?.message || 'No se pudo importar la cola de capturas.');
+            if (!silent) handleError(error?.message || 'No se pudo importar la cola de capturas.');
+        } finally {
+            autoImportingRef.current = false;
         }
     };
+
+    importNativeQueueRef.current = importNativeQueue;
+
+    // Cuando el usuario toca "Finalizar" en el overlay del celular, importamos la cola
+    // automaticamente. Tambien lo hacemos al volver el foco a la app (fallback).
+    useEffect(() => {
+        if (!nativeCaptureSupported) return undefined;
+        const unsubscribe = onNativeCaptureSessionFinalized(() => {
+            importNativeQueueRef.current?.({ silent: true });
+        });
+        const handleReturnToApp = () => {
+            if (typeof document !== 'undefined' && document.visibilityState && document.visibilityState !== 'visible') return;
+            importNativeQueueRef.current?.({ silent: true });
+        };
+        window.addEventListener('focus', handleReturnToApp);
+        document.addEventListener('visibilitychange', handleReturnToApp);
+        return () => {
+            if (typeof unsubscribe === 'function') unsubscribe();
+            window.removeEventListener('focus', handleReturnToApp);
+            document.removeEventListener('visibilitychange', handleReturnToApp);
+        };
+    }, [nativeCaptureSupported]);
 
     const removeItem = (id) => {
         publish(items.filter((item) => item.id !== id));
@@ -359,7 +409,7 @@ const EvidenceIntake = ({
     };
 
     return (
-        <div className="space-y-4" onPaste={handlePaste}>
+        <div className="space-y-4" onPaste={nativeQueueOnly ? undefined : handlePaste}>
             <div className="grid md:grid-cols-5 gap-3">
                 <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
                     <Camera className="w-4 h-4" /> Tomar foto
@@ -374,44 +424,25 @@ const EvidenceIntake = ({
                         <Monitor className="w-4 h-4" /> Capturar pantalla
                     </button>
                 )}
-                <button
-                    type="button"
-                    onClick={captureFromNativeApp}
-                    className={`rounded-2xl border-2 px-3 py-3 text-sm font-black flex items-center justify-center gap-2 ${nativeCaptureSupported
-                        ? 'border-[#16A34A] bg-[#ECFDF3] text-[#166534] hover:border-[#15803D]'
-                        : 'border-gray-200 bg-white text-[#64748B] hover:border-[#7C3AED]/50'
-                        }`}
-                    disabled={!showNativeCapture}
-                >
-                    <Smartphone className="w-4 h-4" /> {nativeSessionActive ? 'Capturar ahora (cola)' : 'Captura de pantalla celular'}
-                </button>
-                {showPasteHint ? (
-                    <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-[#F8FAFF] px-3 py-3 text-xs font-bold text-[#64748B] flex items-center justify-center gap-2">
-                        <Clipboard className="w-4 h-4" /> Pegar screenshot (Ctrl+V)
-                    </div>
-                ) : <div />}
+                {nativeCaptureSupported && !nativeQueueOnly && (
+                    <button
+                        type="button"
+                        onClick={captureFromNativeApp}
+                        className="rounded-2xl border-2 border-[#16A34A] bg-[#ECFDF3] px-3 py-3 text-sm font-black text-[#166534] hover:border-[#15803D] flex items-center justify-center gap-2"
+                    >
+                        <Smartphone className="w-4 h-4" /> Captura de pantalla celular
+                    </button>
+                )}
             </div>
 
-            {showNativeCapture && nativeCaptureSupported && (
-                <div className="rounded-2xl border border-[#DCFCE7] bg-[#F0FDF4] p-3 space-y-2">
-                    <p className="text-xs font-black text-[#166534]">
-                        Modo captura celular: sesion {nativeSessionActive ? 'activa' : 'inactiva'} · cola {nativeQueueCount}
-                    </p>
-                    <div className="grid md:grid-cols-4 gap-2">
-                        <button type="button" onClick={startNativeSession} className="rounded-xl bg-[#166534] text-white px-3 py-2 text-xs font-black">
-                            Iniciar sesion
-                        </button>
-                        <button type="button" onClick={nativeCaptureNow} disabled={!nativeSessionActive} className={`rounded-xl px-3 py-2 text-xs font-black ${nativeSessionActive ? 'bg-[#15803D] text-white' : 'bg-gray-200 text-gray-500'}`}>
-                            Capturar ahora
-                        </button>
-                        <button type="button" onClick={importNativeQueue} disabled={nativeQueueCount <= 0} className={`rounded-xl px-3 py-2 text-xs font-black ${nativeQueueCount > 0 ? 'bg-[#4D96FF] text-white' : 'bg-gray-200 text-gray-500'}`}>
-                            Importar cola
-                        </button>
-                        <button type="button" onClick={stopNativeSession} className="rounded-xl bg-[#334155] text-white px-3 py-2 text-xs font-black">
-                            Cerrar sesion
-                        </button>
-                    </div>
-                </div>
+            {nativeCaptureSupported && nativeQueueCount > 0 && (
+                <button
+                    type="button"
+                    onClick={() => importNativeQueue({ silent: false })}
+                    className="w-full rounded-xl bg-[#4D96FF] text-white px-3 py-3 text-sm font-black flex items-center justify-center gap-2"
+                >
+                    Importar cola ({nativeQueueCount})
+                </button>
             )}
 
             {isCameraOpen && (

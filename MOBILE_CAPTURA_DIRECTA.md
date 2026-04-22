@@ -8,6 +8,7 @@ Esta guia te ayuda a convertir la web de Matico en app Android y activar "Captur
 - Plataforma Android creada en carpeta `android/`.
 - Plugin nativo Android `MaticoScreenCapture` agregado.
 - Boton "Captura de pantalla celular" conectado desde Oraculo.
+- Overlay nativo con marco azul + boton fijo inferior "Capturar pantalla".
 - Fallback para navegador movil: "Subir archivo" desde galeria.
 
 ## Requisitos en tu computador
@@ -67,12 +68,17 @@ Nota: para distribuir a usuarios finales, lo ideal es firmar el APK en Android S
 2. Ir a Oraculo -> "Foto/screenshot cuaderno".
 3. Tocar "Captura de pantalla celular".
 4. Aceptar permiso de captura de pantalla del sistema.
-5. Verificar que la imagen llegue al flujo OCR y genere preguntas.
+5. Verificar que aparece marco azul y boton inferior "Capturar pantalla".
+6. Navegar a la app/pantalla objetivo y tocar "Capturar pantalla".
+7. Validar que vuelve automaticamente a Matico.
+8. Importar cola y verificar que la imagen llegue al flujo OCR y genere preguntas.
 
 ## Si algo falla
 
 - Si no funciona captura directa, usar "Subir archivo" como respaldo.
 - Revisar logs en Android Studio (`Logcat`) filtrando por `MaticoScreenCapturePlugin`.
+- Si no aparece el marco azul/boton inferior, activar permiso "Aparecer encima de apps" para Matico.
+- Si el overlay falla igual, usar los botones de la notificacion foreground (Capturar/Detener) como respaldo.
 - Confirmar que la app abre `https://srv1048418.hstgr.cloud`.
 
 ## Siguiente fase (opcional)

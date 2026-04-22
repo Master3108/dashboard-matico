@@ -49,7 +49,7 @@ const ExamCaptureModal = ({ isOpen, onClose, userId, userEmail }) => {
             return;
         }
         if (!userId) {
-            setErrorMsg('Falta user_id para registrar la prueba.');
+            setErrorMsg('Falta user_id para crear la prueba.');
             return;
         }
         setStatus('submitting');
@@ -71,7 +71,7 @@ const ExamCaptureModal = ({ isOpen, onClose, userId, userEmail }) => {
                 })
             });
             const data = await response.json();
-            if (!response.ok || !data.success) throw new Error(data.error || 'No se pudo registrar');
+            if (!response.ok || !data.success) throw new Error(data.error || 'No se pudo crear');
 
             setEventId(data.event_id);
             setNeedsConfirmation(Boolean(data.needs_confirmation));
@@ -85,7 +85,7 @@ const ExamCaptureModal = ({ isOpen, onClose, userId, userEmail }) => {
             setStatus('done');
             await loadEvents();
         } catch (error) {
-            setErrorMsg(error.message || 'No se pudo registrar la prueba');
+            setErrorMsg(error.message || 'No se pudo crear la prueba');
             setStatus('idle');
         }
     };
@@ -117,7 +117,7 @@ const ExamCaptureModal = ({ isOpen, onClose, userId, userEmail }) => {
         <div className="fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-2xl font-black text-[#2B2E4A]">Registrar prueba (foto/screenshot)</h3>
+                    <h3 className="text-2xl font-black text-[#2B2E4A]">Crear prueba</h3>
                     <button onClick={closeModal} className="p-2 rounded-full hover:bg-gray-100"><X className="w-5 h-5" /></button>
                 </div>
 
@@ -129,11 +129,12 @@ const ExamCaptureModal = ({ isOpen, onClose, userId, userEmail }) => {
                             onChange={setEvidences}
                             onError={setErrorMsg}
                             showNativeCapture
-                            showPasteHint
+                            showPasteHint={false}
+                            nativeQueueOnly
                         />
 
                         <button onClick={submitIntake} disabled={status === 'submitting'} className="w-full py-3 rounded-xl bg-[#4D96FF] text-white font-black">
-                            {status === 'submitting' ? 'Analizando...' : 'Analizar y registrar prueba'}
+                            {status === 'submitting' ? 'Analizando...' : 'Analizar y crear prueba'}
                         </button>
 
                         {errorMsg && (

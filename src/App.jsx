@@ -1910,7 +1910,8 @@ const PrepExamSetupModal = ({
                                 value={evidences}
                                 onChange={onChangeEvidences}
                                 showNativeCapture
-                                showPasteHint
+                                showPasteHint={false}
+                                nativeQueueOnly
                             />
                         </div>
                     </div>
@@ -5115,7 +5116,7 @@ ${finalData.capsule}`;
                     onClick={() => setShowExamCaptureModal(true)}
                     className="fixed bottom-6 right-6 z-[205] bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] transition-all"
                 >
-                    Registrar prueba
+                    Crear prueba
                 </button>
 
                 <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
