@@ -200,21 +200,49 @@ const CHEMISTRY_SESSION_MAP = {
     }
 };
 
+const PHYSICS_SESSION_MAP = {
+    ...createRangeEntries(1, 13, {
+        chapterId: 'cap1_ondas_sonido',
+        focus: 'trabajar ondas y sonido: clasificacion, magnitudes, propagacion y fenomenos ondulatorios'
+    }),
+    ...createRangeEntries(14, 25, {
+        chapterId: 'cap2_luz_optica',
+        focus: 'analizar optica geometrica: reflexion, refraccion, lentes, espejos y fenomenos de la luz'
+    }),
+    ...createRangeEntries(26, 33, {
+        chapterId: 'cap3_sismos_dinamica_terrestre',
+        focus: 'explicar dinamica terrestre y sismos: tectonica, ondas sismicas, hipocentro y escalas'
+    }),
+    ...createRangeEntries(34, 41, {
+        chapterId: 'cap4_universo_gravitacion',
+        focus: 'interpretar universo y gravitacion: expansion cosmica, sistema solar y leyes de kepler'
+    }),
+    ...createRangeEntries(42, 46, {
+        chapterId: 'cap5_fisica_moderna_aplicaciones',
+        focus: 'integrar fisica moderna y aplicaciones tecnologicas con enfoque de cierre de proceso'
+    })
+};
+
 export const resolveMoralejaSessionReference = ({ subject = '', session = 0 } = {}) => {
     const numericSession = Number(session || 0) || 0;
     if (!numericSession) return null;
 
-    const normalizedSubject = String(subject || '').toUpperCase();
+    const normalizedSubject = String(subject || '')
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
     let sessionMap = null;
 
     if (normalizedSubject.includes('LENGUAJE') || normalizedSubject.includes('LECTURA')) {
         sessionMap = LANGUAGE_SESSION_MAP;
-    } else if (normalizedSubject.includes('MATEMATICA') || normalizedSubject.includes('MATEMÃTICA') || normalizedSubject.includes('MATEMÃƒÂTICA')) {
+    } else if (normalizedSubject.includes('MATEMATICA')) {
         sessionMap = MATH_SESSION_MAP;
-    } else if (normalizedSubject.includes('BIOLOGIA') || normalizedSubject.includes('BIOLOGÃA') || normalizedSubject.includes('BIOLOGÃƒÂA')) {
+    } else if (normalizedSubject.includes('BIOLOGIA')) {
         sessionMap = BIOLOGY_SESSION_MAP;
-    } else if (normalizedSubject.includes('QUIMICA') || normalizedSubject.includes('QUÍMICA') || normalizedSubject.includes('QUIMÃCA') || normalizedSubject.includes('QUÃƒÂMICA')) {
+    } else if (normalizedSubject.includes('QUIMICA')) {
         sessionMap = CHEMISTRY_SESSION_MAP;
+    } else if (normalizedSubject.includes('FISICA')) {
+        sessionMap = PHYSICS_SESSION_MAP;
     }
 
     if (!sessionMap || !sessionMap[numericSession]) return null;
@@ -225,4 +253,10 @@ export const resolveMoralejaSessionReference = ({ subject = '', session = 0 } = 
     };
 };
 
-export { LANGUAGE_SESSION_MAP, MATH_SESSION_MAP, BIOLOGY_SESSION_MAP, CHEMISTRY_SESSION_MAP };
+export {
+    LANGUAGE_SESSION_MAP,
+    MATH_SESSION_MAP,
+    BIOLOGY_SESSION_MAP,
+    CHEMISTRY_SESSION_MAP,
+    PHYSICS_SESSION_MAP
+};

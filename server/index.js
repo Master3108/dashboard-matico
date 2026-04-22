@@ -17,6 +17,7 @@ import { resolveMoralejaContext } from './moralejaCompetenciaLectora.js';
 import { resolveMoralejaMatematicaContext } from './moralejaMatematica.js';
 import { resolveMoralejaBiologiaContext } from './moralejaBiologia.js';
 import { resolveMoralejaQuimicaContext } from './moralejaQuimica.js';
+import { resolveMoralejaFisicaContext } from './moralejaFisica.js';
 
 dotenv.config();
 
@@ -3240,6 +3241,14 @@ const isChemistrySubject = (subject = '') => {
     return normalized.includes('QUIMICA');
 };
 
+const isPhysicsSubject = (subject = '') => {
+    const normalized = String(subject || '')
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    return normalized.includes('FISICA');
+};
+
 const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = '' } = {}) => {
     const segments = [`Tema solicitado: ${topic || 'Sin tema especificado'}`];
     const normalizedSubject = String(subject || '').toUpperCase();
@@ -3283,6 +3292,15 @@ const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = 
         });
         segments.push(`[BASE MORALEJA QUIMICA]\n${moralejaQuimicaContext.theoryGuidance}`);
         segments.push('Cierra con una mini clave de resolucion quimica y un ejemplo breve tipo DEMRE/PAES.');
+    } else if (isPhysicsSubject(normalizedSubject)) {
+        const moralejaFisicaContext = resolveMoralejaFisicaContext({
+            topic,
+            session,
+            phase,
+            mode: 'theory'
+        });
+        segments.push(`[BASE MORALEJA FISICA]\n${moralejaFisicaContext.theoryGuidance}`);
+        segments.push('Cierra con una mini clave de razonamiento fisico y un ejemplo breve tipo DEMRE/PAES.');
     }
 
     return segments.filter(Boolean).join('\n\n');
@@ -3384,6 +3402,32 @@ const buildChemistryPromptContext = ({ topic = '', subject = '', session = 0, ph
             `Genera EXACTAMENTE ${requestedCount} preguntas.`,
             `[BASE MORALEJA QUIMICA]\n${moralejaQuimicaContext.quizGuidance}`,
             'Favorece preguntas con balance correcto, relaciones cuantitativas claras y vocabulario escolar chileno consistente con PAES.',
+            'Devuelve SOLO JSON valido con la clave "questions".',
+            'No devuelvas menos preguntas.',
+            'No repitas preguntas.'
+        ].join('\n')
+    };
+};
+
+const buildPhysicsPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+    const moralejaFisicaContext = resolveMoralejaFisicaContext({
+        topic,
+        session,
+        phase,
+        mode: 'quiz'
+    });
+
+    return {
+        moralejaFisicaContext,
+        promptText: [
+            `Tema: ${topic}`,
+            `Asignatura: ${subject}`,
+            `Fase: ${phase || 'BASICO'}`,
+            `Sesion: ${session || 'sin sesion'}`,
+            `Lote: ${batchIndex + 1}/${totalBatches}`,
+            `Genera EXACTAMENTE ${requestedCount} preguntas.`,
+            `[BASE MORALEJA FISICA]\n${moralejaFisicaContext.quizGuidance}`,
+            'Favorece preguntas con interpretacion fisica clara, uso correcto de magnitudes y distractores plausibles.',
             'Devuelve SOLO JSON valido con la clave "questions".',
             'No devuelvas menos preguntas.',
             'No repitas preguntas.'

@@ -8,7 +8,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "pregenerate:math-bank": "node scripts/pregenerateQuestionBank.js --subject MATEMATICA",
-    "pregenerate:language-bank": "node scripts/pregenerateQuestionBank.js --subject LENGUAJE"
+    "pregenerate:language-bank": "node scripts/pregenerateQuestionBank.js --subject LENGUAJE",
+    "pregenerate:physics-bank": "node scripts/pregenerateQuestionBank.js --subject FISICA"
   },
   "dependencies": {
     "cors": "^2.8.5",

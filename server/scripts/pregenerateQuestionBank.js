@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { resolveMoralejaContext } from '../moralejaCompetenciaLectora.js';
 import { resolveMoralejaMatematicaContext } from '../moralejaMatematica.js';
+import { resolveMoralejaFisicaContext } from '../moralejaFisica.js';
 import { resolveMoralejaSessionReference } from '../moralejaSessionCatalog.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -65,6 +66,17 @@ const SUBJECT_CONFIG = {
         displayName: 'Lenguaje y Comunicacion',
         temperature: 0.45,
         resolveContext: ({ session, topic, phase }) => resolveMoralejaContext({
+            session,
+            topic,
+            phase,
+            mode: 'quiz'
+        })
+    },
+    FISICA: {
+        code: 'FIS',
+        displayName: 'Fisica',
+        temperature: 0.4,
+        resolveContext: ({ session, topic, phase }) => resolveMoralejaFisicaContext({
             session,
             topic,
             phase,
@@ -398,7 +410,7 @@ const main = async () => {
     }
 
     if (!subjectConfig) {
-        throw new Error(`Asignatura no soportada: ${subject}. Usa MATEMATICA o LENGUAJE.`);
+        throw new Error(`Asignatura no soportada: ${subject}. Usa MATEMATICA, LENGUAJE o FISICA.`);
     }
 
     const sheets = await getSheetsClient();
