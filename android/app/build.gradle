@@ -7,8 +7,8 @@ android {
         applicationId "app.matico.dashboard"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        versionName "1.9-captura-always-visible"
+        versionCode 13
+        versionName "2.0-tomar-foto-y-subir-always"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

@@ -419,19 +419,18 @@ const EvidenceIntake = ({
 
     return (
         <div className="space-y-4" onPaste={nativeQueueOnly ? undefined : handlePaste}>
-            <div className={`grid gap-3 ${nativeQueueOnly ? 'grid-cols-1' : 'md:grid-cols-5'}`}>
-                {!nativeQueueOnly && (
-                    <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
-                        <Camera className="w-4 h-4" /> Tomar foto
-                    </button>
-                )}
-                {!nativeQueueOnly && (
-                    <label className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2 cursor-pointer">
-                        <UploadCloud className="w-4 h-4" /> Subir archivo
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
-                    </label>
-                )}
-                {/* Solo en web/desktop y en modo completo: en Android nativo este dialogo es confuso */}
+            <div className={`grid gap-3 ${nativeQueueOnly ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
+                {/* Tomar foto: siempre visible en todos los modulos */}
+                <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
+                    <Camera className="w-4 h-4" /> Tomar foto
+                </button>
+                {/* Subir archivo: siempre visible en todos los modulos */}
+                <label className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2 cursor-pointer">
+                    <UploadCloud className="w-4 h-4" /> Subir archivo
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
+                </label>
+                {/* Capturar pantalla (web getDisplayMedia): solo en web/desktop y modo completo.
+                    En APK el dialogo nativo es confuso y para eso esta "Captura de pantalla celular". */}
                 {!isNativePlatform && !nativeQueueOnly && (
                     <button type="button" onClick={captureScreen} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
                         <Monitor className="w-4 h-4" /> Capturar pantalla
