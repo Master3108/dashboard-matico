@@ -5,10 +5,12 @@ import {
     clearNativeQueuedCaptures,
     getNativeCaptureSessionState,
     isNativeScreenCaptureAvailable,
+    isRunningInNativeApp,
     listNativeQueuedCaptures,
     onNativeCaptureSessionFinalized,
     startNativeCaptureSession,
-    stopNativeCaptureSession
+    stopNativeCaptureSession,
+    waitForNativeScreenCapture
 } from '../mobile/screenCaptureBridge';
 
 export const DEFAULT_MAX_EVIDENCE = 10;
@@ -151,8 +153,22 @@ const EvidenceIntake = ({
     useEffect(() => () => stopCamera(), []);
 
     useEffect(() => {
-        setNativeCaptureSupported(isNativeScreenCaptureAvailable());
-        refreshNativeState();
+        let cancelled = false;
+        // Primer intento sincrono; si falla, reintenta hasta 4s (el plugin de
+        // Capacitor puede registrarse despues del mount del componente).
+        if (isNativeScreenCaptureAvailable()) {
+            setNativeCaptureSupported(true);
+            refreshNativeState();
+        } else {
+            waitForNativeScreenCapture().then((ok) => {
+                if (cancelled) return;
+                setNativeCaptureSupported(Boolean(ok));
+                if (ok) refreshNativeState();
+            });
+        }
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {
@@ -421,14 +437,29 @@ const EvidenceIntake = ({
                         <Monitor className="w-4 h-4" /> Capturar pantalla
                     </button>
                 )}
-                {/* En nativeQueueOnly este boton es el UNICO entry point para iniciar sesion */}
-                {nativeCaptureSupported && (
+                {/* Captura de pantalla celular: siempre visible cuando showNativeCapture=true.
+                    - Soportada (APK con plugin): boton verde activo -> abre sesion nativa.
+                    - No soportada (web / APK sin plugin): boton gris que informa como habilitarla. */}
+                {showNativeCapture && (
                     <button
                         type="button"
-                        onClick={captureFromNativeApp}
-                        className="rounded-2xl border-2 border-[#16A34A] bg-[#ECFDF3] px-3 py-3 text-sm font-black text-[#166534] hover:border-[#15803D] flex items-center justify-center gap-2"
+                        onClick={nativeCaptureSupported
+                            ? captureFromNativeApp
+                            : () => handleError(
+                                isRunningInNativeApp()
+                                    ? 'La captura de pantalla celular no se inicializo. Cierra y vuelve a abrir la app Matico.'
+                                    : 'Captura de pantalla celular requiere la app Matico instalada en Android. En web/desktop usa "Capturar pantalla" o "Subir archivo".'
+                            )
+                        }
+                        className={
+                            nativeCaptureSupported
+                                ? 'rounded-2xl border-2 border-[#16A34A] bg-[#ECFDF3] px-3 py-3 text-sm font-black text-[#166534] hover:border-[#15803D] flex items-center justify-center gap-2'
+                                : 'rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 px-3 py-3 text-sm font-black text-gray-500 hover:border-gray-400 flex items-center justify-center gap-2'
+                        }
+                        title={nativeCaptureSupported ? 'Iniciar captura nativa en Android' : 'Disponible en la app Matico (APK)'}
                     >
-                        <Smartphone className="w-4 h-4" /> Captura de pantalla celular
+                        <Smartphone className="w-4 h-4" />
+                        {nativeCaptureSupported ? 'Captura de pantalla celular' : 'Captura celular (app Matico)'}
                     </button>
                 )}
             </div>

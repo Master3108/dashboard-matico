@@ -5,10 +5,12 @@ import {
     clearNativeQueuedCaptures,
     getNativeCaptureSessionState,
     isNativeScreenCaptureAvailable,
+    isRunningInNativeApp,
     listNativeQueuedCaptures,
     onNativeCaptureSessionFinalized,
     startNativeCaptureSession,
-    stopNativeCaptureSession
+    stopNativeCaptureSession,
+    waitForNativeScreenCapture
 } from '../mobile/screenCaptureBridge';
 
 const MAX_PAGES = 10;
@@ -199,8 +201,20 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     };
 
     useEffect(() => {
-        setNativeCaptureSupported(isNativeScreenCaptureAvailable());
-        refreshNativeState();
+        let cancelled = false;
+        if (isNativeScreenCaptureAvailable()) {
+            setNativeCaptureSupported(true);
+            refreshNativeState();
+        } else {
+            waitForNativeScreenCapture().then((ok) => {
+                if (cancelled) return;
+                setNativeCaptureSupported(Boolean(ok));
+                if (ok) refreshNativeState();
+            });
+        }
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {
@@ -679,11 +693,26 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                         <Monitor size={18} /> Capturar pantalla
                                     </button>
                                 )}
-                                {nativeCaptureSupported && (
-                                    <button onClick={startNativeSession} className="flex-1 bg-green-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-green-800 flex items-center justify-center gap-2">
-                                        <Smartphone size={18} /> Captura de pantalla celular
-                                    </button>
-                                )}
+                                {/* Siempre visible: si no esta soportado, el click muestra como habilitarlo. */}
+                                <button
+                                    onClick={nativeCaptureSupported
+                                        ? startNativeSession
+                                        : () => setFeedback(
+                                            isRunningInNativeApp()
+                                                ? 'La captura de pantalla celular no se inicializo. Cierra y vuelve a abrir la app Matico.'
+                                                : 'Captura de pantalla celular requiere la app Matico instalada en Android. En web usa "Capturar pantalla" o "Subir foto".'
+                                        )
+                                    }
+                                    className={
+                                        nativeCaptureSupported
+                                            ? 'flex-1 bg-green-700 text-white px-4 py-3 rounded-xl font-bold hover:bg-green-800 flex items-center justify-center gap-2'
+                                            : 'flex-1 bg-gray-100 text-gray-500 border-2 border-dashed border-gray-300 px-4 py-3 rounded-xl font-bold hover:border-gray-400 flex items-center justify-center gap-2'
+                                    }
+                                    title={nativeCaptureSupported ? 'Iniciar captura nativa en Android' : 'Disponible en la app Matico (APK)'}
+                                >
+                                    <Smartphone size={18} />
+                                    {nativeCaptureSupported ? 'Captura de pantalla celular' : 'Captura celular (app Matico)'}
+                                </button>
                             </div>
                             {nativeCaptureSupported && nativeQueueCount > 0 && (
                                 <button

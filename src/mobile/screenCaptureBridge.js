@@ -17,6 +17,38 @@ export const isNativeScreenCaptureAvailable = () => {
     return Boolean(cap?.isNativePlatform?.() && plugin?.captureScreenshot);
 };
 
+// Retries detection for a few seconds. Capacitor plugins can register after
+// React mounts, so the first synchronous check often fails in native builds.
+// Resolves to true as soon as the plugin appears, false if timeout elapses.
+export const waitForNativeScreenCapture = (timeoutMs = 4000, stepMs = 200) => {
+    return new Promise((resolve) => {
+        if (isNativeScreenCaptureAvailable()) {
+            resolve(true);
+            return;
+        }
+        const started = Date.now();
+        const interval = setInterval(() => {
+            if (isNativeScreenCaptureAvailable()) {
+                clearInterval(interval);
+                resolve(true);
+                return;
+            }
+            if (Date.now() - started >= timeoutMs) {
+                clearInterval(interval);
+                resolve(false);
+            }
+        }, stepMs);
+    });
+};
+
+// True whenever the app runs inside the Android APK shell (Capacitor),
+// regardless of whether the native plugin finished registering yet.
+// Used to decide if we show the "requires app" hint vs. hide completely.
+export const isRunningInNativeApp = () => {
+    const cap = window?.Capacitor;
+    return Boolean(cap?.isNativePlatform?.());
+};
+
 export const captureNativeScreenshot = async () => {
     if (!isNativeScreenCaptureAvailable()) {
         throw new Error('native_not_available');
