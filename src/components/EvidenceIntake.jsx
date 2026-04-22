@@ -373,23 +373,16 @@ const EvidenceIntake = ({
 
     importNativeQueueRef.current = importNativeQueue;
 
-    // Cuando el usuario toca "Finalizar" en el overlay del celular, importamos la cola
-    // automaticamente. Tambien lo hacemos al volver el foco a la app (fallback).
+    // Unica fuente de auto-import: evento "Finalizar" del overlay nativo.
+    // NO se escucha focus / visibilitychange para evitar imports espureos al
+    // cambiar de app. El usuario puede forzar import manualmente con el boton.
     useEffect(() => {
         if (!nativeCaptureSupported) return undefined;
         const unsubscribe = onNativeCaptureSessionFinalized(() => {
             importNativeQueueRef.current?.({ silent: true });
         });
-        const handleReturnToApp = () => {
-            if (typeof document !== 'undefined' && document.visibilityState && document.visibilityState !== 'visible') return;
-            importNativeQueueRef.current?.({ silent: true });
-        };
-        window.addEventListener('focus', handleReturnToApp);
-        document.addEventListener('visibilitychange', handleReturnToApp);
         return () => {
             if (typeof unsubscribe === 'function') unsubscribe();
-            window.removeEventListener('focus', handleReturnToApp);
-            document.removeEventListener('visibilitychange', handleReturnToApp);
         };
     }, [nativeCaptureSupported]);
 
@@ -410,21 +403,26 @@ const EvidenceIntake = ({
 
     return (
         <div className="space-y-4" onPaste={nativeQueueOnly ? undefined : handlePaste}>
-            <div className="grid md:grid-cols-5 gap-3">
-                <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
-                    <Camera className="w-4 h-4" /> Tomar foto
-                </button>
-                <label className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2 cursor-pointer">
-                    <UploadCloud className="w-4 h-4" /> Subir archivo
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
-                </label>
-                {/* Solo en web/desktop: en Android nativo este dialogo es confuso y no funciona bien */}
-                {!isNativePlatform && (
+            <div className={`grid gap-3 ${nativeQueueOnly ? 'grid-cols-1' : 'md:grid-cols-5'}`}>
+                {!nativeQueueOnly && (
+                    <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
+                        <Camera className="w-4 h-4" /> Tomar foto
+                    </button>
+                )}
+                {!nativeQueueOnly && (
+                    <label className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2 cursor-pointer">
+                        <UploadCloud className="w-4 h-4" /> Subir archivo
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
+                    </label>
+                )}
+                {/* Solo en web/desktop y en modo completo: en Android nativo este dialogo es confuso */}
+                {!isNativePlatform && !nativeQueueOnly && (
                     <button type="button" onClick={captureScreen} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
                         <Monitor className="w-4 h-4" /> Capturar pantalla
                     </button>
                 )}
-                {nativeCaptureSupported && !nativeQueueOnly && (
+                {/* En nativeQueueOnly este boton es el UNICO entry point para iniciar sesion */}
+                {nativeCaptureSupported && (
                     <button
                         type="button"
                         onClick={captureFromNativeApp}
