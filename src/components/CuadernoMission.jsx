@@ -475,11 +475,19 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
             await clearNativeQueuedCaptures();
             await refreshNativeState();
             const importedCount = nextPages.length - existingPages.length;
+
+            if (autoSubmit && importedCount > 0) {
+                // Auto-envio a Profe Matico: no pasamos por 'preview' para evitar
+                // parpadeos ni que un re-render cancele el submit. Disparamos directo.
+                setFeedback(`Importadas ${importedCount} capturas. Enviando a Profe Matico...`);
+                setIsGeneratingPdf(false);
+                autoImportingRef.current = false;
+                await submitScan(builtAssets);
+                return;
+            }
+
             setFeedback(`Importadas ${importedCount} capturas desde celular.`);
             setStatus('preview');
-            if (autoSubmit && importedCount > 0) {
-                setTimeout(() => submitScan(builtAssets), 240);
-            }
         } catch {
             if (!silent) setFeedback('No se pudo importar la cola de captura celular.');
             setStatus(scanAssets?.pages?.length ? 'preview' : 'idle');
