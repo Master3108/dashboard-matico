@@ -117,6 +117,7 @@ const EvidenceIntake = ({
     const videoRef = useRef(null);
     const importNativeQueueRef = useRef(() => {});
     const autoImportingRef = useRef(false);
+    const nativeCameraInputRef = useRef(null);
 
     const publish = (nextItems) => {
         const normalized = reindexEvidence(nextItems).slice(0, maxEvidence);
@@ -196,6 +197,20 @@ const EvidenceIntake = ({
     };
 
     const openCamera = async () => {
+        // En APK Android / mobile el preview HTML5 getUserMedia se queda en placeholder.
+        // Usamos la camara nativa via <input type=file capture=environment>, que abre
+        // la camara real del sistema (Android / iOS) y devuelve la foto como File.
+        if (isNativePlatform || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '')) {
+            if (nativeCameraInputRef.current) {
+                nativeCameraInputRef.current.value = '';
+                nativeCameraInputRef.current.click();
+            } else {
+                handleError('No se pudo abrir la camara nativa.');
+            }
+            return;
+        }
+
+        // En web desktop mantenemos el preview inline con getUserMedia.
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'environment', width: { ideal: 1080 }, height: { ideal: 1920 } }
@@ -209,6 +224,27 @@ const EvidenceIntake = ({
         } catch {
             handleError('No se pudo acceder a la camara.');
         }
+    };
+
+    const handleNativeCameraCapture = (event) => {
+        const file = event.target?.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    addAsset(buildImageAssetFromSource(img, items.length + 1, 'camera'));
+                } catch (error) {
+                    handleError(error.message || 'No se pudo procesar la foto');
+                }
+            };
+            img.onerror = () => handleError('No se pudo leer la foto.');
+            img.src = reader.result;
+        };
+        reader.onerror = () => handleError('No se pudo leer la foto.');
+        reader.readAsDataURL(file);
+        event.target.value = '';
     };
 
     const captureFromCamera = () => {
@@ -419,6 +455,15 @@ const EvidenceIntake = ({
 
     return (
         <div className="space-y-4" onPaste={nativeQueueOnly ? undefined : handlePaste}>
+            {/* Input oculto para disparar la camara nativa (Android/iOS) desde "Tomar foto" */}
+            <input
+                ref={nativeCameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleNativeCameraCapture}
+            />
             <div className={`grid gap-3 ${nativeQueueOnly ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
                 {/* Tomar foto: siempre visible en todos los modulos */}
                 <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
