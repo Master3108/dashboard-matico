@@ -2559,16 +2559,6 @@ const AdminPedagogicalAssetsModal = ({
         onRefreshAssets(assetFilters);
     }, [isOpen, assetFilters.subject, assetFilters.status, assetFilters.search, onRefreshAssets]);
 
-    if (!isOpen) return null;
-
-    const resolvePublicUrl = (value) => {
-        try {
-            return new URL(value, window.location.origin).toString();
-        } catch {
-            return value;
-        }
-    };
-
     const selectedAsset = assets.find((item) => item.asset_id === selectedAssetId) || null;
 
     useEffect(() => {
@@ -2583,6 +2573,16 @@ const AdminPedagogicalAssetsModal = ({
             topic: selectedAsset.topic_tags || selectedAsset.title || prev.topic
         }));
     }, [selectedAsset]);
+
+    if (!isOpen) return null;
+
+    const resolvePublicUrl = (value) => {
+        try {
+            return new URL(value, window.location.origin).toString();
+        } catch {
+            return value;
+        }
+    };
 
     const refreshQuestions = async () => {
         setIsLoadingQuestions(true);
