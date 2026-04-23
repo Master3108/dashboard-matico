@@ -166,6 +166,9 @@ const OPENAI_DIRECT_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_IMAGE_API_KEY = process.env.OPENAI_IMAGE_API_KEY || OPENAI_DIRECT_API_KEY || AI_API_KEY || '';
 const OPENAI_IMAGE_BASE_URL = process.env.OPENAI_IMAGE_BASE_URL || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1';
+const GEMINI_IMAGE_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.0-flash-preview-image-generation';
+const GEMINI_IMAGE_PROXY_TOKEN = process.env.GEMINI_IMAGE_PROXY_TOKEN || '';
 
 const normalizeImageGeneratorProvider = (value = '') => {
     const normalized = String(value || '').trim().toLowerCase();
@@ -807,6 +810,23 @@ const fetchImageBufferFromUrl = async (url) => {
         buffer: Buffer.from(arrayBuffer),
         mimeType
     };
+};
+
+const extractGeminiInlineImagePart = (payload = null) => {
+    const candidates = Array.isArray(payload?.candidates) ? payload.candidates : [];
+    for (const candidate of candidates) {
+        const parts = Array.isArray(candidate?.content?.parts) ? candidate.content.parts : [];
+        for (const part of parts) {
+            const inline = part?.inlineData || part?.inline_data || null;
+            if (!inline) continue;
+            const base64Data = String(inline?.data || '').trim();
+            const mimeType = String(inline?.mimeType || inline?.mime_type || 'image/png').trim() || 'image/png';
+            if (base64Data) {
+                return { base64Data, mimeType };
+            }
+        }
+    }
+    return null;
 };
 
 const isImageGeneratorProviderConfigured = (provider = '', effectiveSettings = null) => {
@@ -2291,6 +2311,79 @@ app.post('/api/pedagogical-assets/upload', (req, res) => {
             return res.status(500).json({ success: false, error: err.message || 'No se pudo subir la imagen pedagógica' });
         }
     });
+});
+
+app.post('/api/gemini-image-proxy', async (req, res) => {
+    try {
+        if (GEMINI_IMAGE_PROXY_TOKEN) {
+            const authHeader = String(req.headers.authorization || '').trim();
+            const expected = `Bearer ${GEMINI_IMAGE_PROXY_TOKEN}`;
+            if (authHeader !== expected) {
+                return res.status(401).json({ success: false, error: 'Token inválido para Gemini proxy' });
+            }
+        }
+
+        const prompt = String(req.body?.prompt || '').trim();
+        const model = String(req.body?.model || GEMINI_IMAGE_MODEL).trim();
+        const size = String(req.body?.size || '1024x1024').trim();
+        const apiKey = GEMINI_IMAGE_API_KEY;
+
+        if (!apiKey) {
+            return res.status(500).json({ success: false, error: 'Falta GEMINI_API_KEY/GOOGLE_API_KEY en el servidor' });
+        }
+        if (!prompt) {
+            return res.status(400).json({ success: false, error: 'Debes enviar prompt' });
+        }
+
+        const formattedPrompt = `${prompt}\n\nFormato solicitado: ${size}.`;
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        parts: [{ text: formattedPrompt }]
+                    }
+                ],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
+                }
+            })
+        });
+
+        const rawText = await geminiResponse.text();
+        const payload = safeJsonParse(rawText, {});
+        if (!geminiResponse.ok) {
+            return res.status(geminiResponse.status).json({
+                success: false,
+                error: String(payload?.error?.message || rawText || `Gemini error ${geminiResponse.status}`).slice(0, 600)
+            });
+        }
+
+        const inlineImage = extractGeminiInlineImagePart(payload);
+        if (!inlineImage) {
+            return res.status(502).json({
+                success: false,
+                error: 'Gemini no devolvió imagen inlineData. Revisa el modelo.',
+                debug: { has_candidates: Array.isArray(payload?.candidates), model }
+            });
+        }
+
+        return res.json({
+            success: true,
+            provider: 'gemini_proxy',
+            model,
+            data: [
+                {
+                    b64_json: inlineImage.base64Data,
+                    mime_type: inlineImage.mimeType
+                }
+            ]
+        });
+    } catch (error) {
+        console.error('[GEMINI_PROXY] Error:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo generar imagen con Gemini proxy' });
+    }
 });
 
 app.post('/api/save-notebook', async (req, res) => {
