@@ -2555,9 +2555,14 @@ const AdminPedagogicalAssetsModal = ({
     });
 
     useEffect(() => {
-        if (!isOpen) return;
-        onRefreshAssets(assetFilters);
-    }, [isOpen, assetFilters.subject, assetFilters.status, assetFilters.search, onRefreshAssets]);
+        if (!isOpen) return undefined;
+        // Debounce avoids bursts of Google Sheets reads while typing.
+        const timeoutId = setTimeout(() => {
+            onRefreshAssets(assetFilters);
+        }, 450);
+        return () => clearTimeout(timeoutId);
+        // onRefreshAssets changes identity in parent renders; keeping it out avoids looped refetches.
+    }, [isOpen, assetFilters.subject, assetFilters.status, assetFilters.search]);
 
     const selectedAsset = assets.find((item) => item.asset_id === selectedAssetId) || null;
 
