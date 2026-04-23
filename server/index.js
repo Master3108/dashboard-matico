@@ -438,6 +438,94 @@ const createPedagogicalImageAsset = async (sheets, {
     };
 };
 
+const buildQuestionBankQuestionId = async (sheets, subject = '') => {
+    const rows = await getQuestionBankRows(sheets);
+    const normalizedSubject = normalizeSheetText(subject).toUpperCase() || 'GENERAL';
+    const codeMap = {
+        MATEMATICA: 'MAT',
+        BIOLOGIA: 'BIO',
+        FISICA: 'FIS',
+        QUIMICA: 'QUI',
+        LENGUAJE: 'LEN',
+        HISTORIA: 'HIS'
+    };
+    const subjectCode = codeMap[normalizedSubject] || normalizedSubject.slice(0, 3).padEnd(3, 'X');
+    const yearSuffix = String(new Date().getFullYear()).slice(-2);
+    const prefix = `QB_${subjectCode}_${yearSuffix}_IMG_`;
+    const nextNumber = rows
+        .map((row) => String(row.question_id || '').trim())
+        .filter((id) => id.startsWith(prefix))
+        .map((id) => Number(id.slice(prefix.length)) || 0)
+        .reduce((max, value) => Math.max(max, value), 0) + 1;
+    return `${prefix}${String(nextNumber).padStart(4, '0')}`;
+};
+
+const appendQuestionBankQuestion = async (sheets, {
+    subject = '',
+    session = '',
+    phase = '',
+    slot = '',
+    proposalIndex = 1,
+    levelName = '',
+    topic = '',
+    question = '',
+    options = {},
+    correctAnswer = 'A',
+    explanation = '',
+    sourceMode = 'image_ai_admin',
+    promptImage = null,
+    questionVisualRole = 'required_for_interpretation'
+} = {}) => {
+    const normalizedSubject = normalizeSheetText(subject).toUpperCase();
+    const normalizedQuestion = String(question || '').trim();
+    if (!normalizedSubject || !normalizedQuestion) {
+        throw new Error('La pregunta nueva necesita asignatura y enunciado');
+    }
+
+    const questionId = await buildQuestionBankQuestionId(sheets, normalizedSubject);
+    const timestamp = new Date().toISOString();
+    const normalizedCorrect = String(correctAnswer || 'A').trim().toUpperCase().slice(0, 1) || 'A';
+    const phaseNumber = Number(phase || resolveQuestionBankPhase(levelName || '')) || resolveQuestionBankPhase(levelName || '');
+    const row = {
+        question_id: questionId,
+        subject: normalizedSubject,
+        session: Number(session || 0) || '',
+        phase: phaseNumber || '',
+        slot: Number(slot || 0) || '',
+        proposal_index: Number(proposalIndex || 1) || 1,
+        levelName: String(levelName || '').trim() || 'BASICO',
+        topic: String(topic || '').trim(),
+        question: normalizedQuestion,
+        option_a: String(options?.A || '').trim(),
+        option_b: String(options?.B || '').trim(),
+        option_c: String(options?.C || '').trim(),
+        option_d: String(options?.D || '').trim(),
+        correct_answer: normalizedCorrect,
+        explanation: String(explanation || '').trim(),
+        sourceMode: String(sourceMode || 'image_ai_admin').trim(),
+        created_at: timestamp,
+        updated_at: timestamp,
+        active: 'TRUE',
+        prompt_image_asset_id: String(promptImage?.asset_id || '').trim(),
+        prompt_image_url: String(promptImage?.file_url || '').trim(),
+        prompt_image_alt: String(promptImage?.alt_text || '').trim(),
+        prompt_image_caption: String(promptImage?.caption || '').trim(),
+        question_visual_role: normalizeQuestionVisualRole(questionVisualRole || 'required_for_interpretation')
+    };
+
+    await ensureSheetHeaders(sheets, QUESTION_BANK_SHEET, QUESTION_BANK_HEADERS);
+    await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${QUESTION_BANK_SHEET}!A:X`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+            values: [QUESTION_BANK_HEADERS.map((header) => String(row?.[header] || ''))]
+        }
+    });
+
+    return row;
+};
+
 const updateSheetRowByHeaders = async (sheets, sheetTitle, headers, rowNumber, patch = {}) => {
     const orderedValues = headers.map((header) => String(patch?.[header] ?? '').trim());
     await sheets.spreadsheets.values.update({
@@ -446,6 +534,190 @@ const updateSheetRowByHeaders = async (sheets, sheetTitle, headers, rowNumber, p
         valueInputOption: 'RAW',
         requestBody: { values: [orderedValues] }
     });
+};
+
+const parseJsonObjectResponse = (rawText = '', fallbackLabel = 'JSON') => {
+    const cleaned = String(rawText || '')
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+    try {
+        return JSON.parse(cleaned);
+    } catch {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error(`No se pudo interpretar ${fallbackLabel}`);
+        return JSON.parse(match[0]);
+    }
+};
+
+const readPedagogicalAssetImageAsDataUrl = async (asset = null) => {
+    if (!asset?.file_url || !asset?.mime_type) {
+        throw new Error('El asset no tiene archivo de imagen válido');
+    }
+    const relativeUrl = String(asset.file_url || '').trim();
+    const normalizedPath = relativeUrl.replace(/^\/+/, '').replace(/\//g, path.sep);
+    const absolutePath = path.join(__dirname, normalizedPath);
+    const buffer = await fs.readFile(absolutePath);
+    return `data:${asset.mime_type};base64,${buffer.toString('base64')}`;
+};
+
+const runVisionJsonTaskForPedagogicalAsset = async ({
+    asset,
+    systemPrompt,
+    userPrompt,
+    temperature = 0.2
+}) => {
+    const dataUrl = await readPedagogicalAssetImageAsDataUrl(asset);
+    const content = [
+        { type: 'text', text: userPrompt },
+        { type: 'image_url', image_url: { url: dataUrl } }
+    ];
+
+    if (openaiVisionClient) {
+        const response = await openaiVisionClient.chat.completions.create({
+            model: OPENAI_VISION_MODEL,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content }
+            ],
+            response_format: { type: 'json_object' },
+            temperature
+        });
+        return parseJsonObjectResponse(response.choices?.[0]?.message?.content || '', 'respuesta JSON de visión');
+    }
+
+    if (kimiVisionClient) {
+        const response = await kimiVisionClient.chat.completions.create({
+            model: NOTEBOOK_VISION_MODEL,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content }
+            ],
+            response_format: { type: 'json_object' },
+            temperature
+        });
+        return parseJsonObjectResponse(response.choices?.[0]?.message?.content || '', 'respuesta JSON de visión');
+    }
+
+    throw new Error('No hay proveedor de visión disponible para analizar imágenes');
+};
+
+const buildQuestionBankAssociationSuggestions = async (sheets, asset, {
+    search = '',
+    limit = 8
+} = {}) => {
+    const rows = await getQuestionBankRows(sheets);
+    const subjectFilter = normalizeSheetText(asset?.subject).toUpperCase();
+    const normalizedSearch = normalizeSheetText(search)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const tokenize = (value = '') => normalizeSheetText(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean);
+
+    const assetTokens = new Set([
+        ...tokenize(asset?.title),
+        ...tokenize(asset?.topic_tags),
+        ...tokenize(asset?.alt_text),
+        ...tokenize(asset?.caption),
+        ...tokenize(search)
+    ]);
+
+    return rows
+        .filter((row) => normalizeSheetBool(row.active === '' ? 'TRUE' : row.active))
+        .filter((row) => !subjectFilter || normalizeSheetText(row.subject).toUpperCase() === subjectFilter)
+        .map((row) => {
+            const haystack = [
+                row.topic,
+                row.question,
+                row.explanation
+            ].map((item) => normalizeSheetText(item).toLowerCase()).join(' ');
+            const rowTokens = tokenize(haystack);
+            let score = 0;
+            for (const token of assetTokens) {
+                if (!token) continue;
+                if (haystack.includes(token)) score += 4;
+                if (rowTokens.includes(token)) score += 2;
+            }
+            if (normalizedSearch && haystack.includes(normalizedSearch)) score += 8;
+            if (String(row.prompt_image_asset_id || '').trim()) score -= 3;
+            return {
+                rowNumber: row.rowNumber,
+                question_id: row.question_id,
+                subject: row.subject,
+                session: row.session,
+                phase: row.phase,
+                topic: row.topic,
+                question: row.question,
+                prompt_image_asset_id: row.prompt_image_asset_id || '',
+                prompt_image_url: row.prompt_image_url || '',
+                prompt_image_alt: row.prompt_image_alt || '',
+                prompt_image_caption: row.prompt_image_caption || '',
+                question_visual_role: normalizeQuestionVisualRole(row.question_visual_role || ''),
+                suggestion_score: score
+            };
+        })
+        .filter((row) => row.suggestion_score > 0)
+        .sort((a, b) => b.suggestion_score - a.suggestion_score)
+        .slice(0, Math.max(1, Number(limit || 8) || 8));
+};
+
+const generateQuestionDraftFromPedagogicalAsset = async (sheets, asset, overrides = {}) => {
+    const normalizedSubject = normalizeSheetText(overrides.subject || asset?.subject).toUpperCase() || 'MATEMATICA';
+    const systemPrompt = [
+        'Eres un generador experto de preguntas pedagógicas para estudiantes chilenos.',
+        'Analiza la imagen y crea UNA sola pregunta de selección múltiple con 4 alternativas.',
+        'La pregunta debe ser clara, resoluble, con solo una respuesta correcta y útil para quiz escolar.',
+        'Devuelve SOLO JSON válido con estas claves:',
+        'subject, topic, levelName, session, phase, slot, question, options, correct_answer, explanation, question_visual_role, image_analysis, tags',
+        'options debe ser un objeto con claves A, B, C y D.',
+        'question_visual_role debe ser required_for_interpretation o supporting.'
+    ].join(' ');
+    const userPrompt = [
+        `Asignatura preferida: ${normalizedSubject}.`,
+        `Título del asset: ${asset?.title || 'Sin título'}.`,
+        `Tags del asset: ${asset?.topic_tags || 'Sin tags'}.`,
+        `Alt text: ${asset?.alt_text || 'Sin alt text'}.`,
+        `Caption: ${asset?.caption || 'Sin caption'}.`,
+        `Sesión sugerida: ${overrides.session || ''}.`,
+        `Fase sugerida: ${overrides.phase || ''}.`,
+        `Nivel sugerido: ${overrides.levelName || 'BASICO'}.`,
+        'La pregunta debe apoyarse en la imagen y estar escrita en español.',
+        'Si no puedes inferir sesión o fase, usa 0 en session y 1 en phase.'
+    ].join('\n');
+
+    const draft = await runVisionJsonTaskForPedagogicalAsset({
+        asset,
+        systemPrompt,
+        userPrompt,
+        temperature: 0.3
+    });
+
+    return {
+        subject: normalizeSheetText(draft.subject || normalizedSubject).toUpperCase() || normalizedSubject,
+        topic: String(draft.topic || asset?.topic_tags || asset?.title || '').trim(),
+        levelName: normalizeQuestionBankLevel(draft.levelName || overrides.levelName || 'BASICO') || 'BASICO',
+        session: Number(draft.session || overrides.session || 0) || 0,
+        phase: Number(draft.phase || overrides.phase || resolveQuestionBankPhase(draft.levelName || overrides.levelName || 'BASICO')) || 1,
+        slot: Number(draft.slot || overrides.slot || 0) || 0,
+        question: String(draft.question || '').trim(),
+        options: {
+            A: String(draft.options?.A || '').trim(),
+            B: String(draft.options?.B || '').trim(),
+            C: String(draft.options?.C || '').trim(),
+            D: String(draft.options?.D || '').trim()
+        },
+        correct_answer: String(draft.correct_answer || 'A').trim().toUpperCase().slice(0, 1) || 'A',
+        explanation: String(draft.explanation || '').trim(),
+        question_visual_role: normalizeQuestionVisualRole(draft.question_visual_role || 'required_for_interpretation'),
+        image_analysis: String(draft.image_analysis || '').trim(),
+        tags: Array.isArray(draft.tags) ? draft.tags.map((item) => String(item || '').trim()).filter(Boolean) : []
+    };
 };
 
 const sampleQuestionBankQuestions = async (sheets, {
@@ -5707,6 +5979,103 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
                 assetId: body.asset_id || ''
             });
             return res.json({ success: true, ...result });
+        }
+
+        if (currentAction === 'suggest_question_matches_from_asset') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            if (!body.asset_id) {
+                return res.status(400).json({ success: false, error: 'Debes indicar asset_id' });
+            }
+
+            const asset = await findPedagogicalImageAssetById(sheets, body.asset_id);
+            if (!asset) {
+                return res.status(404).json({ success: false, error: 'El asset indicado no existe' });
+            }
+
+            const aiDraft = await generateQuestionDraftFromPedagogicalAsset(sheets, asset, {
+                subject: body.subject || asset.subject,
+                session: body.session || '',
+                phase: body.phase || '',
+                levelName: body.levelName || ''
+            });
+            const items = await buildQuestionBankAssociationSuggestions(sheets, asset, {
+                search: [aiDraft.topic, aiDraft.image_analysis, ...(aiDraft.tags || [])].filter(Boolean).join(' '),
+                limit: body.limit || 8
+            });
+
+            return res.json({
+                success: true,
+                asset_id: asset.asset_id,
+                ai_draft: aiDraft,
+                items,
+                count: items.length
+            });
+        }
+
+        if (currentAction === 'generate_question_from_asset') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            if (!body.asset_id) {
+                return res.status(400).json({ success: false, error: 'Debes indicar asset_id' });
+            }
+
+            const asset = await findPedagogicalImageAssetById(sheets, body.asset_id);
+            if (!asset) {
+                return res.status(404).json({ success: false, error: 'El asset indicado no existe' });
+            }
+
+            const draft = await generateQuestionDraftFromPedagogicalAsset(sheets, asset, {
+                subject: body.subject || asset.subject,
+                session: body.session || '',
+                phase: body.phase || '',
+                levelName: body.levelName || 'BASICO'
+            });
+
+            if (body.save === true) {
+                if (normalizePedagogicalImageStatus(asset.status) !== 'approved') {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Debes aprobar la imagen antes de guardar una pregunta nueva con ella'
+                    });
+                }
+                const created = await appendQuestionBankQuestion(sheets, {
+                    subject: body.subject || draft.subject || asset.subject,
+                    session: body.session || draft.session || '',
+                    phase: body.phase || draft.phase || '',
+                    slot: body.slot || draft.slot || '',
+                    proposalIndex: 1,
+                    levelName: body.levelName || draft.levelName || 'BASICO',
+                    topic: body.topic || draft.topic || asset.topic_tags || asset.title,
+                    question: body.question || draft.question,
+                    options: {
+                        A: body.option_a || draft.options?.A || '',
+                        B: body.option_b || draft.options?.B || '',
+                        C: body.option_c || draft.options?.C || '',
+                        D: body.option_d || draft.options?.D || ''
+                    },
+                    correctAnswer: body.correct_answer || draft.correct_answer || 'A',
+                    explanation: body.explanation || draft.explanation || '',
+                    sourceMode: 'image_ai_admin',
+                    promptImage: asset,
+                    questionVisualRole: body.question_visual_role || draft.question_visual_role || 'required_for_interpretation'
+                });
+
+                return res.json({
+                    success: true,
+                    saved: true,
+                    item: created,
+                    ai_draft: draft
+                });
+            }
+
+            return res.json({
+                success: true,
+                saved: false,
+                ai_draft: draft
+            });
         }
         // 9. VERIFICAR ESCRITURA A MANO ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â CUADERNO DE MATICO (NVIDIA Kimi K2.5 Vision)
         if (currentAction === 'verify_handwriting') {
