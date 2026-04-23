@@ -931,12 +931,17 @@ const generateImageWithOpenAI = async ({
         baseURL: baseUrl
     });
 
-    const response = await client.images.generate({
+    // gpt-image-1 NO acepta response_format (siempre devuelve b64_json por default).
+    // dall-e-3 / dall-e-2 SI lo aceptan. Solo lo enviamos para modelos DALL-E.
+    const imagePayload = {
         model,
         prompt,
-        size,
-        response_format: 'b64_json'
-    });
+        size
+    };
+    if (/^dall-e/i.test(String(model || ''))) {
+        imagePayload.response_format = 'b64_json';
+    }
+    const response = await client.images.generate(imagePayload);
 
     const first = response?.data?.[0] || null;
     if (!first) {
