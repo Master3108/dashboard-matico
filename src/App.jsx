@@ -2513,7 +2513,8 @@ const AdminPedagogicalAssetsModal = ({
     onUpdateQuestionVisualRole,
     onLinkTheoryAsset,
     onGenerateQuestionFromAsset,
-    onSuggestQuestionMatchesFromAsset
+    onSuggestQuestionMatchesFromAsset,
+    onSuggestTheoryMatchesFromAsset
 }) => {
     const [selectedAssetId, setSelectedAssetId] = useState('');
     const [assetFilters, setAssetFilters] = useState({ subject: '', status: '', search: '' });
@@ -2536,7 +2537,9 @@ const AdminPedagogicalAssetsModal = ({
     const [isLoadingTheory, setIsLoadingTheory] = useState(false);
     const [isGeneratingAiDraft, setIsGeneratingAiDraft] = useState(false);
     const [isLoadingAiSuggestions, setIsLoadingAiSuggestions] = useState(false);
+    const [isLoadingAiTheorySuggestions, setIsLoadingAiTheorySuggestions] = useState(false);
     const [aiSuggestedQuestions, setAiSuggestedQuestions] = useState([]);
+    const [aiSuggestedTheoryRows, setAiSuggestedTheoryRows] = useState([]);
     const [aiDraft, setAiDraft] = useState(null);
     const [aiDraftForm, setAiDraftForm] = useState({
         subject: 'MATEMATICA',
@@ -2569,6 +2572,7 @@ const AdminPedagogicalAssetsModal = ({
     useEffect(() => {
         if (!selectedAsset) {
             setAiSuggestedQuestions([]);
+            setAiSuggestedTheoryRows([]);
             setAiDraft(null);
             return;
         }
@@ -2694,6 +2698,25 @@ const AdminPedagogicalAssetsModal = ({
             setAiSuggestedQuestions(result?.items || []);
         } finally {
             setIsLoadingAiSuggestions(false);
+        }
+    };
+
+    const handleSuggestTheoryMatches = async () => {
+        if (!selectedAsset) {
+            alert('Selecciona un asset primero.');
+            return;
+        }
+        setIsLoadingAiTheorySuggestions(true);
+        try {
+            const result = await onSuggestTheoryMatchesFromAsset(selectedAsset.asset_id, {
+                subject: theoryFilters.subject || aiDraftForm.subject || selectedAsset.subject,
+                session: theoryFilters.session,
+                phase: theoryFilters.phase,
+                search: theoryFilters.search || `${selectedAsset.topic_tags || ''} ${selectedAsset.caption || ''}`.trim()
+            });
+            setAiSuggestedTheoryRows(result?.items || []);
+        } finally {
+            setIsLoadingAiTheorySuggestions(false);
         }
     };
 
@@ -3022,7 +3045,16 @@ const AdminPedagogicalAssetsModal = ({
                                     <h4 className="text-lg font-black text-[#2B2E4A]">Asociar a Teoría Lúdica</h4>
                                     <p className="text-xs font-bold text-[#9094A6]">La imagen será apoyo visual y no afectará el 80%</p>
                                 </div>
-                                <button onClick={refreshTheory} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>BUSCAR</button>
+                                <div className="flex flex-wrap gap-2">
+                                    <button onClick={refreshTheory} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>BUSCAR</button>
+                                    <button
+                                        onClick={handleSuggestTheoryMatches}
+                                        disabled={!selectedAsset || isLoadingAiTheorySuggestions}
+                                        className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset ? 'opacity-50 cursor-not-allowed' : '!bg-[#0EA5E9] !border-[#0284C7] text-white'}`}
+                                    >
+                                        {isLoadingAiTheorySuggestions ? 'SUGIRIENDO...' : 'SUGERIR TEORÍAS IA'}
+                                    </button>
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                                 <select value={theoryFilters.subject} onChange={(e) => setTheoryFilters(prev => ({ ...prev, subject: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
@@ -3032,6 +3064,40 @@ const AdminPedagogicalAssetsModal = ({
                                 <input value={theoryFilters.session} onChange={(e) => setTheoryFilters(prev => ({ ...prev, session: e.target.value }))} placeholder="Sesión" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
                                 <input value={theoryFilters.phase} onChange={(e) => setTheoryFilters(prev => ({ ...prev, phase: e.target.value }))} placeholder="Fase" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
                                 <input value={theoryFilters.search} onChange={(e) => setTheoryFilters(prev => ({ ...prev, search: e.target.value }))} placeholder="Buscar" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                            </div>
+
+                            <div className="rounded-2xl border border-gray-100 bg-[#FAFBFF] p-4">
+                                <p className="text-sm font-black text-[#2B2E4A]">Sugerencias IA para teorías</p>
+                                <p className="text-xs font-bold text-[#9094A6] mt-1">Encuentra las teorías más compatibles con la imagen y asígnalas en un clic.</p>
+                                {isLoadingAiTheorySuggestions ? (
+                                    <div className="py-8 text-center text-[#9094A6]"><Loader className="w-6 h-6 animate-spin mx-auto mb-2" />Buscando teorías compatibles...</div>
+                                ) : aiSuggestedTheoryRows.length === 0 ? (
+                                    <div className="py-4 text-sm font-bold text-[#9094A6]">Todavía no hay sugerencias. Usa “SUGERIR TEORÍAS IA”.</div>
+                                ) : (
+                                    <div className="space-y-3 mt-3 max-h-[260px] overflow-y-auto">
+                                        {aiSuggestedTheoryRows.map((row) => (
+                                            <div key={`ai_theory_${row.rowNumber}_${row.suggestion_score}`} className="rounded-2xl border border-gray-100 p-4 bg-white">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <p className="text-xs font-black uppercase tracking-widest text-[#0EA5E9]">Fila {row.rowNumber}</p>
+                                                        <p className="font-bold text-[#2B2E4A] mt-1 whitespace-pre-wrap">{row.topic}</p>
+                                                        <p className="text-xs text-[#9094A6] mt-2">Sesión {row.session} · Fase {row.phase} · Score IA {row.suggestion_score}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => onLinkTheoryAsset(row.rowNumber, selectedAsset?.asset_id || '').then(async () => {
+                                                            await refreshTheory();
+                                                            await handleSuggestTheoryMatches();
+                                                        })}
+                                                        disabled={!selectedAsset || selectedAsset.status !== 'approved'}
+                                                        className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset || selectedAsset.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : '!bg-[#0EA5E9] !border-[#0284C7] text-white'}`}
+                                                    >
+                                                        ASOCIAR ESTA
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="max-h-[420px] overflow-y-auto space-y-3">
                                 {isLoadingTheory ? (
@@ -4508,6 +4574,25 @@ const App = () => {
         const data = await response.json();
         if (!response.ok || !data.success) {
             throw new Error(data.error || 'No se pudieron generar sugerencias desde la imagen');
+        }
+        return data;
+    };
+
+    const suggestTheoryMatchesFromAsset = async (assetId, payload = {}) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'suggest_theory_matches_from_asset',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                asset_id: assetId,
+                ...payload
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudieron generar sugerencias de teoría desde la imagen');
         }
         return data;
     };
@@ -6419,6 +6504,7 @@ ${finalData.capsule}`;
                     onLinkTheoryAsset={linkTheoryImageAsset}
                     onGenerateQuestionFromAsset={generateQuestionFromAsset}
                     onSuggestQuestionMatchesFromAsset={suggestQuestionMatchesFromAsset}
+                    onSuggestTheoryMatchesFromAsset={suggestTheoryMatchesFromAsset}
                 />
 
                 {/* SETTINGS MODAL */}

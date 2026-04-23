@@ -667,6 +667,74 @@ const buildQuestionBankAssociationSuggestions = async (sheets, asset, {
         .slice(0, Math.max(1, Number(limit || 8) || 8));
 };
 
+const buildTheoryLudicaAssociationSuggestions = async (sheets, asset, {
+    subject = '',
+    session = '',
+    phase = '',
+    search = '',
+    limit = 8
+} = {}) => {
+    const rows = await getTheoryLudicaRows(sheets);
+    const subjectFilter = normalizeSheetText(subject || asset?.subject).toUpperCase();
+    const sessionFilter = Number(session || 0) || 0;
+    const phaseFilter = Number(phase || 0) || 0;
+
+    const normalizeForSearch = (value = '') => normalizeSheetText(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const tokenize = (value = '') => normalizeForSearch(value)
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean);
+
+    const assetTokens = new Set([
+        ...tokenize(asset?.title),
+        ...tokenize(asset?.topic_tags),
+        ...tokenize(asset?.alt_text),
+        ...tokenize(asset?.caption),
+        ...tokenize(search)
+    ]);
+    const normalizedSearch = normalizeForSearch(search);
+
+    return rows
+        .filter((row) => normalizeSheetBool(row.active === '' ? 'TRUE' : row.active))
+        .filter((row) => !subjectFilter || normalizeTheorySubject(row.subject) === subjectFilter)
+        .filter((row) => !sessionFilter || normalizeTheorySession(row.session) === sessionFilter)
+        .filter((row) => !phaseFilter || normalizeTheoryPhase(row.phase) === phaseFilter)
+        .map((row) => {
+            const topicText = normalizeForSearch(row.topic || '');
+            const theoryText = normalizeForSearch(row.theory_markdown || '');
+            const haystack = `${topicText} ${theoryText}`;
+            const rowTokens = tokenize(haystack);
+            let score = 0;
+            for (const token of assetTokens) {
+                if (!token) continue;
+                if (topicText.includes(token)) score += 6;
+                if (haystack.includes(token)) score += 3;
+                if (rowTokens.includes(token)) score += 1;
+            }
+            if (normalizedSearch && haystack.includes(normalizedSearch)) score += 8;
+            if (String(row.support_image_asset_id || '').trim()) score -= 2;
+            return {
+                rowNumber: row.rowNumber,
+                timestamp: row.timestamp,
+                subject: row.subject,
+                session: row.session,
+                phase: row.phase,
+                topic: row.topic,
+                support_image_asset_id: row.support_image_asset_id || '',
+                support_image_url: row.support_image_url || '',
+                support_image_alt: row.support_image_alt || '',
+                support_image_caption: row.support_image_caption || '',
+                suggestion_score: score
+            };
+        })
+        .filter((row) => row.suggestion_score > 0)
+        .sort((a, b) => b.suggestion_score - a.suggestion_score)
+        .slice(0, Math.max(1, Number(limit || 8) || 8));
+};
+
 const generateQuestionDraftFromPedagogicalAsset = async (sheets, asset, overrides = {}) => {
     const normalizedSubject = normalizeSheetText(overrides.subject || asset?.subject).toUpperCase() || 'MATEMATICA';
     const systemPrompt = [
@@ -6009,6 +6077,35 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
                 success: true,
                 asset_id: asset.asset_id,
                 ai_draft: aiDraft,
+                items,
+                count: items.length
+            });
+        }
+
+        if (currentAction === 'suggest_theory_matches_from_asset') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            if (!body.asset_id) {
+                return res.status(400).json({ success: false, error: 'Debes indicar asset_id' });
+            }
+
+            const asset = await findPedagogicalImageAssetById(sheets, body.asset_id);
+            if (!asset) {
+                return res.status(404).json({ success: false, error: 'El asset indicado no existe' });
+            }
+
+            const items = await buildTheoryLudicaAssociationSuggestions(sheets, asset, {
+                subject: body.subject || asset.subject || '',
+                session: body.session || '',
+                phase: body.phase || '',
+                search: body.search || [asset.topic_tags, asset.alt_text, asset.caption].filter(Boolean).join(' '),
+                limit: body.limit || 8
+            });
+
+            return res.json({
+                success: true,
+                asset_id: asset.asset_id,
                 items,
                 count: items.length
             });
