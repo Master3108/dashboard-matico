@@ -33,6 +33,7 @@ const LOCAL_UPLOADS_DIR = path.join(__dirname, 'uploads');
 const NOTEBOOK_UPLOADS_DIR = path.join(LOCAL_UPLOADS_DIR, 'cuadernos');
 const PEDAGOGICAL_ASSETS_UPLOADS_DIR = path.join(LOCAL_UPLOADS_DIR, 'quiz-assets');
 const DATA_DIR = path.join(__dirname, 'data');
+const IMAGE_GENERATION_RUNTIME_CONFIG_FILE = path.join(DATA_DIR, 'image_generation_runtime_config.json');
 const NOTEBOOK_SUBMISSIONS_FILE = path.join(DATA_DIR, 'notebook_submissions.json');
 const NOTEBOOK_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const NOTEBOOK_QUIZ_THRESHOLD = 80;
@@ -218,12 +219,7 @@ const openaiVisionClient = OPENAI_DIRECT_API_KEY
     })
     : null;
 
-const openaiImageClient = OPENAI_IMAGE_API_KEY
-    ? new OpenAI({
-        apiKey: OPENAI_IMAGE_API_KEY,
-        baseURL: OPENAI_IMAGE_BASE_URL
-    })
-    : null;
+let imageGenerationRuntimeConfigCache = null;
 
 // ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n Google Sheets
 const SPREADSHEET_ID = '1l1GLMXh8_Uo_O7XJOY7ZJxh1TER2hxrXTOsc_EcByHo';
@@ -603,6 +599,180 @@ const safeJsonParse = (value = '', fallback = {}) => {
     }
 };
 
+const maskSecret = (value = '') => {
+    const secret = String(value || '').trim();
+    if (!secret) return '';
+    if (secret.length <= 8) return `${secret.slice(0, 1)}***${secret.slice(-1)}`;
+    return `${secret.slice(0, 4)}***${secret.slice(-4)}`;
+};
+
+const normalizeOpenAiImageRuntimeConfig = (input = {}) => ({
+    base_url: String(input.base_url || '').trim(),
+    api_key: String(input.api_key || '').trim(),
+    model: String(input.model || '').trim()
+});
+
+const normalizeNanoBananaImageRuntimeConfig = (input = {}) => ({
+    api_url: String(input.api_url || '').trim(),
+    api_key: String(input.api_key || '').trim(),
+    model: String(input.model || '').trim(),
+    auth_header: String(input.auth_header || '').trim(),
+    auth_prefix: String(input.auth_prefix || '').trim(),
+    prompt_field: String(input.prompt_field || '').trim(),
+    model_field: String(input.model_field || '').trim(),
+    size_field: String(input.size_field || '').trim(),
+    response_b64_path: String(input.response_b64_path || '').trim(),
+    response_url_path: String(input.response_url_path || '').trim(),
+    response_mime_path: String(input.response_mime_path || '').trim(),
+    extra_json: String(input.extra_json || '').trim()
+});
+
+const buildDefaultImageGenerationRuntimeConfig = () => ({
+    default_provider: PEDAGOGICAL_IMAGE_PROVIDER_DEFAULT,
+    providers: {
+        openai: normalizeOpenAiImageRuntimeConfig({
+            base_url: OPENAI_IMAGE_BASE_URL,
+            api_key: '',
+            model: OPENAI_IMAGE_MODEL
+        }),
+        nano_banana: normalizeNanoBananaImageRuntimeConfig({
+            api_url: NANO_BANANA_API_URL,
+            api_key: '',
+            model: NANO_BANANA_MODEL,
+            auth_header: NANO_BANANA_AUTH_HEADER,
+            auth_prefix: NANO_BANANA_AUTH_PREFIX,
+            prompt_field: NANO_BANANA_PROMPT_FIELD,
+            model_field: NANO_BANANA_MODEL_FIELD,
+            size_field: NANO_BANANA_SIZE_FIELD,
+            response_b64_path: NANO_BANANA_B64_PATH,
+            response_url_path: NANO_BANANA_URL_PATH,
+            response_mime_path: NANO_BANANA_MIME_PATH,
+            extra_json: process.env.NANO_BANANA_EXTRA_JSON || ''
+        })
+    }
+});
+
+const mergeImageGenerationRuntimeConfig = (stored = {}) => {
+    const defaults = buildDefaultImageGenerationRuntimeConfig();
+    return {
+        default_provider: normalizeImageGeneratorProvider(stored?.default_provider || defaults.default_provider) || defaults.default_provider,
+        providers: {
+            openai: {
+                ...defaults.providers.openai,
+                ...normalizeOpenAiImageRuntimeConfig(stored?.providers?.openai || {})
+            },
+            nano_banana: {
+                ...defaults.providers.nano_banana,
+                ...normalizeNanoBananaImageRuntimeConfig(stored?.providers?.nano_banana || {})
+            }
+        }
+    };
+};
+
+const readImageGenerationRuntimeConfig = async () => {
+    if (imageGenerationRuntimeConfigCache) return imageGenerationRuntimeConfigCache;
+    const defaults = buildDefaultImageGenerationRuntimeConfig();
+    try {
+        await fs.mkdir(DATA_DIR, { recursive: true });
+        const raw = await fs.readFile(IMAGE_GENERATION_RUNTIME_CONFIG_FILE, 'utf-8');
+        const parsed = safeJsonParse(raw, {});
+        imageGenerationRuntimeConfigCache = mergeImageGenerationRuntimeConfig(parsed);
+    } catch (error) {
+        if (error?.code !== 'ENOENT') {
+            console.error('[IMAGE_RUNTIME_CONFIG] Error leyendo config runtime:', error.message);
+        }
+        imageGenerationRuntimeConfigCache = defaults;
+    }
+    return imageGenerationRuntimeConfigCache;
+};
+
+const writeImageGenerationRuntimeConfig = async (nextConfig = null) => {
+    const merged = mergeImageGenerationRuntimeConfig(nextConfig || {});
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(IMAGE_GENERATION_RUNTIME_CONFIG_FILE, `${JSON.stringify(merged, null, 2)}\n`, 'utf-8');
+    imageGenerationRuntimeConfigCache = merged;
+    return merged;
+};
+
+const updateImageGenerationRuntimeConfig = async ({ defaultProvider = '', provider = '', patch = {} } = {}) => {
+    const current = await readImageGenerationRuntimeConfig();
+    const next = {
+        ...current,
+        providers: {
+            openai: { ...current.providers.openai },
+            nano_banana: { ...current.providers.nano_banana }
+        }
+    };
+
+    const normalizedDefaultProvider = normalizeImageGeneratorProvider(defaultProvider);
+    if (normalizedDefaultProvider && PEDAGOGICAL_IMAGE_PROVIDER_ALLOWLIST.includes(normalizedDefaultProvider)) {
+        next.default_provider = normalizedDefaultProvider;
+    }
+
+    const normalizedProvider = normalizeImageGeneratorProvider(provider);
+    if (normalizedProvider === 'openai') {
+        const normalizedPatch = normalizeOpenAiImageRuntimeConfig(patch);
+        if (normalizedPatch.base_url) next.providers.openai.base_url = normalizedPatch.base_url;
+        if (normalizedPatch.model) next.providers.openai.model = normalizedPatch.model;
+        if (Object.prototype.hasOwnProperty.call(patch, 'api_key')) {
+            const apiKeyValue = String(patch.api_key || '').trim();
+            if (apiKeyValue) next.providers.openai.api_key = apiKeyValue;
+        }
+    }
+    if (normalizedProvider === 'nano_banana') {
+        const normalizedPatch = normalizeNanoBananaImageRuntimeConfig(patch);
+        const stringFields = [
+            'api_url',
+            'model',
+            'auth_header',
+            'auth_prefix',
+            'prompt_field',
+            'model_field',
+            'size_field',
+            'response_b64_path',
+            'response_url_path',
+            'response_mime_path',
+            'extra_json'
+        ];
+        for (const field of stringFields) {
+            if (normalizedPatch[field]) next.providers.nano_banana[field] = normalizedPatch[field];
+        }
+        if (Object.prototype.hasOwnProperty.call(patch, 'api_key')) {
+            const apiKeyValue = String(patch.api_key || '').trim();
+            if (apiKeyValue) next.providers.nano_banana.api_key = apiKeyValue;
+        }
+    }
+
+    return writeImageGenerationRuntimeConfig(next);
+};
+
+const resolveEffectiveImageProviderSettings = async () => {
+    const runtime = await readImageGenerationRuntimeConfig();
+    return {
+        default_provider: runtime.default_provider || PEDAGOGICAL_IMAGE_PROVIDER_DEFAULT,
+        openai: {
+            base_url: runtime.providers.openai.base_url || OPENAI_IMAGE_BASE_URL,
+            api_key: runtime.providers.openai.api_key || OPENAI_IMAGE_API_KEY || '',
+            model: runtime.providers.openai.model || OPENAI_IMAGE_MODEL
+        },
+        nano_banana: {
+            api_url: runtime.providers.nano_banana.api_url || NANO_BANANA_API_URL,
+            api_key: runtime.providers.nano_banana.api_key || NANO_BANANA_API_KEY || '',
+            model: runtime.providers.nano_banana.model || NANO_BANANA_MODEL,
+            auth_header: runtime.providers.nano_banana.auth_header || NANO_BANANA_AUTH_HEADER,
+            auth_prefix: runtime.providers.nano_banana.auth_prefix || NANO_BANANA_AUTH_PREFIX,
+            prompt_field: runtime.providers.nano_banana.prompt_field || NANO_BANANA_PROMPT_FIELD,
+            model_field: runtime.providers.nano_banana.model_field || NANO_BANANA_MODEL_FIELD,
+            size_field: runtime.providers.nano_banana.size_field || NANO_BANANA_SIZE_FIELD,
+            response_b64_path: runtime.providers.nano_banana.response_b64_path || NANO_BANANA_B64_PATH,
+            response_url_path: runtime.providers.nano_banana.response_url_path || NANO_BANANA_URL_PATH,
+            response_mime_path: runtime.providers.nano_banana.response_mime_path || NANO_BANANA_MIME_PATH,
+            extra_json: runtime.providers.nano_banana.extra_json || process.env.NANO_BANANA_EXTRA_JSON || ''
+        },
+        runtime
+    };
+};
+
 const readPathFromObject = (target, pathText = '') => {
     const path = String(pathText || '').trim();
     if (!path) return undefined;
@@ -639,13 +809,22 @@ const fetchImageBufferFromUrl = async (url) => {
     };
 };
 
-const isImageGeneratorProviderConfigured = (provider = '') => {
-    if (provider === 'openai') return Boolean(openaiImageClient);
-    if (provider === 'nano_banana') return Boolean(NANO_BANANA_API_URL && NANO_BANANA_API_KEY);
+const isImageGeneratorProviderConfigured = (provider = '', effectiveSettings = null) => {
+    if (provider === 'openai') {
+        const openaiSettings = effectiveSettings?.openai;
+        if (openaiSettings) return Boolean(openaiSettings.api_key);
+        return Boolean(OPENAI_IMAGE_API_KEY);
+    }
+    if (provider === 'nano_banana') {
+        const externalSettings = effectiveSettings?.nano_banana;
+        if (externalSettings) return Boolean(externalSettings.api_url && externalSettings.api_key);
+        return Boolean(NANO_BANANA_API_URL && NANO_BANANA_API_KEY);
+    }
     return false;
 };
 
-const getImageGenerationProviders = () => {
+const getImageGenerationProviders = async () => {
+    const effectiveSettings = await resolveEffectiveImageProviderSettings();
     const labels = {
         openai: 'OpenAI Images',
         nano_banana: 'Nano Banana (API externa)'
@@ -653,49 +832,87 @@ const getImageGenerationProviders = () => {
     return PEDAGOGICAL_IMAGE_PROVIDER_ALLOWLIST.map((provider) => ({
         provider,
         label: labels[provider] || provider,
-        configured: isImageGeneratorProviderConfigured(provider)
+        configured: isImageGeneratorProviderConfigured(provider, effectiveSettings)
     }));
 };
 
-const resolveImageGeneratorProvider = (requestedProvider = '') => {
+const resolveImageGeneratorProvider = async (requestedProvider = '') => {
+    const effectiveSettings = await resolveEffectiveImageProviderSettings();
+    const defaultProvider = normalizeImageGeneratorProvider(effectiveSettings.default_provider || PEDAGOGICAL_IMAGE_PROVIDER_DEFAULT) || PEDAGOGICAL_IMAGE_PROVIDER_DEFAULT;
     const requested = normalizeImageGeneratorProvider(requestedProvider);
-    if (requested && PEDAGOGICAL_IMAGE_PROVIDER_ALLOWLIST.includes(requested) && isImageGeneratorProviderConfigured(requested)) {
+    if (requested && PEDAGOGICAL_IMAGE_PROVIDER_ALLOWLIST.includes(requested) && isImageGeneratorProviderConfigured(requested, effectiveSettings)) {
         return requested;
     }
-    if (isImageGeneratorProviderConfigured(PEDAGOGICAL_IMAGE_PROVIDER_DEFAULT)) {
-        return PEDAGOGICAL_IMAGE_PROVIDER_DEFAULT;
+    if (isImageGeneratorProviderConfigured(defaultProvider, effectiveSettings)) {
+        return defaultProvider;
     }
-    const fallback = PEDAGOGICAL_IMAGE_PROVIDER_ALLOWLIST.find((provider) => isImageGeneratorProviderConfigured(provider));
+    const fallback = PEDAGOGICAL_IMAGE_PROVIDER_ALLOWLIST.find((provider) => isImageGeneratorProviderConfigured(provider, effectiveSettings));
     if (!fallback) {
         throw new Error('No hay proveedor de generación de imágenes configurado');
     }
     return fallback;
 };
 
-const getImageGenerationConfig = () => {
-    const providers = getImageGenerationProviders();
+const getImageGenerationConfig = async () => {
+    const effectiveSettings = await resolveEffectiveImageProviderSettings();
+    const providers = await getImageGenerationProviders();
     let defaultProvider = '';
     try {
-        defaultProvider = resolveImageGeneratorProvider('');
+        defaultProvider = await resolveImageGeneratorProvider('');
     } catch {
         defaultProvider = providers.find((item) => item.configured)?.provider || '';
     }
+    const runtime = effectiveSettings.runtime || buildDefaultImageGenerationRuntimeConfig();
     return {
         providers,
-        default_provider: defaultProvider
+        default_provider: defaultProvider,
+        runtime: {
+            default_provider: runtime.default_provider || defaultProvider,
+            providers: {
+                openai: {
+                    base_url: runtime.providers?.openai?.base_url || '',
+                    model: runtime.providers?.openai?.model || '',
+                    has_api_key: Boolean(runtime.providers?.openai?.api_key || OPENAI_IMAGE_API_KEY),
+                    api_key_hint: maskSecret(runtime.providers?.openai?.api_key || OPENAI_IMAGE_API_KEY || '')
+                },
+                nano_banana: {
+                    api_url: runtime.providers?.nano_banana?.api_url || '',
+                    model: runtime.providers?.nano_banana?.model || '',
+                    auth_header: runtime.providers?.nano_banana?.auth_header || '',
+                    auth_prefix: runtime.providers?.nano_banana?.auth_prefix || '',
+                    prompt_field: runtime.providers?.nano_banana?.prompt_field || '',
+                    model_field: runtime.providers?.nano_banana?.model_field || '',
+                    size_field: runtime.providers?.nano_banana?.size_field || '',
+                    response_b64_path: runtime.providers?.nano_banana?.response_b64_path || '',
+                    response_url_path: runtime.providers?.nano_banana?.response_url_path || '',
+                    response_mime_path: runtime.providers?.nano_banana?.response_mime_path || '',
+                    extra_json: runtime.providers?.nano_banana?.extra_json || '',
+                    has_api_key: Boolean(runtime.providers?.nano_banana?.api_key || NANO_BANANA_API_KEY),
+                    api_key_hint: maskSecret(runtime.providers?.nano_banana?.api_key || NANO_BANANA_API_KEY || '')
+                }
+            }
+        }
     };
 };
 
 const generateImageWithOpenAI = async ({
     prompt,
-    size = '1024x1024'
+    size = '1024x1024',
+    settings = null
 } = {}) => {
-    if (!openaiImageClient) {
+    const apiKey = settings?.api_key || OPENAI_IMAGE_API_KEY;
+    const baseUrl = settings?.base_url || OPENAI_IMAGE_BASE_URL;
+    const model = settings?.model || OPENAI_IMAGE_MODEL;
+    if (!apiKey) {
         throw new Error('Falta OPENAI_IMAGE_API_KEY para usar OpenAI Images');
     }
+    const client = new OpenAI({
+        apiKey,
+        baseURL: baseUrl
+    });
 
-    const response = await openaiImageClient.images.generate({
-        model: OPENAI_IMAGE_MODEL,
+    const response = await client.images.generate({
+        model,
         prompt,
         size,
         response_format: 'b64_json'
@@ -711,7 +928,7 @@ const generateImageWithOpenAI = async ({
             buffer: Buffer.from(first.b64_json, 'base64'),
             mimeType: 'image/png',
             provider: 'openai',
-            model: OPENAI_IMAGE_MODEL,
+            model,
             revisedPrompt: first.revised_prompt || ''
         };
     }
@@ -721,7 +938,7 @@ const generateImageWithOpenAI = async ({
         return {
             ...downloaded,
             provider: 'openai',
-            model: OPENAI_IMAGE_MODEL,
+            model,
             revisedPrompt: first.revised_prompt || ''
         };
     }
@@ -731,19 +948,33 @@ const generateImageWithOpenAI = async ({
 
 const generateImageWithNanoBanana = async ({
     prompt,
-    size = '1024x1024'
+    size = '1024x1024',
+    settings = null
 } = {}) => {
-    if (!NANO_BANANA_API_URL || !NANO_BANANA_API_KEY) {
+    const apiUrl = settings?.api_url || NANO_BANANA_API_URL;
+    const apiKey = settings?.api_key || NANO_BANANA_API_KEY;
+    const model = settings?.model || NANO_BANANA_MODEL;
+    const authHeader = settings?.auth_header || NANO_BANANA_AUTH_HEADER;
+    const authPrefix = settings?.auth_prefix || NANO_BANANA_AUTH_PREFIX;
+    const promptField = settings?.prompt_field || NANO_BANANA_PROMPT_FIELD;
+    const modelField = settings?.model_field || NANO_BANANA_MODEL_FIELD;
+    const sizeField = settings?.size_field || NANO_BANANA_SIZE_FIELD;
+    const responseB64Path = settings?.response_b64_path || NANO_BANANA_B64_PATH;
+    const responseUrlPath = settings?.response_url_path || NANO_BANANA_URL_PATH;
+    const responseMimePath = settings?.response_mime_path || NANO_BANANA_MIME_PATH;
+    const extraJson = settings?.extra_json || process.env.NANO_BANANA_EXTRA_JSON || '';
+
+    if (!apiUrl || !apiKey) {
         throw new Error('Falta configuración NANO_BANANA_API_URL/NANO_BANANA_API_KEY');
     }
 
     const body = {
-        [NANO_BANANA_PROMPT_FIELD]: prompt
+        [promptField]: prompt
     };
-    if (NANO_BANANA_MODEL_FIELD && NANO_BANANA_MODEL) body[NANO_BANANA_MODEL_FIELD] = NANO_BANANA_MODEL;
-    if (NANO_BANANA_SIZE_FIELD && size) body[NANO_BANANA_SIZE_FIELD] = size;
+    if (modelField && model) body[modelField] = model;
+    if (sizeField && size) body[sizeField] = size;
 
-    const extra = safeJsonParse(process.env.NANO_BANANA_EXTRA_JSON || '', {});
+    const extra = safeJsonParse(extraJson, {});
     if (extra && typeof extra === 'object') {
         Object.assign(body, extra);
     }
@@ -751,12 +982,12 @@ const generateImageWithNanoBanana = async ({
     const headers = {
         'Content-Type': 'application/json'
     };
-    const authValue = NANO_BANANA_AUTH_PREFIX
-        ? `${NANO_BANANA_AUTH_PREFIX} ${NANO_BANANA_API_KEY}`.trim()
-        : NANO_BANANA_API_KEY;
-    if (NANO_BANANA_AUTH_HEADER) headers[NANO_BANANA_AUTH_HEADER] = authValue;
+    const authValue = authPrefix
+        ? `${authPrefix} ${apiKey}`.trim()
+        : apiKey;
+    if (authHeader) headers[authHeader] = authValue;
 
-    const response = await fetch(NANO_BANANA_API_URL, {
+    const response = await fetch(apiUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(body)
@@ -767,16 +998,16 @@ const generateImageWithNanoBanana = async ({
     }
 
     const payload = await response.json();
-    const b64Value = readPathFromObject(payload, NANO_BANANA_B64_PATH);
-    const urlValue = readPathFromObject(payload, NANO_BANANA_URL_PATH);
-    const mimeType = String(readPathFromObject(payload, NANO_BANANA_MIME_PATH) || 'image/png').trim().toLowerCase() || 'image/png';
+    const b64Value = readPathFromObject(payload, responseB64Path);
+    const urlValue = readPathFromObject(payload, responseUrlPath);
+    const mimeType = String(readPathFromObject(payload, responseMimePath) || 'image/png').trim().toLowerCase() || 'image/png';
 
     if (typeof b64Value === 'string' && b64Value.trim()) {
         return {
             buffer: Buffer.from(b64Value, 'base64'),
             mimeType,
             provider: 'nano_banana',
-            model: NANO_BANANA_MODEL || '',
+            model: model || '',
             revisedPrompt: String(readPathFromObject(payload, 'data.0.revised_prompt') || '')
         };
     }
@@ -786,7 +1017,7 @@ const generateImageWithNanoBanana = async ({
         return {
             ...downloaded,
             provider: 'nano_banana',
-            model: NANO_BANANA_MODEL || '',
+            model: model || '',
             revisedPrompt: ''
         };
     }
@@ -799,12 +1030,13 @@ const generatePedagogicalImage = async ({
     prompt = '',
     size = '1024x1024'
 } = {}) => {
-    const finalProvider = resolveImageGeneratorProvider(provider);
+    const effectiveSettings = await resolveEffectiveImageProviderSettings();
+    const finalProvider = await resolveImageGeneratorProvider(provider);
     if (finalProvider === 'openai') {
-        return generateImageWithOpenAI({ prompt, size });
+        return generateImageWithOpenAI({ prompt, size, settings: effectiveSettings.openai });
     }
     if (finalProvider === 'nano_banana') {
-        return generateImageWithNanoBanana({ prompt, size });
+        return generateImageWithNanoBanana({ prompt, size, settings: effectiveSettings.nano_banana });
     }
     throw new Error('Proveedor de imágenes no soportado');
 };
@@ -6224,9 +6456,30 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
             if (!isAdminEmail(body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
+            const config = await getImageGenerationConfig();
             return res.json({
                 success: true,
-                ...getImageGenerationConfig()
+                ...config
+            });
+        }
+
+        if (currentAction === 'update_image_generation_runtime_config') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            const provider = normalizeImageGeneratorProvider(body.provider || '');
+            const patch = body.patch && typeof body.patch === 'object' ? body.patch : {};
+            const nextConfig = await updateImageGenerationRuntimeConfig({
+                defaultProvider: body.default_provider || '',
+                provider,
+                patch
+            });
+            const publicConfig = await getImageGenerationConfig();
+            return res.json({
+                success: true,
+                updated_provider: provider || '',
+                default_provider: nextConfig.default_provider || '',
+                ...publicConfig
             });
         }
 

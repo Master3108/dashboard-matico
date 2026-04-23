@@ -2516,7 +2516,8 @@ const AdminPedagogicalAssetsModal = ({
     onSuggestQuestionMatchesFromAsset,
     onSuggestTheoryMatchesFromAsset,
     onGetImageGenerationConfig,
-    onGeneratePedagogicalImage
+    onGeneratePedagogicalImage,
+    onUpdateImageGenerationRuntimeConfig
 }) => {
     const [selectedAssetId, setSelectedAssetId] = useState('');
     const [assetFilters, setAssetFilters] = useState({ subject: '', status: '', search: '' });
@@ -2533,7 +2534,15 @@ const AdminPedagogicalAssetsModal = ({
     const [isUploading, setIsUploading] = useState(false);
     const [isLoadingImageGenerationConfig, setIsLoadingImageGenerationConfig] = useState(false);
     const [isGeneratingAssetWithAi, setIsGeneratingAssetWithAi] = useState(false);
+    const [isSavingRuntimeConfig, setIsSavingRuntimeConfig] = useState(false);
     const [imageGenerationProviders, setImageGenerationProviders] = useState([]);
+    const [runtimeConfigHints, setRuntimeConfigHints] = useState({
+        default_provider: '',
+        openai_api_key_hint: '',
+        openai_has_api_key: false,
+        nano_api_key_hint: '',
+        nano_has_api_key: false
+    });
     const [imageGenerationForm, setImageGenerationForm] = useState({
         provider: '',
         prompt: '',
@@ -2544,7 +2553,23 @@ const AdminPedagogicalAssetsModal = ({
         alt_text: '',
         caption: '',
         status: 'draft',
-        size: '1024x1024'
+        size: '1024x1024',
+        default_provider: '',
+        openai_base_url: '',
+        openai_model: 'gpt-image-1',
+        openai_api_key: '',
+        nano_api_url: '',
+        nano_model: '',
+        nano_api_key: '',
+        nano_auth_header: 'Authorization',
+        nano_auth_prefix: 'Bearer',
+        nano_prompt_field: 'prompt',
+        nano_model_field: 'model',
+        nano_size_field: 'size',
+        nano_response_b64_path: 'data.0.b64_json',
+        nano_response_url_path: 'data.0.url',
+        nano_response_mime_path: 'data.0.mime_type',
+        nano_extra_json: ''
     });
     const [questionFilters, setQuestionFilters] = useState({ subject: '', session: '', search: '' });
     const [theoryFilters, setTheoryFilters] = useState({ subject: '', session: '', phase: '', search: '' });
@@ -2615,9 +2640,35 @@ const AdminPedagogicalAssetsModal = ({
                     || providers.find((item) => item?.configured)?.provider
                     || providers[0]?.provider
                     || '';
+                const runtime = config?.runtime || {};
+                const runtimeOpenAi = runtime?.providers?.openai || {};
+                const runtimeNano = runtime?.providers?.nano_banana || {};
+                setRuntimeConfigHints({
+                    default_provider: runtime.default_provider || fallbackProvider,
+                    openai_api_key_hint: runtimeOpenAi.api_key_hint || '',
+                    openai_has_api_key: Boolean(runtimeOpenAi.has_api_key),
+                    nano_api_key_hint: runtimeNano.api_key_hint || '',
+                    nano_has_api_key: Boolean(runtimeNano.has_api_key)
+                });
                 setImageGenerationForm((prev) => ({
                     ...prev,
-                    provider: prev.provider || fallbackProvider
+                    provider: prev.provider || fallbackProvider,
+                    default_provider: runtime.default_provider || fallbackProvider,
+                    openai_base_url: runtimeOpenAi.base_url || prev.openai_base_url,
+                    openai_model: runtimeOpenAi.model || prev.openai_model,
+                    openai_api_key: '',
+                    nano_api_url: runtimeNano.api_url || prev.nano_api_url,
+                    nano_model: runtimeNano.model || prev.nano_model,
+                    nano_api_key: '',
+                    nano_auth_header: runtimeNano.auth_header || prev.nano_auth_header,
+                    nano_auth_prefix: runtimeNano.auth_prefix || prev.nano_auth_prefix,
+                    nano_prompt_field: runtimeNano.prompt_field || prev.nano_prompt_field,
+                    nano_model_field: runtimeNano.model_field || prev.nano_model_field,
+                    nano_size_field: runtimeNano.size_field || prev.nano_size_field,
+                    nano_response_b64_path: runtimeNano.response_b64_path || prev.nano_response_b64_path,
+                    nano_response_url_path: runtimeNano.response_url_path || prev.nano_response_url_path,
+                    nano_response_mime_path: runtimeNano.response_mime_path || prev.nano_response_mime_path,
+                    nano_extra_json: runtimeNano.extra_json || prev.nano_extra_json
                 }));
             } catch (error) {
                 console.error('[ADMIN_ASSETS] Error cargando config de generación de imágenes:', error);
@@ -2728,6 +2779,63 @@ const AdminPedagogicalAssetsModal = ({
             }));
         } finally {
             setIsGeneratingAssetWithAi(false);
+        }
+    };
+
+    const handleSaveRuntimeConfig = async (provider) => {
+        if (!onUpdateImageGenerationRuntimeConfig) {
+            alert('La actualización de configuración no está disponible.');
+            return;
+        }
+
+        const selectedProvider = provider === 'openai' ? 'openai' : 'nano_banana';
+        const patch = selectedProvider === 'openai'
+            ? {
+                base_url: imageGenerationForm.openai_base_url,
+                model: imageGenerationForm.openai_model,
+                api_key: imageGenerationForm.openai_api_key
+            }
+            : {
+                api_url: imageGenerationForm.nano_api_url,
+                model: imageGenerationForm.nano_model,
+                api_key: imageGenerationForm.nano_api_key,
+                auth_header: imageGenerationForm.nano_auth_header,
+                auth_prefix: imageGenerationForm.nano_auth_prefix,
+                prompt_field: imageGenerationForm.nano_prompt_field,
+                model_field: imageGenerationForm.nano_model_field,
+                size_field: imageGenerationForm.nano_size_field,
+                response_b64_path: imageGenerationForm.nano_response_b64_path,
+                response_url_path: imageGenerationForm.nano_response_url_path,
+                response_mime_path: imageGenerationForm.nano_response_mime_path,
+                extra_json: imageGenerationForm.nano_extra_json
+            };
+
+        setIsSavingRuntimeConfig(true);
+        try {
+            const updated = await onUpdateImageGenerationRuntimeConfig({
+                provider: selectedProvider,
+                default_provider: imageGenerationForm.default_provider,
+                patch
+            });
+            const runtime = updated?.runtime || {};
+            const runtimeOpenAi = runtime?.providers?.openai || {};
+            const runtimeNano = runtime?.providers?.nano_banana || {};
+            setRuntimeConfigHints({
+                default_provider: runtime.default_provider || imageGenerationForm.default_provider,
+                openai_api_key_hint: runtimeOpenAi.api_key_hint || '',
+                openai_has_api_key: Boolean(runtimeOpenAi.has_api_key),
+                nano_api_key_hint: runtimeNano.api_key_hint || '',
+                nano_has_api_key: Boolean(runtimeNano.has_api_key)
+            });
+            setImageGenerationForm((prev) => ({
+                ...prev,
+                default_provider: runtime.default_provider || prev.default_provider,
+                openai_api_key: '',
+                nano_api_key: ''
+            }));
+            alert('Configuración API guardada.');
+        } finally {
+            setIsSavingRuntimeConfig(false);
         }
     };
 
@@ -2876,6 +2984,98 @@ const AdminPedagogicalAssetsModal = ({
                                 <div>
                                     <p className="text-sm font-black text-[#2B2E4A]">Generar imagen con IA (beta)</p>
                                     <p className="text-[11px] font-bold text-[#9094A6]">Puedes cambiar proveedor cuando quieras (OpenAI, Nano Banana u otro compatible).</p>
+                                </div>
+                                <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-3">
+                                    <p className="text-[11px] font-black uppercase tracking-widest text-[#7C3AED]">Configuración API (solo admin)</p>
+                                    <select
+                                        value={imageGenerationForm.default_provider}
+                                        onChange={(e) => setImageGenerationForm(prev => ({ ...prev, default_provider: e.target.value }))}
+                                        className="w-full rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                    >
+                                        {imageGenerationProviders.map((provider) => (
+                                            <option key={`default_${provider.provider}`} value={provider.provider}>
+                                                Default: {provider.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <input
+                                            value={imageGenerationForm.openai_base_url}
+                                            onChange={(e) => setImageGenerationForm(prev => ({ ...prev, openai_base_url: e.target.value }))}
+                                            placeholder="OpenAI Base URL"
+                                            className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                        />
+                                        <input
+                                            value={imageGenerationForm.openai_model}
+                                            onChange={(e) => setImageGenerationForm(prev => ({ ...prev, openai_model: e.target.value }))}
+                                            placeholder="OpenAI Model"
+                                            className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                        />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        value={imageGenerationForm.openai_api_key}
+                                        onChange={(e) => setImageGenerationForm(prev => ({ ...prev, openai_api_key: e.target.value }))}
+                                        placeholder={`OpenAI API Key (${runtimeConfigHints.openai_has_api_key ? `guardada: ${runtimeConfigHints.openai_api_key_hint}` : 'sin key'})`}
+                                        className="w-full rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSaveRuntimeConfig('openai')}
+                                        disabled={isSavingRuntimeConfig}
+                                        className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#1F9D55] !border-[#19884A] text-white ${isSavingRuntimeConfig ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        {isSavingRuntimeConfig ? 'GUARDANDO...' : 'GUARDAR OPENAI'}
+                                    </button>
+
+                                    <div className="h-px bg-gray-100" />
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <input
+                                            value={imageGenerationForm.nano_api_url}
+                                            onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_api_url: e.target.value }))}
+                                            placeholder="Nano/API URL"
+                                            className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                        />
+                                        <input
+                                            value={imageGenerationForm.nano_model}
+                                            onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_model: e.target.value }))}
+                                            placeholder="Nano/API Model"
+                                            className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                        />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        value={imageGenerationForm.nano_api_key}
+                                        onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_api_key: e.target.value }))}
+                                        placeholder={`Nano/API Key (${runtimeConfigHints.nano_has_api_key ? `guardada: ${runtimeConfigHints.nano_api_key_hint}` : 'sin key'})`}
+                                        className="w-full rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                    />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <input value={imageGenerationForm.nano_auth_header} onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_auth_header: e.target.value }))} placeholder="Auth Header" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                        <input value={imageGenerationForm.nano_auth_prefix} onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_auth_prefix: e.target.value }))} placeholder="Auth Prefix" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                        <input value={imageGenerationForm.nano_prompt_field} onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_prompt_field: e.target.value }))} placeholder="Prompt Field" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                        <input value={imageGenerationForm.nano_model_field} onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_model_field: e.target.value }))} placeholder="Model Field" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                        <input value={imageGenerationForm.nano_size_field} onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_size_field: e.target.value }))} placeholder="Size Field" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                        <input value={imageGenerationForm.nano_response_b64_path} onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_response_b64_path: e.target.value }))} placeholder="Path b64" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                        <input value={imageGenerationForm.nano_response_url_path} onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_response_url_path: e.target.value }))} placeholder="Path URL" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                        <input value={imageGenerationForm.nano_response_mime_path} onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_response_mime_path: e.target.value }))} placeholder="Path MIME" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                    </div>
+                                    <textarea
+                                        value={imageGenerationForm.nano_extra_json}
+                                        onChange={(e) => setImageGenerationForm(prev => ({ ...prev, nano_extra_json: e.target.value }))}
+                                        placeholder='Extra JSON opcional (ej: {"quality":"high"})'
+                                        rows={2}
+                                        className="w-full rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs resize-none"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSaveRuntimeConfig('nano_banana')}
+                                        disabled={isSavingRuntimeConfig}
+                                        className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#1F9D55] !border-[#19884A] text-white ${isSavingRuntimeConfig ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        {isSavingRuntimeConfig ? 'GUARDANDO...' : 'GUARDAR API EXTERNA'}
+                                    </button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     <select
@@ -4610,6 +4810,24 @@ const App = () => {
         }
         await loadAdminPedagogicalAssets();
         return data.item;
+    };
+
+    const updateImageGenerationRuntimeConfig = async (payload = {}) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update_image_generation_runtime_config',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                ...payload
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo actualizar la configuración de imágenes');
+        }
+        return data;
     };
 
     const updatePedagogicalAssetStatus = async (asset, status) => {
@@ -6692,6 +6910,7 @@ ${finalData.capsule}`;
                     onSuggestTheoryMatchesFromAsset={suggestTheoryMatchesFromAsset}
                     onGetImageGenerationConfig={getImageGenerationConfig}
                     onGeneratePedagogicalImage={generatePedagogicalImage}
+                    onUpdateImageGenerationRuntimeConfig={updateImageGenerationRuntimeConfig}
                 />
 
                 {/* SETTINGS MODAL */}
