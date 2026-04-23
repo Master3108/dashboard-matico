@@ -2514,7 +2514,9 @@ const AdminPedagogicalAssetsModal = ({
     onLinkTheoryAsset,
     onGenerateQuestionFromAsset,
     onSuggestQuestionMatchesFromAsset,
-    onSuggestTheoryMatchesFromAsset
+    onSuggestTheoryMatchesFromAsset,
+    onGetImageGenerationConfig,
+    onGeneratePedagogicalImage
 }) => {
     const [selectedAssetId, setSelectedAssetId] = useState('');
     const [assetFilters, setAssetFilters] = useState({ subject: '', status: '', search: '' });
@@ -2529,6 +2531,21 @@ const AdminPedagogicalAssetsModal = ({
     });
     const [uploadFile, setUploadFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isLoadingImageGenerationConfig, setIsLoadingImageGenerationConfig] = useState(false);
+    const [isGeneratingAssetWithAi, setIsGeneratingAssetWithAi] = useState(false);
+    const [imageGenerationProviders, setImageGenerationProviders] = useState([]);
+    const [imageGenerationForm, setImageGenerationForm] = useState({
+        provider: '',
+        prompt: '',
+        title: '',
+        subject: 'MATEMATICA',
+        topic_tags: '',
+        kind: 'diagram',
+        alt_text: '',
+        caption: '',
+        status: 'draft',
+        size: '1024x1024'
+    });
     const [questionFilters, setQuestionFilters] = useState({ subject: '', session: '', search: '' });
     const [theoryFilters, setTheoryFilters] = useState({ subject: '', session: '', phase: '', search: '' });
     const [questionRows, setQuestionRows] = useState([]);
@@ -2582,6 +2599,38 @@ const AdminPedagogicalAssetsModal = ({
             topic: selectedAsset.topic_tags || selectedAsset.title || prev.topic
         }));
     }, [selectedAsset]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        let cancelled = false;
+        const loadGenerationConfig = async () => {
+            if (!onGetImageGenerationConfig) return;
+            setIsLoadingImageGenerationConfig(true);
+            try {
+                const config = await onGetImageGenerationConfig();
+                if (cancelled) return;
+                const providers = Array.isArray(config?.providers) ? config.providers : [];
+                setImageGenerationProviders(providers);
+                const fallbackProvider = config?.default_provider
+                    || providers.find((item) => item?.configured)?.provider
+                    || providers[0]?.provider
+                    || '';
+                setImageGenerationForm((prev) => ({
+                    ...prev,
+                    provider: prev.provider || fallbackProvider
+                }));
+            } catch (error) {
+                console.error('[ADMIN_ASSETS] Error cargando config de generación de imágenes:', error);
+            } finally {
+                if (!cancelled) setIsLoadingImageGenerationConfig(false);
+            }
+        };
+        loadGenerationConfig();
+        return () => {
+            cancelled = true;
+        };
+        // `onGetImageGenerationConfig` se recrea en renders del padre; evitamos recargas infinitas.
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -2640,6 +2689,46 @@ const AdminPedagogicalAssetsModal = ({
 
     const handleStatusChange = async (asset, status) => {
         await onUpdateAssetStatus(asset, status);
+    };
+
+    const handleGenerateImageWithAi = async () => {
+        if (!onGeneratePedagogicalImage) {
+            alert('La generación con IA no está disponible en este entorno.');
+            return;
+        }
+        const prompt = String(imageGenerationForm.prompt || '').trim();
+        if (!prompt) {
+            alert('Escribe un prompt para generar la imagen.');
+            return;
+        }
+
+        setIsGeneratingAssetWithAi(true);
+        try {
+            const result = await onGeneratePedagogicalImage({
+                provider: imageGenerationForm.provider,
+                prompt,
+                title: imageGenerationForm.title || prompt.slice(0, 80),
+                subject: imageGenerationForm.subject || 'MATEMATICA',
+                topic_tags: imageGenerationForm.topic_tags,
+                kind: imageGenerationForm.kind,
+                alt_text: imageGenerationForm.alt_text || prompt.slice(0, 180),
+                caption: imageGenerationForm.caption,
+                status: imageGenerationForm.status,
+                size: imageGenerationForm.size
+            });
+            if (result?.asset_id) {
+                setSelectedAssetId(result.asset_id);
+            }
+            setImageGenerationForm((prev) => ({
+                ...prev,
+                prompt: '',
+                title: '',
+                alt_text: '',
+                caption: ''
+            }));
+        } finally {
+            setIsGeneratingAssetWithAi(false);
+        }
     };
 
     const hydrateDraftForm = (draft) => {
@@ -2783,6 +2872,66 @@ const AdminPedagogicalAssetsModal = ({
                             </div>
 
                             <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} className="block w-full text-sm" />
+                            <div className="rounded-2xl border border-[#DCE7FF] bg-[#F8FBFF] p-4 space-y-3">
+                                <div>
+                                    <p className="text-sm font-black text-[#2B2E4A]">Generar imagen con IA (beta)</p>
+                                    <p className="text-[11px] font-bold text-[#9094A6]">Puedes cambiar proveedor cuando quieras (OpenAI, Nano Banana u otro compatible).</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <select
+                                        value={imageGenerationForm.provider}
+                                        onChange={(e) => setImageGenerationForm(prev => ({ ...prev, provider: e.target.value }))}
+                                        className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                        disabled={isLoadingImageGenerationConfig}
+                                    >
+                                        {imageGenerationProviders.length === 0 ? (
+                                            <option value="">Sin proveedores</option>
+                                        ) : (
+                                            imageGenerationProviders.map((provider) => (
+                                                <option key={provider.provider} value={provider.provider} disabled={!provider.configured}>
+                                                    {provider.label} {!provider.configured ? '(sin configurar)' : ''}
+                                                </option>
+                                            ))
+                                        )}
+                                    </select>
+                                    <select
+                                        value={imageGenerationForm.size}
+                                        onChange={(e) => setImageGenerationForm(prev => ({ ...prev, size: e.target.value }))}
+                                        className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                    >
+                                        {['1024x1024', '1536x1024', '1024x1536'].map((size) => <option key={size} value={size}>{size}</option>)}
+                                    </select>
+                                </div>
+                                <textarea
+                                    value={imageGenerationForm.prompt}
+                                    onChange={(e) => setImageGenerationForm(prev => ({ ...prev, prompt: e.target.value }))}
+                                    placeholder="Prompt IA (ej: diagrama claro de la célula animal con etiquetas en español)"
+                                    rows={3}
+                                    className="w-full rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs resize-none"
+                                />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <input
+                                        value={imageGenerationForm.title}
+                                        onChange={(e) => setImageGenerationForm(prev => ({ ...prev, title: e.target.value }))}
+                                        placeholder="Título (opcional)"
+                                        className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                    />
+                                    <input
+                                        value={imageGenerationForm.alt_text}
+                                        onChange={(e) => setImageGenerationForm(prev => ({ ...prev, alt_text: e.target.value }))}
+                                        placeholder="Texto alternativo (opcional)"
+                                        className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateImageWithAi}
+                                    disabled={isGeneratingAssetWithAi || !imageGenerationForm.provider}
+                                    className={`${clayBtnAction} !bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9] text-white ${isGeneratingAssetWithAi || !imageGenerationForm.provider ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {isGeneratingAssetWithAi ? 'GENERANDO IMAGEN...' : 'GENERAR Y GUARDAR EN BIBLIOTECA'}
+                                </button>
+                            </div>
                             <input value={uploadForm.title} onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Título" className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
                             <select value={uploadForm.subject} onChange={(e) => setUploadForm(prev => ({ ...prev, subject: e.target.value }))} className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
                                 {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'LENGUAJE', 'HISTORIA'].map((option) => <option key={option} value={option}>{option}</option>)}
@@ -4422,6 +4571,42 @@ const App = () => {
         const data = await response.json();
         if (!response.ok || !data.success) {
             throw new Error(data.error || 'No se pudo subir la imagen');
+        }
+        await loadAdminPedagogicalAssets();
+        return data.item;
+    };
+
+    const getImageGenerationConfig = async () => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get_image_generation_config',
+                email: currentUser?.email,
+                user_id: USER_ID
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo cargar la configuración de generación de imágenes');
+        }
+        return data;
+    };
+
+    const generatePedagogicalImage = async (payload = {}) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'generate_pedagogical_image',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                ...payload
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo generar la imagen pedagógica');
         }
         await loadAdminPedagogicalAssets();
         return data.item;
@@ -6505,6 +6690,8 @@ ${finalData.capsule}`;
                     onGenerateQuestionFromAsset={generateQuestionFromAsset}
                     onSuggestQuestionMatchesFromAsset={suggestQuestionMatchesFromAsset}
                     onSuggestTheoryMatchesFromAsset={suggestTheoryMatchesFromAsset}
+                    onGetImageGenerationConfig={getImageGenerationConfig}
+                    onGeneratePedagogicalImage={generatePedagogicalImage}
                 />
 
                 {/* SETTINGS MODAL */}
