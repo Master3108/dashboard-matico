@@ -10,6 +10,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
 import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions, sampleGeneratedQuestions } from './generatedQuestionBank.js';
 import { recordAdaptiveEvent, getAdaptiveSnapshot, backfillAdaptiveProfileFromProgressRows } from './adaptiveProfileStore.js';
 import { getCurriculumContext } from './curriculumCatalog.js';
@@ -30,6 +31,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const LOCAL_UPLOADS_DIR = path.join(__dirname, 'uploads');
 const NOTEBOOK_UPLOADS_DIR = path.join(LOCAL_UPLOADS_DIR, 'cuadernos');
+const PEDAGOGICAL_ASSETS_UPLOADS_DIR = path.join(LOCAL_UPLOADS_DIR, 'quiz-assets');
 const DATA_DIR = path.join(__dirname, 'data');
 const NOTEBOOK_SUBMISSIONS_FILE = path.join(DATA_DIR, 'notebook_submissions.json');
 const NOTEBOOK_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -44,6 +46,33 @@ const QUIZ_TOTAL_QUESTIONS = 45;
 const QUIZ_BATCHES_PER_PHASE = QUIZ_PHASE_QUESTIONS / QUIZ_BATCH_SIZE;
 const QUESTION_BANK_SHEET = 'QuestionBank';
 const THEORY_LUDICA_SHEET = 'TheoryLudicaBank';
+const PEDAGOGICAL_IMAGE_SHEET = 'PedagogicalImageBank';
+const QUESTION_BANK_HEADERS = [
+    'question_id',
+    'subject',
+    'session',
+    'phase',
+    'slot',
+    'proposal_index',
+    'levelName',
+    'topic',
+    'question',
+    'option_a',
+    'option_b',
+    'option_c',
+    'option_d',
+    'correct_answer',
+    'explanation',
+    'sourceMode',
+    'created_at',
+    'updated_at',
+    'active',
+    'prompt_image_asset_id',
+    'prompt_image_url',
+    'prompt_image_alt',
+    'prompt_image_caption',
+    'question_visual_role'
+];
 const THEORY_LUDICA_HEADERS = [
     'timestamp',
     'subject',
@@ -52,7 +81,27 @@ const THEORY_LUDICA_HEADERS = [
     'topic',
     'theory_markdown',
     'source',
-    'active'
+    'active',
+    'support_image_asset_id',
+    'support_image_url',
+    'support_image_alt',
+    'support_image_caption'
+];
+const PEDAGOGICAL_IMAGE_HEADERS = [
+    'asset_id',
+    'title',
+    'subject',
+    'topic_tags',
+    'kind',
+    'file_name',
+    'file_url',
+    'mime_type',
+    'alt_text',
+    'caption',
+    'source_type',
+    'status',
+    'created_at',
+    'updated_at'
 ];
 const EXAM_REMINDER_SHEET = 'ExamReminderBank';
 const EXAM_REMINDER_HEADERS = [
@@ -76,6 +125,13 @@ const EXAM_REMINDER_HEADERS = [
 ];
 const ORACLE_NOTEBOOK_DRAFT_TTL_MS = 30 * 60 * 1000;
 const oracleNotebookDrafts = new Map();
+const PEDAGOGICAL_ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const PEDAGOGICAL_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: PEDAGOGICAL_MAX_FILE_SIZE_BYTES }
+});
 
 // ConfiguraciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n DeepSeek
 const FORCED_AI_PROVIDER = String(process.env.AI_PROVIDER || '').trim().toLowerCase();
@@ -159,6 +215,35 @@ const getSheetsClient = async () => {
     return google.sheets({ version: 'v4', auth });
 };
 
+const normalizePedagogicalImageKind = (value = '') => {
+    const normalized = normalizeSheetText(value).toLowerCase();
+    if (['diagram', 'graph', 'cell', 'wave', 'chart', 'figure', 'other'].includes(normalized)) {
+        return normalized;
+    }
+    return 'other';
+};
+
+const normalizePedagogicalImageStatus = (value = '') => {
+    const normalized = normalizeSheetText(value).toLowerCase();
+    if (['draft', 'approved', 'archived'].includes(normalized)) return normalized;
+    return 'draft';
+};
+
+const normalizeQuestionVisualRole = (value = '') => {
+    const normalized = normalizeSheetText(value).toLowerCase();
+    if (['required_for_interpretation', 'supporting'].includes(normalized)) return normalized;
+    return 'supporting';
+};
+
+const buildAbsolutePublicUrl = (publicUrl = '') => {
+    const normalized = String(publicUrl || '').trim();
+    if (!normalized) return '';
+    if (/^https?:\/\//i.test(normalized)) return normalized;
+    const appUrl = String(process.env.PUBLIC_APP_URL || process.env.APP_URL || '').trim().replace(/\/$/, '');
+    if (!appUrl) return normalized;
+    return `${appUrl}${normalized.startsWith('/') ? normalized : `/${normalized}`}`;
+};
+
 const normalizeSheetText = (value = '') => String(value || '')
     .trim()
     .normalize('NFD')
@@ -189,9 +274,10 @@ const resolveQuestionBankPhase = (value = '') => {
 };
 
 const getQuestionBankRows = async (sheets) => {
+    await ensureSheetHeaders(sheets, QUESTION_BANK_SHEET, QUESTION_BANK_HEADERS);
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${QUESTION_BANK_SHEET}!A:S`,
+        range: `${QUESTION_BANK_SHEET}!A:X`,
     }).catch((error) => {
         if (error?.code === 400) return { data: { values: [] } };
         throw error;
@@ -201,7 +287,165 @@ const getQuestionBankRows = async (sheets) => {
     if (!rows.length) return [];
 
     const [headers, ...dataRows] = rows;
-    return dataRows.map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] || ''])));
+    return dataRows.map((row, index) => ({
+        rowNumber: index + 2,
+        ...Object.fromEntries(headers.map((header, headerIndex) => [header, row[headerIndex] || '']))
+    }));
+};
+
+const getPedagogicalImageRows = async (sheets) => {
+    await ensureSheetHeaders(sheets, PEDAGOGICAL_IMAGE_SHEET, PEDAGOGICAL_IMAGE_HEADERS);
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${PEDAGOGICAL_IMAGE_SHEET}!A:N`,
+    }).catch((error) => {
+        if (error?.code === 400) return { data: { values: [] } };
+        throw error;
+    });
+
+    const rows = response.data.values || [];
+    if (!rows.length) return [];
+
+    const [headers, ...dataRows] = rows;
+    return dataRows.map((row, index) => ({
+        rowNumber: index + 2,
+        ...Object.fromEntries(headers.map((header, headerIndex) => [header, row[headerIndex] || '']))
+    }));
+};
+
+const buildPedagogicalAssetId = async (sheets, subject = '') => {
+    const rows = await getPedagogicalImageRows(sheets);
+    const normalizedSubject = normalizeSheetText(subject).toUpperCase() || 'GEN';
+    const code = normalizedSubject.slice(0, 3).padEnd(3, 'X');
+    const nextNumber = rows.length + 1;
+    return `IMG_${code}_${String(nextNumber).padStart(4, '0')}`;
+};
+
+const listPedagogicalImageAssets = async (sheets, filters = {}) => {
+    const rows = await getPedagogicalImageRows(sheets);
+    const subjectFilter = normalizeSheetText(filters.subject).toUpperCase();
+    const statusFilter = normalizePedagogicalImageStatus(filters.status || '');
+    const searchFilter = normalizeSheetText(filters.search).toLowerCase();
+
+    return rows
+        .filter((row) => !subjectFilter || normalizeSheetText(row.subject).toUpperCase() === subjectFilter)
+        .filter((row) => !filters.status || normalizePedagogicalImageStatus(row.status) === statusFilter)
+        .filter((row) => {
+            if (!searchFilter) return true;
+            const haystack = [
+                row.asset_id,
+                row.title,
+                row.subject,
+                row.topic_tags,
+                row.alt_text,
+                row.caption
+            ].map((item) => normalizeSheetText(item).toLowerCase()).join(' ');
+            return haystack.includes(searchFilter);
+        })
+        .sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime())
+        .map((row) => ({
+            ...row,
+            status: normalizePedagogicalImageStatus(row.status),
+            absolute_file_url: buildAbsolutePublicUrl(row.file_url)
+        }));
+};
+
+const findPedagogicalImageAssetById = async (sheets, assetId = '', { approvedOnly = false } = {}) => {
+    const normalizedId = String(assetId || '').trim();
+    if (!normalizedId) return null;
+    const rows = await getPedagogicalImageRows(sheets);
+    const found = rows.find((row) => String(row.asset_id || '').trim() === normalizedId) || null;
+    if (!found) return null;
+    if (approvedOnly && normalizePedagogicalImageStatus(found.status) !== 'approved') return null;
+    return {
+        ...found,
+        status: normalizePedagogicalImageStatus(found.status),
+        absolute_file_url: buildAbsolutePublicUrl(found.file_url)
+    };
+};
+
+const updatePedagogicalImageAssetRow = async (sheets, assetId = '', patch = {}) => {
+    const rows = await getPedagogicalImageRows(sheets);
+    const current = rows.find((row) => String(row.asset_id || '').trim() === String(assetId || '').trim());
+    if (!current) throw new Error('El asset pedagógico no existe');
+
+    const next = {
+        ...current,
+        ...patch,
+        updated_at: new Date().toISOString()
+    };
+    const values = PEDAGOGICAL_IMAGE_HEADERS.map((header) => String(next?.[header] || '').trim());
+    await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${PEDAGOGICAL_IMAGE_SHEET}!A${current.rowNumber}:N${current.rowNumber}`,
+        valueInputOption: 'RAW',
+        requestBody: { values: [values] }
+    });
+
+    return {
+        ...next,
+        rowNumber: current.rowNumber,
+        absolute_file_url: buildAbsolutePublicUrl(next.file_url)
+    };
+};
+
+const createPedagogicalImageAsset = async (sheets, {
+    title = '',
+    subject = '',
+    topicTags = '',
+    kind = 'other',
+    fileName = '',
+    fileUrl = '',
+    mimeType = '',
+    altText = '',
+    caption = '',
+    sourceType = 'admin_upload',
+    status = 'draft'
+} = {}) => {
+    const normalizedSubject = normalizeSheetText(subject).toUpperCase();
+    const assetId = await buildPedagogicalAssetId(sheets, normalizedSubject);
+    const timestamp = new Date().toISOString();
+    const record = {
+        asset_id: assetId,
+        title: String(title || '').trim(),
+        subject: normalizedSubject,
+        topic_tags: String(topicTags || '').trim(),
+        kind: normalizePedagogicalImageKind(kind),
+        file_name: String(fileName || '').trim(),
+        file_url: String(fileUrl || '').trim(),
+        mime_type: String(mimeType || '').trim(),
+        alt_text: String(altText || '').trim(),
+        caption: String(caption || '').trim(),
+        source_type: String(sourceType || 'admin_upload').trim(),
+        status: normalizePedagogicalImageStatus(status),
+        created_at: timestamp,
+        updated_at: timestamp
+    };
+
+    await ensureSheetHeaders(sheets, PEDAGOGICAL_IMAGE_SHEET, PEDAGOGICAL_IMAGE_HEADERS);
+    await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${PEDAGOGICAL_IMAGE_SHEET}!A:N`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+            values: [PEDAGOGICAL_IMAGE_HEADERS.map((header) => String(record?.[header] || ''))]
+        }
+    });
+
+    return {
+        ...record,
+        absolute_file_url: buildAbsolutePublicUrl(record.file_url)
+    };
+};
+
+const updateSheetRowByHeaders = async (sheets, sheetTitle, headers, rowNumber, patch = {}) => {
+    const orderedValues = headers.map((header) => String(patch?.[header] ?? '').trim());
+    await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${sheetTitle}!A${rowNumber}:${columnLabel(headers.length)}${rowNumber}`,
+        valueInputOption: 'RAW',
+        requestBody: { values: [orderedValues] }
+    });
 };
 
 const sampleQuestionBankQuestions = async (sheets, {
@@ -264,6 +508,11 @@ const sampleQuestionBankQuestions = async (sheets, {
             batch_index: Math.max(0, Number(batchIndex) || 0),
             slot: rowSlot,
             proposal_index: Number(row.proposal_index || 0) || 0,
+            prompt_image_asset_id: String(row.prompt_image_asset_id || '').trim(),
+            prompt_image_url: String(row.prompt_image_url || '').trim(),
+            prompt_image_alt: String(row.prompt_image_alt || '').trim(),
+            prompt_image_caption: String(row.prompt_image_caption || '').trim(),
+            question_visual_role: normalizeQuestionVisualRole(row.question_visual_role || ''),
             signature,
         });
     }
@@ -278,6 +527,53 @@ const sampleQuestionBankQuestions = async (sheets, {
     }
 
     return selected;
+};
+
+const listQuestionBankRowsForAdmin = async (sheets, {
+    subject = '',
+    session = '',
+    search = '',
+    limit = 60
+} = {}) => {
+    const subjectFilter = normalizeSheetText(subject).toUpperCase();
+    const sessionFilter = Number(session || 0) || 0;
+    const searchFilter = normalizeSheetText(search).toLowerCase();
+    const rows = await getQuestionBankRows(sheets);
+
+    return rows
+        .filter((row) => normalizeSheetBool(row.active === '' ? 'TRUE' : row.active))
+        .filter((row) => !subjectFilter || normalizeSheetText(row.subject).toUpperCase() === subjectFilter)
+        .filter((row) => !sessionFilter || (Number(row.session || 0) || 0) === sessionFilter)
+        .filter((row) => {
+            if (!searchFilter) return true;
+            const haystack = [
+                row.question_id,
+                row.topic,
+                row.question
+            ].map((item) => normalizeSheetText(item).toLowerCase()).join(' ');
+            return haystack.includes(searchFilter);
+        })
+        .sort((a, b) => {
+            const aSession = Number(a.session || 0) || 0;
+            const bSession = Number(b.session || 0) || 0;
+            if (aSession !== bSession) return bSession - aSession;
+            return (Number(a.slot || 0) || 0) - (Number(b.slot || 0) || 0);
+        })
+        .slice(0, Math.max(1, Number(limit || 60) || 60))
+        .map((row) => ({
+            rowNumber: row.rowNumber,
+            question_id: row.question_id,
+            subject: row.subject,
+            session: row.session,
+            phase: row.phase,
+            topic: row.topic,
+            question: row.question,
+            prompt_image_asset_id: row.prompt_image_asset_id || '',
+            prompt_image_url: row.prompt_image_url || '',
+            prompt_image_alt: row.prompt_image_alt || '',
+            prompt_image_caption: row.prompt_image_caption || '',
+            question_visual_role: normalizeQuestionVisualRole(row.question_visual_role || '')
+        }));
 };
 
 const sanitizeFileSegment = (value = '') => {
@@ -315,6 +611,40 @@ const saveBase64ToLocalFile = async (base64File, fileName, subfolder = 'general'
 
     const absolutePath = path.join(targetDir, finalName);
     await fs.writeFile(absolutePath, Buffer.from(base64File, 'base64'));
+
+    return {
+        absolutePath,
+        publicUrl: `/uploads/${publicSubfolder}/${finalName}`,
+        fileName: finalName
+    };
+};
+
+const saveBufferToLocalFile = async (buffer, fileName, subfolder = 'general') => {
+    const normalizedSubfolder = String(subfolder || 'general')
+        .replace(/\\/g, '/')
+        .split('/')
+        .filter(Boolean);
+    const publicSubfolder = normalizedSubfolder.join('/');
+    const targetDir = path.join(LOCAL_UPLOADS_DIR, ...normalizedSubfolder);
+    await fs.mkdir(targetDir, { recursive: true });
+
+    const cleanName = sanitizeFileSegment(path.parse(fileName).name);
+    const extension = path.extname(fileName) || '.bin';
+    let finalName = `${cleanName}${extension}`;
+    let suffix = 1;
+
+    while (true) {
+        try {
+            await fs.access(path.join(targetDir, finalName));
+            finalName = `${cleanName}_${Date.now()}_${suffix}${extension}`;
+            suffix += 1;
+        } catch {
+            break;
+        }
+    }
+
+    const absolutePath = path.join(targetDir, finalName);
+    await fs.writeFile(absolutePath, buffer);
 
     return {
         absolutePath,
@@ -1062,6 +1392,74 @@ app.get('/api/notebook/submissions/:id', async (req, res) => {
         console.error('[NOTEBOOK] Error consultando submission:', error.message);
         return res.status(500).json({ success: false, error: error.message || 'No se pudo consultar la entrega' });
     }
+});
+
+app.post('/api/pedagogical-assets/upload', (req, res) => {
+    upload.single('image')(req, res, async (error) => {
+        try {
+            if (error) {
+                const message = error.code === 'LIMIT_FILE_SIZE'
+                    ? `La imagen supera el máximo de ${(PEDAGOGICAL_MAX_FILE_SIZE_BYTES / (1024 * 1024)).toFixed(0)} MB`
+                    : (error.message || 'No se pudo subir la imagen');
+                return res.status(400).json({ success: false, error: message });
+            }
+
+            if (!isAdminEmail(req.body?.email || '')) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            const file = req.file;
+            if (!file) {
+                return res.status(400).json({ success: false, error: 'Debes adjuntar una imagen' });
+            }
+
+            if (!PEDAGOGICAL_ALLOWED_MIME_TYPES.has(String(file.mimetype || '').toLowerCase())) {
+                return res.status(400).json({ success: false, error: 'Formato no permitido. Usa PNG, JPG, JPEG o WEBP.' });
+            }
+
+            const title = String(req.body?.title || '').trim();
+            const subject = String(req.body?.subject || '').trim().toUpperCase();
+            const topicTags = String(req.body?.topic_tags || '').trim();
+            const kind = normalizePedagogicalImageKind(req.body?.kind || 'other');
+            const altText = String(req.body?.alt_text || '').trim();
+            const caption = String(req.body?.caption || '').trim();
+            const status = normalizePedagogicalImageStatus(req.body?.status || 'draft');
+
+            if (!title) {
+                return res.status(400).json({ success: false, error: 'Debes indicar un título para la imagen' });
+            }
+            if (!subject) {
+                return res.status(400).json({ success: false, error: 'Debes indicar la asignatura' });
+            }
+            if (!altText) {
+                return res.status(400).json({ success: false, error: 'Debes indicar un texto alternativo' });
+            }
+
+            const safeTitle = sanitizeFileSegment(title).toLowerCase();
+            const extension = path.extname(file.originalname || '').toLowerCase()
+                || (file.mimetype === 'image/png' ? '.png' : (file.mimetype === 'image/webp' ? '.webp' : '.jpg'));
+            const saved = await saveBufferToLocalFile(file.buffer, `${safeTitle}${extension}`, 'quiz-assets');
+            const sheets = await getSheetsClient();
+            const created = await createPedagogicalImageAsset(sheets, {
+                title,
+                subject,
+                topicTags,
+                kind,
+                fileName: saved.fileName,
+                fileUrl: saved.publicUrl,
+                mimeType: file.mimetype,
+                altText,
+                caption,
+                sourceType: 'admin_upload',
+                status
+            });
+
+            return res.json({ success: true, item: created });
+        } catch (err) {
+            console.error('[PEDAGOGICAL_ASSET] Error subiendo imagen:', err.message);
+            return res.status(500).json({ success: false, error: err.message || 'No se pudo subir la imagen pedagógica' });
+        }
+    });
 });
 
 app.post('/api/save-notebook', async (req, res) => {
@@ -1985,7 +2383,7 @@ const getTheoryLudicaRows = async (sheets) => {
     await ensureTheorySheetFormatting(sheets);
     const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${THEORY_LUDICA_SHEET}!A:H`
+        range: `${THEORY_LUDICA_SHEET}!A:L`
     }).catch((error) => {
         if (error?.code === 400) return { data: { values: [] } };
         throw error;
@@ -2016,13 +2414,55 @@ const findTheoryLudicaByKey = async (sheets, { subject = '', session = '', phase
     return matches[0] || null;
 };
 
+const listTheoryLudicaRowsForAdmin = async (sheets, {
+    subject = '',
+    session = '',
+    phase = '',
+    search = '',
+    limit = 40
+} = {}) => {
+    const subjectFilter = normalizeTheorySubject(subject);
+    const sessionFilter = normalizeTheorySession(session);
+    const phaseFilter = normalizeTheoryPhase(phase);
+    const searchFilter = normalizeSheetText(search).toLowerCase();
+    const rows = await getTheoryLudicaRows(sheets);
+
+    return rows
+        .filter((row) => normalizeSheetBool(row.active === '' ? 'TRUE' : row.active))
+        .filter((row) => !subjectFilter || normalizeTheorySubject(row.subject) === subjectFilter)
+        .filter((row) => !sessionFilter || normalizeTheorySession(row.session) === sessionFilter)
+        .filter((row) => !phaseFilter || normalizeTheoryPhase(row.phase) === phaseFilter)
+        .filter((row) => {
+            if (!searchFilter) return true;
+            const haystack = [row.subject, row.session, row.phase, row.topic]
+                .map((item) => normalizeSheetText(item).toLowerCase())
+                .join(' ');
+            return haystack.includes(searchFilter);
+        })
+        .sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime())
+        .slice(0, Math.max(1, Number(limit || 40) || 40))
+        .map((row) => ({
+            rowNumber: row.rowNumber,
+            timestamp: row.timestamp,
+            subject: row.subject,
+            session: row.session,
+            phase: row.phase,
+            topic: row.topic,
+            support_image_asset_id: row.support_image_asset_id || '',
+            support_image_url: row.support_image_url || '',
+            support_image_alt: row.support_image_alt || '',
+            support_image_caption: row.support_image_caption || ''
+        }));
+};
+
 const appendTheoryLudicaToSheet = async (sheets, {
     subject = '',
     session = '',
     phase = '',
     topic = '',
     theoryMarkdown = '',
-    source = 'ai_generated'
+    source = 'ai_generated',
+    supportImage = null
 } = {}) => {
     const key = resolveTheoryLookup({ subject, session, phase, topic });
     if (!key.subject || !key.session || !key.phase || !String(theoryMarkdown || '').trim()) return null;
@@ -2053,12 +2493,16 @@ const appendTheoryLudicaToSheet = async (sheets, {
         String(topic || '').trim(),
         String(theoryMarkdown || '').trim(),
         String(source || 'ai_generated').trim(),
-        'TRUE'
+        'TRUE',
+        String(supportImage?.asset_id || '').trim(),
+        String(supportImage?.file_url || '').trim(),
+        String(supportImage?.alt_text || '').trim(),
+        String(supportImage?.caption || '').trim()
     ]];
 
     await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${THEORY_LUDICA_SHEET}!A:H`,
+        range: `${THEORY_LUDICA_SHEET}!A:L`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values }
     });
@@ -2071,7 +2515,87 @@ const appendTheoryLudicaToSheet = async (sheets, {
         topic: String(topic || '').trim(),
         theory_markdown: String(theoryMarkdown || '').trim(),
         source: String(source || 'ai_generated').trim(),
-        active: 'TRUE'
+        active: 'TRUE',
+        support_image_asset_id: String(supportImage?.asset_id || '').trim(),
+        support_image_url: String(supportImage?.file_url || '').trim(),
+        support_image_alt: String(supportImage?.alt_text || '').trim(),
+        support_image_caption: String(supportImage?.caption || '').trim()
+    };
+};
+
+const linkQuestionBankAsset = async (sheets, { questionId = '', assetId = '' } = {}) => {
+    const rows = await getQuestionBankRows(sheets);
+    const target = rows.find((row) => String(row.question_id || '').trim() === String(questionId || '').trim());
+    if (!target) throw new Error('La pregunta del banco no existe');
+
+    let asset = null;
+    if (assetId) {
+        asset = await findPedagogicalImageAssetById(sheets, assetId, { approvedOnly: true });
+        if (!asset) throw new Error('El asset no existe o no está aprobado');
+    }
+
+    const patch = {
+        ...target,
+        prompt_image_asset_id: asset?.asset_id || '',
+        prompt_image_url: asset?.file_url || '',
+        prompt_image_alt: asset?.alt_text || '',
+        prompt_image_caption: asset?.caption || '',
+        question_visual_role: asset ? normalizeQuestionVisualRole(target.question_visual_role || 'supporting') : ''
+    };
+
+    await updateSheetRowByHeaders(sheets, QUESTION_BANK_SHEET, QUESTION_BANK_HEADERS, target.rowNumber, patch);
+
+    return {
+        question_id: target.question_id,
+        prompt_image_asset_id: patch.prompt_image_asset_id,
+        prompt_image_url: patch.prompt_image_url,
+        prompt_image_alt: patch.prompt_image_alt,
+        prompt_image_caption: patch.prompt_image_caption,
+        question_visual_role: patch.question_visual_role
+    };
+};
+
+const updateQuestionVisualRole = async (sheets, { questionId = '', visualRole = '' } = {}) => {
+    const rows = await getQuestionBankRows(sheets);
+    const target = rows.find((row) => String(row.question_id || '').trim() === String(questionId || '').trim());
+    if (!target) throw new Error('La pregunta del banco no existe');
+
+    const patch = {
+        ...target,
+        question_visual_role: normalizeQuestionVisualRole(visualRole || target.question_visual_role || 'supporting')
+    };
+
+    await updateSheetRowByHeaders(sheets, QUESTION_BANK_SHEET, QUESTION_BANK_HEADERS, target.rowNumber, patch);
+    return { question_id: target.question_id, question_visual_role: patch.question_visual_role };
+};
+
+const linkTheoryLudicaAsset = async (sheets, { rowNumber = 0, assetId = '' } = {}) => {
+    const rows = await getTheoryLudicaRows(sheets);
+    const target = rows.find((row) => Number(row.rowNumber) === Number(rowNumber));
+    if (!target) throw new Error('La teoría no existe');
+
+    let asset = null;
+    if (assetId) {
+        asset = await findPedagogicalImageAssetById(sheets, assetId, { approvedOnly: true });
+        if (!asset) throw new Error('El asset no existe o no está aprobado');
+    }
+
+    const patch = {
+        ...target,
+        support_image_asset_id: asset?.asset_id || '',
+        support_image_url: asset?.file_url || '',
+        support_image_alt: asset?.alt_text || '',
+        support_image_caption: asset?.caption || ''
+    };
+
+    await updateSheetRowByHeaders(sheets, THEORY_LUDICA_SHEET, THEORY_LUDICA_HEADERS, target.rowNumber, patch);
+
+    return {
+        rowNumber: target.rowNumber,
+        support_image_asset_id: patch.support_image_asset_id,
+        support_image_url: patch.support_image_url,
+        support_image_alt: patch.support_image_alt,
+        support_image_caption: patch.support_image_caption
     };
 };
 
@@ -3819,7 +4343,11 @@ app.post('/webhook/MATICO', async (req, res) => {
                             theory_source: 'sheet',
                             subject: theoryLookup.subject,
                             session: theoryLookup.session,
-                            phase: theoryLookup.phase
+                            phase: theoryLookup.phase,
+                            support_image_asset_id: String(storedTheory.support_image_asset_id || '').trim(),
+                            support_image_url: String(storedTheory.support_image_url || '').trim(),
+                            support_image_alt: String(storedTheory.support_image_alt || '').trim(),
+                            support_image_caption: String(storedTheory.support_image_caption || '').trim()
                         });
                     }
                 } catch (error) {
@@ -3871,7 +4399,11 @@ Tu tono es cercano, motivador y lleno de energia, como un tutor favorito.`;
                 theory_source: 'ai_generated',
                 subject: theoryLookup.subject || normalizeTheorySubject(theorySubject),
                 session: theoryLookup.session || normalizeTheorySession(theorySession),
-                phase: theoryLookup.phase || normalizeTheoryPhase(theoryPhase)
+                phase: theoryLookup.phase || normalizeTheoryPhase(theoryPhase),
+                support_image_asset_id: '',
+                support_image_url: '',
+                support_image_alt: '',
+                support_image_caption: ''
             });
         }
 
@@ -4398,7 +4930,12 @@ Estructura JSON:
                     source_mode: String(item.source_mode || '').trim(),
                     source_action: String(item.source_action || '').trim(),
                     slot: Number(item.slot || 0) || 0,
-                    proposal_index: Number(item.proposal_index || 0) || 0
+                    proposal_index: Number(item.proposal_index || 0) || 0,
+                    prompt_image_asset_id: String(item.prompt_image_asset_id || '').trim(),
+                    prompt_image_url: String(item.prompt_image_url || '').trim(),
+                    prompt_image_alt: String(item.prompt_image_alt || '').trim(),
+                    prompt_image_caption: String(item.prompt_image_caption || '').trim(),
+                    question_visual_role: normalizeQuestionVisualRole(item.question_visual_role || '')
                 };
 
                 const inferredCorrectAnswer = inferCorrectAnswerFromExplanation(normalizedQuestion);
@@ -5068,6 +5605,107 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
             }
 
             const result = await deleteGeneratedQuestion(body.question_id);
+            return res.json({ success: true, ...result });
+        }
+
+        if (currentAction === 'list_pedagogical_assets') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            const items = await listPedagogicalImageAssets(sheets, {
+                subject: body.subject || '',
+                status: body.status || '',
+                search: body.search || ''
+            });
+            return res.json({ success: true, items, count: items.length });
+        }
+
+        if (currentAction === 'update_pedagogical_asset_status') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            if (!body.asset_id) {
+                return res.status(400).json({ success: false, error: 'Debes indicar asset_id' });
+            }
+
+            const item = await updatePedagogicalImageAssetRow(sheets, body.asset_id, {
+                status: normalizePedagogicalImageStatus(body.status || 'draft')
+            });
+            return res.json({ success: true, item });
+        }
+
+        if (currentAction === 'list_question_bank_rows') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            const items = await listQuestionBankRowsForAdmin(sheets, {
+                subject: body.subject || '',
+                session: body.session || '',
+                search: body.search || '',
+                limit: body.limit || 60
+            });
+            return res.json({ success: true, items, count: items.length });
+        }
+
+        if (currentAction === 'list_theory_rows') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            const items = await listTheoryLudicaRowsForAdmin(sheets, {
+                subject: body.subject || '',
+                session: body.session || '',
+                phase: body.phase || '',
+                search: body.search || '',
+                limit: body.limit || 40
+            });
+            return res.json({ success: true, items, count: items.length });
+        }
+
+        if (currentAction === 'link_question_image_asset') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            if (!body.question_id) {
+                return res.status(400).json({ success: false, error: 'Debes indicar question_id' });
+            }
+
+            const result = await linkQuestionBankAsset(sheets, {
+                questionId: body.question_id,
+                assetId: body.asset_id || ''
+            });
+            return res.json({ success: true, ...result });
+        }
+
+        if (currentAction === 'update_question_visual_role') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            if (!body.question_id) {
+                return res.status(400).json({ success: false, error: 'Debes indicar question_id' });
+            }
+
+            const result = await updateQuestionVisualRole(sheets, {
+                questionId: body.question_id,
+                visualRole: body.question_visual_role || 'supporting'
+            });
+            return res.json({ success: true, ...result });
+        }
+
+        if (currentAction === 'link_theory_image_asset') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            if (!body.row_number) {
+                return res.status(400).json({ success: false, error: 'Debes indicar row_number' });
+            }
+
+            const result = await linkTheoryLudicaAsset(sheets, {
+                rowNumber: body.row_number,
+                assetId: body.asset_id || ''
+            });
             return res.json({ success: true, ...result });
         }
         // 9. VERIFICAR ESCRITURA A MANO ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â CUADERNO DE MATICO (NVIDIA Kimi K2.5 Vision)

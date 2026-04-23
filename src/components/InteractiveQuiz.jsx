@@ -554,6 +554,27 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                             <div className="mb-2 text-[#4D96FF] font-black text-sm uppercase tracking-wider">
                                 {question.isRetry ? '🔁 REPASO DE REITERACIÓN' : `Pregunta ${currentQuestion + 1} de ${displayedQuestionTotal}`}
                             </div>
+                            {question.prompt_image_url && (
+                                <div className="mb-5 rounded-3xl overflow-hidden border border-[#DCE7FF] bg-[#F8FBFF] shadow-sm">
+                                    <img
+                                        src={question.prompt_image_url}
+                                        alt={question.prompt_image_alt || 'Imagen pedagógica de apoyo'}
+                                        className="w-full max-h-[320px] object-contain bg-white"
+                                    />
+                                    {(question.prompt_image_caption || question.question_visual_role) && (
+                                        <div className="px-4 py-3 border-t border-[#DCE7FF] bg-[#F8FBFF]">
+                                            {question.prompt_image_caption && (
+                                                <p className="text-sm font-semibold text-[#2B2E4A]">{question.prompt_image_caption}</p>
+                                            )}
+                                            {question.question_visual_role === 'required_for_interpretation' && (
+                                                <p className="text-[11px] mt-1 font-black uppercase tracking-wider text-[#4D96FF]">
+                                                    Interpreta la imagen para resolver esta pregunta
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="text-xl md:text-2xl font-bold text-gray-800 leading-relaxed">
                                 <MathRenderer text={wrapQuestionMath(question.question, subject)} />
                             </div>

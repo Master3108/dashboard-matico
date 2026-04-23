@@ -828,7 +828,7 @@ const VideoModal = ({ isOpen, onClose, videoUrl, title, onDoubt, onFinish }) => 
 };
 
 // COMPONENT: Reading Modal
-const ReadingModal = ({ isOpen, onClose, title, content, onFinish, buttonText = "Terminar y Analizar" }) => {
+const ReadingModal = ({ isOpen, onClose, title, content, onFinish, buttonText = "Terminar y Analizar", supportImage = null }) => {
     if (!isOpen) return null;
 
     return (
@@ -853,6 +853,20 @@ const ReadingModal = ({ isOpen, onClose, title, content, onFinish, buttonText = 
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-8 font-serif text-lg leading-relaxed text-[#2B2E4A]/90 whitespace-pre-wrap">
+                    {supportImage?.url && (
+                        <div className="mb-6 rounded-3xl overflow-hidden border border-orange-100 bg-white shadow-sm">
+                            <img
+                                src={supportImage.url}
+                                alt={supportImage.alt || 'Imagen de apoyo teórico'}
+                                className="w-full max-h-[320px] object-contain bg-[#FFFDF8]"
+                            />
+                            {(supportImage.caption || supportImage.alt) && (
+                                <div className="px-5 py-4 border-t border-orange-100 bg-orange-50/50">
+                                    <p className="text-sm font-bold text-[#2B2E4A]">{supportImage.caption || supportImage.alt}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <MathRenderer text={content} />
                 </div>
 
@@ -1309,6 +1323,11 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
     // NEW: DETECT VIDEO CONTEXT FROM QUERY
     const isVideoContext = userQuery && userQuery.includes('[Context: Video');
     const isTheory = !isQuiz && !isReview && !isActiveQuiz && !isVideoContext;
+    const theorySupportImage = isTheory && apiJson?.support_image_url ? {
+        url: apiJson.support_image_url,
+        alt: apiJson.support_image_alt || 'Imagen de apoyo teórico',
+        caption: apiJson.support_image_caption || ''
+    } : null;
 
     let actionText = 'CERRAR';
     let actionColor = clayBtnAction;
@@ -1418,6 +1437,21 @@ const AIContentModal = ({ isOpen, onClose, content, subject, callAgent, isCallin
                             </div>
                         )}
                     </h4>
+
+                    {theorySupportImage?.url && (
+                        <div className="mb-5 rounded-3xl overflow-hidden border border-[#DCE7FF] bg-white shadow-sm">
+                            <img
+                                src={theorySupportImage.url}
+                                alt={theorySupportImage.alt}
+                                className="w-full max-h-[320px] object-contain bg-[#F8FBFF]"
+                            />
+                            {(theorySupportImage.caption || theorySupportImage.alt) && (
+                                <div className="px-4 py-3 border-t border-[#DCE7FF] bg-[#F8FBFF]">
+                                    <p className="text-sm font-bold text-[#2B2E4A]">{theorySupportImage.caption || theorySupportImage.alt}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <MathRenderer text={content} />
 
@@ -2465,6 +2499,330 @@ const AdminGeneratedQuestionsModal = ({
     );
 };
 
+const AdminPedagogicalAssetsModal = ({
+    isOpen,
+    onClose,
+    assets,
+    isLoadingAssets,
+    onRefreshAssets,
+    onUploadAsset,
+    onUpdateAssetStatus,
+    onSearchQuestionRows,
+    onSearchTheoryRows,
+    onLinkQuestionAsset,
+    onUpdateQuestionVisualRole,
+    onLinkTheoryAsset
+}) => {
+    const [selectedAssetId, setSelectedAssetId] = useState('');
+    const [assetFilters, setAssetFilters] = useState({ subject: '', status: '', search: '' });
+    const [uploadForm, setUploadForm] = useState({
+        title: '',
+        subject: 'MATEMATICA',
+        topic_tags: '',
+        kind: 'diagram',
+        alt_text: '',
+        caption: '',
+        status: 'draft'
+    });
+    const [uploadFile, setUploadFile] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [questionFilters, setQuestionFilters] = useState({ subject: '', session: '', search: '' });
+    const [theoryFilters, setTheoryFilters] = useState({ subject: '', session: '', phase: '', search: '' });
+    const [questionRows, setQuestionRows] = useState([]);
+    const [theoryRows, setTheoryRows] = useState([]);
+    const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+    const [isLoadingTheory, setIsLoadingTheory] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        onRefreshAssets(assetFilters);
+    }, [isOpen, assetFilters.subject, assetFilters.status, assetFilters.search, onRefreshAssets]);
+
+    if (!isOpen) return null;
+
+    const resolvePublicUrl = (value) => {
+        try {
+            return new URL(value, window.location.origin).toString();
+        } catch {
+            return value;
+        }
+    };
+
+    const selectedAsset = assets.find((item) => item.asset_id === selectedAssetId) || null;
+
+    const refreshQuestions = async () => {
+        setIsLoadingQuestions(true);
+        try {
+            const rows = await onSearchQuestionRows(questionFilters);
+            setQuestionRows(rows || []);
+        } finally {
+            setIsLoadingQuestions(false);
+        }
+    };
+
+    const refreshTheory = async () => {
+        setIsLoadingTheory(true);
+        try {
+            const rows = await onSearchTheoryRows(theoryFilters);
+            setTheoryRows(rows || []);
+        } finally {
+            setIsLoadingTheory(false);
+        }
+    };
+
+    const handleUpload = async (event) => {
+        event.preventDefault();
+        if (!uploadFile) {
+            alert('Selecciona una imagen antes de subir.');
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            await onUploadAsset(uploadForm, uploadFile);
+            setUploadForm({
+                title: '',
+                subject: uploadForm.subject || 'MATEMATICA',
+                topic_tags: '',
+                kind: 'diagram',
+                alt_text: '',
+                caption: '',
+                status: 'draft'
+            });
+            setUploadFile(null);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleStatusChange = async (asset, status) => {
+        await onUpdateAssetStatus(asset, status);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[197] flex items-center justify-center p-4 bg-[#2B2E4A]/70 backdrop-blur-md">
+            <div className="bg-[#F4F7FF] w-full max-w-7xl rounded-[32px] overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.35)] border-4 border-white max-h-[92vh] flex flex-col">
+                <div className="bg-white px-6 py-5 border-b-2 border-gray-100 flex items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-2xl font-black text-[#2B2E4A]">Biblioteca Visual Pedagógica</h3>
+                        <p className="text-sm font-bold text-[#9094A6]">Sube imágenes, apruébalas y asígnalas al quiz o a Teoría Lúdica</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => onRefreshAssets(assetFilters)} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>
+                            RECARGAR
+                        </button>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <X className="w-6 h-6 text-gray-400" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-6">
+                        <form onSubmit={handleUpload} className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4">
+                            <div>
+                                <h4 className="text-lg font-black text-[#2B2E4A]">Subir nueva imagen</h4>
+                                <p className="text-xs font-bold text-[#9094A6] mt-1">PNG, JPG, JPEG o WEBP hasta 5 MB</p>
+                            </div>
+
+                            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} className="block w-full text-sm" />
+                            <input value={uploadForm.title} onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Título" className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                            <select value={uploadForm.subject} onChange={(e) => setUploadForm(prev => ({ ...prev, subject: e.target.value }))} className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
+                                {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'LENGUAJE', 'HISTORIA'].map((option) => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                            <input value={uploadForm.topic_tags} onChange={(e) => setUploadForm(prev => ({ ...prev, topic_tags: e.target.value }))} placeholder="Tema o tags" className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                            <select value={uploadForm.kind} onChange={(e) => setUploadForm(prev => ({ ...prev, kind: e.target.value }))} className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
+                                {['diagram', 'graph', 'cell', 'wave', 'chart', 'figure', 'other'].map((option) => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                            <input value={uploadForm.alt_text} onChange={(e) => setUploadForm(prev => ({ ...prev, alt_text: e.target.value }))} placeholder="Texto alternativo" className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                            <textarea value={uploadForm.caption} onChange={(e) => setUploadForm(prev => ({ ...prev, caption: e.target.value }))} placeholder="Caption opcional" rows={3} className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm resize-none" />
+                            <select value={uploadForm.status} onChange={(e) => setUploadForm(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
+                                {['draft', 'approved'].map((option) => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                            <button type="submit" disabled={isUploading} className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6] text-white`}>
+                                {isUploading ? 'SUBIENDO...' : 'SUBIR IMAGEN'}
+                            </button>
+                        </form>
+
+                        <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4">
+                            <div className="flex flex-col md:flex-row gap-3">
+                                <select value={assetFilters.subject} onChange={(e) => setAssetFilters(prev => ({ ...prev, subject: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
+                                    <option value="">Todas las asignaturas</option>
+                                    {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'LENGUAJE', 'HISTORIA'].map((option) => <option key={option} value={option}>{option}</option>)}
+                                </select>
+                                <select value={assetFilters.status} onChange={(e) => setAssetFilters(prev => ({ ...prev, status: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
+                                    <option value="">Todos los estados</option>
+                                    {['draft', 'approved', 'archived'].map((option) => <option key={option} value={option}>{option}</option>)}
+                                </select>
+                                <input value={assetFilters.search} onChange={(e) => setAssetFilters(prev => ({ ...prev, search: e.target.value }))} placeholder="Buscar imagen" className="flex-1 rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                            </div>
+
+                            {selectedAsset && (
+                                <div className="rounded-2xl border border-[#DCE7FF] bg-[#F8FBFF] p-4 flex items-center justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-black uppercase tracking-widest text-[#4D96FF]">Asset seleccionado</p>
+                                        <p className="font-black text-[#2B2E4A]">{selectedAsset.title}</p>
+                                        <p className="text-xs text-[#9094A6]">{selectedAsset.asset_id} · {selectedAsset.status}</p>
+                                    </div>
+                                    <button onClick={() => setSelectedAssetId('')} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>
+                                        LIMPIAR
+                                    </button>
+                                </div>
+                            )}
+
+                            {isLoadingAssets ? (
+                                <div className="py-16 flex flex-col items-center justify-center text-[#9094A6]">
+                                    <Loader className="w-8 h-8 animate-spin mb-3" />
+                                    <p className="font-bold">Cargando assets...</p>
+                                </div>
+                            ) : assets.length === 0 ? (
+                                <div className="py-16 text-center text-[#9094A6]">
+                                    <ImageIcon className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                                    <p className="font-bold">No hay imágenes pedagógicas todavía.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    {assets.map((asset) => (
+                                        <div key={asset.asset_id} className={`rounded-3xl border p-4 shadow-sm ${selectedAssetId === asset.asset_id ? 'border-[#4D96FF] bg-[#EEF4FF]' : 'border-gray-100 bg-white'}`}>
+                                            <div className="rounded-2xl overflow-hidden border border-gray-100 bg-[#F8FBFF] mb-3">
+                                                <img src={resolvePublicUrl(asset.file_url)} alt={asset.alt_text || asset.title} className="w-full h-44 object-contain bg-white" />
+                                            </div>
+                                            <p className="font-black text-[#2B2E4A]">{asset.title}</p>
+                                            <p className="text-xs text-[#9094A6] mt-1">{asset.asset_id} · {asset.subject} · {asset.kind}</p>
+                                            <p className="text-xs font-bold text-[#4B5563] mt-2">{asset.caption || asset.alt_text || 'Sin descripción'}</p>
+                                            <div className="flex flex-wrap gap-2 mt-4">
+                                                <button onClick={() => setSelectedAssetId(asset.asset_id)} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${selectedAssetId === asset.asset_id ? '!bg-[#4D96FF] !border-[#3B80E6] text-white' : ''}`}>
+                                                    {selectedAssetId === asset.asset_id ? 'SELECCIONADO' : 'SELECCIONAR'}
+                                                </button>
+                                                <button onClick={() => handleStatusChange(asset, 'approved')} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#2ECC71] !border-[#27AE60] text-white`}>
+                                                    APROBAR
+                                                </button>
+                                                <button onClick={() => handleStatusChange(asset, 'archived')} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#FF4B4B] !border-[#D63E3E] text-white`}>
+                                                    ARCHIVAR
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <h4 className="text-lg font-black text-[#2B2E4A]">Asociar a preguntas del Quiz</h4>
+                                    <p className="text-xs font-bold text-[#9094A6]">Busca preguntas del QuestionBank y asígnales el asset seleccionado</p>
+                                </div>
+                                <button onClick={refreshQuestions} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>BUSCAR</button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <select value={questionFilters.subject} onChange={(e) => setQuestionFilters(prev => ({ ...prev, subject: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
+                                    <option value="">Todas</option>
+                                    {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'LENGUAJE', 'HISTORIA'].map((option) => <option key={option} value={option}>{option}</option>)}
+                                </select>
+                                <input value={questionFilters.session} onChange={(e) => setQuestionFilters(prev => ({ ...prev, session: e.target.value }))} placeholder="Sesión" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                                <input value={questionFilters.search} onChange={(e) => setQuestionFilters(prev => ({ ...prev, search: e.target.value }))} placeholder="Buscar" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                            </div>
+                            <div className="max-h-[420px] overflow-y-auto space-y-3">
+                                {isLoadingQuestions ? (
+                                    <div className="py-10 text-center text-[#9094A6]"><Loader className="w-6 h-6 animate-spin mx-auto mb-2" />Cargando preguntas...</div>
+                                ) : questionRows.length === 0 ? (
+                                    <div className="py-10 text-center text-[#9094A6]">Busca preguntas para asociar.</div>
+                                ) : (
+                                    questionRows.map((row) => (
+                                        <div key={row.question_id} className="rounded-2xl border border-gray-100 p-4 bg-[#FAFBFF]">
+                                            <p className="text-xs font-black uppercase tracking-widest text-[#4D96FF]">{row.question_id}</p>
+                                            <p className="font-bold text-[#2B2E4A] mt-1 whitespace-pre-wrap">{row.question}</p>
+                                            <p className="text-xs text-[#9094A6] mt-2">Sesión {row.session} · Fase {row.phase} · {row.topic || 'Sin tema'}</p>
+                                            <div className="flex flex-wrap gap-2 mt-3">
+                                                <select
+                                                    value={row.question_visual_role || 'supporting'}
+                                                    onChange={(e) => onUpdateQuestionVisualRole(row.question_id, e.target.value).then(refreshQuestions)}
+                                                    className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold"
+                                                >
+                                                    <option value="supporting">supporting</option>
+                                                    <option value="required_for_interpretation">required_for_interpretation</option>
+                                                </select>
+                                                <button
+                                                    onClick={() => onLinkQuestionAsset(row.question_id, selectedAsset?.asset_id || '').then(refreshQuestions)}
+                                                    disabled={!selectedAsset || selectedAsset.status !== 'approved'}
+                                                    className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset || selectedAsset.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : '!bg-[#4D96FF] !border-[#3B80E6] text-white'}`}
+                                                >
+                                                    {row.prompt_image_asset_id ? 'REEMPLAZAR' : 'ASOCIAR'}
+                                                </button>
+                                                {row.prompt_image_asset_id && (
+                                                    <button onClick={() => onLinkQuestionAsset(row.question_id, '').then(refreshQuestions)} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#FF4B4B] !border-[#D63E3E] text-white`}>
+                                                        QUITAR
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {row.prompt_image_url && (
+                                                <p className="text-[11px] mt-2 font-bold text-[#16A34A]">Imagen actual: {row.prompt_image_asset_id || 'Sí'}</p>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <h4 className="text-lg font-black text-[#2B2E4A]">Asociar a Teoría Lúdica</h4>
+                                    <p className="text-xs font-bold text-[#9094A6]">La imagen será apoyo visual y no afectará el 80%</p>
+                                </div>
+                                <button onClick={refreshTheory} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>BUSCAR</button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                <select value={theoryFilters.subject} onChange={(e) => setTheoryFilters(prev => ({ ...prev, subject: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
+                                    <option value="">Todas</option>
+                                    {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'LENGUAJE', 'HISTORIA'].map((option) => <option key={option} value={option}>{option}</option>)}
+                                </select>
+                                <input value={theoryFilters.session} onChange={(e) => setTheoryFilters(prev => ({ ...prev, session: e.target.value }))} placeholder="Sesión" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                                <input value={theoryFilters.phase} onChange={(e) => setTheoryFilters(prev => ({ ...prev, phase: e.target.value }))} placeholder="Fase" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                                <input value={theoryFilters.search} onChange={(e) => setTheoryFilters(prev => ({ ...prev, search: e.target.value }))} placeholder="Buscar" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
+                            </div>
+                            <div className="max-h-[420px] overflow-y-auto space-y-3">
+                                {isLoadingTheory ? (
+                                    <div className="py-10 text-center text-[#9094A6]"><Loader className="w-6 h-6 animate-spin mx-auto mb-2" />Cargando teorías...</div>
+                                ) : theoryRows.length === 0 ? (
+                                    <div className="py-10 text-center text-[#9094A6]">Busca teorías para asociar.</div>
+                                ) : (
+                                    theoryRows.map((row) => (
+                                        <div key={`${row.rowNumber}_${row.timestamp}`} className="rounded-2xl border border-gray-100 p-4 bg-[#FAFBFF]">
+                                            <p className="text-xs font-black uppercase tracking-widest text-[#4D96FF]">Fila {row.rowNumber} · {row.subject} · Sesión {row.session} · Fase {row.phase}</p>
+                                            <p className="font-bold text-[#2B2E4A] mt-1 whitespace-pre-wrap">{row.topic}</p>
+                                            <div className="flex flex-wrap gap-2 mt-3">
+                                                <button
+                                                    onClick={() => onLinkTheoryAsset(row.rowNumber, selectedAsset?.asset_id || '').then(refreshTheory)}
+                                                    disabled={!selectedAsset || selectedAsset.status !== 'approved'}
+                                                    className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset || selectedAsset.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : '!bg-[#4D96FF] !border-[#3B80E6] text-white'}`}
+                                                >
+                                                    {row.support_image_asset_id ? 'REEMPLAZAR' : 'ASOCIAR'}
+                                                </button>
+                                                {row.support_image_asset_id && (
+                                                    <button onClick={() => onLinkTheoryAsset(row.rowNumber, '').then(refreshTheory)} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#FF4B4B] !border-[#D63E3E] text-white`}>
+                                                        QUITAR
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {row.support_image_url && (
+                                                <p className="text-[11px] mt-2 font-bold text-[#16A34A]">Imagen actual: {row.support_image_asset_id || 'Sí'}</p>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const App = () => {
     const [isCallingN8N, setIsCallingN8N] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState(""); // Helper state for multi-stage loading
@@ -2856,6 +3214,9 @@ const App = () => {
     const [showAdminGeneratedQuestionsModal, setShowAdminGeneratedQuestionsModal] = useState(false);
     const [adminGeneratedQuestions, setAdminGeneratedQuestions] = useState([]);
     const [isLoadingAdminGeneratedQuestions, setIsLoadingAdminGeneratedQuestions] = useState(false);
+    const [showAdminPedagogicalAssetsModal, setShowAdminPedagogicalAssetsModal] = useState(false);
+    const [adminPedagogicalAssets, setAdminPedagogicalAssets] = useState([]);
+    const [isLoadingAdminPedagogicalAssets, setIsLoadingAdminPedagogicalAssets] = useState(false);
     const [showExamCaptureModal, setShowExamCaptureModal] = useState(false);
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
@@ -3692,6 +4053,178 @@ const App = () => {
         }
     };
 
+    const loadAdminPedagogicalAssets = async (filters = {}) => {
+        if (!isAdminUser) return [];
+
+        setIsLoadingAdminPedagogicalAssets(true);
+        try {
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'list_pedagogical_assets',
+                    email: currentUser?.email,
+                    user_id: USER_ID,
+                    ...filters
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No se pudieron cargar los assets');
+            }
+            setAdminPedagogicalAssets(data.items || []);
+            return data.items || [];
+        } catch (error) {
+            console.error('[ADMIN_ASSETS] Error listando assets:', error);
+            alert(`No pudimos cargar la biblioteca visual. ${error.message || ''}`);
+            return [];
+        } finally {
+            setIsLoadingAdminPedagogicalAssets(false);
+        }
+    };
+
+    const openAdminPedagogicalAssetsModal = async () => {
+        setShowAdminPedagogicalAssetsModal(true);
+        await loadAdminPedagogicalAssets();
+    };
+
+    const uploadPedagogicalAsset = async (formValues, file) => {
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('email', currentUser?.email || '');
+        formData.append('title', formValues.title || '');
+        formData.append('subject', formValues.subject || '');
+        formData.append('topic_tags', formValues.topic_tags || '');
+        formData.append('kind', formValues.kind || 'other');
+        formData.append('alt_text', formValues.alt_text || '');
+        formData.append('caption', formValues.caption || '');
+        formData.append('status', formValues.status || 'draft');
+
+        const response = await fetch('/api/pedagogical-assets/upload', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo subir la imagen');
+        }
+        await loadAdminPedagogicalAssets();
+        return data.item;
+    };
+
+    const updatePedagogicalAssetStatus = async (asset, status) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update_pedagogical_asset_status',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                asset_id: asset.asset_id,
+                status
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo actualizar el estado del asset');
+        }
+        await loadAdminPedagogicalAssets();
+        return data.item;
+    };
+
+    const searchQuestionBankRows = async (filters = {}) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'list_question_bank_rows',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                ...filters
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudieron cargar las preguntas del banco');
+        }
+        return data.items || [];
+    };
+
+    const searchTheoryRows = async (filters = {}) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'list_theory_rows',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                ...filters
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudieron cargar las teorías');
+        }
+        return data.items || [];
+    };
+
+    const linkQuestionImageAsset = async (questionId, assetId) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'link_question_image_asset',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                question_id: questionId,
+                asset_id: assetId || ''
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo asociar la imagen a la pregunta');
+        }
+        return data;
+    };
+
+    const updateQuestionImageVisualRole = async (questionId, questionVisualRole) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update_question_visual_role',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                question_id: questionId,
+                question_visual_role: questionVisualRole
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo actualizar el rol visual de la pregunta');
+        }
+        return data;
+    };
+
+    const linkTheoryImageAsset = async (rowNumber, assetId) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'link_theory_image_asset',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                row_number: rowNumber,
+                asset_id: assetId || ''
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo asociar la imagen a la teoría');
+        }
+        return data;
+    };
+
     // --- SMART CALENDAR LOGIC (MATICO PRODUCTION PLAN) ---
     const resolveMaticoPlan = () => {
         try {
@@ -3926,7 +4459,12 @@ const App = () => {
                 question: q.question,
                 options: optsObj,
                 correct_answer: correctKey,
-                explanation: q.explanation || 'Verificacion pendiente.'
+                explanation: q.explanation || 'Verificacion pendiente.',
+                prompt_image_asset_id: q.prompt_image_asset_id || '',
+                prompt_image_url: q.prompt_image_url || '',
+                prompt_image_alt: q.prompt_image_alt || '',
+                prompt_image_caption: q.prompt_image_caption || '',
+                question_visual_role: q.question_visual_role || ''
             };
         });
 
@@ -5044,6 +5582,11 @@ ${finalData.capsule}`;
                     onClose={() => setShowTheoryModal(false)}
                     title={theoryTitle}
                     content={theoryContent}
+                    supportImage={apiJson?.support_image_url ? {
+                        url: apiJson.support_image_url,
+                        alt: apiJson.support_image_alt || 'Imagen de apoyo teórico',
+                        caption: apiJson.support_image_caption || ''
+                    } : null}
                     onFinish={handleContinueToQuiz}
                     buttonText="INICIAR QUIZ COMPLETO"
                 />
@@ -5574,6 +6117,21 @@ ${finalData.capsule}`;
                     onDelete={deleteAdminGeneratedQuestion}
                 />
 
+                <AdminPedagogicalAssetsModal
+                    isOpen={showAdminPedagogicalAssetsModal}
+                    onClose={() => setShowAdminPedagogicalAssetsModal(false)}
+                    assets={adminPedagogicalAssets}
+                    isLoadingAssets={isLoadingAdminPedagogicalAssets}
+                    onRefreshAssets={loadAdminPedagogicalAssets}
+                    onUploadAsset={uploadPedagogicalAsset}
+                    onUpdateAssetStatus={updatePedagogicalAssetStatus}
+                    onSearchQuestionRows={searchQuestionBankRows}
+                    onSearchTheoryRows={searchTheoryRows}
+                    onLinkQuestionAsset={linkQuestionImageAsset}
+                    onUpdateQuestionVisualRole={updateQuestionImageVisualRole}
+                    onLinkTheoryAsset={linkTheoryImageAsset}
+                />
+
                 {/* SETTINGS MODAL */}
                 {settingsOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#2B2E4A]/60 backdrop-blur-md animate-fade-in">
@@ -5744,6 +6302,24 @@ ${finalData.capsule}`;
                                                 className={`${clayBtnAction} !bg-[#4D96FF] !border-[#3B80E6] hover:!bg-[#3B80E6]`}
                                             >
                                                 VER BANCO IA <Database className="w-5 h-5" />
+                                            </button>
+
+                                            <div className="h-px bg-gray-100" />
+
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                                                    <ImageIcon className="w-4 h-4 text-emerald-600" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">Biblioteca visual</span>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Subir, aprobar y asociar imagenes</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={openAdminPedagogicalAssetsModal}
+                                                className={`${clayBtnAction} !bg-[#2BB673] !border-[#23965F] hover:!bg-[#23965F]`}
+                                            >
+                                                ABRIR BIBLIOTECA VISUAL <ImageIcon className="w-5 h-5" />
                                             </button>
                                         </div>
                                     </div>
