@@ -226,24 +226,30 @@ const EvidenceIntake = ({
         }
     };
 
+    // Soporta 1..N fotos. En APK con capture=environment solo llega 1 por click,
+    // pero si el dispositivo soporta multi (galeria), se procesan todas.
     const handleNativeCameraCapture = (event) => {
-        const file = event.target?.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            const img = new Image();
-            img.onload = () => {
-                try {
-                    addAsset(buildImageAssetFromSource(img, items.length + 1, 'camera'));
-                } catch (error) {
-                    handleError(error.message || 'No se pudo procesar la foto');
-                }
+        const files = Array.from(event.target?.files || []);
+        if (!files.length) return;
+
+        files.forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        addAsset(buildImageAssetFromSource(img, items.length + 1, 'camera'));
+                    } catch (error) {
+                        handleError(error.message || 'No se pudo procesar la foto');
+                    }
+                };
+                img.onerror = () => handleError('No se pudo leer la foto.');
+                img.src = reader.result;
             };
-            img.onerror = () => handleError('No se pudo leer la foto.');
-            img.src = reader.result;
-        };
-        reader.onerror = () => handleError('No se pudo leer la foto.');
-        reader.readAsDataURL(file);
+            reader.onerror = () => handleError('No se pudo leer la foto.');
+            reader.readAsDataURL(file);
+        });
+
         event.target.value = '';
     };
 
@@ -465,13 +471,14 @@ const EvidenceIntake = ({
                 onChange={handleNativeCameraCapture}
             />
             <div className={`grid gap-3 ${nativeQueueOnly ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
-                {/* Tomar foto: siempre visible en todos los modulos */}
+                {/* Tomar foto: siempre visible en todos los modulos.
+                    En APK abre camara nativa (1 por click, puedes repetir cuantas veces quieras). */}
                 <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
                     <Camera className="w-4 h-4" /> Tomar foto
                 </button>
-                {/* Subir archivo: siempre visible en todos los modulos */}
-                <label className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2 cursor-pointer">
-                    <UploadCloud className="w-4 h-4" /> Subir archivo
+                {/* Subir archivo: siempre visible. Permite MULTIPLES imagenes desde galeria en una sola seleccion. */}
+                <label className="rounded-2xl border-2 border-[#4D96FF] bg-[#EEF4FF] px-3 py-3 text-sm font-black text-[#1D4ED8] hover:border-[#1D4ED8] flex items-center justify-center gap-2 cursor-pointer">
+                    <UploadCloud className="w-4 h-4" /> Subir varias fotos
                     <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
                 </label>
                 {/* Capturar pantalla (web getDisplayMedia): solo en web/desktop y modo completo.
@@ -573,9 +580,12 @@ const EvidenceIntake = ({
                 </div>
             )}
 
+            <p className="text-xs text-[#64748B] font-bold">
+                Tip: con "Subir varias fotos" puedes seleccionar hasta {maxEvidence} imagenes de una vez desde tu galeria. Con "Tomar foto" toma una, se suma al listado y puedes repetir para agregar mas.
+            </p>
             {!nativeCaptureSupported && showNativeCapture && (
                 <p className="text-xs text-[#64748B] font-bold">
-                    En celular web usa "Subir archivo" (screenshot de galeria). La captura de pantalla celular funciona en app movil nativa.
+                    En celular web usa "Subir varias fotos" (screenshot de galeria). La captura de pantalla celular funciona en app movil nativa.
                 </p>
             )}
 

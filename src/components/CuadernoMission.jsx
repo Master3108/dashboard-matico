@@ -177,6 +177,16 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     const submitTapLockRef = useRef(false);
     const uploadInputRef = useRef(null);
     const extraUploadInputRef = useRef(null);
+    // Input dedicado para subir MULTIPLES imagenes desde galeria (sin capture=environment).
+    const multiGalleryInputRef = useRef(null);
+    const extraMultiGalleryInputRef = useRef(null);
+
+    const openMultiGalleryPicker = () => {
+        multiGalleryInputRef.current?.click();
+    };
+    const openExtraMultiGalleryPicker = () => {
+        extraMultiGalleryInputRef.current?.click();
+    };
 
     useEffect(() => () => {
         mountedRef.current = false;
@@ -336,25 +346,46 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         await addPageFromSource(videoRef.current);
     };
 
-    const handleCapture = async (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
+    // Procesa una imagen (File/Blob) como pagina del cuaderno.
+    const addPageFromFile = (file) => new Promise((resolve) => {
+        if (!file) return resolve();
         const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
         img.onload = async () => {
             try {
                 await addPageFromSource(img);
             } finally {
-                URL.revokeObjectURL(img.src);
-                event.target.value = '';
+                URL.revokeObjectURL(objectUrl);
+                resolve();
             }
         };
         img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
             setStatus('error');
-            setFeedback('La imagen no es válida o está dañada.');
-            event.target.value = '';
+            setFeedback('Una imagen no es valida o esta danada.');
+            resolve();
         };
-        img.src = URL.createObjectURL(file);
+        img.src = objectUrl;
+    });
+
+    // Soporta multiples archivos en una sola seleccion. En el input nativo con
+    // capture=environment siempre llega 1, pero en el selector de galeria con
+    // multiple llegan N y se encolan todas.
+    const handleCapture = async (event) => {
+        const files = Array.from(event.target.files || []);
+        if (!files.length) return;
+        // Limita a lo que falta para no pasar MAX_PAGES.
+        const existing = scanAssets?.pages?.length || 0;
+        const remainingSlots = Math.max(0, MAX_PAGES - existing);
+        const toProcess = files.slice(0, remainingSlots);
+        if (files.length > remainingSlots) {
+            setFeedback(`Solo se agregaron ${remainingSlots} paginas: el maximo es ${MAX_PAGES}.`);
+        }
+        for (const file of toProcess) {
+            // eslint-disable-next-line no-await-in-loop
+            await addPageFromFile(file);
+        }
+        event.target.value = '';
     };
 
     const openUploadPicker = () => {
@@ -363,6 +394,21 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
 
     const openExtraUploadPicker = () => {
         extraUploadInputRef.current?.click();
+    };
+
+    // Cierra el modal y vuelve a Teoria Ludica. Advierte si el % de interpretacion es bajo.
+    const handleCloseModal = () => {
+        const score = Number(analysis?.interpretation_score || 0);
+        // Si ya esta en success o retry y tiene score >= 80, cerrar sin advertencia.
+        // Si score < 80 o no hay analisis aun, avisa que debe completar/mejorar.
+        if (status === 'success' || status === 'retry' || status === 'error' || !analysis || score < NOTEBOOK_QUIZ_THRESHOLD) {
+            // onSkip devuelve al flujo de Teoria Ludica; si no existe, no podemos cerrar.
+            if (typeof onSkip === 'function') {
+                onSkip();
+            }
+        } else if (typeof onSkip === 'function') {
+            onSkip();
+        }
     };
 
     const handlePaste = (event) => {
@@ -665,14 +711,27 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[260] p-4" onPaste={handlePaste}>
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden max-h-[90vh] overflow-y-auto">
-                <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white">
-                    <div className="flex items-center gap-3">
+                <div className="relative bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white">
+                    <div className="flex items-center gap-3 pr-10">
                         <div className="bg-white/20 p-2 rounded-xl"><Camera size={28} /></div>
                         <div>
                             <h3 className="text-xl font-bold">Cuaderno con Profe Matico</h3>
                             <p className="text-sm opacity-90 mt-1">PDF automático multipágina y desbloqueo del quiz por comprensión</p>
                         </div>
                     </div>
+                    {/* X arriba a la derecha: cierra el modal y vuelve a Teoria Ludica.
+                        Si el % de interpretacion es menor al 80% se avisa al alumno antes de cerrar. */}
+                    {typeof onSkip === 'function' && status !== 'camera' && (
+                        <button
+                            type="button"
+                            onClick={handleCloseModal}
+                            aria-label="Cerrar y volver a Teoria Ludica"
+                            title="Cerrar y volver a Teoria Ludica"
+                            className="absolute top-3 right-3 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    )}
                 </div>
 
                 <div className="p-6">
@@ -689,11 +748,31 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                 <button onClick={openCamera} className="flex-1 bg-[#2B2E4A] text-white px-4 py-4 rounded-xl font-bold hover:bg-[#3d426b] flex items-center justify-center gap-2">
                                     <Video size={20} /> Abrir cámara
                                 </button>
+                                {/* Subir foto desde camara (1 a la vez, por si queda algo suelto). */}
                                 <button type="button" onClick={openUploadPicker} className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-4 rounded-xl font-bold flex items-center justify-center gap-2">
                                     <UploadCloud size={20} /> Subir foto
                                 </button>
                                 <input ref={uploadInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
                             </div>
+                            {/* Subir MULTIPLES imagenes desde la galeria en una sola seleccion. */}
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    type="button"
+                                    onClick={openMultiGalleryPicker}
+                                    className="w-full bg-indigo-600 text-white px-4 py-4 rounded-xl font-bold hover:bg-indigo-700 flex items-center justify-center gap-2"
+                                >
+                                    <UploadCloud size={20} /> Subir varias fotos (galeria)
+                                </button>
+                                <input
+                                    ref={multiGalleryInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                    onChange={handleCapture}
+                                />
+                            </div>
+                            <p className="text-xs text-slate-500 text-center -mt-1">Tip: con "Subir varias fotos" puedes seleccionar hasta {MAX_PAGES} imagenes de una sola vez desde tu galeria.</p>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 {/* Solo en web/desktop: en Android nativo muestra dialogo confuso */}
                                 {!isNativePlatform && (
@@ -777,15 +856,32 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                 </button>
 
                                 {status === 'preview' && pages.length < MAX_PAGES && (
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <button onClick={openCamera} className="flex-1 bg-[#2B2E4A] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                                            <Camera size={18} /> Agregar otra página
+                                    <>
+                                        <div className="flex flex-col sm:flex-row gap-3">
+                                            <button onClick={openCamera} className="flex-1 bg-[#2B2E4A] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                                                <Camera size={18} /> Agregar otra página
+                                            </button>
+                                            <button type="button" onClick={openExtraUploadPicker} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                                                <UploadCloud size={18} /> Subir otra página
+                                            </button>
+                                            <input ref={extraUploadInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={openExtraMultiGalleryPicker}
+                                            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
+                                        >
+                                            <UploadCloud size={18} /> Subir varias páginas (galeria)
                                         </button>
-                                        <button type="button" onClick={openExtraUploadPicker} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                                            <UploadCloud size={18} /> Subir otra página
-                                        </button>
-                                        <input ref={extraUploadInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
-                                    </div>
+                                        <input
+                                            ref={extraMultiGalleryInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            className="hidden"
+                                            onChange={handleCapture}
+                                        />
+                                    </>
                                 )}
 
                                 {status === 'preview' ? (
@@ -845,11 +941,32 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex gap-3">
-                                    <button onClick={restartFlow} className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                                        <RotateCcw size={18} /> Hacer nuevo escaneo
-                                    </button>
-                                    {retryCount >= 2 && onSkip && <button onClick={onSkip} className="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-medium">Seguir sin quiz</button>}
+                                <div className="space-y-3">
+                                    {/* Mensaje explicito cuando el % es menor al 80%: que volver a copiar / completar. */}
+                                    {Number(analysis?.interpretation_score || 0) < NOTEBOOK_QUIZ_THRESHOLD && (
+                                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-sm text-orange-800 space-y-2">
+                                            <p className="font-bold">Tu interpretacion quedo en {analysis?.interpretation_score || 0}%. Para desbloquear el quiz necesitas llegar al {NOTEBOOK_QUIZ_THRESHOLD}%.</p>
+                                            {analysis?.missing_concepts?.length > 0 && (
+                                                <p>Aun falta por copiar/explicar: <strong>{analysis.missing_concepts.join(', ')}</strong>.</p>
+                                            )}
+                                            <p>Vuelve a la <strong>Teoria Ludica</strong> (X arriba a la derecha) para repasar y copia de nuevo lo que falta en tu cuaderno.</p>
+                                        </div>
+                                    )}
+                                    <div className="flex gap-3">
+                                        <button onClick={restartFlow} className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                                            <RotateCcw size={18} /> Hacer nuevo escaneo
+                                        </button>
+                                        {onSkip && (
+                                            <button onClick={handleCloseModal} className="flex-1 bg-indigo-100 text-indigo-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                                                <X size={18} /> Volver a Teoria
+                                            </button>
+                                        )}
+                                    </div>
+                                    {retryCount >= 2 && onSkip && (
+                                        <button onClick={onSkip} className="w-full bg-slate-100 text-slate-600 py-2 rounded-xl font-medium text-sm">
+                                            Seguir sin quiz (saltar cuaderno)
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>

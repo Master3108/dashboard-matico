@@ -432,6 +432,21 @@ const computeNotebookStrictScore = ({
         ? clampNumber(detectedCount / (detectedCount + missingCount), 0, 1)
         : 0.5;
 
+    // CASO ESPECIAL: Si el estudiante copió TODO el texto de la teoría (cobertura >= 95%),
+    // el puntaje debe ser 100% aunque haya agregado palabras adicionales con sus propias palabras.
+    // Esto evita penalizar la comprensión demostrada con explicaciones extendidas.
+    if (theoryCoverage >= 0.95) {
+        const finalScore = clampNumber(Math.min(safeAiScore, 100), 0, 100);
+        return {
+            finalScore,
+            strictScore: 100,
+            aiScore: safeAiScore,
+            ocrWordCount,
+            theoryCoverage: Number(theoryCoverage.toFixed(3)),
+            expectedWordsByPages
+        };
+    }
+
     let strictScore = Math.round((theoryCoverage * 0.55 + lengthScore * 0.25 + conceptScore * 0.20) * 100);
 
     if (ocrWordCount < 25) strictScore = Math.min(strictScore, 40);
@@ -1285,6 +1300,8 @@ app.post('/api/oracle/exam-from-notebook/intake', async (req, res) => {
     }
 });
 
+// Primera tanda rapida: 3 preguntas INTRODUCTORIO + practice_guide + metadatos.
+// El frontend despues llama /generate-batch para las tandas siguientes (de 5) hasta completar.
 app.post('/api/oracle/exam-from-notebook/generate', async (req, res) => {
     try {
         cleanupOracleNotebookDrafts();
@@ -1323,7 +1340,42 @@ app.post('/api/oracle/exam-from-notebook/generate', async (req, res) => {
 
         const webQueries = [topic, ...subtopics.slice(0, 2), `${subject} ${topic}`];
         const webContext = await fetchWikipediaEducationalContext(webQueries);
-        const questions = await generateOracleExamFromNotebook({
+
+        // Tandas: primera rapida (3), resto de 5. Con 15 preguntas: 3 + 5 + 5 + 2 => 4 tandas (o 3 + 5 + 5 + 5 si piden 18+).
+        const firstBatchSize = Math.min(3, questionCount);
+        const remaining = Math.max(0, questionCount - firstBatchSize);
+        const batchSize = 5;
+        const remainingBatches = Math.ceil(remaining / batchSize);
+        const totalBatches = 1 + remainingBatches;
+
+        // Genera la primera tanda y la practice_guide en paralelo para responder rapido.
+        const [firstQuestions, practiceGuide] = await Promise.all([
+            generateOracleExamFromNotebook({
+                subject,
+                topic,
+                subtopics,
+                keywords,
+                grade,
+                questionCount,
+                notebookExcerpt,
+                sessionBase,
+                webContext,
+                batchIndex: 0,
+                batchSize: firstBatchSize,
+                totalBatches,
+                previousSignatures: []
+            }),
+            generateOraclePracticeGuide({
+                subject,
+                topic,
+                subtopics,
+                questionCount,
+                grade
+            })
+        ]);
+
+        // Persiste contexto en el draft para que /generate-batch no tenga que recalcular ni re-fetchear wikipedia.
+        draft.generation_context = {
             subject,
             topic,
             subtopics,
@@ -1332,17 +1384,15 @@ app.post('/api/oracle/exam-from-notebook/generate', async (req, res) => {
             questionCount,
             notebookExcerpt,
             sessionBase,
-            webContext
-        });
-        const practiceGuide = await generateOraclePracticeGuide({
-            subject,
-            topic,
-            subtopics,
-            questionCount,
-            grade
-        });
+            webContext,
+            totalBatches,
+            batchSize,
+            firstBatchSize,
+            practice_guide: practiceGuide,
+            created_at: Date.now()
+        };
 
-        const sourceMixSet = new Set(questions.map((item) => item.source_type).filter(Boolean));
+        const sourceMixSet = new Set(firstQuestions.map((item) => item.source_type).filter(Boolean));
         if (webContext.length > 0) sourceMixSet.add('web');
         sourceMixSet.add('notebook');
         sourceMixSet.add('ai');
@@ -1353,17 +1403,103 @@ app.post('/api/oracle/exam-from-notebook/generate', async (req, res) => {
             subject,
             topic,
             session_base: sessionBase,
-            question_count: questions.length,
+            question_count: questionCount,
+            batch_index: 0,
+            total_batches: totalBatches,
+            has_more: questionCount > firstQuestions.length,
             confidence: sourcePreview.confidence || 0,
             evidence_count_used: Number(sourcePreview.evidence_count_used || 1) || 1,
             detected_topics: [topic, ...subtopics].filter(Boolean).slice(0, 8),
-            questions,
+            questions: firstQuestions,
             practice_guide: practiceGuide,
             source_mix: sourceMix
         });
     } catch (error) {
         console.error('[ORACLE_NOTEBOOK_GENERATE] Error:', error.message);
         return res.status(500).json({ success: false, error: error.message || 'No se pudo generar la prueba del cuaderno' });
+    }
+});
+
+// Tandas siguientes: el frontend envia draft_id + batch_index + previous_signatures y se genera UNA tanda de 5 preguntas
+// con dificultad progresiva (cada tanda sube un tier en ORACLE_DIFFICULTY_TIERS).
+app.post('/api/oracle/exam-from-notebook/generate-batch', async (req, res) => {
+    try {
+        cleanupOracleNotebookDrafts();
+        const {
+            draft_id = '',
+            user_id = '',
+            batch_index = 1,
+            previous_signatures = []
+        } = req.body || {};
+
+        if (!draft_id) {
+            return res.status(400).json({ success: false, error: 'Falta draft_id' });
+        }
+
+        const draft = oracleNotebookDrafts.get(String(draft_id || '').trim());
+        if (!draft) {
+            return res.status(404).json({ success: false, error: 'Draft no encontrado o expirado' });
+        }
+        if (user_id && draft.user_id && String(user_id).trim() !== String(draft.user_id).trim()) {
+            return res.status(403).json({ success: false, error: 'El draft no pertenece a este usuario' });
+        }
+
+        const ctx = draft.generation_context;
+        if (!ctx) {
+            return res.status(409).json({ success: false, error: 'Debes llamar primero a /generate para inicializar el contexto' });
+        }
+
+        const batchIndex = Math.max(1, Math.min(20, Number(batch_index) || 1));
+        if (batchIndex >= ctx.totalBatches) {
+            return res.json({ success: true, questions: [], batch_index: batchIndex, has_more: false, total_batches: ctx.totalBatches });
+        }
+
+        // Cuantas preguntas faltan tras esta tanda?
+        const alreadyGenerated = Math.min(
+            ctx.questionCount,
+            ctx.firstBatchSize + (batchIndex - 1) * ctx.batchSize
+        );
+        const stillMissing = Math.max(0, ctx.questionCount - alreadyGenerated);
+        const thisBatchSize = Math.min(ctx.batchSize, stillMissing);
+
+        if (thisBatchSize <= 0) {
+            return res.json({ success: true, questions: [], batch_index: batchIndex, has_more: false, total_batches: ctx.totalBatches });
+        }
+
+        const prevSigs = Array.isArray(previous_signatures) ? previous_signatures.filter(Boolean).slice(-60) : [];
+
+        const questions = await generateOracleExamFromNotebook({
+            subject: ctx.subject,
+            topic: ctx.topic,
+            subtopics: ctx.subtopics,
+            keywords: ctx.keywords,
+            grade: ctx.grade,
+            questionCount: ctx.questionCount,
+            notebookExcerpt: ctx.notebookExcerpt,
+            sessionBase: ctx.sessionBase,
+            webContext: ctx.webContext,
+            batchIndex,
+            batchSize: thisBatchSize,
+            totalBatches: ctx.totalBatches,
+            previousSignatures: prevSigs
+        });
+
+        const producedCount = questions.length;
+        const newTotal = alreadyGenerated + producedCount;
+        const hasMore = newTotal < ctx.questionCount && batchIndex + 1 < ctx.totalBatches;
+
+        return res.json({
+            success: true,
+            batch_index: batchIndex,
+            total_batches: ctx.totalBatches,
+            has_more: hasMore,
+            questions,
+            total_generated: newTotal,
+            total_expected: ctx.questionCount
+        });
+    } catch (error) {
+        console.error('[ORACLE_NOTEBOOK_GENERATE_BATCH] Error:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo generar la tanda' });
     }
 });
 // --- HELPER: Subir imagen a Google Drive ---
@@ -2505,6 +2641,41 @@ const sanitizeOracleQuestions = (items = [], fallbackSession = 1, fallbackTopic 
         .filter((item) => item.question && Object.keys(item.options).length >= 2);
 };
 
+// Mapa de dificultad progresiva: el indice del batch define el tier.
+// Cada tier sube la exigencia cognitiva (Bloom: recordar -> comprender -> aplicar -> analizar -> evaluar).
+const ORACLE_DIFFICULTY_TIERS = [
+    {
+        label: 'INTRODUCTORIO',
+        bloom: 'comprender/aplicar',
+        description: 'Reconocer definiciones, identificar ejemplos simples, aplicar una regla directa. Evita trivialidades (si es 2+2, NO sirve).'
+    },
+    {
+        label: 'INTERMEDIO',
+        bloom: 'aplicar',
+        description: 'Resolver en 2-3 pasos, comparar casos, usar formulas o reglas combinadas. El alumno debe calcular/razonar, no solo recordar.'
+    },
+    {
+        label: 'DESAFIANTE',
+        bloom: 'analizar',
+        description: 'Problemas con distractores realistas, casos borde, elegir la mejor de varias opciones correctas, interpretar contexto.'
+    },
+    {
+        label: 'AVANZADO',
+        bloom: 'analizar/evaluar',
+        description: 'Encadenar 3-4 pasos, justificar por descarte, reconocer errores tipicos. Mezcla conceptos del tema con subtemas.'
+    },
+    {
+        label: 'EXPERTO',
+        bloom: 'evaluar/crear',
+        description: 'Problemas tipo PAES/PSU: enunciado largo, datos parcialmente relevantes, aplicacion en contexto real. Solo para estudiantes que ya dominan el tema.'
+    }
+];
+
+const pickDifficultyTier = (batchIndex = 0) => {
+    const idx = Math.max(0, Math.min(ORACLE_DIFFICULTY_TIERS.length - 1, Number(batchIndex) || 0));
+    return ORACLE_DIFFICULTY_TIERS[idx];
+};
+
 const buildOracleNotebookQuestionPrompt = ({
     subject = 'MATEMATICA',
     topic = '',
@@ -2513,46 +2684,76 @@ const buildOracleNotebookQuestionPrompt = ({
     grade = '1medio',
     questionCount = 15,
     notebookExcerpt = '',
-    webContext = []
+    webContext = [],
+    batchIndex = 0,
+    batchSize = 0,
+    totalBatches = 1,
+    previousSignatures = []
 } = {}) => {
     const webBlock = (webContext || [])
         .map((item, index) => `${index + 1}. ${item.title}\nResumen: ${item.text}\nFuente: ${item.source_ref || 'sin URL'}`)
         .join('\n\n');
 
-    return `Genera una prueba para estudiante chileno (${grade}) basada en cuaderno + apoyo web.
+    const tier = pickDifficultyTier(batchIndex);
+    const askCount = Math.max(1, Number(batchSize || questionCount) || 3);
+    const alreadyAsked = Array.isArray(previousSignatures) ? previousSignatures.filter(Boolean).slice(0, 40) : [];
+    const alreadyAskedBlock = alreadyAsked.length
+        ? alreadyAsked.map((sig, i) => `${i + 1}. ${String(sig).slice(0, 140)}`).join('\n')
+        : 'Ninguna aun. Es la primera tanda.';
+
+    const batchContext = totalBatches > 1
+        ? `Esta es la TANDA ${batchIndex + 1} de ${totalBatches}. Genera exactamente ${askCount} preguntas NUEVAS (no repitas las anteriores).`
+        : `Genera ${askCount} preguntas.`;
+
+    return `Eres Matico, profesor chileno experto en disenar evaluaciones variadas y creativas.
+Debes generar una prueba para estudiante de ${grade} basada en cuaderno escolar + apoyo web,
+COMPLEMENTANDO el contenido porque el alumno puede no haber copiado toda la materia.
 
 MATERIA: ${subject}
 TEMA PRINCIPAL: ${topic}
 SUBTEMAS: ${(subtopics || []).join(', ') || 'No especificados'}
 PALABRAS CLAVE: ${(keywords || []).join(', ') || 'No especificadas'}
-PREGUNTAS SOLICITADAS: ${questionCount}
+NIVEL DE DIFICULTAD DE ESTA TANDA: ${tier.label} (Bloom: ${tier.bloom})
+INSTRUCCION DE DIFICULTAD: ${tier.description}
 
-EXTRACTO CUADERNO:
+${batchContext}
+
+EXTRACTO CUADERNO (puede estar incompleto):
 ${notebookExcerpt || 'Sin extracto visible'}
 
 CONTEXTO WEB EDUCATIVO:
-${webBlock || 'No disponible (usa solo cuaderno + IA)'}
+${webBlock || 'No disponible (usa cuaderno + tu conocimiento del curriculum chileno)'}
 
-Devuelve SOLO JSON valido:
+PREGUNTAS YA CREADAS (NO las repitas ni las reformules):
+${alreadyAskedBlock}
+
+REGLAS DE CREATIVIDAD Y NO-REPETICION (obligatorias):
+1. Cada pregunta debe cubrir un subtema o angulo DISTINTO. Varia el tipo: definicion, calculo, aplicacion, comparacion, analisis de caso, interpretacion.
+2. PROHIBIDO reformular una pregunta ya hecha cambiando solo numeros o nombres. Si ya se pregunto por "pendiente de una recta", en esta tanda cubre otro concepto (interseccion, paralelismo, ecuacion general, etc.).
+3. COMPLEMENTA lo que el cuaderno no trae: si el cuaderno solo muestra 2 subtemas, sugiere preguntas sobre 2-3 subtemas vecinos del mismo curso (${grade}), pero dentro del tema principal "${topic}".
+4. Cada pregunta debe tener 4 opciones plausibles. Ninguna opcion debe ser trivialmente absurda. Los distractores deben basarse en errores reales que cometen los alumnos.
+5. Respeta el nivel de dificultad ${tier.label}: no bajes a nivel facilito, no subas a nivel universitario.
+6. Escribe enunciados claros y con contexto cuando ayude (ej: "Ana compra 3 kilos de..."), no solo formulas sueltas.
+7. La opcion correcta debe variar entre A, B, C y D a lo largo del conjunto (no siempre A).
+
+Devuelve SOLO JSON valido con exactamente ${askCount} preguntas:
 {
   "questions": [
     {
-      "question": "texto",
+      "question": "enunciado claro y contextualizado",
       "options": { "A":"", "B":"", "C":"", "D":"" },
-      "correct_answer": "A",
-      "explanation": "explicacion corta",
+      "correct_answer": "A|B|C|D",
+      "explanation": "explicacion breve de por que es correcta",
       "source_type": "notebook|web|ai",
-      "source_ref": "url opcional",
+      "source_ref": "url si usaste web, si no vacio",
       "source_session": 1,
-      "source_topic": "tema"
+      "source_topic": "subtema especifico que cubre esta pregunta"
     }
   ]
 }
 
-Reglas:
-- Mezcla fuentes: intenta balancear cuaderno + web + ai.
-- Preguntas claras, una sola correcta, nivel ${grade}.
-- No inventes fuentes web si no hay contexto web.`;
+- No inventes URLs. Si no hay contexto web, deja source_ref vacio y source_type="notebook" o "ai".
+- Responde UNICAMENTE el JSON, sin markdown ni texto extra.`;
 };
 
 const generateOraclePracticeGuide = async ({
@@ -2596,8 +2797,13 @@ const generateOracleExamFromNotebook = async ({
     questionCount = 15,
     notebookExcerpt = '',
     sessionBase = 1,
-    webContext = []
+    webContext = [],
+    batchIndex = 0,
+    batchSize = 0,
+    totalBatches = 1,
+    previousSignatures = []
 } = {}) => {
+    const effectiveBatchSize = Math.max(1, Number(batchSize || questionCount) || 3);
     const prompt = buildOracleNotebookQuestionPrompt({
         subject,
         topic,
@@ -2606,26 +2812,45 @@ const generateOracleExamFromNotebook = async ({
         grade,
         questionCount,
         notebookExcerpt,
-        webContext
+        webContext,
+        batchIndex,
+        batchSize: effectiveBatchSize,
+        totalBatches,
+        previousSignatures
     });
+
+    // Temperatura sube por tanda para mas creatividad/variedad en las tandas finales.
+    const temperature = Math.min(0.95, 0.5 + Math.max(0, Number(batchIndex) || 0) * 0.1);
 
     const completion = await openai.chat.completions.create({
         model: AI_MODELS.fast,
         messages: [
             {
                 role: 'system',
-                content: 'Eres Matico, creador de evaluaciones escolares. Responde unicamente JSON valido.'
+                content: 'Eres Matico, creador de evaluaciones escolares creativas y variadas. Responde unicamente JSON valido. Nunca repitas ni reformules preguntas ya creadas.'
             },
             { role: 'user', content: prompt }
         ],
-        temperature: 0.5
+        temperature
     });
 
     const raw = String(completion.choices?.[0]?.message?.content || '').trim();
     const parsed = parseExamAnalysisResponse(raw);
-    const questions = sanitizeOracleQuestions(parsed?.questions || [], sessionBase, topic);
-    if (!questions.length) throw new Error('La IA no devolvio preguntas validas desde el cuaderno');
-    return questions.slice(0, Math.max(5, Math.min(45, Number(questionCount || 15) || 15)));
+    const rawQuestions = sanitizeOracleQuestions(parsed?.questions || [], sessionBase, topic);
+    if (!rawQuestions.length) throw new Error('La IA no devolvio preguntas validas desde el cuaderno');
+
+    // Deduplica contra previousSignatures y contra si mismas
+    const seen = new Set(Array.isArray(previousSignatures) ? previousSignatures.filter(Boolean) : []);
+    const deduped = [];
+    for (const q of rawQuestions) {
+        const sig = normalizeQuestionSignature(q.question, q.options);
+        if (!sig || seen.has(sig)) continue;
+        seen.add(sig);
+        deduped.push(q);
+    }
+
+    const finalList = deduped.length ? deduped : rawQuestions;
+    return finalList.slice(0, effectiveBatchSize);
 };
 
 const autoAppendMissingSessionCompleted = async (sheets, rows = [], userId = '', subject = '', grade = '1medio') => {
