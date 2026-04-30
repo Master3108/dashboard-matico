@@ -7,11 +7,15 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "test:supabase": "node db/test_connection.js",
+    "migrate": "node scripts/migrate_sheets_to_supabase.js",
+    "migrate:dry": "node scripts/migrate_sheets_to_supabase.js --dry-run",
     "pregenerate:math-bank": "node scripts/pregenerateQuestionBank.js --subject MATEMATICA",
     "pregenerate:language-bank": "node scripts/pregenerateQuestionBank.js --subject LENGUAJE",
     "pregenerate:physics-bank": "node scripts/pregenerateQuestionBank.js --subject FISICA"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",

@@ -118,10 +118,13 @@ const EvidenceIntake = ({
     const importNativeQueueRef = useRef(() => {});
     const autoImportingRef = useRef(false);
     const nativeCameraInputRef = useRef(null);
+    // Ref que siempre apunta al último valor de items para evitar stale closures en callbacks async.
+    const itemsRef = useRef(items);
 
     const publish = (nextItems) => {
         const normalized = reindexEvidence(nextItems).slice(0, maxEvidence);
         setItems(normalized);
+        itemsRef.current = normalized;
         onChange?.(normalized);
     };
 
@@ -184,10 +187,11 @@ const EvidenceIntake = ({
         if (!Array.isArray(value)) return;
         const normalized = value.map(normalizeEvidenceAsset);
         setItems(normalized);
+        itemsRef.current = normalized;
     }, [value]);
 
     const addAsset = (asset) => {
-        const current = Array.isArray(items) ? items : [];
+        const current = Array.isArray(itemsRef.current) ? itemsRef.current : [];
         if (current.length >= maxEvidence) {
             handleError(`Maximo ${maxEvidence} evidencias por intento.`);
             return;
@@ -228,27 +232,34 @@ const EvidenceIntake = ({
 
     // Soporta 1..N fotos. En APK con capture=environment solo llega 1 por click,
     // pero si el dispositivo soporta multi (galeria), se procesan todas.
-    const handleNativeCameraCapture = (event) => {
+    // Usa procesamiento secuencial con Promises para evitar stale closures.
+    const handleNativeCameraCapture = async (event) => {
         const files = Array.from(event.target?.files || []);
         if (!files.length) return;
 
-        files.forEach((file) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                const img = new Image();
-                img.onload = () => {
-                    try {
-                        addAsset(buildImageAssetFromSource(img, items.length + 1, 'camera'));
-                    } catch (error) {
-                        handleError(error.message || 'No se pudo procesar la foto');
-                    }
-                };
-                img.onerror = () => handleError('No se pudo leer la foto.');
-                img.src = reader.result;
-            };
-            reader.onerror = () => handleError('No se pudo leer la foto.');
-            reader.readAsDataURL(file);
-        });
+        for (const file of files) {
+            try {
+                await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const img = new Image();
+                        img.onload = () => {
+                            try {
+                                addAsset(buildImageAssetFromSource(img, itemsRef.current.length + 1, 'camera'));
+                                resolve();
+                            } catch (error) {
+                                handleError(error.message || 'No se pudo procesar la foto');
+                                resolve(); // sigue con la siguiente
+                            }
+                        };
+                        img.onerror = () => { handleError('No se pudo leer la foto.'); resolve(); };
+                        img.src = reader.result;
+                    };
+                    reader.onerror = () => { handleError('No se pudo leer la foto.'); resolve(); };
+                    reader.readAsDataURL(file);
+                });
+            } catch { /* continua con la siguiente */ }
+        }
 
         event.target.value = '';
     };
@@ -262,30 +273,38 @@ const EvidenceIntake = ({
         }
     };
 
-    const handleFileUpload = (event) => {
+    // Procesa archivos secuencialmente para que cada addAsset vea el itemsRef actualizado.
+    const handleFileUpload = async (event) => {
         const files = Array.from(event.target.files || []);
         if (!files.length) return;
 
-        files.forEach((file) => {
+        for (const file of files) {
             const isImage = file.type.startsWith('image/');
             if (!isImage) {
                 handleError('Por ahora sube imagen (foto/screenshot).');
-                return;
+                continue;
             }
-            const reader = new FileReader();
-            reader.onload = () => {
-                const img = new Image();
-                img.onload = () => {
-                    try {
-                        addAsset(buildImageAssetFromSource(img, items.length + 1, 'upload'));
-                    } catch (error) {
-                        handleError(error.message || 'No se pudo procesar la imagen');
-                    }
-                };
-                img.src = reader.result;
-            };
-            reader.readAsDataURL(file);
-        });
+            try {
+                await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const img = new Image();
+                        img.onload = () => {
+                            try {
+                                addAsset(buildImageAssetFromSource(img, itemsRef.current.length + 1, 'upload'));
+                            } catch (error) {
+                                handleError(error.message || 'No se pudo procesar la imagen');
+                            }
+                            resolve();
+                        };
+                        img.onerror = () => { handleError('No se pudo leer la imagen.'); resolve(); };
+                        img.src = reader.result;
+                    };
+                    reader.onerror = () => { handleError('No se pudo leer el archivo.'); resolve(); };
+                    reader.readAsDataURL(file);
+                });
+            } catch { /* continua con la siguiente */ }
+        }
 
         event.target.value = '';
     };
@@ -581,11 +600,11 @@ const EvidenceIntake = ({
             )}
 
             <p className="text-xs text-[#64748B] font-bold">
-                Tip: con "Subir varias fotos" puedes seleccionar hasta {maxEvidence} imagenes de una vez desde tu galeria. Con "Tomar foto" toma una, se suma al listado y puedes repetir para agregar mas.
+                Tip: con &quot;Subir varias fotos&quot; puedes seleccionar hasta {maxEvidence} imagenes de una vez desde tu galeria. Con &quot;Tomar foto&quot; toma una, se suma al listado y puedes repetir para agregar mas.
             </p>
             {!nativeCaptureSupported && showNativeCapture && (
                 <p className="text-xs text-[#64748B] font-bold">
-                    En celular web usa "Subir varias fotos" (screenshot de galeria). La captura de pantalla celular funciona en app movil nativa.
+                    En celular web usa &quot;Subir varias fotos&quot; (screenshot de galeria). La captura de pantalla celular funciona en app movil nativa.
                 </p>
             )}
 

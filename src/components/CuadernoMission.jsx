@@ -975,7 +975,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                     {status === 'error' && (
                         <div className="space-y-4">
                             <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-                                <div className="flex items-center gap-2 mb-3 text-red-700"><AlertTriangle size={24} /><span className="font-bold text-lg">No se pudo completar la revisión</span></div>
+                                <div className="flex items-center gap-2 mb-3 text-red-700"><AlertTriangle size={24} /><span className="font-bold text-lg">No se pudo completar la revision</span></div>
                                 <p className="text-red-600">{feedback}</p>
                             </div>
                             <div className="flex gap-3">
@@ -992,7 +992,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                             </div>
                             {canBypassProviderFailure && (
                                 <p className="text-xs text-slate-500 text-center">
-                                    El cuaderno quedó temporalmente fuera de servicio por un problema del proveedor visual. Puedes seguir estudiando mientras lo corregimos.
+                                    El cuaderno quedo temporalmente fuera de servicio por un problema del proveedor visual. Puedes seguir estudiando mientras lo corregimos.
                                 </p>
                             )}
                         </div>
@@ -1028,7 +1028,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                         {isGeneratingPdf ? (
                             <div className="text-center text-white">
                                 <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-200 border-t-orange-500 mx-auto mb-2" />
-                                Procesando página...
+                                Procesando pagina...
                             </div>
                         ) : (
                             <button onClick={takePhoto} className="bg-white h-20 w-20 rounded-full border-4 border-amber-500 flex items-center justify-center shadow-xl">

@@ -5,6 +5,7 @@ import LoginPage from './components/LoginPage';
 import CuadernoMission from './components/CuadernoMission';
 import ExamCaptureModal from './components/ExamCaptureModal';
 import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
+import QuestionBankManager from './components/QuestionBankManager';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntake';
 import {
     BookOpen,
@@ -2515,9 +2516,11 @@ const AdminPedagogicalAssetsModal = ({
     onGenerateQuestionFromAsset,
     onSuggestQuestionMatchesFromAsset,
     onSuggestTheoryMatchesFromAsset,
+    onCreateQuestionBankRow,
     onGetImageGenerationConfig,
     onGeneratePedagogicalImage,
-    onUpdateImageGenerationRuntimeConfig
+    onUpdateImageGenerationRuntimeConfig,
+    onPopulatePhaseWithImages
 }) => {
     const [selectedAssetId, setSelectedAssetId] = useState('');
     const [assetFilters, setAssetFilters] = useState({ subject: '', status: '', search: '' });
@@ -2571,33 +2574,18 @@ const AdminPedagogicalAssetsModal = ({
         nano_response_mime_path: 'data.0.mime_type',
         nano_extra_json: ''
     });
-    const [questionFilters, setQuestionFilters] = useState({ subject: '', session: '', search: '' });
-    const [theoryFilters, setTheoryFilters] = useState({ subject: '', session: '', phase: '', search: '' });
-    const [questionRows, setQuestionRows] = useState([]);
-    const [theoryRows, setTheoryRows] = useState([]);
-    const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
-    const [isLoadingTheory, setIsLoadingTheory] = useState(false);
-    const [isGeneratingAiDraft, setIsGeneratingAiDraft] = useState(false);
-    const [isLoadingAiSuggestions, setIsLoadingAiSuggestions] = useState(false);
-    const [isLoadingAiTheorySuggestions, setIsLoadingAiTheorySuggestions] = useState(false);
-    const [aiSuggestedQuestions, setAiSuggestedQuestions] = useState([]);
-    const [aiSuggestedTheoryRows, setAiSuggestedTheoryRows] = useState([]);
-    const [aiDraft, setAiDraft] = useState(null);
-    const [aiDraftForm, setAiDraftForm] = useState({
+    const [phaseBatchForm, setPhaseBatchForm] = useState({
         subject: 'MATEMATICA',
-        session: '',
+        session: '1',
         phase: '1',
         levelName: 'BASICO',
-        topic: '',
-        question: '',
-        option_a: '',
-        option_b: '',
-        option_c: '',
-        option_d: '',
-        correct_answer: 'A',
-        explanation: '',
-        question_visual_role: 'required_for_interpretation'
+        count: '15',
+        image_cap: '6',
+        min_image_score: '5',
+        size: '1024x1024'
     });
+    const [phaseBatchResult, setPhaseBatchResult] = useState(null);
+    const [isRunningPhaseBatch, setIsRunningPhaseBatch] = useState(false);
 
     useEffect(() => {
         if (!isOpen) return undefined;
@@ -2610,20 +2598,6 @@ const AdminPedagogicalAssetsModal = ({
     }, [isOpen, assetFilters.subject, assetFilters.status, assetFilters.search]);
 
     const selectedAsset = assets.find((item) => item.asset_id === selectedAssetId) || null;
-
-    useEffect(() => {
-        if (!selectedAsset) {
-            setAiSuggestedQuestions([]);
-            setAiSuggestedTheoryRows([]);
-            setAiDraft(null);
-            return;
-        }
-        setAiDraftForm((prev) => ({
-            ...prev,
-            subject: selectedAsset.subject || prev.subject,
-            topic: selectedAsset.topic_tags || selectedAsset.title || prev.topic
-        }));
-    }, [selectedAsset]);
 
     useEffect(() => {
         if (!isOpen) return undefined;
@@ -2690,26 +2664,6 @@ const AdminPedagogicalAssetsModal = ({
             return new URL(value, window.location.origin).toString();
         } catch {
             return value;
-        }
-    };
-
-    const refreshQuestions = async () => {
-        setIsLoadingQuestions(true);
-        try {
-            const rows = await onSearchQuestionRows(questionFilters);
-            setQuestionRows(rows || []);
-        } finally {
-            setIsLoadingQuestions(false);
-        }
-    };
-
-    const refreshTheory = async () => {
-        setIsLoadingTheory(true);
-        try {
-            const rows = await onSearchTheoryRows(theoryFilters);
-            setTheoryRows(rows || []);
-        } finally {
-            setIsLoadingTheory(false);
         }
     };
 
@@ -2839,117 +2793,40 @@ const AdminPedagogicalAssetsModal = ({
         }
     };
 
-    const hydrateDraftForm = (draft) => {
-        if (!draft) return;
-        setAiDraft(draft);
-        setAiDraftForm({
-            subject: draft.subject || selectedAsset?.subject || 'MATEMATICA',
-            session: draft.session ? String(draft.session) : '',
-            phase: draft.phase ? String(draft.phase) : '1',
-            levelName: draft.levelName || 'BASICO',
-            topic: draft.topic || '',
-            question: draft.question || '',
-            option_a: draft.options?.A || '',
-            option_b: draft.options?.B || '',
-            option_c: draft.options?.C || '',
-            option_d: draft.options?.D || '',
-            correct_answer: draft.correct_answer || 'A',
-            explanation: draft.explanation || '',
-            question_visual_role: draft.question_visual_role || 'required_for_interpretation'
-        });
-    };
-
-    const handleGenerateQuestionDraft = async () => {
-        if (!selectedAsset) {
-            alert('Selecciona un asset primero.');
+    const handleRunPhaseBatch = async () => {
+        if (!onPopulatePhaseWithImages) return;
+        const subject = String(phaseBatchForm.subject || 'MATEMATICA').toUpperCase();
+        const session = Number(phaseBatchForm.session || 0) || 0;
+        const phase = Number(phaseBatchForm.phase || 0) || 0;
+        const count = Math.max(3, Math.min(20, Number(phaseBatchForm.count || 15) || 15));
+        const cap = Math.max(0, Math.min(15, Number(phaseBatchForm.image_cap || 6) || 6));
+        const minScore = Math.max(0, Math.min(10, Number(phaseBatchForm.min_image_score || 5) || 5));
+        if (!session || !phase) {
+            alert('Indica sesion y fase (numeros enteros)');
             return;
         }
-        setIsGeneratingAiDraft(true);
+        if (!window.confirm('Vas a generar ' + count + ' preguntas y hasta ' + cap + ' imagenes nuevas para ' + subject + ' sesion ' + session + ' fase ' + phase + '. Esto consume tokens y costo de imagenes. Continuar?')) {
+            return;
+        }
+        setIsRunningPhaseBatch(true);
+        setPhaseBatchResult(null);
         try {
-            const result = await onGenerateQuestionFromAsset(selectedAsset.asset_id, {
-                subject: aiDraftForm.subject || selectedAsset.subject,
-                session: aiDraftForm.session,
-                phase: aiDraftForm.phase,
-                levelName: aiDraftForm.levelName
+            const result = await onPopulatePhaseWithImages({
+                subject,
+                session,
+                phase,
+                levelName: phaseBatchForm.levelName,
+                count,
+                image_cap: cap,
+                min_image_score: minScore,
+                size: phaseBatchForm.size
             });
-            hydrateDraftForm(result?.ai_draft || null);
+            setPhaseBatchResult(result);
+            await onRefreshAssets(assetFilters);
+        } catch (err) {
+            alert('Error en batch de fase: ' + (err && err.message ? err.message : err));
         } finally {
-            setIsGeneratingAiDraft(false);
-        }
-    };
-
-    const handleSuggestMatches = async () => {
-        if (!selectedAsset) {
-            alert('Selecciona un asset primero.');
-            return;
-        }
-        setIsLoadingAiSuggestions(true);
-        try {
-            const result = await onSuggestQuestionMatchesFromAsset(selectedAsset.asset_id, {
-                subject: aiDraftForm.subject || selectedAsset.subject,
-                session: aiDraftForm.session,
-                phase: aiDraftForm.phase,
-                levelName: aiDraftForm.levelName
-            });
-            if (result?.ai_draft) hydrateDraftForm(result.ai_draft);
-            setAiSuggestedQuestions(result?.items || []);
-        } finally {
-            setIsLoadingAiSuggestions(false);
-        }
-    };
-
-    const handleSuggestTheoryMatches = async () => {
-        if (!selectedAsset) {
-            alert('Selecciona un asset primero.');
-            return;
-        }
-        setIsLoadingAiTheorySuggestions(true);
-        try {
-            const result = await onSuggestTheoryMatchesFromAsset(selectedAsset.asset_id, {
-                subject: theoryFilters.subject || aiDraftForm.subject || selectedAsset.subject,
-                session: theoryFilters.session,
-                phase: theoryFilters.phase,
-                search: theoryFilters.search || `${selectedAsset.topic_tags || ''} ${selectedAsset.caption || ''}`.trim()
-            });
-            setAiSuggestedTheoryRows(result?.items || []);
-        } finally {
-            setIsLoadingAiTheorySuggestions(false);
-        }
-    };
-
-    const handleSaveAiDraft = async () => {
-        if (!selectedAsset) {
-            alert('Selecciona un asset primero.');
-            return;
-        }
-        if (!aiDraftForm.question.trim()) {
-            alert('La pregunta está vacía.');
-            return;
-        }
-        setIsGeneratingAiDraft(true);
-        try {
-            const result = await onGenerateQuestionFromAsset(selectedAsset.asset_id, {
-                save: true,
-                subject: aiDraftForm.subject,
-                session: aiDraftForm.session,
-                phase: aiDraftForm.phase,
-                levelName: aiDraftForm.levelName,
-                topic: aiDraftForm.topic,
-                question: aiDraftForm.question,
-                option_a: aiDraftForm.option_a,
-                option_b: aiDraftForm.option_b,
-                option_c: aiDraftForm.option_c,
-                option_d: aiDraftForm.option_d,
-                correct_answer: aiDraftForm.correct_answer,
-                explanation: aiDraftForm.explanation,
-                question_visual_role: aiDraftForm.question_visual_role
-            });
-            if (result?.item?.question_id) {
-                alert(`Pregunta guardada: ${result.item.question_id}`);
-                await refreshQuestions();
-            }
-        } finally {
-            setIsGeneratingAiDraft(false);
+            setIsRunningPhaseBatch(false);
         }
     };
 
@@ -3150,7 +3027,99 @@ const AdminPedagogicalAssetsModal = ({
                             </button>
                         </form>
 
-                        <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4">
+                        <div className="bg-white rounded-3xl border border-[#FDE68A] p-5 shadow-sm space-y-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <h4 className="text-lg font-black text-[#92400E]">Generar batch IA por fase</h4>
+                                    <p className="text-xs font-bold text-[#9094A6] mt-1">La IA crea {phaseBatchForm.count || 15} preguntas para una fase y elige cuales son mas idoneas para acompanar con imagen. Tope: {phaseBatchForm.image_cap || 6} imagenes por fase (suma a las existentes).</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <select value={phaseBatchForm.subject} onChange={(e) => setPhaseBatchForm(prev => ({ ...prev, subject: e.target.value }))} className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs">
+                                    {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'LENGUAJE', 'HISTORIA'].map((option) => <option key={option} value={option}>{option}</option>)}
+                                </select>
+                                <input type="number" min="1" value={phaseBatchForm.session} onChange={(e) => setPhaseBatchForm(prev => ({ ...prev, session: e.target.value }))} placeholder="Sesion" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                <input type="number" min="1" max="3" value={phaseBatchForm.phase} onChange={(e) => setPhaseBatchForm(prev => ({ ...prev, phase: e.target.value }))} placeholder="Fase" className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs" />
+                                <select value={phaseBatchForm.levelName} onChange={(e) => setPhaseBatchForm(prev => ({ ...prev, levelName: e.target.value }))} className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs">
+                                    {['BASICO', 'INTERMEDIO', 'AVANZADO'].map((option) => <option key={option} value={option}>{option}</option>)}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <label className="text-[10px] font-black text-[#92400E] flex flex-col gap-1">
+                                    PREGUNTAS
+                                    <input type="number" min="3" max="20" value={phaseBatchForm.count} onChange={(e) => setPhaseBatchForm(prev => ({ ...prev, count: e.target.value }))} className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs text-[#2B2E4A]" />
+                                </label>
+                                <label className="text-[10px] font-black text-[#92400E] flex flex-col gap-1">
+                                    CAP IMAGENES
+                                    <input type="number" min="0" max="15" value={phaseBatchForm.image_cap} onChange={(e) => setPhaseBatchForm(prev => ({ ...prev, image_cap: e.target.value }))} className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs text-[#2B2E4A]" />
+                                </label>
+                                <label className="text-[10px] font-black text-[#92400E] flex flex-col gap-1">
+                                    SCORE MIN
+                                    <input type="number" min="0" max="10" value={phaseBatchForm.min_image_score} onChange={(e) => setPhaseBatchForm(prev => ({ ...prev, min_image_score: e.target.value }))} className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs text-[#2B2E4A]" />
+                                </label>
+                                <label className="text-[10px] font-black text-[#92400E] flex flex-col gap-1">
+                                    SIZE
+                                    <select value={phaseBatchForm.size} onChange={(e) => setPhaseBatchForm(prev => ({ ...prev, size: e.target.value }))} className="rounded-xl border border-gray-200 px-3 py-2 font-bold text-xs text-[#2B2E4A]">
+                                        {['1024x1024', '1536x1024', '1024x1536'].map((size) => <option key={size} value={size}>{size}</option>)}
+                                    </select>
+                                </label>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleRunPhaseBatch}
+                                disabled={isRunningPhaseBatch}
+                                className={`${clayBtnAction} !bg-[#F59E0B] !border-[#D97706] hover:!bg-[#D97706] text-white ${isRunningPhaseBatch ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isRunningPhaseBatch ? 'GENERANDO BATCH (puede tardar 1-2 min)...' : 'GENERAR BATCH PARA FASE'}
+                            </button>
+
+                            {phaseBatchResult && (
+                                <div className="rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] p-4 space-y-3">
+                                    <div className="flex flex-wrap gap-2 text-[11px] font-black text-[#92400E]">
+                                        <span className="px-2 py-1 rounded-full bg-white border border-[#FDE68A]">SUBJECT: {phaseBatchResult.subject}</span>
+                                        <span className="px-2 py-1 rounded-full bg-white border border-[#FDE68A]">SESION {phaseBatchResult.session}</span>
+                                        <span className="px-2 py-1 rounded-full bg-white border border-[#FDE68A]">FASE {phaseBatchResult.phase}</span>
+                                        <span className="px-2 py-1 rounded-full bg-white border border-[#FDE68A]">{phaseBatchResult.levelName}</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                        <div className="rounded-xl bg-white border border-gray-100 p-3">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase">Preguntas</p>
+                                            <p className="text-lg font-black text-[#2B2E4A]">{phaseBatchResult.saved_count || 0}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-white border border-gray-100 p-3">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase">Imagenes</p>
+                                            <p className="text-lg font-black text-[#1F9D55]">{phaseBatchResult.images_generated || 0}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-white border border-gray-100 p-3">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase">Skip cap</p>
+                                            <p className="text-lg font-black text-[#9094A6]">{phaseBatchResult.images_skipped_cap_full || 0}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-white border border-gray-100 p-3">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase">Cap fase</p>
+                                            <p className="text-lg font-black text-[#7C3AED]">{phaseBatchResult.existing_images_in_phase || 0}/{phaseBatchResult.cap_per_phase || 6}</p>
+                                        </div>
+                                    </div>
+                                    <div className="max-h-72 overflow-y-auto space-y-2">
+                                        {(phaseBatchResult.items || []).map((item, idx) => (
+                                            <div key={item.question_id || idx} className={`rounded-xl border p-3 ${item.had_image_attached ? 'border-[#86EFAC] bg-[#F0FDF4]' : 'border-gray-100 bg-white'}`}>
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <p className="text-xs font-black text-[#2B2E4A] flex-1">{item.question}</p>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${item.had_image_attached ? 'bg-[#1F9D55] text-white' : item.was_image_candidate ? 'bg-[#F59E0B] text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                                            {item.had_image_attached ? 'CON IMG' : item.was_image_candidate ? 'CAP LLENO' : 'SIN IMG'}
+                                                        </span>
+                                                        <span className="text-[10px] font-black text-[#9094A6]">SCORE {item.image_score}</span>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] text-[#9094A6] mt-1">{item.topic} | {item.image_role}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                                                <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4">
                             <div className="flex flex-col md:flex-row gap-3">
                                 <select value={assetFilters.subject} onChange={(e) => setAssetFilters(prev => ({ ...prev, subject: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
                                     <option value="">Todas las asignaturas</option>
@@ -3214,273 +3183,19 @@ const AdminPedagogicalAssetsModal = ({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                        <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4">
-                            <div className="flex items-center justify-between gap-3">
-                                <div>
-                                    <h4 className="text-lg font-black text-[#2B2E4A]">Ayuda IA para la imagen</h4>
-                                    <p className="text-xs font-bold text-[#9094A6]">Crea una pregunta nueva o sugiere asociaciones con el banco existente</p>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <button onClick={handleGenerateQuestionDraft} disabled={!selectedAsset || isGeneratingAiDraft} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset ? 'opacity-50 cursor-not-allowed' : '!bg-[#7C3AED] !border-[#6D28D9] text-white'}`}>
-                                        {isGeneratingAiDraft ? 'GENERANDO...' : 'GENERAR PREGUNTA IA'}
-                                    </button>
-                                    <button onClick={handleSuggestMatches} disabled={!selectedAsset || isLoadingAiSuggestions} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset ? 'opacity-50 cursor-not-allowed' : '!bg-[#0EA5E9] !border-[#0284C7] text-white'}`}>
-                                        {isLoadingAiSuggestions ? 'BUSCANDO...' : 'SUGERIR ASOCIACIONES'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {!selectedAsset ? (
-                                <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-sm font-bold text-[#9094A6]">
-                                    Selecciona una imagen de la biblioteca para activar la ayuda de IA.
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                        <select value={aiDraftForm.subject} onChange={(e) => setAiDraftForm(prev => ({ ...prev, subject: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
-                                            {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'LENGUAJE', 'HISTORIA'].map((option) => <option key={option} value={option}>{option}</option>)}
-                                        </select>
-                                        <input value={aiDraftForm.session} onChange={(e) => setAiDraftForm(prev => ({ ...prev, session: e.target.value }))} placeholder="Sesión" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                        <input value={aiDraftForm.phase} onChange={(e) => setAiDraftForm(prev => ({ ...prev, phase: e.target.value }))} placeholder="Fase" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                        <select value={aiDraftForm.levelName} onChange={(e) => setAiDraftForm(prev => ({ ...prev, levelName: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
-                                            {['BASICO', 'INTERMEDIO', 'AVANZADO'].map((option) => <option key={option} value={option}>{option}</option>)}
-                                        </select>
-                                    </div>
-
-                                    {aiDraft && (
-                                        <div className="rounded-2xl border border-[#E9D5FF] bg-[#FAF5FF] p-4">
-                                            <p className="text-xs font-black uppercase tracking-widest text-[#7C3AED]">Lectura IA de la imagen</p>
-                                            <p className="mt-2 text-sm font-bold text-[#2B2E4A]">{aiDraft.image_analysis || 'La IA generó un borrador editable para esta imagen.'}</p>
-                                            {Array.isArray(aiDraft.tags) && aiDraft.tags.length > 0 && (
-                                                <div className="mt-3 flex flex-wrap gap-2">
-                                                    {aiDraft.tags.map((tag) => (
-                                                        <span key={tag} className="px-2 py-1 rounded-full bg-white border border-[#E9D5FF] text-[11px] font-black text-[#7C3AED]">{tag}</span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <input value={aiDraftForm.topic} onChange={(e) => setAiDraftForm(prev => ({ ...prev, topic: e.target.value }))} placeholder="Tema" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                        <select value={aiDraftForm.question_visual_role} onChange={(e) => setAiDraftForm(prev => ({ ...prev, question_visual_role: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
-                                            <option value="required_for_interpretation">required_for_interpretation</option>
-                                            <option value="supporting">supporting</option>
-                                        </select>
-                                    </div>
-                                    <textarea value={aiDraftForm.question} onChange={(e) => setAiDraftForm(prev => ({ ...prev, question: e.target.value }))} placeholder="Enunciado de la pregunta" rows={3} className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm resize-none" />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <input value={aiDraftForm.option_a} onChange={(e) => setAiDraftForm(prev => ({ ...prev, option_a: e.target.value }))} placeholder="Opción A" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                        <input value={aiDraftForm.option_b} onChange={(e) => setAiDraftForm(prev => ({ ...prev, option_b: e.target.value }))} placeholder="Opción B" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                        <input value={aiDraftForm.option_c} onChange={(e) => setAiDraftForm(prev => ({ ...prev, option_c: e.target.value }))} placeholder="Opción C" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                        <input value={aiDraftForm.option_d} onChange={(e) => setAiDraftForm(prev => ({ ...prev, option_d: e.target.value }))} placeholder="Opción D" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-3">
-                                        <select value={aiDraftForm.correct_answer} onChange={(e) => setAiDraftForm(prev => ({ ...prev, correct_answer: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
-                                            {['A', 'B', 'C', 'D'].map((option) => <option key={option} value={option}>{option}</option>)}
-                                        </select>
-                                        <textarea value={aiDraftForm.explanation} onChange={(e) => setAiDraftForm(prev => ({ ...prev, explanation: e.target.value }))} placeholder="Explicación de la respuesta correcta" rows={3} className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm resize-none" />
-                                    </div>
-                                    <button onClick={handleSaveAiDraft} disabled={!selectedAsset || selectedAsset.status !== 'approved' || isGeneratingAiDraft} className={`${clayBtnAction} !bg-[#16A34A] !border-[#15803D] hover:!bg-[#15803D] text-white ${!selectedAsset || selectedAsset.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                        {isGeneratingAiDraft ? 'GUARDANDO...' : 'GUARDAR PREGUNTA NUEVA EN QUESTIONBANK'}
-                                    </button>
-                                    {selectedAsset.status !== 'approved' && (
-                                        <p className="text-xs font-black text-[#B45309]">Aprueba la imagen antes de guardar una pregunta nueva con ella.</p>
-                                    )}
-
-                                    <div className="rounded-2xl border border-gray-100 bg-[#FAFBFF] p-4">
-                                        <div className="flex items-center justify-between gap-3 mb-3">
-                                            <div>
-                                                <p className="text-sm font-black text-[#2B2E4A]">Sugerencias IA para asociar a preguntas existentes</p>
-                                                <p className="text-xs font-bold text-[#9094A6]">La IA usa la imagen y sus tags para encontrar preguntas compatibles</p>
-                                            </div>
-                                        </div>
-                                        {isLoadingAiSuggestions ? (
-                                            <div className="py-8 text-center text-[#9094A6]"><Loader className="w-6 h-6 animate-spin mx-auto mb-2" />Buscando coincidencias...</div>
-                                        ) : aiSuggestedQuestions.length === 0 ? (
-                                            <div className="py-6 text-sm font-bold text-[#9094A6]">Todavía no hay sugerencias. Usa “SUGERIR ASOCIACIONES”.</div>
-                                        ) : (
-                                            <div className="space-y-3 max-h-[360px] overflow-y-auto">
-                                                {aiSuggestedQuestions.map((row) => (
-                                                    <div key={`${row.question_id}_${row.suggestion_score}`} className="rounded-2xl border border-gray-100 p-4 bg-white">
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div>
-                                                                <p className="text-xs font-black uppercase tracking-widest text-[#0EA5E9]">{row.question_id}</p>
-                                                                <p className="font-bold text-[#2B2E4A] mt-1 whitespace-pre-wrap">{row.question}</p>
-                                                                <p className="text-xs text-[#9094A6] mt-2">Sesión {row.session} · Fase {row.phase} · Score IA {row.suggestion_score}</p>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => onLinkQuestionAsset(row.question_id, selectedAsset?.asset_id || '').then(async () => {
-                                                                    await refreshQuestions();
-                                                                    await handleSuggestMatches();
-                                                                })}
-                                                                disabled={!selectedAsset || selectedAsset.status !== 'approved'}
-                                                                className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset || selectedAsset.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : '!bg-[#0EA5E9] !border-[#0284C7] text-white'}`}
-                                                            >
-                                                                ASOCIAR ESTA
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4">
-                            <div className="flex items-center justify-between gap-3">
-                                <div>
-                                    <h4 className="text-lg font-black text-[#2B2E4A]">Asociar a preguntas del Quiz</h4>
-                                    <p className="text-xs font-bold text-[#9094A6]">Busca preguntas del QuestionBank y asígnales el asset seleccionado</p>
-                                </div>
-                                <button onClick={refreshQuestions} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>BUSCAR</button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <select value={questionFilters.subject} onChange={(e) => setQuestionFilters(prev => ({ ...prev, subject: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
-                                    <option value="">Todas</option>
-                                    {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'LENGUAJE', 'HISTORIA'].map((option) => <option key={option} value={option}>{option}</option>)}
-                                </select>
-                                <input value={questionFilters.session} onChange={(e) => setQuestionFilters(prev => ({ ...prev, session: e.target.value }))} placeholder="Sesión" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                <input value={questionFilters.search} onChange={(e) => setQuestionFilters(prev => ({ ...prev, search: e.target.value }))} placeholder="Buscar" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                            </div>
-                            <div className="max-h-[420px] overflow-y-auto space-y-3">
-                                {isLoadingQuestions ? (
-                                    <div className="py-10 text-center text-[#9094A6]"><Loader className="w-6 h-6 animate-spin mx-auto mb-2" />Cargando preguntas...</div>
-                                ) : questionRows.length === 0 ? (
-                                    <div className="py-10 text-center text-[#9094A6]">Busca preguntas para asociar.</div>
-                                ) : (
-                                    questionRows.map((row) => (
-                                        <div key={row.question_id} className="rounded-2xl border border-gray-100 p-4 bg-[#FAFBFF]">
-                                            <p className="text-xs font-black uppercase tracking-widest text-[#4D96FF]">{row.question_id}</p>
-                                            <p className="font-bold text-[#2B2E4A] mt-1 whitespace-pre-wrap">{row.question}</p>
-                                            <p className="text-xs text-[#9094A6] mt-2">Sesión {row.session} · Fase {row.phase} · {row.topic || 'Sin tema'}</p>
-                                            <div className="flex flex-wrap gap-2 mt-3">
-                                                <select
-                                                    value={row.question_visual_role || 'supporting'}
-                                                    onChange={(e) => onUpdateQuestionVisualRole(row.question_id, e.target.value).then(refreshQuestions)}
-                                                    className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold"
-                                                >
-                                                    <option value="supporting">supporting</option>
-                                                    <option value="required_for_interpretation">required_for_interpretation</option>
-                                                </select>
-                                                <button
-                                                    onClick={() => onLinkQuestionAsset(row.question_id, selectedAsset?.asset_id || '').then(refreshQuestions)}
-                                                    disabled={!selectedAsset || selectedAsset.status !== 'approved'}
-                                                    className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset || selectedAsset.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : '!bg-[#4D96FF] !border-[#3B80E6] text-white'}`}
-                                                >
-                                                    {row.prompt_image_asset_id ? 'REEMPLAZAR' : 'ASOCIAR'}
-                                                </button>
-                                                {row.prompt_image_asset_id && (
-                                                    <button onClick={() => onLinkQuestionAsset(row.question_id, '').then(refreshQuestions)} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#FF4B4B] !border-[#D63E3E] text-white`}>
-                                                        QUITAR
-                                                    </button>
-                                                )}
-                                            </div>
-                                            {row.prompt_image_url && (
-                                                <p className="text-[11px] mt-2 font-bold text-[#16A34A]">Imagen actual: {row.prompt_image_asset_id || 'Sí'}</p>
-                                            )}
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4">
-                            <div className="flex items-center justify-between gap-3">
-                                <div>
-                                    <h4 className="text-lg font-black text-[#2B2E4A]">Asociar a Teoría Lúdica</h4>
-                                    <p className="text-xs font-bold text-[#9094A6]">La imagen será apoyo visual y no afectará el 80%</p>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <button onClick={refreshTheory} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs`}>BUSCAR</button>
-                                    <button
-                                        onClick={handleSuggestTheoryMatches}
-                                        disabled={!selectedAsset || isLoadingAiTheorySuggestions}
-                                        className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset ? 'opacity-50 cursor-not-allowed' : '!bg-[#0EA5E9] !border-[#0284C7] text-white'}`}
-                                    >
-                                        {isLoadingAiTheorySuggestions ? 'SUGIRIENDO...' : 'SUGERIR TEORÍAS IA'}
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                <select value={theoryFilters.subject} onChange={(e) => setTheoryFilters(prev => ({ ...prev, subject: e.target.value }))} className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm">
-                                    <option value="">Todas</option>
-                                    {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'LENGUAJE', 'HISTORIA'].map((option) => <option key={option} value={option}>{option}</option>)}
-                                </select>
-                                <input value={theoryFilters.session} onChange={(e) => setTheoryFilters(prev => ({ ...prev, session: e.target.value }))} placeholder="Sesión" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                <input value={theoryFilters.phase} onChange={(e) => setTheoryFilters(prev => ({ ...prev, phase: e.target.value }))} placeholder="Fase" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                                <input value={theoryFilters.search} onChange={(e) => setTheoryFilters(prev => ({ ...prev, search: e.target.value }))} placeholder="Buscar" className="rounded-2xl border border-gray-200 px-4 py-3 font-bold text-sm" />
-                            </div>
-
-                            <div className="rounded-2xl border border-gray-100 bg-[#FAFBFF] p-4">
-                                <p className="text-sm font-black text-[#2B2E4A]">Sugerencias IA para teorías</p>
-                                <p className="text-xs font-bold text-[#9094A6] mt-1">Encuentra las teorías más compatibles con la imagen y asígnalas en un clic.</p>
-                                {isLoadingAiTheorySuggestions ? (
-                                    <div className="py-8 text-center text-[#9094A6]"><Loader className="w-6 h-6 animate-spin mx-auto mb-2" />Buscando teorías compatibles...</div>
-                                ) : aiSuggestedTheoryRows.length === 0 ? (
-                                    <div className="py-4 text-sm font-bold text-[#9094A6]">Todavía no hay sugerencias. Usa “SUGERIR TEORÍAS IA”.</div>
-                                ) : (
-                                    <div className="space-y-3 mt-3 max-h-[260px] overflow-y-auto">
-                                        {aiSuggestedTheoryRows.map((row) => (
-                                            <div key={`ai_theory_${row.rowNumber}_${row.suggestion_score}`} className="rounded-2xl border border-gray-100 p-4 bg-white">
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div>
-                                                        <p className="text-xs font-black uppercase tracking-widest text-[#0EA5E9]">Fila {row.rowNumber}</p>
-                                                        <p className="font-bold text-[#2B2E4A] mt-1 whitespace-pre-wrap">{row.topic}</p>
-                                                        <p className="text-xs text-[#9094A6] mt-2">Sesión {row.session} · Fase {row.phase} · Score IA {row.suggestion_score}</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => onLinkTheoryAsset(row.rowNumber, selectedAsset?.asset_id || '').then(async () => {
-                                                            await refreshTheory();
-                                                            await handleSuggestTheoryMatches();
-                                                        })}
-                                                        disabled={!selectedAsset || selectedAsset.status !== 'approved'}
-                                                        className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset || selectedAsset.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : '!bg-[#0EA5E9] !border-[#0284C7] text-white'}`}
-                                                    >
-                                                        ASOCIAR ESTA
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="max-h-[420px] overflow-y-auto space-y-3">
-                                {isLoadingTheory ? (
-                                    <div className="py-10 text-center text-[#9094A6]"><Loader className="w-6 h-6 animate-spin mx-auto mb-2" />Cargando teorías...</div>
-                                ) : theoryRows.length === 0 ? (
-                                    <div className="py-10 text-center text-[#9094A6]">Busca teorías para asociar.</div>
-                                ) : (
-                                    theoryRows.map((row) => (
-                                        <div key={`${row.rowNumber}_${row.timestamp}`} className="rounded-2xl border border-gray-100 p-4 bg-[#FAFBFF]">
-                                            <p className="text-xs font-black uppercase tracking-widest text-[#4D96FF]">Fila {row.rowNumber} · {row.subject} · Sesión {row.session} · Fase {row.phase}</p>
-                                            <p className="font-bold text-[#2B2E4A] mt-1 whitespace-pre-wrap">{row.topic}</p>
-                                            <div className="flex flex-wrap gap-2 mt-3">
-                                                <button
-                                                    onClick={() => onLinkTheoryAsset(row.rowNumber, selectedAsset?.asset_id || '').then(refreshTheory)}
-                                                    disabled={!selectedAsset || selectedAsset.status !== 'approved'}
-                                                    className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs ${!selectedAsset || selectedAsset.status !== 'approved' ? 'opacity-50 cursor-not-allowed' : '!bg-[#4D96FF] !border-[#3B80E6] text-white'}`}
-                                                >
-                                                    {row.support_image_asset_id ? 'REEMPLAZAR' : 'ASOCIAR'}
-                                                </button>
-                                                {row.support_image_asset_id && (
-                                                    <button onClick={() => onLinkTheoryAsset(row.rowNumber, '').then(refreshTheory)} className={`${clayBtnAction} !w-auto !py-2 !px-4 text-xs !bg-[#FF4B4B] !border-[#D63E3E] text-white`}>
-                                                        QUITAR
-                                                    </button>
-                                                )}
-                                            </div>
-                                            {row.support_image_url && (
-                                                <p className="text-[11px] mt-2 font-bold text-[#16A34A]">Imagen actual: {row.support_image_asset_id || 'Sí'}</p>
-                                            )}
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                    <QuestionBankManager
+                        selectedAsset={selectedAsset}
+                        actionButtonClass={clayBtnAction}
+                        onSearchQuestionRows={onSearchQuestionRows}
+                        onSearchTheoryRows={onSearchTheoryRows}
+                        onLinkQuestionAsset={onLinkQuestionAsset}
+                        onUpdateQuestionVisualRole={onUpdateQuestionVisualRole}
+                        onLinkTheoryAsset={onLinkTheoryAsset}
+                        onGenerateQuestionFromAsset={onGenerateQuestionFromAsset}
+                        onSuggestQuestionMatchesFromAsset={onSuggestQuestionMatchesFromAsset}
+                        onSuggestTheoryMatchesFromAsset={onSuggestTheoryMatchesFromAsset}
+                        onCreateQuestionBankRow={onCreateQuestionBankRow}
+                    />
                 </div>
             </div>
         </div>
@@ -4812,6 +4527,25 @@ const App = () => {
         return data.item;
     };
 
+    const populatePhaseWithImages = async (payload = {}) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'populate_phase_with_images',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                ...payload
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo generar el batch de fase');
+        }
+        try { await loadAdminPedagogicalAssets(); } catch (e) { /* noop */ }
+        return data;
+    };
+
     const updateImageGenerationRuntimeConfig = async (payload = {}) => {
         const response = await fetch(activeWebhookUrl, {
             method: 'POST',
@@ -4884,6 +4618,24 @@ const App = () => {
             throw new Error(data.error || 'No se pudieron cargar las teorías');
         }
         return data.items || [];
+    };
+
+    const createQuestionBankRow = async (payload = {}) => {
+        const response = await fetch(activeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'create_question_bank_row',
+                email: currentUser?.email,
+                user_id: USER_ID,
+                ...payload
+            })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'No se pudo crear la pregunta en el QuestionBank');
+        }
+        return data;
     };
 
     const linkQuestionImageAsset = async (questionId, assetId) => {
@@ -6407,6 +6159,10 @@ ${finalData.capsule}`;
                     onClose={() => setShowExamCaptureModal(false)}
                     userId={USER_ID}
                     userEmail={currentUser?.email}
+                    defaultSubject={currentSubject}
+                    defaultSession={TODAYS_SESSION?.session || 1}
+                    questionCount={15}
+                    onExamReady={startOracleNotebookExam}
                 />
 
                 <AIContentModal
@@ -6908,9 +6664,11 @@ ${finalData.capsule}`;
                     onGenerateQuestionFromAsset={generateQuestionFromAsset}
                     onSuggestQuestionMatchesFromAsset={suggestQuestionMatchesFromAsset}
                     onSuggestTheoryMatchesFromAsset={suggestTheoryMatchesFromAsset}
+                    onCreateQuestionBankRow={createQuestionBankRow}
                     onGetImageGenerationConfig={getImageGenerationConfig}
                     onGeneratePedagogicalImage={generatePedagogicalImage}
                     onUpdateImageGenerationRuntimeConfig={updateImageGenerationRuntimeConfig}
+                    onPopulatePhaseWithImages={populatePhaseWithImages}
                 />
 
                 {/* SETTINGS MODAL */}

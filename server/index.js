@@ -19,6 +19,32 @@ import { resolveMoralejaMatematicaContext } from './moralejaMatematica.js';
 import { resolveMoralejaBiologiaContext } from './moralejaBiologia.js';
 import { resolveMoralejaQuimicaContext } from './moralejaQuimica.js';
 import { resolveMoralejaFisicaContext } from './moralejaFisica.js';
+import {
+    appendRuntimeTheoryLudica,
+    createRuntimePedagogicalAsset,
+    createRuntimeQuestionBankQuestion,
+    findRuntimeExamReminderById,
+    findRuntimePedagogicalAssetById,
+    findRuntimeTheoryLudicaByKey,
+    getRuntimeUserByEmail,
+    getRuntimeUserByToken,
+    insertRuntimeAdaptiveSnapshot,
+    insertRuntimeProgressLog,
+    linkRuntimeQuestionBankAsset,
+    linkRuntimeTheoryLudicaAsset,
+    listRuntimeExamReminders,
+    listRuntimePedagogicalAssets,
+    listRuntimeQuestionBankImageCandidates,
+    listRuntimeQuestionBankRowsForAdmin,
+    listRuntimeTheoryLudicaRowsForAdmin,
+    listRuntimeUsers,
+    countRuntimeQuestionsWithImageInPhase,
+    updateRuntimePedagogicalAsset,
+    updateRuntimeExistingQuestionWithImage,
+    updateRuntimeQuestionVisualRole,
+    upsertRuntimeExamReminder,
+    upsertRuntimeUser
+} from './db/runtimeWrites.js';
 
 dotenv.config();
 
@@ -365,41 +391,17 @@ const buildPedagogicalAssetId = async (sheets, subject = '') => {
 };
 
 const listPedagogicalImageAssets = async (sheets, filters = {}) => {
-    const rows = await getPedagogicalImageRows(sheets);
-    const subjectFilter = normalizeSheetText(filters.subject).toUpperCase();
-    const statusFilter = normalizePedagogicalImageStatus(filters.status || '');
-    const searchFilter = normalizeSheetText(filters.search).toLowerCase();
-
-    return rows
-        .filter((row) => !subjectFilter || normalizeSheetText(row.subject).toUpperCase() === subjectFilter)
-        .filter((row) => !filters.status || normalizePedagogicalImageStatus(row.status) === statusFilter)
-        .filter((row) => {
-            if (!searchFilter) return true;
-            const haystack = [
-                row.asset_id,
-                row.title,
-                row.subject,
-                row.topic_tags,
-                row.alt_text,
-                row.caption
-            ].map((item) => normalizeSheetText(item).toLowerCase()).join(' ');
-            return haystack.includes(searchFilter);
-        })
-        .sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime())
-        .map((row) => ({
-            ...row,
-            status: normalizePedagogicalImageStatus(row.status),
-            absolute_file_url: buildAbsolutePublicUrl(row.file_url)
-        }));
+    const rows = await listRuntimePedagogicalAssets(filters);
+    return rows.map((row) => ({
+        ...row,
+        status: normalizePedagogicalImageStatus(row.status),
+        absolute_file_url: buildAbsolutePublicUrl(row.file_url)
+    }));
 };
 
 const findPedagogicalImageAssetById = async (sheets, assetId = '', { approvedOnly = false } = {}) => {
-    const normalizedId = String(assetId || '').trim();
-    if (!normalizedId) return null;
-    const rows = await getPedagogicalImageRows(sheets);
-    const found = rows.find((row) => String(row.asset_id || '').trim() === normalizedId) || null;
+    const found = await findRuntimePedagogicalAssetById(assetId, { approvedOnly });
     if (!found) return null;
-    if (approvedOnly && normalizePedagogicalImageStatus(found.status) !== 'approved') return null;
     return {
         ...found,
         status: normalizePedagogicalImageStatus(found.status),
@@ -408,26 +410,10 @@ const findPedagogicalImageAssetById = async (sheets, assetId = '', { approvedOnl
 };
 
 const updatePedagogicalImageAssetRow = async (sheets, assetId = '', patch = {}) => {
-    const rows = await getPedagogicalImageRows(sheets);
-    const current = rows.find((row) => String(row.asset_id || '').trim() === String(assetId || '').trim());
-    if (!current) throw new Error('El asset pedagógico no existe');
-
-    const next = {
-        ...current,
-        ...patch,
-        updated_at: new Date().toISOString()
-    };
-    const values = PEDAGOGICAL_IMAGE_HEADERS.map((header) => String(next?.[header] || '').trim());
-    await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${PEDAGOGICAL_IMAGE_SHEET}!A${current.rowNumber}:N${current.rowNumber}`,
-        valueInputOption: 'RAW',
-        requestBody: { values: [values] }
-    });
+    const next = await updateRuntimePedagogicalAsset(assetId, patch);
 
     return {
         ...next,
-        rowNumber: current.rowNumber,
         absolute_file_url: buildAbsolutePublicUrl(next.file_url)
     };
 };
@@ -445,39 +431,23 @@ const createPedagogicalImageAsset = async (sheets, {
     sourceType = 'admin_upload',
     status = 'draft'
 } = {}) => {
-    const normalizedSubject = normalizeSheetText(subject).toUpperCase();
-    const assetId = await buildPedagogicalAssetId(sheets, normalizedSubject);
-    const timestamp = new Date().toISOString();
-    const record = {
-        asset_id: assetId,
-        title: String(title || '').trim(),
-        subject: normalizedSubject,
-        topic_tags: String(topicTags || '').trim(),
+    const created = await createRuntimePedagogicalAsset({
+        title,
+        subject,
+        topicTags,
         kind: normalizePedagogicalImageKind(kind),
-        file_name: String(fileName || '').trim(),
-        file_url: String(fileUrl || '').trim(),
-        mime_type: String(mimeType || '').trim(),
-        alt_text: String(altText || '').trim(),
-        caption: String(caption || '').trim(),
-        source_type: String(sourceType || 'admin_upload').trim(),
-        status: normalizePedagogicalImageStatus(status),
-        created_at: timestamp,
-        updated_at: timestamp
-    };
-
-    await ensureSheetHeaders(sheets, PEDAGOGICAL_IMAGE_SHEET, PEDAGOGICAL_IMAGE_HEADERS);
-    await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${PEDAGOGICAL_IMAGE_SHEET}!A:N`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-            values: [PEDAGOGICAL_IMAGE_HEADERS.map((header) => String(record?.[header] || ''))]
-        }
+        fileName,
+        fileUrl,
+        mimeType,
+        altText,
+        caption,
+        sourceType,
+        status: normalizePedagogicalImageStatus(status)
     });
 
     return {
-        ...record,
-        absolute_file_url: buildAbsolutePublicUrl(record.file_url)
+        ...created,
+        absolute_file_url: buildAbsolutePublicUrl(created.file_url)
     };
 };
 
@@ -519,54 +489,63 @@ const appendQuestionBankQuestion = async (sheets, {
     promptImage = null,
     questionVisualRole = 'required_for_interpretation'
 } = {}) => {
-    const normalizedSubject = normalizeSheetText(subject).toUpperCase();
-    const normalizedQuestion = String(question || '').trim();
-    if (!normalizedSubject || !normalizedQuestion) {
-        throw new Error('La pregunta nueva necesita asignatura y enunciado');
+    const phaseNumber = Number(phase || resolveQuestionBankPhase(levelName || '')) || resolveQuestionBankPhase(levelName || '');
+    return createRuntimeQuestionBankQuestion({
+        subject,
+        session,
+        phase: phaseNumber || phase,
+        slot,
+        proposalIndex,
+        levelName,
+        topic,
+        question,
+        options,
+        correctAnswer,
+        explanation,
+        sourceMode,
+        promptImage,
+        questionVisualRole: normalizeQuestionVisualRole(questionVisualRole || 'required_for_interpretation')
+    });
+};
+
+const createQuestionBankRowFromPayload = async (sheets, payload = {}, {
+    fallback = {},
+    sourceMode = 'manual_admin',
+    requireApprovedAsset = false
+} = {}) => {
+    const assetId = String(payload.asset_id || fallback.asset_id || '').trim();
+    let asset = null;
+
+    if (assetId) {
+        asset = await findPedagogicalImageAssetById(sheets, assetId, { approvedOnly: requireApprovedAsset });
+        if (!asset) {
+            throw new Error(requireApprovedAsset
+                ? 'El asset no existe o no está aprobado'
+                : 'El asset indicado no existe');
+        }
     }
 
-    const questionId = await buildQuestionBankQuestionId(sheets, normalizedSubject);
-    const timestamp = new Date().toISOString();
-    const normalizedCorrect = String(correctAnswer || 'A').trim().toUpperCase().slice(0, 1) || 'A';
-    const phaseNumber = Number(phase || resolveQuestionBankPhase(levelName || '')) || resolveQuestionBankPhase(levelName || '');
-    const row = {
-        question_id: questionId,
-        subject: normalizedSubject,
-        session: Number(session || 0) || '',
-        phase: phaseNumber || '',
-        slot: Number(slot || 0) || '',
-        proposal_index: Number(proposalIndex || 1) || 1,
-        levelName: String(levelName || '').trim() || 'BASICO',
-        topic: String(topic || '').trim(),
-        question: normalizedQuestion,
-        option_a: String(options?.A || '').trim(),
-        option_b: String(options?.B || '').trim(),
-        option_c: String(options?.C || '').trim(),
-        option_d: String(options?.D || '').trim(),
-        correct_answer: normalizedCorrect,
-        explanation: String(explanation || '').trim(),
-        sourceMode: String(sourceMode || 'image_ai_admin').trim(),
-        created_at: timestamp,
-        updated_at: timestamp,
-        active: 'TRUE',
-        prompt_image_asset_id: String(promptImage?.asset_id || '').trim(),
-        prompt_image_url: String(promptImage?.file_url || '').trim(),
-        prompt_image_alt: String(promptImage?.alt_text || '').trim(),
-        prompt_image_caption: String(promptImage?.caption || '').trim(),
-        question_visual_role: normalizeQuestionVisualRole(questionVisualRole || 'required_for_interpretation')
-    };
-
-    await ensureSheetHeaders(sheets, QUESTION_BANK_SHEET, QUESTION_BANK_HEADERS);
-    await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${QUESTION_BANK_SHEET}!A:X`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-            values: [QUESTION_BANK_HEADERS.map((header) => String(row?.[header] || ''))]
-        }
+    return appendQuestionBankQuestion(sheets, {
+        subject: payload.subject || fallback.subject || asset?.subject || '',
+        session: payload.session || fallback.session || '',
+        phase: payload.phase || fallback.phase || '',
+        slot: payload.slot || fallback.slot || '',
+        proposalIndex: payload.proposal_index || payload.proposalIndex || fallback.proposalIndex || 1,
+        levelName: payload.levelName || fallback.levelName || 'BASICO',
+        topic: payload.topic || fallback.topic || asset?.topic_tags || asset?.title || '',
+        question: payload.question || fallback.question || '',
+        options: {
+            A: payload.option_a || payload.options?.A || fallback.options?.A || '',
+            B: payload.option_b || payload.options?.B || fallback.options?.B || '',
+            C: payload.option_c || payload.options?.C || fallback.options?.C || '',
+            D: payload.option_d || payload.options?.D || fallback.options?.D || ''
+        },
+        correctAnswer: payload.correct_answer || fallback.correct_answer || 'A',
+        explanation: payload.explanation || fallback.explanation || '',
+        sourceMode,
+        promptImage: asset,
+        questionVisualRole: payload.question_visual_role || fallback.question_visual_role || 'required_for_interpretation'
     });
-
-    return row;
 };
 
 const updateSheetRowByHeaders = async (sheets, sheetTitle, headers, rowNumber, patch = {}) => {
@@ -918,6 +897,7 @@ const getImageGenerationConfig = async () => {
 const generateImageWithOpenAI = async ({
     prompt,
     size = '1024x1024',
+    quality = 'low',
     settings = null
 } = {}) => {
     const apiKey = settings?.api_key || OPENAI_IMAGE_API_KEY;
@@ -1053,18 +1033,386 @@ const generateImageWithNanoBanana = async ({
 const generatePedagogicalImage = async ({
     provider = '',
     prompt = '',
-    size = '1024x1024'
+    size = '1024x1024',
+    quality = 'low'
 } = {}) => {
     const effectiveSettings = await resolveEffectiveImageProviderSettings();
     const finalProvider = await resolveImageGeneratorProvider(provider);
+    const styledPrompt = /blanco y negro|black and white/i.test(prompt)
+        ? prompt
+        : 'Dibujo simple en blanco y negro, estilo libro escolar, linea limpia, minimalista, fondo blanco. ' + prompt;
     if (finalProvider === 'openai') {
-        return generateImageWithOpenAI({ prompt, size, settings: effectiveSettings.openai });
+        return generateImageWithOpenAI({ prompt: styledPrompt, size, quality, settings: effectiveSettings.openai });
     }
     if (finalProvider === 'nano_banana') {
-        return generateImageWithNanoBanana({ prompt, size, settings: effectiveSettings.nano_banana });
+        return generateImageWithNanoBanana({ prompt: styledPrompt, size, settings: effectiveSettings.nano_banana });
     }
     throw new Error('Proveedor de imágenes no soportado');
 };
+
+// Genera pregunta + imagen desde asignatura/sesion/fase/nivel.
+// El tema tambien lo propone la IA (o admin lo sugiere via topicHint).
+const generateQuestionWithImageFromTopic = async (sheets, {
+    subject = 'MATEMATICA',
+    session = '',
+    phase = '',
+    levelName = 'BASICO',
+    topicHint = '',
+    provider = '',
+    quality = 'low',
+    size = '1024x1024'
+} = {}) => {
+    const normalizedSubject = normalizeSheetText(subject).toUpperCase() || 'MATEMATICA';
+    const normalizedLevel = normalizeQuestionBankLevel(levelName) || 'BASICO';
+    const curriculumContext = await getCurriculumContext('1medio', normalizedSubject).catch(() => ({}));
+
+    const systemPrompt = [
+        'Eres Matico, profesor chileno experto en crear preguntas pedagogicas para estudiantes de ensenanza media.',
+        'Dado un contexto (asignatura, sesion, fase, nivel) PROPONES un tema especifico apropiado y creas UNA pregunta de seleccion multiple con 4 alternativas.',
+        'Devuelve SOLO JSON valido con estas claves: topic, question, options, correct_answer, explanation, image_prompt, question_visual_role.',
+        'options debe ser un objeto con claves A, B, C, D.',
+        'correct_answer debe ser una sola letra (A|B|C|D).',
+        'image_prompt debe estar en espanol, maximo 2 frases, describir elementos visuales concretos para ilustrar la pregunta.',
+        'image_prompt NO debe incluir texto, numeros escritos ni letras dentro de la imagen.',
+        'question_visual_role puede ser required_for_interpretation o supporting.'
+    ].join(' ');
+
+    const userPrompt = [
+        'Asignatura: ' + normalizedSubject + (curriculumContext && curriculumContext.subject_label ? ' (' + curriculumContext.subject_label + ')' : '') + '.',
+        'Grado: ' + ((curriculumContext && curriculumContext.grade_label) || '1 medio') + '.',
+        'Sesion: ' + (session || '(libre)') + '.',
+        'Fase: ' + (phase || '(libre)') + '.',
+        'Nivel de dificultad: ' + normalizedLevel + '.',
+        topicHint
+            ? 'Pista del admin sobre el tema: "' + topicHint + '". Si la pista es clara, usala. Si es vaga, propon un tema mas especifico dentro de ese ambito.'
+            : 'El admin NO indico tema - propon uno apropiado para la asignatura, nivel y sesion.',
+        'Pregunta en espanol, una sola respuesta correcta clara, alternativas plausibles pero distintas.'
+    ].join('\n');
+
+    const completion = await openai.chat.completions.create({
+        model: AI_MODELS.fast,
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.75,
+        response_format: { type: 'json_object' }
+    });
+    const parsed = parseJsonObjectResponse(
+        completion.choices?.[0]?.message?.content || '',
+        'propuesta pregunta+imagen'
+    );
+
+    const proposedTopic = String(parsed.topic || topicHint || 'Tema general').trim();
+    const questionText = String(parsed.question || '').trim();
+    if (!questionText) throw new Error('La IA no propuso un enunciado valido');
+    const options = {
+        A: String(parsed.options?.A || '').trim(),
+        B: String(parsed.options?.B || '').trim(),
+        C: String(parsed.options?.C || '').trim(),
+        D: String(parsed.options?.D || '').trim()
+    };
+    if (!options.A || !options.B || !options.C || !options.D) {
+        throw new Error('La IA no genero las 4 alternativas completas');
+    }
+    const correctAnswer = String(parsed.correct_answer || 'A').trim().toUpperCase().slice(0, 1) || 'A';
+    const explanation = String(parsed.explanation || '').trim();
+    const imagePrompt = String(parsed.image_prompt || ('Ilustracion educativa de ' + proposedTopic)).trim();
+    const visualRole = normalizeQuestionVisualRole(parsed.question_visual_role || 'supporting');
+
+    const generated = await generatePedagogicalImage({
+        provider,
+        prompt: imagePrompt,
+        size,
+        quality
+    });
+
+    const extension = mimeTypeToExtension(generated.mimeType || '');
+    const safeTitle = sanitizeFileSegment((proposedTopic || 'ia_question').slice(0, 60)).toLowerCase();
+    const saved = await saveBufferToLocalFile(
+        generated.buffer,
+        safeTitle + '_' + Date.now() + extension,
+        'quiz-assets'
+    );
+    const asset = await createPedagogicalImageAsset(sheets, {
+        title: (proposedTopic + ' (IA)').slice(0, 180),
+        subject: normalizedSubject,
+        topicTags: proposedTopic,
+        kind: 'diagram',
+        fileName: saved.fileName,
+        fileUrl: saved.publicUrl,
+        mimeType: generated.mimeType || 'image/png',
+        altText: imagePrompt.slice(0, 180),
+        caption: 'Auto-generada para pregunta de ' + normalizedSubject + ' - ' + normalizedLevel,
+        sourceType: 'ai_generate_' + (generated.provider || 'openai'),
+        status: 'draft'
+    });
+
+    return {
+        proposed_topic: proposedTopic,
+        image_prompt: imagePrompt,
+        subject: normalizedSubject,
+        session: Number(session || 0) || 0,
+        phase: Number(phase || 0) || 0,
+        levelName: normalizedLevel,
+        question: questionText,
+        options,
+        correct_answer: correctAnswer,
+        explanation,
+        question_visual_role: visualRole,
+        asset,
+        generation: {
+            provider: generated.provider || provider || '',
+            model: generated.model || '',
+            text_model: AI_MODELS.fast
+        }
+    };
+};
+
+// Cuenta cuantas preguntas activas en QuestionBank tienen imagen asociada
+// para una combinacion (subject, session, phase). Usado para enforcar el
+// tope de imagenes por fase.
+const countQuestionsWithImageInPhase = async (sheets, { subject = '', session = '', phase = '' } = {}) => {
+    return countRuntimeQuestionsWithImageInPhase({ subject, session, phase });
+};
+
+// Genera un batch de preguntas para una fase y le pide a la IA que indique
+// para CADA pregunta su image_score (0-10) y image_role. El consumidor
+// decide despues cuales reciben imagen real (respetando el cap por fase).
+const generatePhaseBatchWithImageScoring = async (sheets, {
+    subject = 'MATEMATICA',
+    session = '',
+    phase = '',
+    levelName = 'BASICO',
+    count = 15
+} = {}) => {
+    const normalizedSubject = normalizeSheetText(subject).toUpperCase() || 'MATEMATICA';
+    const normalizedLevel = normalizeQuestionBankLevel(levelName) || 'BASICO';
+    const targetCount = Math.max(3, Math.min(20, Number(count) || 15));
+    const curriculumContext = await getCurriculumContext('1medio', normalizedSubject).catch(() => ({}));
+
+    const systemPrompt = [
+        'Eres Matico, profesor chileno experto en el curriculum nacional.',
+        'Generas preguntas pedagogicas de seleccion multiple (4 alternativas) para una fase concreta de una sesion.',
+        'Tu mision en esta llamada: generar EXACTAMENTE ' + targetCount + ' preguntas variadas dentro de la asignatura/sesion/fase.',
+        'Para CADA pregunta debes ademas evaluar si se beneficia de una imagen o diagrama acompanante.',
+        'No todas las preguntas necesitan imagen: calculo numerico abstracto, definiciones puramente verbales, etimologia, etc., normalmente NO requieren imagen.',
+        'Si requieren imagen: geometria, graficos cartesianos, mapas, anatomia, circuitos, lineas de tiempo, esquemas de procesos, diagramas moleculares, etc.',
+        'Devuelve SOLO JSON valido con esta forma exacta:',
+        '{ "questions": [ {',
+        '  "topic": "...",',
+        '  "question": "...",',
+        '  "options": {"A":"...","B":"...","C":"...","D":"..."},',
+        '  "correct_answer": "A|B|C|D",',
+        '  "explanation": "...",',
+        '  "image_score": 0-10,',
+        '  "image_role": "required_for_interpretation" | "supporting" | "none",',
+        '  "image_prompt": "..."',
+        '} ] }',
+        'Reglas de scoring:',
+        '- image_score 9-10 = sin imagen la pregunta pierde casi todo sentido (ej: identificar el angulo en una figura).',
+        '- image_score 6-8  = la imagen ayuda mucho a interpretar el contexto.',
+        '- image_score 3-5  = la imagen es decorativa o redundante.',
+        '- image_score 0-2  = la imagen no aporta nada.',
+        'image_role debe ser "required_for_interpretation" cuando image_score >= 8, "supporting" cuando 5-7, "none" cuando < 5.',
+        'image_prompt SOLO obligatorio si image_score >= 5. Debe estar en espanol, maximo 2 frases concretas.',
+        'image_prompt NO debe incluir texto, numeros escritos ni letras dentro de la imagen (esas se renderizan despues si hace falta).',
+        'Estilo de imagen referencia: dibujo en blanco y negro, linea limpia, minimalista, libro escolar.'
+    ].join(' ');
+
+    const userPrompt = [
+        'Asignatura: ' + normalizedSubject + (curriculumContext && curriculumContext.subject_label ? ' (' + curriculumContext.subject_label + ')' : '') + '.',
+        'Grado: ' + ((curriculumContext && curriculumContext.grade_label) || '1 medio') + '.',
+        'Sesion: ' + (session || '(libre)') + '.',
+        'Fase: ' + (phase || '(libre)') + '.',
+        'Nivel de dificultad: ' + normalizedLevel + '.',
+        'Genera ' + targetCount + ' preguntas variadas. Asegurate de incluir al menos 3 preguntas con image_score >= 6 si la asignatura lo permite, y el resto con image_score adecuado a su naturaleza.',
+        'No fuerces image_score alto si la pregunta no se beneficia realmente de la imagen.'
+    ].join('\n');
+
+    const completion = await openai.chat.completions.create({
+        model: AI_MODELS.fast,
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
+    });
+    const parsed = parseJsonObjectResponse(
+        completion.choices?.[0]?.message?.content || '',
+        'batch fase con scoring'
+    );
+
+    const rawQuestions = Array.isArray(parsed.questions) ? parsed.questions : [];
+    const normalizedQuestions = rawQuestions
+        .map((raw) => {
+            const options = {
+                A: String(raw?.options?.A || '').trim(),
+                B: String(raw?.options?.B || '').trim(),
+                C: String(raw?.options?.C || '').trim(),
+                D: String(raw?.options?.D || '').trim()
+            };
+            if (!options.A || !options.B || !options.C || !options.D) return null;
+            const questionText = String(raw?.question || '').trim();
+            if (!questionText) return null;
+            const score = Math.max(0, Math.min(10, Number(raw?.image_score) || 0));
+            const rawRole = String(raw?.image_role || '').trim().toLowerCase();
+            const role = (rawRole === 'required_for_interpretation' || rawRole === 'supporting')
+                ? rawRole
+                : 'none';
+            return {
+                topic: String(raw?.topic || '').trim(),
+                question: questionText,
+                options,
+                correct_answer: String(raw?.correct_answer || 'A').trim().toUpperCase().slice(0, 1) || 'A',
+                explanation: String(raw?.explanation || '').trim(),
+                image_score: score,
+                image_role: role,
+                image_prompt: String(raw?.image_prompt || '').trim()
+            };
+        })
+        .filter(Boolean);
+
+    return {
+        subject: normalizedSubject,
+        session: Number(session || 0) || 0,
+        phase: Number(phase || 0) || 0,
+        levelName: normalizedLevel,
+        target_count: targetCount,
+        questions: normalizedQuestions,
+        text_model: AI_MODELS.fast
+    };
+};
+
+const scoreExistingQuestionsForImage = async ({ subject = '', questions = [] } = {}) => {
+    if (!Array.isArray(questions) || questions.length === 0) return [];
+
+    const systemPrompt = [
+        'Eres Matico, profesor chileno experto en crear imagenes pedagogicas utiles.',
+        'Recibes preguntas YA EXISTENTES del QuestionBank y debes decidir cuales se benefician de una imagen.',
+        'Para cada pregunta devuelve: question_id, image_score, image_role, image_prompt.',
+        'Reglas:',
+        '- image_score 9-10: la imagen es critica para interpretar o resolver.',
+        '- image_score 6-8: la imagen ayuda mucho, pero no es estrictamente obligatoria.',
+        '- image_score 3-5: la imagen seria decorativa o redundante.',
+        '- image_score 0-2: la imagen no aporta.',
+        'image_role debe ser required_for_interpretation si image_score >= 8, supporting si 5-7, none si < 5.',
+        'image_prompt debe estar en espanol, maximo 2 frases, con elementos visuales concretos.',
+        'image_prompt NO debe pedir texto, numeros ni letras escritos dentro de la imagen.',
+        'Devuelve SOLO JSON valido: { "scores": [ { "question_id": "...", "image_score": 0-10, "image_role": "...", "image_prompt": "..." } ] }',
+        'Incluye todas las preguntas recibidas.'
+    ].join(' ');
+
+    const userPrompt = [
+        'Asignatura: ' + String(subject || '').trim().toUpperCase(),
+        'Preguntas:',
+        ...questions.map((q, index) => [
+            '[' + (index + 1) + ']',
+            'question_id=' + q.question_id,
+            'topic=' + (q.topic || ''),
+            'question=' + String(q.question || '').slice(0, 500),
+            'options=' + JSON.stringify(q.options || {
+                A: q.option_a,
+                B: q.option_b,
+                C: q.option_c,
+                D: q.option_d
+            })
+        ].join(' | '))
+    ].join('\n');
+
+    const completion = await openai.chat.completions.create({
+        model: AI_MODELS.fast,
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.25,
+        response_format: { type: 'json_object' }
+    });
+
+    const parsed = parseJsonObjectResponse(completion.choices?.[0]?.message?.content || '', 'scoring preguntas existentes');
+    return (Array.isArray(parsed.scores) ? parsed.scores : []).map((item) => {
+        const score = Math.max(0, Math.min(10, Number(item?.image_score) || 0));
+        const rawRole = String(item?.image_role || '').trim().toLowerCase();
+        return {
+            question_id: String(item?.question_id || '').trim(),
+            image_score: score,
+            image_role: rawRole === 'required_for_interpretation'
+                ? 'required_for_interpretation'
+                : (rawRole === 'supporting' ? 'supporting' : 'none'),
+            image_prompt: String(item?.image_prompt || '').trim()
+        };
+    });
+};
+
+const rewriteExistingQuestionForImage = async ({ subject = '', candidate = null, imagePrompt = '', imageRole = 'supporting' } = {}) => {
+    if (!candidate?.question_id) throw new Error('Falta pregunta candidata');
+
+    const systemPrompt = [
+        'Eres Matico, profesor chileno experto en evaluacion.',
+        'Vas a tomar una pregunta existente y adaptarla para que dialogue de verdad con una imagen pedagogica.',
+        'La pregunta debe seguir siendo de seleccion multiple con opciones A/B/C/D.',
+        'Si image_role es required_for_interpretation, la pregunta debe requerir interpretar la imagen para responder.',
+        'Si image_role es supporting, la imagen debe apoyar el razonamiento, no ser solo decorativa.',
+        'No menciones que la imagen fue generada por IA.',
+        'No dependas de texto escrito dentro de la imagen.',
+        'Devuelve SOLO JSON valido con: topic, question, options, correct_answer, explanation, image_prompt, question_visual_role.',
+        'options debe tener A, B, C, D. correct_answer debe ser A, B, C o D.'
+    ].join(' ');
+
+    const userPrompt = [
+        'Asignatura: ' + String(subject || candidate.subject || '').trim().toUpperCase(),
+        'Rol visual objetivo: ' + imageRole,
+        'Prompt de imagen propuesto: ' + imagePrompt,
+        'Pregunta original:',
+        JSON.stringify({
+            question_id: candidate.question_id,
+            topic: candidate.topic,
+            question: candidate.question,
+            options: candidate.options || {
+                A: candidate.option_a,
+                B: candidate.option_b,
+                C: candidate.option_c,
+                D: candidate.option_d
+            },
+            correct_answer: candidate.correct_answer,
+            explanation: candidate.explanation
+        }, null, 2)
+    ].join('\n');
+
+    const completion = await openai.chat.completions.create({
+        model: AI_MODELS.fast,
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.35,
+        response_format: { type: 'json_object' }
+    });
+
+    const parsed = parseJsonObjectResponse(completion.choices?.[0]?.message?.content || '', 'rewrite pregunta existente con imagen');
+    const options = {
+        A: String(parsed.options?.A || '').trim(),
+        B: String(parsed.options?.B || '').trim(),
+        C: String(parsed.options?.C || '').trim(),
+        D: String(parsed.options?.D || '').trim()
+    };
+    if (!parsed.question || !options.A || !options.B || !options.C || !options.D) {
+        throw new Error('La IA no devolvio una pregunta reescrita valida');
+    }
+
+    return {
+        topic: String(parsed.topic || candidate.topic || '').trim(),
+        question: String(parsed.question || '').trim(),
+        options,
+        correct_answer: String(parsed.correct_answer || candidate.correct_answer || 'A').trim().toUpperCase().slice(0, 1) || 'A',
+        explanation: String(parsed.explanation || candidate.explanation || '').trim(),
+        image_prompt: String(parsed.image_prompt || imagePrompt || '').trim(),
+        question_visual_role: normalizeQuestionVisualRole(parsed.question_visual_role || imageRole || 'supporting')
+    };
+};
+
 
 const readPedagogicalAssetImageAsDataUrl = async (asset = null) => {
     if (!asset?.file_url || !asset?.mime_type) {
@@ -1320,7 +1668,12 @@ const sampleQuestionBankQuestions = async (sheets, {
     const endSlot = startSlot + requestedCount - 1;
     const desiredSlots = Array.from({ length: requestedCount }, (_, index) => startSlot + index);
     const excluded = new Set((excludeSignatures || []).map((item) => String(item || '').trim()).filter(Boolean));
-    const rows = await getQuestionBankRows(sheets);
+    const rows = await listRuntimeQuestionBankRowsForAdmin({
+        subject: normalizedSubject,
+        session: sessionNumber,
+        phase: expectedPhase,
+        limit: 300
+    });
 
     const candidatesBySlot = new Map();
     for (const row of rows) {
@@ -1391,45 +1744,7 @@ const listQuestionBankRowsForAdmin = async (sheets, {
     search = '',
     limit = 60
 } = {}) => {
-    const subjectFilter = normalizeSheetText(subject).toUpperCase();
-    const sessionFilter = Number(session || 0) || 0;
-    const searchFilter = normalizeSheetText(search).toLowerCase();
-    const rows = await getQuestionBankRows(sheets);
-
-    return rows
-        .filter((row) => normalizeSheetBool(row.active === '' ? 'TRUE' : row.active))
-        .filter((row) => !subjectFilter || normalizeSheetText(row.subject).toUpperCase() === subjectFilter)
-        .filter((row) => !sessionFilter || (Number(row.session || 0) || 0) === sessionFilter)
-        .filter((row) => {
-            if (!searchFilter) return true;
-            const haystack = [
-                row.question_id,
-                row.topic,
-                row.question
-            ].map((item) => normalizeSheetText(item).toLowerCase()).join(' ');
-            return haystack.includes(searchFilter);
-        })
-        .sort((a, b) => {
-            const aSession = Number(a.session || 0) || 0;
-            const bSession = Number(b.session || 0) || 0;
-            if (aSession !== bSession) return bSession - aSession;
-            return (Number(a.slot || 0) || 0) - (Number(b.slot || 0) || 0);
-        })
-        .slice(0, Math.max(1, Number(limit || 60) || 60))
-        .map((row) => ({
-            rowNumber: row.rowNumber,
-            question_id: row.question_id,
-            subject: row.subject,
-            session: row.session,
-            phase: row.phase,
-            topic: row.topic,
-            question: row.question,
-            prompt_image_asset_id: row.prompt_image_asset_id || '',
-            prompt_image_url: row.prompt_image_url || '',
-            prompt_image_alt: row.prompt_image_alt || '',
-            prompt_image_caption: row.prompt_image_caption || '',
-            question_visual_role: normalizeQuestionVisualRole(row.question_visual_role || '')
-        }));
+    return listRuntimeQuestionBankRowsForAdmin({ subject, session, search, limit });
 };
 
 const sanitizeFileSegment = (value = '') => {
@@ -2894,37 +3209,27 @@ const transporter = isEmailEnabled()
 
 // --- HELPER: Obtener datos del usuario desde la hoja Usuarios ---
 const getUserFromSheet = async (sheets, user_id) => {
-    const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'Usuarios!A:I', // A:token, B:pass, C:created, D:mail, E:nombre, F:celular, G:region, H:comuna, I:correo_apoderado
-    });
-    const rows = response.data.values || [];
-    const row = rows.find(r => r[0] === user_id);
+    const row = await getRuntimeUserByToken(user_id);
     if (!row) return null;
     return {
-        token: row[0],
-        email: row[3] || '',
-        nombre: row[4] || 'Estudiante',
-        celular: row[5] || '',
-        region: row[6] || '',
-        comuna: row[7] || '',
-        correo_apoderado: row[8] || '',
+        token: row.token,
+        email: row.mail || '',
+        nombre: row.nombre || 'Estudiante',
+        celular: row.celular || '',
+        region: row.region || '',
+        comuna: row.comuna || '',
+        correo_apoderado: row.correo_apoderado || '',
     };
 };
 
 // --- HELPER: Obtener TODOS los usuarios ---
 const getAllUsersFromSheet = async (sheets) => {
-    const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'Usuarios!A:I',
-    });
-    const rows = response.data.values || [];
-    // Saltar header (fila 1)
-    return rows.slice(1).map(row => ({
-        token: row[0] || '',
-        email: row[3] || '',
-        nombre: row[4] || 'Estudiante',
-        correo_apoderado: row[8] || '',
+    const rows = await listRuntimeUsers();
+    return rows.map(row => ({
+        token: row.token || '',
+        email: row.mail || '',
+        nombre: row.nombre || 'Estudiante',
+        correo_apoderado: row.correo_apoderado || '',
     }));
 };
 
@@ -2997,42 +3302,33 @@ const logToSheet = async (
     improvementPlan = ''
 ) => {
     try {
-        await ensureSheetHeaders(sheets, 'progress_log', PROGRESS_LOG_HEADERS);
         const timestamp = new Date().toISOString();
-        const values = [
-            timestamp,
-            user_id || '',
-            subject || '',
-            session || '',
-            event_type || '',
-            phase || '',
-            subLevel || '',
-            levelName || '',
-            score || '0',
-            xp || '0',
-            grade || '',
-            topic || '',
-            totalQuestions || '',
-            sourceMode || '',
-            batchIndex || '',
-            batchSize || '',
-            correctAnswers || '',
-            wrongAnswers || '',
-            wrongQuestionDetails || '',
-            weakness || '',
-            improvementPlan || ''
-        ];
-
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: SPREADSHEET_ID,
-            range: 'progress_log!A:U',
-            valueInputOption: 'USER_ENTERED',
-            requestBody: { values: [values] },
+        await insertRuntimeProgressLog({
+            user_id,
+            subject,
+            session,
+            event_type,
+            phase,
+            subLevel,
+            levelName,
+            score,
+            xp,
+            grade,
+            topic,
+            totalQuestions,
+            sourceMode,
+            batchIndex,
+            batchSize,
+            correctAnswers,
+            wrongAnswers,
+            wrongQuestionDetails,
+            weakness,
+            improvementPlan
         });
 
-        console.log('[SHEET] ? ' + event_type + ' | User: ' + user_id + ' | Subj: ' + subject + ' | Phase: ' + phase + ' | XP: ' + xp);
+        console.log('[SUPABASE_PROGRESS_OK]', JSON.stringify({ timestamp, event_type, user_id, subject, phase, xp }));
     } catch (err) {
-        console.error('[SHEET] ? Error:', err.message);
+        console.error('[SUPABASE_PROGRESS_FAIL]', err.message);
     }
 };
 
@@ -3083,39 +3379,30 @@ const appendProgressToSheetOrThrow = async (sheets, {
     improvementPlan = ''
 }) => {
     const timestamp = new Date().toISOString();
-    const values = [
-        timestamp,
-        user_id || '',
-        subject || '',
-        session || '',
-        event_type || '',
-        phase || '',
-        subLevel || '',
-        levelName || '',
-        score || '0',
-        xp || '0',
-        grade || '',
-        topic || '',
-        totalQuestions || '',
-        sourceMode || '',
-        batchIndex || '',
-        batchSize || '',
-        correctAnswers || '',
-        wrongAnswers || '',
-        wrongQuestionDetails || '',
-        weakness || '',
-        improvementPlan || ''
-    ];
-
     try {
-        await ensureSheetHeaders(sheets, 'progress_log', PROGRESS_LOG_HEADERS);
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: SPREADSHEET_ID,
-            range: 'progress_log!A:U',
-            valueInputOption: 'USER_ENTERED',
-            requestBody: { values: [values] },
+        await insertRuntimeProgressLog({
+            user_id,
+            subject,
+            session,
+            event_type,
+            phase,
+            subLevel,
+            levelName,
+            score,
+            xp,
+            grade,
+            topic,
+            totalQuestions,
+            sourceMode,
+            batchIndex,
+            batchSize,
+            correctAnswers,
+            wrongAnswers,
+            wrongQuestionDetails,
+            weakness,
+            improvementPlan
         });
-        console.log('[SHEET_APPEND_OK]', JSON.stringify({
+        console.log('[SUPABASE_PROGRESS_APPEND_OK]', JSON.stringify({
             timestamp,
             user_id,
             subject,
@@ -3139,7 +3426,7 @@ const appendProgressToSheetOrThrow = async (sheets, {
             improvementPlan
         }));
     } catch (err) {
-        console.error('[SHEET_APPEND_FAIL]', JSON.stringify({
+        console.error('[SUPABASE_PROGRESS_APPEND_FAIL]', JSON.stringify({
             timestamp,
             user_id,
             subject,
@@ -3331,16 +3618,7 @@ const getTheoryLudicaRows = async (sheets) => {
 const findTheoryLudicaByKey = async (sheets, { subject = '', session = '', phase = '' } = {}) => {
     const key = resolveTheoryLookup({ subject, session, phase });
     if (!key.subject || !key.session || !key.phase) return null;
-
-    const rows = await getTheoryLudicaRows(sheets);
-    const matches = rows
-        .filter((row) => normalizeSheetBool(row.active === '' ? 'TRUE' : row.active))
-        .filter((row) => normalizeTheorySubject(row.subject) === key.subject)
-        .filter((row) => normalizeTheorySession(row.session) === key.session)
-        .filter((row) => normalizeTheoryPhase(row.phase) === key.phase)
-        .sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
-
-    return matches[0] || null;
+    return findRuntimeTheoryLudicaByKey(key);
 };
 
 const listTheoryLudicaRowsForAdmin = async (sheets, {
@@ -3350,38 +3628,7 @@ const listTheoryLudicaRowsForAdmin = async (sheets, {
     search = '',
     limit = 40
 } = {}) => {
-    const subjectFilter = normalizeTheorySubject(subject);
-    const sessionFilter = normalizeTheorySession(session);
-    const phaseFilter = normalizeTheoryPhase(phase);
-    const searchFilter = normalizeSheetText(search).toLowerCase();
-    const rows = await getTheoryLudicaRows(sheets);
-
-    return rows
-        .filter((row) => normalizeSheetBool(row.active === '' ? 'TRUE' : row.active))
-        .filter((row) => !subjectFilter || normalizeTheorySubject(row.subject) === subjectFilter)
-        .filter((row) => !sessionFilter || normalizeTheorySession(row.session) === sessionFilter)
-        .filter((row) => !phaseFilter || normalizeTheoryPhase(row.phase) === phaseFilter)
-        .filter((row) => {
-            if (!searchFilter) return true;
-            const haystack = [row.subject, row.session, row.phase, row.topic]
-                .map((item) => normalizeSheetText(item).toLowerCase())
-                .join(' ');
-            return haystack.includes(searchFilter);
-        })
-        .sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime())
-        .slice(0, Math.max(1, Number(limit || 40) || 40))
-        .map((row) => ({
-            rowNumber: row.rowNumber,
-            timestamp: row.timestamp,
-            subject: row.subject,
-            session: row.session,
-            phase: row.phase,
-            topic: row.topic,
-            support_image_asset_id: row.support_image_asset_id || '',
-            support_image_url: row.support_image_url || '',
-            support_image_alt: row.support_image_alt || '',
-            support_image_caption: row.support_image_caption || ''
-        }));
+    return listRuntimeTheoryLudicaRowsForAdmin({ subject, session, phase, search, limit });
 };
 
 const appendTheoryLudicaToSheet = async (sheets, {
@@ -3396,136 +3643,30 @@ const appendTheoryLudicaToSheet = async (sheets, {
     const key = resolveTheoryLookup({ subject, session, phase, topic });
     if (!key.subject || !key.session || !key.phase || !String(theoryMarkdown || '').trim()) return null;
 
-    const rows = await getTheoryLudicaRows(sheets);
-    const matchingRows = rows.filter((row) =>
-        normalizeTheorySubject(row.subject) === key.subject
-        && normalizeTheorySession(row.session) === key.session
-        && normalizeTheoryPhase(row.phase) === key.phase
-        && normalizeSheetBool(row.active === '' ? 'TRUE' : row.active)
-    );
-
-    for (const row of matchingRows) {
-        await sheets.spreadsheets.values.update({
-            spreadsheetId: SPREADSHEET_ID,
-            range: `${THEORY_LUDICA_SHEET}!H${row.rowNumber}`,
-            valueInputOption: 'RAW',
-            requestBody: { values: [['FALSE']] }
-        });
-    }
-
-    const timestamp = new Date().toISOString();
-    const values = [[
-        timestamp,
-        key.subject,
-        key.session,
-        key.phase,
-        String(topic || '').trim(),
-        String(theoryMarkdown || '').trim(),
-        String(source || 'ai_generated').trim(),
-        'TRUE',
-        String(supportImage?.asset_id || '').trim(),
-        String(supportImage?.file_url || '').trim(),
-        String(supportImage?.alt_text || '').trim(),
-        String(supportImage?.caption || '').trim()
-    ]];
-
-    await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${THEORY_LUDICA_SHEET}!A:L`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values }
-    });
-
-    return {
-        timestamp,
+    return appendRuntimeTheoryLudica({
         subject: key.subject,
         session: key.session,
         phase: key.phase,
-        topic: String(topic || '').trim(),
-        theory_markdown: String(theoryMarkdown || '').trim(),
-        source: String(source || 'ai_generated').trim(),
-        active: 'TRUE',
-        support_image_asset_id: String(supportImage?.asset_id || '').trim(),
-        support_image_url: String(supportImage?.file_url || '').trim(),
-        support_image_alt: String(supportImage?.alt_text || '').trim(),
-        support_image_caption: String(supportImage?.caption || '').trim()
-    };
+        topic,
+        theoryMarkdown,
+        source,
+        supportImage
+    });
 };
 
 const linkQuestionBankAsset = async (sheets, { questionId = '', assetId = '' } = {}) => {
-    const rows = await getQuestionBankRows(sheets);
-    const target = rows.find((row) => String(row.question_id || '').trim() === String(questionId || '').trim());
-    if (!target) throw new Error('La pregunta del banco no existe');
-
-    let asset = null;
-    if (assetId) {
-        asset = await findPedagogicalImageAssetById(sheets, assetId, { approvedOnly: true });
-        if (!asset) throw new Error('El asset no existe o no está aprobado');
-    }
-
-    const patch = {
-        ...target,
-        prompt_image_asset_id: asset?.asset_id || '',
-        prompt_image_url: asset?.file_url || '',
-        prompt_image_alt: asset?.alt_text || '',
-        prompt_image_caption: asset?.caption || '',
-        question_visual_role: asset ? normalizeQuestionVisualRole(target.question_visual_role || 'supporting') : ''
-    };
-
-    await updateSheetRowByHeaders(sheets, QUESTION_BANK_SHEET, QUESTION_BANK_HEADERS, target.rowNumber, patch);
-
-    return {
-        question_id: target.question_id,
-        prompt_image_asset_id: patch.prompt_image_asset_id,
-        prompt_image_url: patch.prompt_image_url,
-        prompt_image_alt: patch.prompt_image_alt,
-        prompt_image_caption: patch.prompt_image_caption,
-        question_visual_role: patch.question_visual_role
-    };
+    return linkRuntimeQuestionBankAsset({ questionId, assetId });
 };
 
 const updateQuestionVisualRole = async (sheets, { questionId = '', visualRole = '' } = {}) => {
-    const rows = await getQuestionBankRows(sheets);
-    const target = rows.find((row) => String(row.question_id || '').trim() === String(questionId || '').trim());
-    if (!target) throw new Error('La pregunta del banco no existe');
-
-    const patch = {
-        ...target,
-        question_visual_role: normalizeQuestionVisualRole(visualRole || target.question_visual_role || 'supporting')
-    };
-
-    await updateSheetRowByHeaders(sheets, QUESTION_BANK_SHEET, QUESTION_BANK_HEADERS, target.rowNumber, patch);
-    return { question_id: target.question_id, question_visual_role: patch.question_visual_role };
+    return updateRuntimeQuestionVisualRole({
+        questionId,
+        visualRole: normalizeQuestionVisualRole(visualRole || 'supporting')
+    });
 };
 
 const linkTheoryLudicaAsset = async (sheets, { rowNumber = 0, assetId = '' } = {}) => {
-    const rows = await getTheoryLudicaRows(sheets);
-    const target = rows.find((row) => Number(row.rowNumber) === Number(rowNumber));
-    if (!target) throw new Error('La teoría no existe');
-
-    let asset = null;
-    if (assetId) {
-        asset = await findPedagogicalImageAssetById(sheets, assetId, { approvedOnly: true });
-        if (!asset) throw new Error('El asset no existe o no está aprobado');
-    }
-
-    const patch = {
-        ...target,
-        support_image_asset_id: asset?.asset_id || '',
-        support_image_url: asset?.file_url || '',
-        support_image_alt: asset?.alt_text || '',
-        support_image_caption: asset?.caption || ''
-    };
-
-    await updateSheetRowByHeaders(sheets, THEORY_LUDICA_SHEET, THEORY_LUDICA_HEADERS, target.rowNumber, patch);
-
-    return {
-        rowNumber: target.rowNumber,
-        support_image_asset_id: patch.support_image_asset_id,
-        support_image_url: patch.support_image_url,
-        support_image_alt: patch.support_image_alt,
-        support_image_caption: patch.support_image_caption
-    };
+    return linkRuntimeTheoryLudicaAsset({ rowNumber, assetId });
 };
 
 const parseExamAnalysisResponse = (rawText = '') => {
@@ -3567,57 +3708,25 @@ const boolToSheet = (value) => (value ? 'TRUE' : 'FALSE');
 const parseSheetBool = (value = '') => normalizeSheetBool(value);
 
 const getExamReminderRows = async (sheets) => {
-    await ensureSheetHeaders(sheets, EXAM_REMINDER_SHEET, EXAM_REMINDER_HEADERS);
-    const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${EXAM_REMINDER_SHEET}!A:Q`
-    }).catch((error) => {
-        if (error?.code === 400) return { data: { values: [] } };
-        throw error;
-    });
-
-    const rows = response.data.values || [];
-    if (!rows.length) return [];
-
-    const [headers, ...dataRows] = rows;
-    return dataRows.map((row, index) => ({
-        rowNumber: index + 2,
-        ...Object.fromEntries(headers.map((header, headerIndex) => [header, row[headerIndex] || '']))
-    }));
+    return listRuntimeExamReminders();
 };
 
 const appendExamReminderRow = async (sheets, record = {}) => {
-    await ensureSheetHeaders(sheets, EXAM_REMINDER_SHEET, EXAM_REMINDER_HEADERS);
-    const values = EXAM_REMINDER_HEADERS.map((header) => String(record?.[header] || ''));
-    await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${EXAM_REMINDER_SHEET}!A:Q`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [values] }
-    });
+    await upsertRuntimeExamReminder(record);
 };
 
 const updateExamReminderRow = async (sheets, rowNumber, patch = {}) => {
     const rows = await getExamReminderRows(sheets);
-    const current = rows.find((row) => Number(row.rowNumber) === Number(rowNumber));
+    const current = rows.find((row) => String(row.rowNumber) === String(rowNumber) || String(row.event_id) === String(rowNumber));
     if (!current) return null;
 
     const next = { ...current, ...patch };
-    const values = EXAM_REMINDER_HEADERS.map((header) => String(next?.[header] || ''));
-    await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${EXAM_REMINDER_SHEET}!A${rowNumber}:Q${rowNumber}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [values] }
-    });
+    await upsertRuntimeExamReminder(next);
     return { ...next, rowNumber };
 };
 
 const findExamReminderById = async (sheets, eventId = '') => {
-    const normalized = String(eventId || '').trim();
-    if (!normalized) return null;
-    const rows = await getExamReminderRows(sheets);
-    return rows.find((row) => String(row.event_id || '').trim() === normalized) || null;
+    return findRuntimeExamReminderById(eventId);
 };
 
 const daysUntilExam = (examDate = '', now = new Date()) => {
@@ -4373,51 +4482,25 @@ const appendAdaptiveSnapshotToSheetOrThrow = async (sheets, {
     sourceMode = ''
 }) => {
     const timestamp = new Date().toISOString();
-    const headers = [
-        'timestamp',
-        'user_id',
-        'grade',
-        'subject',
-        'session',
-        'topic',
-        'event_type',
-        'mastery',
-        'total_attempts',
-        'total_correct',
-        'total_questions',
-        'next_action',
-        'weak_sessions',
-        'strong_sessions',
-        'source_mode'
-    ];
-    const values = [
-        timestamp,
-        user_id || "",
-        grade || "",
-        subject || "",
-        session || "",
-        topic || "",
-        event_type || "",
-        mastery || 0,
-        totalAttempts || 0,
-        totalCorrect || 0,
-        totalQuestions || 0,
-        nextAction || "",
-        JSON.stringify(weakSessions || []),
-        JSON.stringify(strongSessions || []),
-        sourceMode || ""
-    ];
-
-    await ensureSheetTabExists(sheets, ADAPTIVE_PROFILE_SHEET, headers);
 
     try {
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: SPREADSHEET_ID,
-            range: ADAPTIVE_PROFILE_SHEET + '!A:O',
-            valueInputOption: 'USER_ENTERED',
-            requestBody: { values: [values] },
+        await insertRuntimeAdaptiveSnapshot({
+            user_id,
+            grade,
+            subject,
+            session,
+            topic,
+            event_type,
+            mastery,
+            totalAttempts,
+            totalCorrect,
+            totalQuestions,
+            nextAction,
+            weakSessions,
+            strongSessions,
+            sourceMode
         });
-        console.log("[ADAPTIVE_SHEET_APPEND_OK]", JSON.stringify({
+        console.log("[SUPABASE_ADAPTIVE_APPEND_OK]", JSON.stringify({
             timestamp,
             user_id,
             grade,
@@ -4432,7 +4515,7 @@ const appendAdaptiveSnapshotToSheetOrThrow = async (sheets, {
             sourceMode
         }));
     } catch (err) {
-        console.error("[ADAPTIVE_SHEET_APPEND_FAIL]", JSON.stringify({
+        console.error("[SUPABASE_ADAPTIVE_APPEND_FAIL]", JSON.stringify({
             timestamp,
             user_id,
             grade,
@@ -5221,16 +5304,11 @@ app.post('/webhook/MATICO', async (req, res) => {
         if (currentAction === 'login' || currentAction === 'register') {
             const { email, password, name, phone, region, commune, correo_apoderado } = body;
 
-            const response = await sheets.spreadsheets.values.get({
-                spreadsheetId: SPREADSHEET_ID,
-                range: 'Usuarios!A:I',
-            });
-            const rows = response.data.values || [];
-            const user = rows.find(row => row[3] === email);
+            const user = await getRuntimeUserByEmail(email);
 
             if (currentAction === 'login') {
-                if (user && user[1] === password) {
-                    return res.json({ success: true, user_id: user[0], name: user[4] || 'Estudiante' });
+                if (user && user.pass === password) {
+                    return res.json({ success: true, user_id: user.token, name: user.nombre || 'Estudiante' });
                 }
                 return res.status(401).json({ success: false, message: "Credenciales invÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡lidas" });
             }
@@ -5238,13 +5316,15 @@ app.post('/webhook/MATICO', async (req, res) => {
             if (currentAction === 'register') {
                 if (user) return res.status(400).json({ success: false, message: "El usuario ya existe" });
                 const newToken = `TK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-                await sheets.spreadsheets.values.append({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Usuarios!A:I',
-                    valueInputOption: 'USER_ENTERED',
-                    requestBody: {
-                        values: [[newToken, password, new Date().toISOString(), email, name || 'Estudiante', phone || '', region || '', commune || '', correo_apoderado || '']]
-                    },
+                await upsertRuntimeUser({
+                    token: newToken,
+                    pass: password,
+                    mail: email,
+                    nombre: name || 'Estudiante',
+                    celular: phone || '',
+                    region: region || '',
+                    comuna: commune || '',
+                    correo_apoderado: correo_apoderado || ''
                 });
                 return res.json({ success: true, user_id: newToken, name: name || 'Estudiante' });
             }
@@ -5772,7 +5852,7 @@ Estructura JSON:
                     .filter(Boolean)
             );
 
-            const useSpreadsheetQuestionBank = isMathSubject(subject) || isReadingSubject(subject);
+            const useSpreadsheetQuestionBank = isMathSubject(subject) || isPhysicsSubject(subject) || isReadingSubject(subject);
             const bankSeed = useSpreadsheetQuestionBank
                 ? await sampleQuestionBankQuestions(sheets, {
                     subject,
@@ -5801,7 +5881,7 @@ Estructura JSON:
             timingTrace.mark('question_bank_seed_loaded', {
                 seed_count: Array.isArray(bankSeed) ? bankSeed.length : 0,
                 excluded_count: seenSignatures.size,
-                source: useSpreadsheetQuestionBank ? 'spreadsheet' : 'local_json'
+                source: useSpreadsheetQuestionBank ? 'supabase_question_bank' : 'local_json'
             });
 
             const normalizeOptionsObject = (options = {}) => {
@@ -5903,7 +5983,7 @@ Estructura JSON:
                         batch_index: batchIndex,
                         question_index: index + 1,
                         source_mode: question.source_mode || (useSpreadsheetQuestionBank ? 'question_bank' : 'quiz'),
-                        source_action: question.source_action || (useSpreadsheetQuestionBank ? 'question_bank' : 'generate_quiz')
+                        source_action: question.source_action || (useSpreadsheetQuestionBank ? 'supabase_question_bank' : 'generate_quiz')
                     }));
 
                 timingTrace.mark('served_from_bank', {
@@ -6600,11 +6680,15 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
             const status = normalizePedagogicalImageStatus(body.status || 'draft');
             const provider = normalizeImageGeneratorProvider(body.provider || '');
             const size = String(body.size || '1024x1024').trim() || '1024x1024';
+            const quality = ['low','medium','high','auto'].includes(String(body.quality||'').toLowerCase())
+                ? String(body.quality).toLowerCase()
+                : 'low';
 
             const generated = await generatePedagogicalImage({
                 provider,
                 prompt,
-                size
+                size,
+                quality
             });
             const extension = mimeTypeToExtension(generated.mimeType || '');
             const safeTitle = sanitizeFileSegment(title || 'imagen_ia').toLowerCase();
@@ -6639,6 +6723,361 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
             });
         }
 
+        // Genera pregunta+imagen a partir de asignatura/sesion/fase/nivel.
+        // El tema tambien lo propone la IA (o admin lo sugiere con body.topic_hint).
+        // Si body.save === true, ademas persiste la pregunta en el Question Bank.
+        if (currentAction === 'generate_question_with_image') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            const subject = String(body.subject || 'MATEMATICA').trim().toUpperCase();
+            const session = body.session || '';
+            const phase = body.phase || '';
+            const levelName = normalizeQuestionBankLevel(body.levelName || 'BASICO') || 'BASICO';
+            const topicHint = String(body.topic_hint || body.topic || '').trim();
+            const provider = normalizeImageGeneratorProvider(body.provider || '');
+            const quality = ['low','medium','high','auto'].includes(String(body.quality||'').toLowerCase())
+                ? String(body.quality).toLowerCase()
+                : 'low';
+            const size = String(body.size || '1024x1024').trim() || '1024x1024';
+
+            const result = await generateQuestionWithImageFromTopic(sheets, {
+                subject, session, phase, levelName, topicHint, provider, quality, size
+            });
+
+            if (body.save === true) {
+                const created = await appendQuestionBankQuestion(sheets, {
+                    subject: result.subject,
+                    session: result.session,
+                    phase: result.phase,
+                    slot: Number(body.slot || 0) || 0,
+                    proposalIndex: 1,
+                    levelName: result.levelName,
+                    topic: result.proposed_topic,
+                    question: result.question,
+                    options: result.options,
+                    correctAnswer: result.correct_answer,
+                    explanation: result.explanation,
+                    sourceMode: 'topic_ai_admin',
+                    promptImage: result.asset,
+                    questionVisualRole: result.question_visual_role
+                });
+                return res.json({ success: true, saved: true, item: created, draft: result });
+            }
+
+            return res.json({ success: true, saved: false, draft: result });
+        }
+
+        // Genera un batch de preguntas para una fase con scoring de imagen.
+        // La IA puntea cuales preguntas son mas idoneas para llevar imagen.
+        // Aplica el cap (default 6) de imagenes por fase: las preguntas top
+        // por image_score reciben imagen, el resto se guardan sin imagen.
+        if (currentAction === 'populate_phase_with_images') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            const subject = String(body.subject || 'MATEMATICA').trim().toUpperCase();
+            const session = body.session || '';
+            const phase = body.phase || '';
+            const levelName = normalizeQuestionBankLevel(body.levelName || body.level_name || 'BASICO') || 'BASICO';
+            const count = Math.max(3, Math.min(20, Number(body.count) || 15));
+            const provider = normalizeImageGeneratorProvider(body.provider || '');
+            const quality = ['low', 'medium', 'high', 'auto'].includes(String(body.quality || '').toLowerCase())
+                ? String(body.quality).toLowerCase()
+                : 'low';
+            const size = String(body.size || '1024x1024').trim() || '1024x1024';
+            const maxImagesPerPhase = Math.max(0, Math.min(15, Number(body.image_cap || 6) || 6));
+            const minScore = Math.max(0, Math.min(10, Number(body.min_image_score || 5) || 5));
+
+            const batch = await generatePhaseBatchWithImageScoring(sheets, {
+                subject, session, phase, levelName, count
+            });
+
+            const existingWithImage = await countQuestionsWithImageInPhase(sheets, { subject, session, phase });
+            const remainingSlots = Math.max(0, maxImagesPerPhase - existingWithImage);
+
+            const candidates = batch.questions
+                .map((q, idx) => ({ ...q, originalIndex: idx }))
+                .filter((q) => q.image_role !== 'none' && q.image_score >= minScore && q.image_prompt)
+                .sort((a, b) => b.image_score - a.image_score)
+                .slice(0, remainingSlots);
+            const indexesGettingImage = new Set(candidates.map((c) => c.originalIndex));
+
+            const items = [];
+            let imagesGenerated = 0;
+            let imagesSkippedCapFull = 0;
+            let imagesFailed = 0;
+
+            for (let i = 0; i < batch.questions.length; i++) {
+                const q = batch.questions[i];
+                let asset = null;
+                let visualRole = 'illustrative_only';
+
+                const wasCandidate = (q.image_role !== 'none' && q.image_score >= minScore && !!q.image_prompt);
+
+                if (indexesGettingImage.has(i)) {
+                    try {
+                        const generated = await generatePedagogicalImage({
+                            provider,
+                            prompt: q.image_prompt || ('Ilustracion educativa de ' + (q.topic || subject)),
+                            size,
+                            quality
+                        });
+                        const extension = mimeTypeToExtension(generated.mimeType || '');
+                        const safeTitle = sanitizeFileSegment((q.topic || 'phase_batch').slice(0, 60)).toLowerCase();
+                        const saved = await saveBufferToLocalFile(
+                            generated.buffer,
+                            safeTitle + '_' + Date.now() + '_' + i + extension,
+                            'quiz-assets'
+                        );
+                        asset = await createPedagogicalImageAsset(sheets, {
+                            title: ((q.topic || 'IA batch') + ' (IA)').slice(0, 180),
+                            subject,
+                            topicTags: q.topic || '',
+                            kind: 'diagram',
+                            fileName: saved.fileName,
+                            fileUrl: saved.publicUrl,
+                            mimeType: generated.mimeType || 'image/png',
+                            altText: (q.image_prompt || q.topic || subject).slice(0, 180),
+                            caption: 'Auto-generada batch fase ' + (phase || '?') + ' sesion ' + (session || '?'),
+                            sourceType: 'ai_phase_batch_' + (generated.provider || 'openai'),
+                            status: 'draft'
+                        });
+                        visualRole = q.image_role === 'required_for_interpretation' ? 'required_for_interpretation' : 'supporting';
+                        imagesGenerated++;
+                    } catch (imgErr) {
+                        console.error('[PHASE_BATCH] Error generando imagen Q' + i + ':', imgErr.message);
+                        imagesFailed++;
+                    }
+                } else if (wasCandidate) {
+                    imagesSkippedCapFull++;
+                }
+
+                const created = await appendQuestionBankQuestion(sheets, {
+                    subject,
+                    session,
+                    phase,
+                    slot: 0,
+                    proposalIndex: 1,
+                    levelName,
+                    topic: q.topic,
+                    question: q.question,
+                    options: q.options,
+                    correctAnswer: q.correct_answer,
+                    explanation: q.explanation,
+                    sourceMode: 'phase_batch_ai_admin',
+                    promptImage: asset,
+                    questionVisualRole: visualRole
+                });
+                items.push({
+                    ...created,
+                    image_score: q.image_score,
+                    image_role: q.image_role,
+                    image_prompt: q.image_prompt || '',
+                    had_image_attached: !!asset,
+                    was_image_candidate: wasCandidate
+                });
+            }
+
+            return res.json({
+                success: true,
+                subject,
+                session: Number(session || 0) || 0,
+                phase: Number(phase || 0) || 0,
+                levelName,
+                requested_count: count,
+                saved_count: items.length,
+                images_generated: imagesGenerated,
+                images_skipped_cap_full: imagesSkippedCapFull,
+                images_failed: imagesFailed,
+                cap_per_phase: maxImagesPerPhase,
+                existing_images_in_phase: existingWithImage,
+                remaining_slots_at_start: remainingSlots,
+                min_image_score: minScore,
+                items
+            });
+        }
+
+        // Toma preguntas EXISTENTES de QuestionBank y les agrega imagen real.
+        // Este flujo no duplica preguntas: reescribe la fila original para que
+        // pregunta, opciones e imagen queden acopladas.
+        if (currentAction === 'add_images_to_existing_phase_questions') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            const subject = String(body.subject || '').trim().toUpperCase();
+            const session = Number(body.session || 0) || 0;
+            const phase = Number(body.phase || 0) || 0;
+            const provider = normalizeImageGeneratorProvider(body.provider || '');
+            const quality = ['low', 'medium', 'high', 'auto'].includes(String(body.quality || '').toLowerCase())
+                ? String(body.quality).toLowerCase()
+                : 'low';
+            const size = String(body.size || '1024x1024').trim() || '1024x1024';
+            const maxImagesPerPhase = Math.max(1, Math.min(15, Number(body.image_cap || 6) || 6));
+            const minScore = Math.max(0, Math.min(10, Number(body.min_image_score || 6) || 6));
+            const candidateLimit = Math.max(6, Math.min(80, Number(body.candidate_limit || 45) || 45));
+            const previewOnly = body.preview_only === true || body.dry_run === true;
+
+            if (!['FISICA', 'MATEMATICA'].includes(subject)) {
+                return res.status(400).json({ success: false, error: 'Por ahora este flujo esta habilitado para FISICA y MATEMATICA' });
+            }
+            if (!session || !phase) {
+                return res.status(400).json({ success: false, error: 'Debes indicar session y phase numericos' });
+            }
+
+            const existingWithImage = await countRuntimeQuestionsWithImageInPhase({ subject, session, phase });
+            const remainingSlots = Math.max(0, maxImagesPerPhase - existingWithImage);
+            const candidates = await listRuntimeQuestionBankImageCandidates({
+                subject,
+                session,
+                phase,
+                limit: candidateLimit
+            });
+
+            if (remainingSlots === 0 || candidates.length === 0) {
+                return res.json({
+                    success: true,
+                    subject,
+                    session,
+                    phase,
+                    preview_only: previewOnly,
+                    cap_per_phase: maxImagesPerPhase,
+                    existing_images_in_phase: existingWithImage,
+                    remaining_slots: remainingSlots,
+                    candidates_without_image: candidates.length,
+                    images_generated: 0,
+                    items: []
+                });
+            }
+
+            const scores = await scoreExistingQuestionsForImage({ subject, questions: candidates });
+            const byQuestionId = new Map(candidates.map((item) => [item.question_id, item]));
+            const selected = scores
+                .filter((item) => byQuestionId.has(item.question_id))
+                .filter((item) => item.image_role !== 'none' && item.image_score >= minScore && item.image_prompt)
+                .sort((a, b) => b.image_score - a.image_score)
+                .slice(0, remainingSlots);
+
+            if (previewOnly) {
+                return res.json({
+                    success: true,
+                    subject,
+                    session,
+                    phase,
+                    preview_only: true,
+                    cap_per_phase: maxImagesPerPhase,
+                    existing_images_in_phase: existingWithImage,
+                    remaining_slots: remainingSlots,
+                    candidates_without_image: candidates.length,
+                    selected_count: selected.length,
+                    items: selected.map((score) => ({
+                        ...score,
+                        question: byQuestionId.get(score.question_id)?.question || '',
+                        topic: byQuestionId.get(score.question_id)?.topic || ''
+                    }))
+                });
+            }
+
+            const items = [];
+            let imagesGenerated = 0;
+            let imagesFailed = 0;
+            let rewritesFailed = 0;
+
+            for (const score of selected) {
+                const candidate = byQuestionId.get(score.question_id);
+                if (!candidate) continue;
+
+                try {
+                    const rewrite = await rewriteExistingQuestionForImage({
+                        subject,
+                        candidate,
+                        imagePrompt: score.image_prompt,
+                        imageRole: score.image_role
+                    });
+
+                    const generated = await generatePedagogicalImage({
+                        provider,
+                        prompt: rewrite.image_prompt || score.image_prompt,
+                        size,
+                        quality
+                    });
+                    const extension = mimeTypeToExtension(generated.mimeType || '');
+                    const safeTitle = sanitizeFileSegment((rewrite.topic || candidate.topic || 'retrofit_image').slice(0, 60)).toLowerCase();
+                    const saved = await saveBufferToLocalFile(
+                        generated.buffer,
+                        safeTitle + '_' + Date.now() + '_' + candidate.question_id + extension,
+                        'quiz-assets'
+                    );
+                    const asset = await createPedagogicalImageAsset(sheets, {
+                        title: ((rewrite.topic || candidate.topic || 'Imagen QuestionBank') + ' (retrofit IA)').slice(0, 180),
+                        subject,
+                        topicTags: rewrite.topic || candidate.topic || '',
+                        kind: 'diagram',
+                        fileName: saved.fileName,
+                        fileUrl: saved.publicUrl,
+                        mimeType: generated.mimeType || 'image/png',
+                        altText: (rewrite.image_prompt || score.image_prompt || '').slice(0, 180),
+                        caption: 'Imagen generada para pregunta existente ' + candidate.question_id,
+                        sourceType: 'ai_existing_question_' + (generated.provider || 'openai'),
+                        status: 'approved'
+                    });
+
+                    const updated = await updateRuntimeExistingQuestionWithImage({
+                        questionId: candidate.question_id,
+                        asset,
+                        visualRole: rewrite.question_visual_role || score.image_role,
+                        topic: rewrite.topic,
+                        question: rewrite.question,
+                        options: rewrite.options,
+                        correctAnswer: rewrite.correct_answer,
+                        explanation: rewrite.explanation
+                    });
+
+                    imagesGenerated++;
+                    items.push({
+                        ...updated,
+                        image_score: score.image_score,
+                        image_role: score.image_role,
+                        image_prompt: rewrite.image_prompt || score.image_prompt,
+                        asset
+                    });
+                } catch (error) {
+                    console.error('[EXISTING_IMAGE_RETROFIT] Error en ' + score.question_id + ':', error.message);
+                    if (/reescrita|pregunta/i.test(error.message)) {
+                        rewritesFailed++;
+                    } else {
+                        imagesFailed++;
+                    }
+                    items.push({
+                        question_id: score.question_id,
+                        success: false,
+                        error: error.message,
+                        image_score: score.image_score,
+                        image_role: score.image_role
+                    });
+                }
+            }
+
+            return res.json({
+                success: true,
+                subject,
+                session,
+                phase,
+                preview_only: false,
+                cap_per_phase: maxImagesPerPhase,
+                existing_images_in_phase_before: existingWithImage,
+                remaining_slots_at_start: remainingSlots,
+                candidates_without_image: candidates.length,
+                selected_count: selected.length,
+                images_generated: imagesGenerated,
+                images_failed: imagesFailed,
+                rewrites_failed: rewritesFailed,
+                min_image_score: minScore,
+                items
+            });
+        }
+
         if (currentAction === 'update_pedagogical_asset_status') {
             if (!isAdminEmail(body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
@@ -6665,6 +7104,25 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
                 limit: body.limit || 60
             });
             return res.json({ success: true, items, count: items.length });
+        }
+
+        if (currentAction === 'create_question_bank_row') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+            if (!String(body.question || '').trim()) {
+                return res.status(400).json({ success: false, error: 'Debes indicar el enunciado de la pregunta' });
+            }
+            if (!String(body.subject || '').trim()) {
+                return res.status(400).json({ success: false, error: 'Debes indicar la asignatura' });
+            }
+
+            const created = await createQuestionBankRowFromPayload(sheets, body, {
+                sourceMode: body.sourceMode || 'manual_admin',
+                requireApprovedAsset: true
+            });
+
+            return res.json({ success: true, item: created });
         }
 
         if (currentAction === 'list_theory_rows') {
@@ -6810,32 +7268,13 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
             });
 
             if (body.save === true) {
-                if (normalizePedagogicalImageStatus(asset.status) !== 'approved') {
-                    return res.status(400).json({
-                        success: false,
-                        error: 'Debes aprobar la imagen antes de guardar una pregunta nueva con ella'
-                    });
-                }
-                const created = await appendQuestionBankQuestion(sheets, {
-                    subject: body.subject || draft.subject || asset.subject,
-                    session: body.session || draft.session || '',
-                    phase: body.phase || draft.phase || '',
-                    slot: body.slot || draft.slot || '',
-                    proposalIndex: 1,
-                    levelName: body.levelName || draft.levelName || 'BASICO',
-                    topic: body.topic || draft.topic || asset.topic_tags || asset.title,
-                    question: body.question || draft.question,
-                    options: {
-                        A: body.option_a || draft.options?.A || '',
-                        B: body.option_b || draft.options?.B || '',
-                        C: body.option_c || draft.options?.C || '',
-                        D: body.option_d || draft.options?.D || ''
-                    },
-                    correctAnswer: body.correct_answer || draft.correct_answer || 'A',
-                    explanation: body.explanation || draft.explanation || '',
+                const created = await createQuestionBankRowFromPayload(sheets, {
+                    ...body,
+                    asset_id: asset.asset_id
+                }, {
+                    fallback: draft,
                     sourceMode: 'image_ai_admin',
-                    promptImage: asset,
-                    questionVisualRole: body.question_visual_role || draft.question_visual_role || 'required_for_interpretation'
+                    requireApprovedAsset: true
                 });
 
                 return res.json({
