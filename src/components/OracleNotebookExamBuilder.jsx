@@ -249,7 +249,14 @@ const OracleNotebookExamBuilder = ({
 
     const handleUseExam = () => {
         if (!generatedResult) return;
-        onExamReady?.({ ...generatedResult, questions: accumQuestions, question_count: accumQuestions.length });
+        onExamReady?.({
+            ...generatedResult,
+            questions: accumQuestions,
+            question_count: accumQuestions.length,
+            draft_id: draftId,
+            total_batches: batchInfo.total_batches,
+            batch_index: batchInfo.done_batches
+        });
     };
 
     const canAnalyze = evidences.length > 0 && !isAnalyzing && !isGenerating;

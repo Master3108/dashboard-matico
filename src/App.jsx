@@ -4117,6 +4117,7 @@ const App = () => {
         const session = Math.max(1, Number(payload.session_base || prepExamOracleSession || 1) || 1);
         const topic = String(payload.topic || payload.detected_topics?.[0] || prepExamOraclePrompt || `Cuaderno ${subject}`).trim();
         const questionCount = Number(payload.question_count || questions.length) || questions.length;
+        const totalBatches = Number(payload.total_batches || Math.ceil(questionCount / 5)) || 1;
         const normalizedQuestions = questions.map((question, index) => ({
             ...question,
             source_session: Number(question.source_session) || session,
@@ -4127,13 +4128,16 @@ const App = () => {
             subject,
             sessions: [session],
             questionCount,
-            totalBatches: 1,
+            totalBatches,
             topics: [topic],
             sessionDetails: [{
                 session,
                 topic,
                 readingContent: payload.practice_guide || ''
-            }]
+            }],
+            // Oracle notebook: guardar draft_id para pedir tandas siguientes
+            oracleNotebookDraftId: payload.draft_id || '',
+            sourceMode: 'oracle_notebook'
         };
 
         setCurrentSubject(subject);
@@ -4150,9 +4154,11 @@ const App = () => {
             setAiContent(payload.practice_guide);
         }
 
-        prepExamBatchRef.current = 1;
+        // Batch index 0 ya se cargo (primera tanda), empezar desde 1
+        const startBatch = Number(payload.batch_index || 0) + 1;
+        prepExamBatchRef.current = startBatch;
         prepExamNextBatchPromiseRef.current = null;
-        prepExamBackgroundLoadRef.current = false;
+        prepExamBackgroundLoadRef.current = totalBatches > 1;
 
         await saveProgress('prep_exam_started', {
             subject,
@@ -4173,9 +4179,31 @@ const App = () => {
 
         if (nextBatchIndex >= totalBatches) return [];
 
+        // --- Oracle Notebook mode: usa endpoint propio en vez de n8n ---
+        const isOracleNotebook = Boolean(prepExamConfig.oracleNotebookDraftId);
+
         let parsed = null;
         if (prepExamNextBatchPromiseRef.current) {
             parsed = await prepExamNextBatchPromiseRef.current;
+        } else if (isOracleNotebook) {
+            // Recopilar firmas de preguntas ya mostradas para dedupe
+            const previousSignatures = prepExamQuestions.map(q => {
+                const opts = q.options || {};
+                const clean = (v = '') => String(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+                return `${clean(q.question)} || ${Object.values(opts).map(clean).sort().join(' | ')}`;
+            });
+            const response = await fetch('/api/oracle/exam-from-notebook/generate-batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    draft_id: prepExamConfig.oracleNotebookDraftId,
+                    user_id: USER_ID,
+                    batch_index: nextBatchIndex,
+                    previous_signatures: previousSignatures
+                })
+            });
+            const data = await response.json();
+            parsed = data.success ? data : null;
         } else {
             const response = await fetch(activeWebhookUrl, {
                 method: 'POST',
@@ -4215,34 +4243,58 @@ const App = () => {
             setPrepExamLoadedCount(prev => prev + nextQuestions.length);
         }
 
+        // Precargar siguiente tanda
         if (nextBatchIndex + 1 < totalBatches) {
-            prepExamNextBatchPromiseRef.current = fetch(activeWebhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'generate_prep_exam_batch',
-                    user_id: USER_ID,
-                    subject: prepExamConfig.subject,
-                    grade: ACTIVE_GRADE,
-                    sessions: prepExamConfig.sessions,
-                    topics: prepExamConfig.sessionDetails.map(item => item.topic),
-                    evidences: (prepExamConfig.evidences || []).slice(0, DEFAULT_MAX_EVIDENCE).map((item, index) => ({
-                        image_base64: item.imageBase64,
-                        image_mime_type: item.imageMimeType || 'image/jpeg',
-                        source_type: item.sourceType || 'prep_exam',
-                        page_number: index + 1
-                    })),
-                    batch_index: nextBatchIndex + 1,
-                    batch_size: 5,
-                    total_batches: totalBatches,
-                    mode: 'diagnostic_review'
-                })
-            })
-                .then(async (batchResponse) => parseN8NResponse(await batchResponse.text()))
-                .catch((error) => {
-                    console.error('[PREP_EXAM] Error precargando siguiente tanda:', error);
-                    return null;
+            if (isOracleNotebook) {
+                const allSigs = [...prepExamQuestions, ...nextQuestions].map(q => {
+                    const opts = q.options || {};
+                    const clean = (v = '') => String(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+                    return `${clean(q.question)} || ${Object.values(opts).map(clean).sort().join(' | ')}`;
                 });
+                prepExamNextBatchPromiseRef.current = fetch('/api/oracle/exam-from-notebook/generate-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        draft_id: prepExamConfig.oracleNotebookDraftId,
+                        user_id: USER_ID,
+                        batch_index: nextBatchIndex + 1,
+                        previous_signatures: allSigs
+                    })
+                })
+                    .then(async (batchResponse) => { const d = await batchResponse.json(); return d.success ? d : null; })
+                    .catch((error) => {
+                        console.error('[ORACLE_NOTEBOOK] Error precargando siguiente tanda:', error);
+                        return null;
+                    });
+            } else {
+                prepExamNextBatchPromiseRef.current = fetch(activeWebhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'generate_prep_exam_batch',
+                        user_id: USER_ID,
+                        subject: prepExamConfig.subject,
+                        grade: ACTIVE_GRADE,
+                        sessions: prepExamConfig.sessions,
+                        topics: prepExamConfig.sessionDetails.map(item => item.topic),
+                        evidences: (prepExamConfig.evidences || []).slice(0, DEFAULT_MAX_EVIDENCE).map((item, index) => ({
+                            image_base64: item.imageBase64,
+                            image_mime_type: item.imageMimeType || 'image/jpeg',
+                            source_type: item.sourceType || 'prep_exam',
+                            page_number: index + 1
+                        })),
+                        batch_index: nextBatchIndex + 1,
+                        batch_size: 5,
+                        total_batches: totalBatches,
+                        mode: 'diagnostic_review'
+                    })
+                })
+                    .then(async (batchResponse) => parseN8NResponse(await batchResponse.text()))
+                    .catch((error) => {
+                        console.error('[PREP_EXAM] Error precargando siguiente tanda:', error);
+                        return null;
+                    });
+            }
         } else {
             prepExamNextBatchPromiseRef.current = null;
         }
