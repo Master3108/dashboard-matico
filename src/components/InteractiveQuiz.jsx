@@ -601,7 +601,23 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                                     }));
                                 }
 
-                                return standardizedOptions.map(({ key, value }) => (
+                                // Detectar si una opción es una imagen (URL o ruta /uploads/)
+                                const isOptionImage = (val) => {
+                                    const v = String(val || '').trim();
+                                    return v.startsWith('http') || v.startsWith('/uploads/') || v.startsWith('data:image/');
+                                };
+
+                                // Obtener imágenes de opciones desde option_images si existe
+                                const optionImages = question.option_images || {};
+
+                                return standardizedOptions.map(({ key, value }) => {
+                                    const optImg = optionImages[key] || '';
+                                    const valueIsImage = isOptionImage(value);
+                                    const hasImage = optImg || valueIsImage;
+                                    const imageUrl = optImg || (valueIsImage ? value : '');
+                                    const textValue = valueIsImage ? '' : value;
+
+                                    return (
                                     <button
                                         key={key}
                                         onClick={() => handleAnswerClick(key)}
@@ -617,8 +633,17 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                                                 `}>
                                                     {key}
                                                 </div>
-                                                <div className="text-gray-700 font-medium">
-                                                    <MathRenderer text={wrapQuestionMath(wrapInlineMath(value), subject)} />
+                                                <div className="text-gray-700 font-medium flex-1">
+                                                    {hasImage && imageUrl && (
+                                                        <img
+                                                            src={imageUrl}
+                                                            alt={`Opción ${key}`}
+                                                            className="max-h-[120px] max-w-full object-contain rounded-xl mb-1"
+                                                        />
+                                                    )}
+                                                    {textValue && (
+                                                        <MathRenderer text={wrapQuestionMath(wrapInlineMath(textValue), subject)} />
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -631,7 +656,8 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                                             )}
                                         </div>
                                     </button>
-                                ));
+                                    );
+                                });
                             })()}
                         </div>
 

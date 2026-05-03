@@ -2911,13 +2911,47 @@ app.post('/api/oracle/exam-from-notebook/intake', async (req, res) => {
             sessionHint: session_hint
         });
 
+        // Guardar fotos del cuaderno como pedagogical_assets para vincular a preguntas
+        const savedNotebookAssets = [];
+        try {
+            const sheets = await getSheetsClient();
+            for (let i = 0; i < evidences.length; i++) {
+                const ev = evidences[i];
+                const raw = String(ev.image_base64 || '').replace(/^data:image\/\w+;base64,/, '');
+                if (!raw) continue;
+                const buffer = Buffer.from(raw, 'base64');
+                const mimeType = ev.image_mime_type || 'image/png';
+                const ext = mimeType === 'image/png' ? '.png' : mimeType === 'image/webp' ? '.webp' : '.jpg';
+                const safeName = sanitizeFileSegment((preview.topic || subject_hint || 'notebook').slice(0, 40)).toLowerCase();
+                const fileName = `notebook_${safeName}_p${i + 1}_${Date.now()}${ext}`;
+                const saved = await saveBufferToLocalFile(buffer, fileName, 'quiz-assets');
+                const asset = await createPedagogicalImageAsset(sheets, {
+                    title: `Cuaderno ${preview.topic || subject_hint} p${i + 1}`.slice(0, 180),
+                    subject: normalizeSheetText(preview.subject || subject_hint).toUpperCase(),
+                    topicTags: preview.topic || '',
+                    kind: 'photo',
+                    fileName: saved.fileName,
+                    fileUrl: saved.publicUrl,
+                    mimeType,
+                    altText: `Foto cuaderno pagina ${i + 1}`,
+                    caption: '',
+                    sourceType: 'notebook_capture',
+                    status: 'approved'
+                });
+                savedNotebookAssets.push(asset);
+            }
+        } catch (assetErr) {
+            console.warn('[ORACLE_NOTEBOOK_INTAKE] No se pudieron guardar assets:', assetErr.message);
+        }
+
         const draftId = `ORACLE_NOTEBOOK_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
         oracleNotebookDrafts.set(draftId, {
             createdAt: Date.now(),
             user_id: String(user_id || '').trim(),
             email: String(email || '').trim(),
             question_count: Math.max(5, Math.min(45, Number(question_count || 15) || 15)),
-            preview
+            preview,
+            notebook_assets: savedNotebookAssets
         });
 
         return res.json({
@@ -3040,6 +3074,22 @@ app.post('/api/oracle/exam-from-notebook/generate', async (req, res) => {
         sourceMixSet.add('ai');
         const sourceMix = Array.from(sourceMixSet);
 
+        // Enriquecer preguntas con imagenes del cuaderno (round-robin)
+        const notebookAssets = draft.notebook_assets || [];
+        const enrichedQuestions = firstQuestions.map((q, idx) => {
+            if (notebookAssets.length === 0) return q;
+            const asset = notebookAssets[idx % notebookAssets.length];
+            if (!asset) return q;
+            return {
+                ...q,
+                prompt_image_asset_id: asset.asset_id || '',
+                prompt_image_url: asset.file_url || asset.public_url || '',
+                prompt_image_alt: asset.alt_text || asset.altText || '',
+                prompt_image_caption: `Foto de cuaderno: ${topic}`.slice(0, 120),
+                question_visual_role: 'supporting'
+            };
+        });
+
         return res.json({
             success: true,
             subject,
@@ -3052,9 +3102,10 @@ app.post('/api/oracle/exam-from-notebook/generate', async (req, res) => {
             confidence: sourcePreview.confidence || 0,
             evidence_count_used: Number(sourcePreview.evidence_count_used || 1) || 1,
             detected_topics: [topic, ...subtopics].filter(Boolean).slice(0, 8),
-            questions: firstQuestions,
+            questions: enrichedQuestions,
             practice_guide: practiceGuide,
-            source_mix: sourceMix
+            source_mix: sourceMix,
+            notebook_assets: notebookAssets.map(a => ({ asset_id: a.asset_id, url: a.file_url || a.public_url }))
         });
     } catch (error) {
         console.error('[ORACLE_NOTEBOOK_GENERATE] Error:', error.message);
@@ -3130,12 +3181,29 @@ app.post('/api/oracle/exam-from-notebook/generate-batch', async (req, res) => {
         const newTotal = alreadyGenerated + producedCount;
         const hasMore = newTotal < ctx.questionCount && batchIndex + 1 < ctx.totalBatches;
 
+        // Enriquecer con imágenes del cuaderno (round-robin con offset por batch)
+        const notebookAssets = draft.notebook_assets || [];
+        const enrichedBatchQuestions = questions.map((q, idx) => {
+            if (notebookAssets.length === 0) return q;
+            const assetIdx = (alreadyGenerated + idx) % notebookAssets.length;
+            const asset = notebookAssets[assetIdx];
+            if (!asset) return q;
+            return {
+                ...q,
+                prompt_image_asset_id: asset.asset_id || '',
+                prompt_image_url: asset.file_url || asset.public_url || '',
+                prompt_image_alt: asset.alt_text || asset.altText || '',
+                prompt_image_caption: `Foto de cuaderno: ${ctx.topic}`.slice(0, 120),
+                question_visual_role: 'supporting'
+            };
+        });
+
         return res.json({
             success: true,
             batch_index: batchIndex,
             total_batches: ctx.totalBatches,
             has_more: hasMore,
-            questions,
+            questions: enrichedBatchQuestions,
             total_generated: newTotal,
             total_expected: ctx.questionCount
         });
@@ -3144,6 +3212,106 @@ app.post('/api/oracle/exam-from-notebook/generate-batch', async (req, res) => {
         return res.status(500).json({ success: false, error: error.message || 'No se pudo generar la tanda' });
     }
 });
+
+// =====================================================================
+// POST /api/oracle/upload-question-image
+// Sube una imagen (desde fotos del cuaderno u otra fuente) y la asocia
+// como pedagogical_asset. Puede vincularla a una pregunta existente.
+// =====================================================================
+app.post('/api/oracle/upload-question-image', upload.single('image'), async (req, res) => {
+    try {
+        const { subject = '', session = '', topic = '', question_id = '', visual_role = 'supporting' } = req.body || {};
+        const file = req.file;
+
+        if (!file) {
+            // Try base64 fallback from body
+            const base64 = req.body?.image_base64 || req.body?.base64;
+            if (!base64) {
+                return res.status(400).json({ success: false, error: 'Falta imagen (field "image" o "image_base64")' });
+            }
+            const buffer = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+            const mimeType = (base64.match(/^data:(image\/\w+);/) || [])[1] || 'image/png';
+            if (!PEDAGOGICAL_ALLOWED_MIME_TYPES.has(mimeType)) {
+                return res.status(400).json({ success: false, error: `Tipo MIME no permitido: ${mimeType}` });
+            }
+            const ext = mimeType === 'image/png' ? '.png' : mimeType === 'image/webp' ? '.webp' : '.jpg';
+            const safeTopic = sanitizeFileSegment((topic || subject || 'question_image').slice(0, 60)).toLowerCase();
+            const fileName = `${safeTopic}_${Date.now()}${ext}`;
+            const saved = await saveBufferToLocalFile(buffer, fileName, 'quiz-assets');
+
+            const sheets = await getSheetsClient();
+            const asset = await createPedagogicalImageAsset(sheets, {
+                title: (topic || 'Imagen pregunta').slice(0, 180),
+                subject: normalizeSheetText(subject).toUpperCase(),
+                topicTags: topic || '',
+                kind: 'photo',
+                fileName: saved.fileName,
+                fileUrl: saved.publicUrl,
+                mimeType,
+                altText: (topic || 'Imagen de pregunta').slice(0, 180),
+                caption: '',
+                sourceType: 'notebook_upload',
+                status: 'approved'
+            });
+
+            // Link to question if question_id provided
+            if (question_id) {
+                await linkQuestionBankAsset(sheets, { questionId: question_id, assetId: asset.asset_id });
+                if (visual_role) {
+                    await updateQuestionVisualRole(sheets, { questionId: question_id, visualRole: visual_role });
+                }
+            }
+
+            return res.json({
+                success: true,
+                asset,
+                linked_question_id: question_id || null
+            });
+        }
+
+        // Multer file upload path
+        if (!PEDAGOGICAL_ALLOWED_MIME_TYPES.has(file.mimetype)) {
+            return res.status(400).json({ success: false, error: `Tipo MIME no permitido: ${file.mimetype}` });
+        }
+
+        const ext = file.mimetype === 'image/png' ? '.png' : file.mimetype === 'image/webp' ? '.webp' : '.jpg';
+        const safeTopic = sanitizeFileSegment((topic || subject || 'question_image').slice(0, 60)).toLowerCase();
+        const fileName = `${safeTopic}_${Date.now()}${ext}`;
+        const saved = await saveBufferToLocalFile(file.buffer, fileName, 'quiz-assets');
+
+        const sheets = await getSheetsClient();
+        const asset = await createPedagogicalImageAsset(sheets, {
+            title: (topic || 'Imagen pregunta').slice(0, 180),
+            subject: normalizeSheetText(subject).toUpperCase(),
+            topicTags: topic || '',
+            kind: 'photo',
+            fileName: saved.fileName,
+            fileUrl: saved.publicUrl,
+            mimeType: file.mimetype,
+            altText: (topic || 'Imagen de pregunta').slice(0, 180),
+            caption: '',
+            sourceType: 'notebook_upload',
+            status: 'approved'
+        });
+
+        if (question_id) {
+            await linkQuestionBankAsset(sheets, { questionId: question_id, assetId: asset.asset_id });
+            if (visual_role) {
+                await updateQuestionVisualRole(sheets, { questionId: question_id, visualRole: visual_role });
+            }
+        }
+
+        return res.json({
+            success: true,
+            asset,
+            linked_question_id: question_id || null
+        });
+    } catch (error) {
+        console.error('[ORACLE_UPLOAD_QUESTION_IMAGE] Error:', error.message);
+        return res.status(500).json({ success: false, error: error.message || 'No se pudo subir la imagen' });
+    }
+});
+
 // --- HELPER: Subir imagen a Google Drive ---
 const uploadToDrive = async (base64File, fileName, folderId, mimeType = 'image/jpeg') => {
     try {
