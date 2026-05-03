@@ -6213,7 +6213,6 @@ ${finalData.capsule}`;
                     userEmail={currentUser?.email}
                     defaultSubject={currentSubject}
                     defaultSession={TODAYS_SESSION?.session || 1}
-                    questionCount={15}
                     onExamReady={startOracleNotebookExam}
                 />
 
