@@ -2015,7 +2015,7 @@ const OraclePrepModal = ({
     onStartFromNotebook,
     isLoading
 }) => {
-    const [mode, setMode] = useState('manual');
+    const [mode, setMode] = useState('notebook');
     const promptReady = Number(session) > 0 && String(subject || '').trim().length > 0;
 
     if (!isOpen) return null;
@@ -2055,7 +2055,7 @@ const OraclePrepModal = ({
                                 : 'bg-white text-[#64748B] border-gray-200'
                                 }`}
                         >
-                            Foto/screenshot cuaderno
+                            Foto o captura de pantalla
                         </button>
                     </div>
 
@@ -6238,7 +6238,7 @@ ${finalData.capsule}`;
                 />
 
                 <button
-                    onClick={() => setShowExamCaptureModal(true)}
+                    onClick={() => setShowOraclePrepModal(true)}
                     className="fixed bottom-6 right-6 z-[205] bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] transition-all"
                 >
                     Crear prueba
