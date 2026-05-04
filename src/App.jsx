@@ -5,6 +5,7 @@ import LoginPage from './components/LoginPage';
 import CuadernoMission from './components/CuadernoMission';
 import ExamCaptureModal from './components/ExamCaptureModal';
 import CreateEventModal from './components/CreateEventModal';
+import CalendarView from './components/CalendarView';
 import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
 import QuestionBankManager from './components/QuestionBankManager';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntake';
@@ -3599,6 +3600,7 @@ const App = () => {
     const [isLoadingAdminPedagogicalAssets, setIsLoadingAdminPedagogicalAssets] = useState(false);
     const [showExamCaptureModal, setShowExamCaptureModal] = useState(false);
     const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+    const [showCalendarView, setShowCalendarView] = useState(false);
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
     useEffect(() => {
@@ -6241,6 +6243,12 @@ ${finalData.capsule}`;
 
                 <div className="fixed bottom-6 right-6 z-[205] flex flex-col gap-3">
                     <button
+                        onClick={() => setShowCalendarView(true)}
+                        className="bg-[#10B981] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(16,185,129,0.45)] hover:bg-[#059669] transition-all"
+                    >
+                        Calendario
+                    </button>
+                    <button
                         onClick={() => setShowCreateEventModal(true)}
                         className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(77,150,255,0.45)] hover:bg-[#3B82F6] transition-all"
                     >
@@ -6253,6 +6261,13 @@ ${finalData.capsule}`;
                         Crear prueba
                     </button>
                 </div>
+
+                <CalendarView
+                    isOpen={showCalendarView}
+                    onClose={() => setShowCalendarView(false)}
+                    userId={USER_ID}
+                    userRole={currentUser?.role || 'estudiante'}
+                />
 
                 <CreateEventModal
                     isOpen={showCreateEventModal}
