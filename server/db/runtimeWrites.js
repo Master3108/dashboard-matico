@@ -535,16 +535,28 @@ export const linkRuntimeTheoryLudicaAsset = async ({ rowNumber = 0, assetId = ''
 
 export const getRuntimeUserByEmail = async (email) => {
     if (!email) return null;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('email', email)
+        .ilike('email', normalizedEmail)
         .maybeSingle();
 
     if (error) throw new Error(`getRuntimeUserByEmail: ${error.message}`);
-    if (!data) return null;
+    if (data) return mapProfileToLegacy(data);
 
-    return mapProfileToLegacy(data);
+    const { data: legacyData, error: legacyError } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('mail', normalizedEmail)
+        .maybeSingle();
+
+    if (legacyError) {
+        console.warn(`[getRuntimeUserByEmail] fallback users failed: ${legacyError.message}`);
+        return null;
+    }
+
+    return legacyData ? mapLegacyUserToLegacy(legacyData) : null;
 };
 
 export const getRuntimeUserByToken = async (user_id) => {
@@ -629,6 +641,29 @@ const mapProfileToLegacy = (row) => {
         role: row.role || 'estudiante',
         parent_user_id: row.parent_user_id || null,
         created_at: row.created_at,
+        updated_at: row.updated_at,
+    };
+};
+
+const mapLegacyUserToLegacy = (row) => {
+    if (!row) return null;
+    return {
+        token: row.token || '',
+        user_id: row.token || '',
+        pass: row.pass || '',
+        mail: row.mail || '',
+        email: row.mail || '',
+        nombre: row.nombre || 'Estudiante',
+        display_name: row.nombre || 'Estudiante',
+        celular: row.celular || '',
+        region: row.region || '',
+        comuna: row.comuna || '',
+        correo_apoderado: row.correo_apoderado || '',
+        is_admin: row.is_admin || false,
+        current_grade: row.current_grade || '1medio',
+        role: row.role || 'estudiante',
+        parent_user_id: row.parent_user_id || null,
+        created_at: row.created,
         updated_at: row.updated_at,
     };
 };
