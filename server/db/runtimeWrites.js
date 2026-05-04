@@ -626,6 +626,8 @@ const mapProfileToLegacy = (row) => {
         correo_apoderado: row.guardian_email || '',
         is_admin: row.is_admin || false,
         current_grade: row.current_grade || '1medio',
+        role: row.role || 'estudiante',
+        parent_user_id: row.parent_user_id || null,
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -944,4 +946,18 @@ export async function markNotificationRead(notif_id) {
         .eq('notif_id', notif_id);
     if (error) throw new Error(`markNotificationRead: ${error.message}`);
     return { success: true };
+}
+
+// =====================================================================
+// PROGRESS SUMMARY (for parent dashboard)
+// =====================================================================
+export async function getChildProgressSummary(child_user_id, limit = 50) {
+    const { data, error } = await supabase
+        .from('progress_log')
+        .select('*')
+        .eq('user_id', child_user_id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+    if (error) return [];
+    return data || [];
 }

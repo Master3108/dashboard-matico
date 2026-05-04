@@ -47,7 +47,9 @@ const LoginPage = ({ onLogin }) => {
                 onLogin({
                     user_id: data.user_id,
                     username: data.name || formData.name || 'Estudiante',
-                    email: formData.email
+                    email: data.email || formData.email,
+                    role: data.role || 'estudiante',
+                    parent_user_id: data.parent_user_id || null
                 });
             } else {
                 throw new Error(data.message || data.error || 'Error en la autenticación');
