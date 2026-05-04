@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Calendar, Clock, Bell, BookOpen } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import { X, Calendar, Clock, Bell, BookOpen, Mic, MicOff } from 'lucide-react';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './EvidenceIntake';
 
 const EVENT_TYPES = [
@@ -34,6 +34,78 @@ const CreateEventModal = ({ isOpen, onClose, userId, userRole = 'estudiante', st
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+    const [listeningField, setListeningField] = useState(null); // 'title' | 'description' | null
+    const recognitionRef = useRef(null);
+
+    // Speech-to-Text
+    const startListening = useCallback((field) => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            setErrorMsg('Tu navegador no soporta reconocimiento de voz');
+            return;
+        }
+
+        // Stop if already listening
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+            setListeningField(null);
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'es-CL';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        let finalTranscript = '';
+
+        recognition.onresult = (event) => {
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interim = transcript;
+                }
+            }
+            const combined = finalTranscript + interim;
+            if (field === 'title') {
+                setTitle(prev => {
+                    const base = prev && !prev.endsWith(' ') ? prev + ' ' : prev;
+                    return (base + combined).trimStart();
+                });
+            } else if (field === 'description') {
+                setDescription(prev => {
+                    const base = prev && !prev.endsWith(' ') ? prev + ' ' : prev;
+                    return (base + combined).trimStart();
+                });
+            }
+        };
+
+        recognition.onerror = () => {
+            setListeningField(null);
+            recognitionRef.current = null;
+        };
+
+        recognition.onend = () => {
+            setListeningField(null);
+            recognitionRef.current = null;
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+        setListeningField(field);
+    }, []);
+
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+        }
+        setListeningField(null);
+    }, []);
 
     if (!isOpen) return null;
 
@@ -142,13 +214,27 @@ const CreateEventModal = ({ isOpen, onClose, userId, userRole = 'estudiante', st
                         <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
                             Título
                         </label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Ej: Prueba de fracciones, Tarea de Lenguaje..."
-                            className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED]"
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => { stopListening(); setTitle(e.target.value); }}
+                                placeholder="Ej: Prueba de fracciones, Tarea de Lenguaje..."
+                                className="flex-1 rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED]"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => listeningField === 'title' ? stopListening() : startListening('title')}
+                                className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+                                    listeningField === 'title'
+                                        ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40'
+                                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                }`}
+                                title={listeningField === 'title' ? 'Detener' : 'Dictar título'}
+                            >
+                                {listeningField === 'title' ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                            </button>
+                        </div>
                     </div>
 
                     {/* Materia */}
@@ -207,15 +293,31 @@ const CreateEventModal = ({ isOpen, onClose, userId, userRole = 'estudiante', st
 
                     {/* Descripción */}
                     <div>
-                        <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6] mb-2">
-                            Descripción (opcional)
-                        </label>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-xs font-black uppercase tracking-widest text-[#9094A6]">
+                                Descripción (opcional)
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => listeningField === 'description' ? stopListening() : startListening('description')}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                                    listeningField === 'description'
+                                        ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40'
+                                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                }`}
+                            >
+                                {listeningField === 'description' ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                                {listeningField === 'description' ? 'Detener' : 'Dictar'}
+                            </button>
+                        </div>
                         <textarea
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => { stopListening(); setDescription(e.target.value); }}
                             rows={3}
-                            placeholder="Detalles del evento, páginas del libro, temas a estudiar..."
-                            className="w-full rounded-2xl border-2 border-gray-200 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none focus:border-[#7C3AED] resize-none"
+                            placeholder="Detalles del evento, páginas del libro, temas a estudiar... También puedes dictar con el micrófono."
+                            className={`w-full rounded-2xl border-2 bg-white px-4 py-3 font-bold text-[#2B2E4A] outline-none resize-none ${
+                                listeningField === 'description' ? 'border-red-400 bg-red-50/30' : 'border-gray-200 focus:border-[#7C3AED]'
+                            }`}
                         />
                     </div>
 
