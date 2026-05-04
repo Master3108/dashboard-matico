@@ -52,7 +52,8 @@ import {
     getChildrenProfiles,
     createNotification,
     listUnreadNotifications,
-    markNotificationRead
+    markNotificationRead,
+    getChildProgressSummary
 } from './db/runtimeWrites.js';
 
 dotenv.config();
@@ -5485,9 +5486,16 @@ app.post('/webhook/MATICO', async (req, res) => {
 
             if (currentAction === 'login') {
                 if (user && user.pass === password) {
-                    return res.json({ success: true, user_id: user.token, name: user.nombre || 'Estudiante' });
+                    return res.json({
+                        success: true,
+                        user_id: user.token,
+                        name: user.nombre || 'Estudiante',
+                        role: user.role || 'estudiante',
+                        parent_user_id: user.parent_user_id || null,
+                        email: user.email || email
+                    });
                 }
-                return res.status(401).json({ success: false, message: "Credenciales invÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡lidas" });
+                return res.status(401).json({ success: false, message: "Credenciales invalidas" });
             }
 
             if (currentAction === 'register') {
@@ -7798,6 +7806,140 @@ app.post('/api/calendar/events', async (req, res) => {
     }
 });
 
+// Smart event creation via AI Vision
+app.post('/api/calendar/smart-create', upload.single('image'), async (req, res) => {
+    try {
+        const { user_id, student_user_id, text_input, role } = req.body;
+        if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+
+        const visionClient = openaiVisionClient || kimiVisionClient;
+        if (!visionClient) return res.status(500).json({ success: false, error: 'No hay cliente de IA Vision configurado' });
+
+        // Build the prompt
+        const today = new Date().toISOString().split('T')[0];
+        const systemPrompt = `Eres un asistente de un apoderado/padre/madre chileno que analiza imágenes y textos de tareas, pruebas y comunicaciones escolares.
+Tu trabajo es extraer la información del evento escolar y devolverla en JSON.
+
+Fecha de hoy: ${today}
+
+DEBES responder SOLO con un JSON válido, sin markdown ni texto extra:
+{
+  "title": "título del evento (breve, claro)",
+  "event_type": "prueba|tarea|estudio|repaso|otro",
+  "subject": "MATEMATICA|LENGUAJE|CIENCIAS|HISTORIA|INGLES|FISICA|QUIMICA|BIOLOGIA|ARTES|MUSICA|EDUCACION_FISICA|TECNOLOGIA|OTRO",
+  "event_date": "YYYY-MM-DD",
+  "start_time": "HH:MM" o null,
+  "end_time": "HH:MM" o null,
+  "description": "descripción detallada de lo que debe hacer el estudiante",
+  "confidence": "alta|media|baja"
+}
+
+Si no puedes determinar la fecha exacta, usa la próxima fecha lógica (ej: si dice "lunes" y hoy es sábado, usa el próximo lunes).
+Si no puedes determinar algo, pon null o tu mejor estimación.
+El campo subject debe estar en MAYÚSCULAS con underscore.`;
+
+        const messages = [{ role: 'system', content: systemPrompt }];
+        const userContent = [];
+
+        // Add text if provided
+        if (text_input) {
+            userContent.push({ type: 'text', text: text_input });
+        }
+
+        // Add image if provided
+        if (req.file) {
+            const base64 = req.file.buffer.toString('base64');
+            const mimeType = req.file.mimetype || 'image/jpeg';
+            userContent.push({
+                type: 'image_url',
+                image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' }
+            });
+        }
+
+        if (userContent.length === 0) {
+            return res.status(400).json({ success: false, error: 'Debes enviar una imagen o texto' });
+        }
+
+        if (!text_input && req.file) {
+            userContent.unshift({ type: 'text', text: 'Analiza esta imagen de una comunicación/tarea/prueba escolar y extrae los datos del evento.' });
+        }
+
+        messages.push({ role: 'user', content: userContent });
+
+        console.log('[SMART-CREATE] Analizando con IA...', { hasImage: !!req.file, hasText: !!text_input });
+
+        const model = openaiVisionClient ? OPENAI_VISION_MODEL : NOTEBOOK_VISION_MODEL;
+        const response = await visionClient.chat.completions.create({
+            model,
+            messages,
+            max_tokens: 800,
+            temperature: 0.1
+        });
+
+        const raw = response.choices?.[0]?.message?.content || '';
+        console.log('[SMART-CREATE] Respuesta IA:', raw);
+
+        // Parse JSON from response
+        let eventData;
+        try {
+            const jsonMatch = raw.match(/\{[\s\S]*\}/);
+            eventData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        } catch (parseErr) {
+            console.error('[SMART-CREATE] Error parseando JSON:', parseErr.message);
+            return res.json({
+                success: false,
+                error: 'No se pudo interpretar la imagen/texto',
+                raw_response: raw
+            });
+        }
+
+        // Create the event
+        const targetUserId = student_user_id || user_id;
+        const event = await createCalendarEvent({
+            user_id: targetUserId,
+            created_by: user_id,
+            title: eventData.title || 'Evento sin título',
+            event_type: eventData.event_type || 'otro',
+            subject: eventData.subject || null,
+            event_date: eventData.event_date || today,
+            start_time: eventData.start_time || null,
+            end_time: eventData.end_time || null,
+            description: eventData.description || null,
+            status: 'pendiente'
+        });
+
+        // Auto-notify guardian if student created it
+        if (role !== 'apoderado') {
+            try {
+                const studentProfile = await getUserProfile(targetUserId);
+                if (studentProfile?.parent_user_id) {
+                    await createNotification({
+                        user_id: studentProfile.parent_user_id,
+                        event_id: event?.event_id,
+                        type: 'nuevo_evento',
+                        title: `Nuevo: ${eventData.title}`,
+                        body: `${eventData.event_type} para ${eventData.event_date}`,
+                        scheduled_at: new Date().toISOString()
+                    });
+                }
+            } catch (notifErr) {
+                console.error('[SMART-CREATE] Error notificando:', notifErr.message);
+            }
+        }
+
+        res.json({
+            success: true,
+            event,
+            extracted: eventData,
+            message: `Evento "${eventData.title}" creado para ${eventData.event_date}`
+        });
+
+    } catch (err) {
+        console.error('[SMART-CREATE] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 app.get('/api/calendar/events', async (req, res) => {
     try {
         const { user_id, role, from_date, to_date, status, limit } = req.query;
@@ -7849,6 +7991,18 @@ app.get('/api/profile', async (req, res) => {
             children = await getChildrenProfiles(user_id);
         }
         res.json({ success: true, profile, children });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Progreso del hijo (para dashboard de apoderado)
+app.get('/api/progress/child', async (req, res) => {
+    try {
+        const { child_user_id, limit } = req.query;
+        if (!child_user_id) return res.status(400).json({ success: false, error: 'Falta child_user_id' });
+        const progress = await getChildProgressSummary(child_user_id, Number(limit) || 50);
+        res.json({ success: true, progress });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

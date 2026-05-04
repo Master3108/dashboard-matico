@@ -5,7 +5,9 @@ import LoginPage from './components/LoginPage';
 import CuadernoMission from './components/CuadernoMission';
 import ExamCaptureModal from './components/ExamCaptureModal';
 import CreateEventModal from './components/CreateEventModal';
+import ChatEventCreator from './components/ChatEventCreator';
 import CalendarView from './components/CalendarView';
+import ParentDashboard from './components/ParentDashboard';
 import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
 import QuestionBankManager from './components/QuestionBankManager';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntake';
@@ -79,6 +81,33 @@ const downloadTextFile = (fileName, content, mimeType = 'application/json') => {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+};
+
+const normalizeStoredList = (value, fallback = []) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return fallback;
+        try {
+            return normalizeStoredList(JSON.parse(trimmed), fallback);
+        } catch {
+            return trimmed.split(',').map((item) => item.trim()).filter(Boolean);
+        }
+    }
+    if (value && typeof value === 'object') {
+        if (Array.isArray(value.items)) return value.items;
+        if (Array.isArray(value.completed)) return value.completed;
+        if (Array.isArray(value.completedSessions)) return value.completedSessions;
+    }
+    return fallback;
+};
+
+const readStoredList = (key, fallback = []) => {
+    try {
+        return normalizeStoredList(localStorage.getItem(key), fallback);
+    } catch {
+        return fallback;
+    }
 };
 
 const escapeCsvCell = (value = '') => {
@@ -3600,6 +3629,7 @@ const App = () => {
     const [isLoadingAdminPedagogicalAssets, setIsLoadingAdminPedagogicalAssets] = useState(false);
     const [showExamCaptureModal, setShowExamCaptureModal] = useState(false);
     const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+    const [showChatEventCreator, setShowChatEventCreator] = useState(false);
     const [showCalendarView, setShowCalendarView] = useState(false);
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
@@ -3712,25 +3742,12 @@ const App = () => {
                 // SYNC: Marcar sesiones completadas en localStorage
                 if (data && data.last_completed_session > 0) {
                     const completedKey = completedSessionsStorageKey;
-                    const stored = localStorage.getItem(completedKey);
-                    let completed = [];
-
-                    // Fallback para datos corruptos
-                    try {
-                        completed = stored ? JSON.parse(stored) : [];
-                        if (!Array.isArray(completed) && typeof stored === 'string') {
-                            completed = stored.split(',').filter(s => s.trim() !== '');
-                        }
-                    } catch (e) {
-                        if (typeof stored === 'string') {
-                            completed = stored.split(',').filter(s => s.trim() !== '');
-                        }
-                    }
+                    let completed = readStoredList(completedKey);
 
                     let changed = false;
                     for (let s = 1; s <= data.last_completed_session; s++) {
                         const sessionKey = `${currentSubject}_${s}`;
-                        if (!(completed || []).includes(sessionKey)) {
+                        if (!completed.includes(sessionKey)) {
                             completed.push(sessionKey);
                             changed = true;
                         }
@@ -3824,13 +3841,12 @@ const App = () => {
     const todaysSessionStorageKey = `${currentSubject}_${TODAYS_SESSION.session}`;
     const completedSessionsForSubject = (() => {
         try {
-            const storedCompleted = localStorage.getItem(completedSessionsStorageKey);
-            return storedCompleted ? JSON.parse(storedCompleted) : [];
+            return readStoredList(completedSessionsStorageKey);
         } catch {
             return [];
         }
     })();
-    const isTodaysSessionCompleted = completedSessionsForSubject.includes(todaysSessionStorageKey);
+    const isTodaysSessionCompleted = normalizeStoredList(completedSessionsForSubject).includes(todaysSessionStorageKey);
     const todaysSessionCtaLabel = isCallingN8N
         ? 'CARGANDO...'
         : (isTodaysSessionCompleted
@@ -4817,8 +4833,7 @@ const App = () => {
 
             if (diffDays < 0) return { subject: 'MATEMATICA', index: 0 };
 
-            const completedStr = localStorage.getItem(completedSessionsStorageKey);
-            const completed = completedStr ? JSON.parse(completedStr) : [];
+            const completed = readStoredList(completedSessionsStorageKey);
 
             console.log("[CALENDAR] Resolving plan for today. Completed:", completed);
 
@@ -4834,7 +4849,7 @@ const App = () => {
                     const weekNumber = Math.floor(d / 7);
                     const sessionKey = `${subject}_${weekNumber + 1}`;
 
-                    if (!(completed || []).includes(sessionKey)) {
+                    if (!completed.includes(sessionKey)) {
                         console.log(`[CALENDAR] BLOQUEO: Sesión pendiente detectada: ${sessionKey}`);
                         return { subject, index: weekNumber, isMissed: true, missedSubject: subject };
                     }
@@ -4850,7 +4865,7 @@ const App = () => {
                 const todaysSubject = todaysPlan.subject;
                 const todaysSessionKey = `${todaysSubject}_${currentWeekNumber + 1}`;
 
-                if (!(completed || []).includes(todaysSessionKey)) {
+                if (!completed.includes(todaysSessionKey)) {
                     return { subject: todaysSubject, index: currentWeekNumber, isMissed: false };
                 }
             }
@@ -4869,13 +4884,12 @@ const App = () => {
 
     const markSessionComplete = (subject, sessionId) => {
         const key = `${subject}_${sessionId}`;
-        const completedStr = localStorage.getItem(completedSessionsStorageKey);
-        const completed = completedStr ? JSON.parse(completedStr) : [];
+        const completed = readStoredList(completedSessionsStorageKey);
 
         console.log(`[MATICO] markSessionComplete called:`, { subject, sessionId, key });
 
-        if (!(completed || []).includes(key)) {
-            const newCompleted = [...(completed || []), key];
+        if (!completed.includes(key)) {
+            const newCompleted = [...completed, key];
             localStorage.setItem(completedSessionsStorageKey, JSON.stringify(newCompleted));
             console.log(`[MATICO] Marked ${key} as complete!`);
 
@@ -4890,13 +4904,12 @@ const App = () => {
     // Helper to find the first incomplete session for a specific subject
     const getSmartSessionIndex = (subject) => {
         try {
-            const completedStr = localStorage.getItem(completedSessionsStorageKey);
-            const completed = completedStr ? JSON.parse(completedStr) : [];
+            const completed = readStoredList(completedSessionsStorageKey);
 
             // Search through weeks (indices)
             for (let i = 0; i < 10; i++) { // Check up to 10 weeks
                 const sessionKey = `${subject}_${i + 1}`;
-                if (!(completed || []).includes(sessionKey)) {
+                if (!completed.includes(sessionKey)) {
                     return i;
                 }
             }
@@ -6052,6 +6065,11 @@ ${finalData.capsule}`;
         return <LoginPage onLogin={handleLogin} />;
     }
 
+    // Si es apoderado, mostrar panel de apoderado
+    if (currentUser.role === 'apoderado') {
+        return <ParentDashboard currentUser={currentUser} onLogout={handleLogout} />;
+    }
+
     return (
         <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-x-hidden">
             {/* ALERTA GLOBAL CENTRADA */}
@@ -6249,7 +6267,7 @@ ${finalData.capsule}`;
                         Calendario
                     </button>
                     <button
-                        onClick={() => setShowCreateEventModal(true)}
+                        onClick={() => setShowChatEventCreator(true)}
                         className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(77,150,255,0.45)] hover:bg-[#3B82F6] transition-all"
                     >
                         Crear evento
@@ -6278,6 +6296,17 @@ ${finalData.capsule}`;
                     onEventCreated={(event) => {
                         console.log('[CALENDAR] Evento creado:', event);
                         setShowCreateEventModal(false);
+                    }}
+                />
+
+                <ChatEventCreator
+                    isOpen={showChatEventCreator}
+                    onClose={() => setShowChatEventCreator(false)}
+                    userId={USER_ID}
+                    userRole={currentUser?.role || 'estudiante'}
+                    studentUserId={USER_ID}
+                    onEventCreated={(event) => {
+                        console.log('[CHAT-EVENT] Evento creado:', event);
                     }}
                 />
 
