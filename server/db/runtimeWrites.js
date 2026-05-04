@@ -828,3 +828,120 @@ const mapExamReminderRow = (row) => {
         created_at: row.created_at,
     };
 };
+
+// =====================================================================
+// CALENDARIO Y EVENTOS
+// =====================================================================
+
+export async function createCalendarEvent({
+    created_by, student_user_id, event_type = 'estudio', title, description,
+    subject, session_number, event_date, start_time, end_time, all_day = false,
+    recurrence = 'none', recurrence_end, evidences = [],
+    notify_guardian = true, notify_student = true, reminder_minutes = 15, alarm_sound = true
+}) {
+    const { data, error } = await supabase
+        .from('calendar_events')
+        .insert({
+            created_by, student_user_id, event_type, title, description,
+            subject, session_number, event_date, start_time, end_time, all_day,
+            recurrence, recurrence_end, evidences: JSON.stringify(evidences),
+            notify_guardian, notify_student, reminder_minutes, alarm_sound,
+            status: 'pendiente'
+        })
+        .select()
+        .single();
+    if (error) throw new Error(`createCalendarEvent: ${error.message}`);
+    return data;
+}
+
+export async function listCalendarEvents({ user_id, role = 'estudiante', from_date, to_date, status, limit = 50 }) {
+    // Apoderado ve eventos de sus hijos, estudiante ve los propios
+    let query = supabase.from('calendar_events').select('*');
+
+    if (role === 'apoderado') {
+        query = query.eq('created_by', user_id);
+    } else {
+        query = query.eq('student_user_id', user_id);
+    }
+
+    if (from_date) query = query.gte('event_date', from_date);
+    if (to_date) query = query.lte('event_date', to_date);
+    if (status) query = query.eq('status', status);
+
+    query = query.order('event_date', { ascending: true }).order('start_time', { ascending: true }).limit(limit);
+
+    const { data, error } = await query;
+    if (error) throw new Error(`listCalendarEvents: ${error.message}`);
+    return data || [];
+}
+
+export async function updateCalendarEvent(event_id, updates) {
+    updates.updated_at = new Date().toISOString();
+    const { data, error } = await supabase
+        .from('calendar_events')
+        .update(updates)
+        .eq('event_id', event_id)
+        .select()
+        .single();
+    if (error) throw new Error(`updateCalendarEvent: ${error.message}`);
+    return data;
+}
+
+export async function deleteCalendarEvent(event_id) {
+    const { error } = await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('event_id', event_id);
+    if (error) throw new Error(`deleteCalendarEvent: ${error.message}`);
+    return { success: true };
+}
+
+export async function getUserProfile(user_id) {
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user_id)
+        .single();
+    if (error) return null;
+    return data;
+}
+
+export async function getChildrenProfiles(parent_user_id) {
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('parent_user_id', parent_user_id);
+    if (error) return [];
+    return data || [];
+}
+
+export async function createNotification({ user_id, event_id, type = 'reminder', title, body, scheduled_at }) {
+    const { data, error } = await supabase
+        .from('notifications')
+        .insert({ user_id, event_id, type, title, body, scheduled_at })
+        .select()
+        .single();
+    if (error) throw new Error(`createNotification: ${error.message}`);
+    return data;
+}
+
+export async function listUnreadNotifications(user_id, limit = 20) {
+    const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user_id)
+        .eq('read', false)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+    if (error) return [];
+    return data || [];
+}
+
+export async function markNotificationRead(notif_id) {
+    const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('notif_id', notif_id);
+    if (error) throw new Error(`markNotificationRead: ${error.message}`);
+    return { success: true };
+}

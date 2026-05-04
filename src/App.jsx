@@ -4,6 +4,7 @@ import InteractiveQuiz from './components/InteractiveQuiz';
 import LoginPage from './components/LoginPage';
 import CuadernoMission from './components/CuadernoMission';
 import ExamCaptureModal from './components/ExamCaptureModal';
+import CreateEventModal from './components/CreateEventModal';
 import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
 import QuestionBankManager from './components/QuestionBankManager';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntake';
@@ -3597,6 +3598,7 @@ const App = () => {
     const [adminPedagogicalAssets, setAdminPedagogicalAssets] = useState([]);
     const [isLoadingAdminPedagogicalAssets, setIsLoadingAdminPedagogicalAssets] = useState(false);
     const [showExamCaptureModal, setShowExamCaptureModal] = useState(false);
+    const [showCreateEventModal, setShowCreateEventModal] = useState(false);
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
     useEffect(() => {
@@ -6237,12 +6239,32 @@ ${finalData.capsule}`;
                     quizProgress={getQuizProgress()} // NEW: Pass quiz progress for UI
                 />
 
-                <button
-                    onClick={() => setShowOraclePrepModal(true)}
-                    className="fixed bottom-6 right-6 z-[205] bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] transition-all"
-                >
-                    Crear prueba
-                </button>
+                <div className="fixed bottom-6 right-6 z-[205] flex flex-col gap-3">
+                    <button
+                        onClick={() => setShowCreateEventModal(true)}
+                        className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(77,150,255,0.45)] hover:bg-[#3B82F6] transition-all"
+                    >
+                        Crear evento
+                    </button>
+                    <button
+                        onClick={() => setShowOraclePrepModal(true)}
+                        className="bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] transition-all"
+                    >
+                        Crear prueba
+                    </button>
+                </div>
+
+                <CreateEventModal
+                    isOpen={showCreateEventModal}
+                    onClose={() => setShowCreateEventModal(false)}
+                    userId={USER_ID}
+                    userRole={currentUser?.role || 'estudiante'}
+                    studentUserId={USER_ID}
+                    onEventCreated={(event) => {
+                        console.log('[CALENDAR] Evento creado:', event);
+                        setShowCreateEventModal(false);
+                    }}
+                />
 
                 <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
                     <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">

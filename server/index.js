@@ -43,7 +43,16 @@ import {
     updateRuntimeExistingQuestionWithImage,
     updateRuntimeQuestionVisualRole,
     upsertRuntimeExamReminder,
-    upsertRuntimeUser
+    upsertRuntimeUser,
+    createCalendarEvent,
+    listCalendarEvents,
+    updateCalendarEvent,
+    deleteCalendarEvent,
+    getUserProfile,
+    getChildrenProfiles,
+    createNotification,
+    listUnreadNotifications,
+    markNotificationRead
 } from './db/runtimeWrites.js';
 
 dotenv.config();
@@ -7754,6 +7763,117 @@ cron.schedule('15 3 * * *', async () => {
         console.error('[CRON_NOTEBOOK] Error limpiando cuadernos:', error.message);
     }
 }, { timezone: 'America/Santiago' });
+
+// =====================================================================
+// CALENDARIO / EVENTOS
+// =====================================================================
+
+app.post('/api/calendar/events', async (req, res) => {
+    try {
+        const event = await createCalendarEvent(req.body);
+
+        // Crear notificaciones automáticas
+        if (req.body.notify_guardian && req.body.student_user_id) {
+            try {
+                const studentProfile = await getUserProfile(req.body.student_user_id);
+                if (studentProfile?.parent_user_id) {
+                    await createNotification({
+                        user_id: studentProfile.parent_user_id,
+                        event_id: event.event_id,
+                        type: 'info',
+                        title: `Nuevo evento: ${req.body.title}`,
+                        body: `${req.body.event_type} programado para ${req.body.event_date}${req.body.start_time ? ' a las ' + req.body.start_time : ''}`,
+                        scheduled_at: new Date().toISOString()
+                    });
+                }
+            } catch (notifErr) {
+                console.error('[CALENDAR] Error creando notificación:', notifErr.message);
+            }
+        }
+
+        res.json({ success: true, event });
+    } catch (err) {
+        console.error('[CALENDAR] Error creando evento:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.get('/api/calendar/events', async (req, res) => {
+    try {
+        const { user_id, role, from_date, to_date, status, limit } = req.query;
+        if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+
+        const events = await listCalendarEvents({
+            user_id,
+            role: role || 'estudiante',
+            from_date, to_date, status,
+            limit: Number(limit) || 50
+        });
+        res.json({ success: true, events });
+    } catch (err) {
+        console.error('[CALENDAR] Error listando eventos:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.put('/api/calendar/events/:event_id', async (req, res) => {
+    try {
+        const event = await updateCalendarEvent(req.params.event_id, req.body);
+        res.json({ success: true, event });
+    } catch (err) {
+        console.error('[CALENDAR] Error actualizando evento:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.delete('/api/calendar/events/:event_id', async (req, res) => {
+    try {
+        await deleteCalendarEvent(req.params.event_id);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[CALENDAR] Error eliminando evento:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Perfil y relaciones apoderado-hijo
+app.get('/api/profile', async (req, res) => {
+    try {
+        const { user_id } = req.query;
+        if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+        const profile = await getUserProfile(user_id);
+        if (!profile) return res.status(404).json({ success: false, error: 'Perfil no encontrado' });
+
+        let children = [];
+        if (profile.role === 'apoderado') {
+            children = await getChildrenProfiles(user_id);
+        }
+        res.json({ success: true, profile, children });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Notificaciones
+app.get('/api/notifications', async (req, res) => {
+    try {
+        const { user_id, limit } = req.query;
+        if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+        const notifications = await listUnreadNotifications(user_id, Number(limit) || 20);
+        res.json({ success: true, notifications });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.put('/api/notifications/:notif_id/read', async (req, res) => {
+    try {
+        await markNotificationRead(req.params.notif_id);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 
 app.listen(PORT, () => {
     const emailStatus = getEmailStatus();
