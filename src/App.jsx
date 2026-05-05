@@ -6282,26 +6282,29 @@ ${finalData.capsule}`;
                     quizProgress={getQuizProgress()} // NEW: Pass quiz progress for UI
                 />
 
-                <div className="fixed bottom-6 right-6 z-[205] flex flex-col gap-3">
-                    <button
-                        onClick={() => setShowCalendarView(true)}
-                        className="bg-[#10B981] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(16,185,129,0.45)] hover:bg-[#059669] transition-all"
-                    >
-                        Calendario
-                    </button>
-                    <button
-                        onClick={() => setShowChatEventCreator(true)}
-                        className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(77,150,255,0.45)] hover:bg-[#3B82F6] transition-all"
-                    >
-                        Crear evento
-                    </button>
-                    <button
-                        onClick={() => setShowOraclePrepModal(true)}
-                        className="bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] transition-all"
-                    >
-                        Crear prueba
-                    </button>
-                </div>
+                {/* Botones flotantes: solo para estudiantes, no para admin-apoderado */}
+                {currentUser.role !== 'apoderado' && (
+                    <div className="fixed bottom-6 right-6 z-[205] flex flex-col gap-3">
+                        <button
+                            onClick={() => setShowCalendarView(true)}
+                            className="bg-[#10B981] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(16,185,129,0.45)] hover:bg-[#059669] transition-all"
+                        >
+                            Calendario
+                        </button>
+                        <button
+                            onClick={() => setShowChatEventCreator(true)}
+                            className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(77,150,255,0.45)] hover:bg-[#3B82F6] transition-all"
+                        >
+                            Crear evento
+                        </button>
+                        <button
+                            onClick={() => setShowOraclePrepModal(true)}
+                            className="bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] transition-all"
+                        >
+                            Crear prueba
+                        </button>
+                    </div>
+                )}
 
                 <CalendarView
                     isOpen={showCalendarView}
@@ -6333,15 +6336,18 @@ ${finalData.capsule}`;
                     }}
                 />
 
-                <MaticoAgent
-                    userId={USER_ID}
-                    userRole={currentUser?.role || 'estudiante'}
-                    studentUserId={USER_ID}
-                    studentName={currentUser?.username || 'Estudiante'}
-                    onEventCreated={(event) => {
-                        console.log('[MATICO-AGENT] Evento creado:', event);
-                    }}
-                />
+                {/* MaticoAgent solo para estudiantes, no para admin-apoderado */}
+                {currentUser.role !== 'apoderado' && (
+                    <MaticoAgent
+                        userId={USER_ID}
+                        userRole={currentUser?.role || 'estudiante'}
+                        studentUserId={USER_ID}
+                        studentName={currentUser?.username || 'Estudiante'}
+                        onEventCreated={(event) => {
+                            console.log('[MATICO-AGENT] Evento creado:', event);
+                        }}
+                    />
+                )}
 
                 <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
                     <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">
