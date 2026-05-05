@@ -59,6 +59,7 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
     const [activeTab, setActiveTab] = useState('resumen');
     const [weekOffset, setWeekOffset] = useState(0);
     const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+    const [creatorIntent, setCreatorIntent] = useState('evento');
     const [showCalendarView, setShowCalendarView] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [maticoMood, setMaticoMood] = useState('happy');
@@ -155,6 +156,11 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
         setRefreshing(true);
         await Promise.all([fetchChildEvents(), fetchChildProgress(), fetchNotifications()]);
         setRefreshing(false);
+    };
+
+    const openSmartCreator = (intent = 'evento') => {
+        setCreatorIntent(intent);
+        setShowCreateEventModal(true);
     };
 
     // --- Compute stats ---
@@ -335,7 +341,7 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="font-black text-[#2B2E4A]">Próximos eventos</h3>
                                 <button
-                                    onClick={() => setShowCreateEventModal(true)}
+                                    onClick={() => openSmartCreator('evento')}
                                     className="flex items-center gap-1 bg-[#4D96FF] text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-[#3B82F6] transition-all"
                                 >
                                     <Plus className="w-3 h-3" /> Crear
@@ -462,7 +468,7 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
 
                             <div className="flex justify-end mb-3">
                                 <button
-                                    onClick={() => setShowCreateEventModal(true)}
+                                    onClick={() => openSmartCreator('evento')}
                                     className="flex items-center gap-1 bg-[#4D96FF] text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-[#3B82F6] transition-all"
                                 >
                                     <Plus className="w-3 h-3" /> Crear evento
@@ -620,6 +626,22 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
             {/* Floating buttons (right side) */}
             <div className="fixed bottom-6 right-4 z-[200] flex flex-col gap-3">
                 <button
+                    onClick={() => openSmartCreator('evento')}
+                    disabled={!selectedChild}
+                    className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(77,150,255,0.35)] hover:bg-[#3B82F6] hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
+                >
+                    <Plus className="w-4 h-4" />
+                    Crear evento
+                </button>
+                <button
+                    onClick={() => openSmartCreator('prueba')}
+                    disabled={!selectedChild}
+                    className="bg-[#EF4444] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(239,68,68,0.35)] hover:bg-[#DC2626] hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
+                >
+                    <BookOpen className="w-4 h-4" />
+                    Crear prueba
+                </button>
+                <button
                     onClick={() => setShowCalendarView(true)}
                     className="bg-[#10B981] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(16,185,129,0.45)] hover:bg-[#059669] hover:scale-105 transition-all flex items-center gap-2"
                 >
@@ -634,6 +656,20 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                 onClose={() => setShowCalendarView(false)}
                 userId={selectedChild?.user_id || currentUser?.user_id}
                 userRole="apoderado"
+            />
+
+            <ChatEventCreator
+                isOpen={showCreateEventModal}
+                onClose={() => setShowCreateEventModal(false)}
+                userId={currentUser?.user_id}
+                userRole="apoderado"
+                studentUserId={selectedChild?.user_id}
+                studentName={selectedChild?.display_name || 'tu hijo'}
+                intent={creatorIntent}
+                onEventCreated={() => {
+                    fetchChildEvents();
+                    fetchNotifications();
+                }}
             />
         </div>
     );

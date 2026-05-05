@@ -13,7 +13,17 @@ const EVENT_TYPE_CONFIG = {
     otro: { label: 'Otro', color: '#6B7280', emoji: '📌' }
 };
 
-const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, onEventCreated }) => {
+const getWelcomeMessage = (intent, studentName) => {
+    const name = studentName || 'el estudiante';
+
+    if (intent === 'prueba') {
+        return `Vamos a crear una prueba para ${name}. Sube una foto o captura de pantalla del aviso del colegio y yo intento sacar fecha, materia, contenidos y hora. Tambien puedes escribirlo o dictarlo.`;
+    }
+
+    return `Hola! Soy tu asistente para crear eventos de ${name}. Puedes enviarme una foto o captura de una comunicacion del colegio, tarea o prueba, y yo extraigo la informacion automaticamente. Tambien puedes escribir o dictar por voz.`;
+};
+
+const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, studentName, intent = 'evento', onEventCreated }) => {
     const [messages, setMessages] = useState([
         {
             id: 'welcome',
@@ -34,6 +44,23 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, on
     const cameraInputRef = useRef(null);
     const recognitionRef = useRef(null);
     const textareaRef = useRef(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        setMessages([
+            {
+                id: 'welcome',
+                type: 'bot',
+                text: getWelcomeMessage(intent, studentName),
+                timestamp: new Date()
+            }
+        ]);
+        setInputText('');
+        setSelectedImage(null);
+        setImagePreview(null);
+        setLastCreatedEvent(null);
+    }, [isOpen, intent, studentName]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -138,7 +165,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, on
         const userImagePreview = imagePreview;
 
         // Add user message
-        addUserMessage(userText || (userImage ? 'Imagen enviada' : ''), userImagePreview);
+        addUserMessage(userText || (userImage ? (intent === 'prueba' ? 'Imagen de prueba enviada' : 'Imagen enviada') : ''), userImagePreview);
 
         // Clear inputs
         setInputText('');
@@ -159,7 +186,10 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, on
             formData.append('user_id', userId);
             formData.append('role', userRole || 'estudiante');
             if (studentUserId) formData.append('student_user_id', studentUserId);
-            if (userText) formData.append('text_input', userText);
+            const directedText = intent === 'prueba'
+                ? `Crear una prueba para ${studentName || 'el estudiante'}. ${userText}`.trim()
+                : userText;
+            if (directedText) formData.append('text_input', directedText);
             if (userImage) formData.append('image', userImage);
 
             const res = await fetch('/api/calendar/smart-create', {
@@ -213,8 +243,8 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, on
                             <Sparkles className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-black text-white">Crear evento</h3>
-                            <p className="text-white/70 text-xs font-bold">Sube una foto o escribe</p>
+                            <h3 className="text-lg font-black text-white">{intent === 'prueba' ? 'Crear prueba' : 'Crear evento'}</h3>
+                            <p className="text-white/70 text-xs font-bold">{intent === 'prueba' ? 'Foto, captura o detalles' : 'Sube una foto o escribe'}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="text-white font-bold text-2xl hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center">
@@ -348,7 +378,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, on
                                 value={inputText}
                                 onChange={(e) => setInputText(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Escribe o sube una foto..."
+                                placeholder={intent === 'prueba' ? 'Sube una captura o escribe la prueba...' : 'Escribe o sube una foto...'}
                                 rows={1}
                                 className="w-full px-4 py-2.5 rounded-2xl bg-gray-100 text-sm text-[#2B2E4A] placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 max-h-[120px]"
                                 disabled={isProcessing}
