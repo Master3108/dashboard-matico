@@ -146,6 +146,47 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
         reader.readAsDataURL(file);
     };
 
+    // Abre camara nativa en movil, getUserMedia en desktop
+    const openCamera = async () => {
+        // Mobile: usar input nativo con capture=environment
+        if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '')) {
+            if (cameraInputRef.current) {
+                cameraInputRef.current.value = '';
+                cameraInputRef.current.click();
+            }
+            return;
+        }
+        // Desktop: getUserMedia preview
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1080 }, height: { ideal: 1920 } }
+            });
+            const track = stream.getVideoTracks()[0];
+            const imageCapture = new ImageCapture(track);
+            const bitmap = await imageCapture.grabFrame();
+            track.stop();
+            const canvas = document.createElement('canvas');
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            canvas.getContext('2d').drawImage(bitmap, 0, 0);
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], 'foto-camara.png', { type: 'image/png' });
+                    setSelectedImage(file);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setImagePreview(ev.target.result);
+                    reader.readAsDataURL(file);
+                }
+            }, 'image/png');
+        } catch (err) {
+            // Fallback: abrir input con capture
+            if (cameraInputRef.current) {
+                cameraInputRef.current.value = '';
+                cameraInputRef.current.click();
+            }
+        }
+    };
+
     const removeImage = () => {
         setSelectedImage(null);
         setImagePreview(null);
@@ -374,7 +415,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                     <div className="grid grid-cols-3 gap-2">
                         <button
                             type="button"
-                            onClick={() => cameraInputRef.current?.click()}
+                            onClick={openCamera}
                             className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2.5 text-xs font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-1.5 transition-all"
                         >
                             <Camera className="w-4 h-4" /> Tomar foto

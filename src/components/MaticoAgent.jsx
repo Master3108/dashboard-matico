@@ -236,6 +236,43 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         }
     };
 
+    const openCamera = async () => {
+        if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '')) {
+            if (cameraInputRef.current) {
+                cameraInputRef.current.value = '';
+                cameraInputRef.current.click();
+            }
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1080 }, height: { ideal: 1920 } }
+            });
+            const track = stream.getVideoTracks()[0];
+            const imageCapture = new ImageCapture(track);
+            const bitmap = await imageCapture.grabFrame();
+            track.stop();
+            const canvas = document.createElement('canvas');
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            canvas.getContext('2d').drawImage(bitmap, 0, 0);
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], 'foto-camara.png', { type: 'image/png' });
+                    setSelectedImage(file);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setImagePreview(ev.target.result);
+                    reader.readAsDataURL(file);
+                }
+            }, 'image/png');
+        } catch (err) {
+            if (cameraInputRef.current) {
+                cameraInputRef.current.value = '';
+                cameraInputRef.current.click();
+            }
+        }
+    };
+
     const handleSend = async () => {
         if (isProcessing) return;
         if (!inputText.trim() && !selectedImage) return;
@@ -520,7 +557,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                     <div className="grid grid-cols-3 gap-2">
                         <button
                             type="button"
-                            onClick={() => cameraInputRef.current?.click()}
+                            onClick={openCamera}
                             className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2 text-xs font-black text-[#2B2E4A] hover:border-[#FFD93D] flex items-center justify-center gap-1 transition-all"
                         >
                             <Camera className="w-3.5 h-3.5" /> Tomar foto
