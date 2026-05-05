@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     Send, Mic, MicOff, Image, Camera, X, Calendar,
     CheckCircle, Loader, Sparkles, Clock, AlertTriangle,
-    ChevronDown
+    ChevronDown, Monitor, UploadCloud
 } from 'lucide-react';
 
 const EVENT_TYPE_CONFIG = {
@@ -151,6 +151,35 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
         setImagePreview(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
         if (cameraInputRef.current) cameraInputRef.current.value = '';
+    };
+
+    // Captura de pantalla via getDisplayMedia (web/desktop)
+    const captureScreen = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const track = stream.getVideoTracks()[0];
+            const imageCapture = new ImageCapture(track);
+            const bitmap = await imageCapture.grabFrame();
+            track.stop();
+
+            const canvas = document.createElement('canvas');
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(bitmap, 0, 0);
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], 'captura-pantalla.png', { type: 'image/png' });
+                    setSelectedImage(file);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setImagePreview(ev.target.result);
+                    reader.readAsDataURL(file);
+                }
+            }, 'image/png');
+        } catch (err) {
+            console.error('[SCREEN-CAPTURE] Error:', err);
+        }
     };
 
     const handleSend = async () => {
@@ -336,56 +365,51 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 )}
 
                 {/* Input area */}
-                <div className="px-4 py-3 bg-white border-t border-gray-100 shrink-0">
-                    <div className="flex items-end gap-2">
-                        {/* Image buttons */}
-                        <div className="flex gap-1 shrink-0">
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageSelect}
-                                className="hidden"
-                            />
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
-                                title="Subir foto"
-                            >
-                                <Image className="w-5 h-5 text-gray-500" />
-                            </button>
-                            <input
-                                ref={cameraInputRef}
-                                type="file"
-                                accept="image/*"
-                                capture="environment"
-                                onChange={handleImageSelect}
-                                className="hidden"
-                            />
-                            <button
-                                onClick={() => cameraInputRef.current?.click()}
-                                className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
-                                title="Tomar foto"
-                            >
-                                <Camera className="w-5 h-5 text-gray-500" />
-                            </button>
-                        </div>
+                <div className="px-3 py-3 bg-white border-t border-gray-100 shrink-0 space-y-2">
+                    {/* Hidden file inputs */}
+                    <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden" />
+                    <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageSelect} className="hidden" />
 
-                        {/* Text input */}
-                        <div className="flex-1 relative">
+                    {/* Capture buttons row - estilo Oraculo */}
+                    <div className="grid grid-cols-3 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => cameraInputRef.current?.click()}
+                            className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2.5 text-xs font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-1.5 transition-all"
+                        >
+                            <Camera className="w-4 h-4" /> Tomar foto
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="rounded-2xl border-2 border-[#4D96FF] bg-[#EEF4FF] px-2 py-2.5 text-xs font-black text-[#1D4ED8] hover:border-[#1D4ED8] flex items-center justify-center gap-1.5 transition-all"
+                        >
+                            <UploadCloud className="w-4 h-4" /> Subir fotos
+                        </button>
+                        <button
+                            type="button"
+                            onClick={captureScreen}
+                            className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2.5 text-xs font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-1.5 transition-all"
+                        >
+                            <Monitor className="w-4 h-4" /> Captura pantalla
+                        </button>
+                    </div>
+
+                    {/* Text input + voice + send */}
+                    <div className="flex items-end gap-1.5">
+                        <div className="flex-1">
                             <textarea
                                 ref={textareaRef}
                                 value={inputText}
                                 onChange={(e) => setInputText(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder={intent === 'prueba' ? 'Sube una captura o escribe la prueba...' : 'Escribe o sube una foto...'}
+                                placeholder={intent === 'prueba' ? 'O escribe los detalles de la prueba...' : 'O escribe los detalles...'}
                                 rows={1}
-                                className="w-full px-4 py-2.5 rounded-2xl bg-gray-100 text-sm text-[#2B2E4A] placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 max-h-[120px]"
+                                className="w-full px-3 py-2.5 rounded-2xl bg-gray-100 text-sm text-[#2B2E4A] placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 max-h-[100px]"
                                 disabled={isProcessing}
                             />
                         </div>
 
-                        {/* Voice button */}
                         <button
                             onClick={isListening ? stopListening : startListening}
                             className={`p-2.5 rounded-xl transition-all shrink-0 ${
@@ -393,13 +417,11 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                                     ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30'
                                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                             }`}
-                            title={isListening ? 'Detener' : 'Hablar'}
                             disabled={isProcessing}
                         >
                             {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                         </button>
 
-                        {/* Send button */}
                         <button
                             onClick={handleSend}
                             disabled={isProcessing || (!inputText.trim() && !selectedImage)}
