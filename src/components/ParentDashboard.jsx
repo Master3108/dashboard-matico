@@ -6,6 +6,7 @@ import {
     MessageCircle, Sparkles, RefreshCw
 } from 'lucide-react';
 import ChatEventCreator from './ChatEventCreator';
+import CalendarView from './CalendarView';
 
 const EVENT_TYPE_CONFIG = {
     prueba: { label: 'Prueba', color: '#EF4444', bg: '#FEF2F2', emoji: '📝' },
@@ -57,7 +58,9 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
     const [activeTab, setActiveTab] = useState('resumen');
     const [weekOffset, setWeekOffset] = useState(0);
     const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+    const [showCalendarView, setShowCalendarView] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [maticoMood, setMaticoMood] = useState('happy');
 
     // Fetch profile + children
     const fetchProfile = useCallback(async () => {
@@ -191,12 +194,22 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
             <div className="bg-gradient-to-r from-[#7C3AED] to-[#4D96FF] px-4 py-4 shadow-lg">
                 <div className="max-w-5xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-white" />
+                        {/* Mini Matico in header */}
+                        <div className="w-11 h-11 relative flex items-center justify-center">
+                            <div className="absolute top-0 -left-0.5 w-3 h-4 bg-[#FFD93D] rounded-b-[20px] rounded-t-[6px] rotate-[-10deg]"></div>
+                            <div className="absolute top-0 -right-0.5 w-3 h-4 bg-[#FFD93D] rounded-b-[20px] rounded-t-[6px] rotate-[10deg]"></div>
+                            <div className="absolute inset-[8%] bg-[#FFD93D] rounded-[45%] shadow-md"></div>
+                            <div className="relative flex flex-col items-center justify-center z-10 translate-y-0.5">
+                                <div className="flex gap-2 mb-0.5">
+                                    <div className="w-1.5 h-2 bg-[#2B2E4A] rounded-full"></div>
+                                    <div className="w-1.5 h-2 bg-[#2B2E4A] rounded-full"></div>
+                                </div>
+                                <div className="w-2 h-1 bg-[#2B2E4A] rounded-t-full rounded-b-[50%]"></div>
+                            </div>
                         </div>
                         <div>
-                            <h1 className="text-white font-black text-lg">Panel de Apoderado</h1>
-                            <p className="text-white/70 text-xs font-bold">{currentUser?.username || currentUser?.email}</p>
+                            <h1 className="text-white font-black text-lg">Hola, {(currentUser?.username || 'Apoderado').split(' ')[0]}</h1>
+                            <p className="text-white/70 text-xs font-bold">Panel de seguimiento</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -591,15 +604,72 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                 )}
             </div>
 
-            {/* Floating create button */}
-            <div className="fixed bottom-6 right-6 z-[200]">
+            {/* Matico mascota flotante */}
+            <div className="fixed bottom-24 left-4 z-[190] animate-pulse">
+                <div className="relative cursor-pointer group" onClick={() => setMaticoMood(m => m === 'happy' ? 'excited' : 'happy')}>
+                    {/* Perrito Matico mini */}
+                    <div className="w-16 h-16 relative flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
+                        <div className="absolute top-0 -left-1 w-4 h-6 bg-[#FFD93D] rounded-b-[30px] rounded-t-[10px] rotate-[-10deg] shadow-sm"></div>
+                        <div className="absolute top-0 -right-1 w-4 h-6 bg-[#FFD93D] rounded-b-[30px] rounded-t-[10px] rotate-[10deg] shadow-sm"></div>
+                        <div className="absolute inset-[5%] bg-[#FFD93D] rounded-[45%] shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff]"></div>
+                        <div className="relative w-full h-full flex flex-col items-center justify-center z-10 translate-y-1">
+                            <div className="flex gap-3 w-full justify-center mb-1">
+                                <div className="w-2 h-2.5 bg-[#2B2E4A] rounded-full relative">
+                                    <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-white rounded-full"></div>
+                                </div>
+                                <div className="w-2 h-2.5 bg-[#2B2E4A] rounded-full relative">
+                                    <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-white rounded-full"></div>
+                                </div>
+                            </div>
+                            <div className="w-6 h-4 bg-[#FFE88A] rounded-[40%] flex flex-col items-center justify-start pt-0.5">
+                                <div className="w-2.5 h-1.5 bg-[#2B2E4A] rounded-t-[40%] rounded-b-[50%]"></div>
+                                {maticoMood === 'happy' && <div className="w-3 h-1.5 border-b-2 border-[#2B2E4A] rounded-full"></div>}
+                                {maticoMood === 'excited' && <div className="w-3 h-1.5 bg-[#2B2E4A] rounded-b-full -mt-0.5"></div>}
+                            </div>
+                        </div>
+                    </div>
+                    {/* Speech bubble */}
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white px-3 py-1.5 rounded-xl shadow-md text-xs font-bold text-[#7C3AED] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                        {pendingEvents > 0 ? `${pendingEvents} pendientes` : 'Todo al día'}
+                    </div>
+                </div>
+            </div>
+
+            {/* 3 Floating buttons */}
+            <div className="fixed bottom-6 right-4 z-[200] flex flex-col gap-3">
+                <button
+                    onClick={() => setShowCalendarView(true)}
+                    className="bg-[#10B981] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(16,185,129,0.45)] hover:bg-[#059669] hover:scale-105 transition-all flex items-center gap-2"
+                >
+                    <Calendar className="w-4 h-4" />
+                    Calendario
+                </button>
                 <button
                     onClick={() => setShowCreateEventModal(true)}
-                    className="bg-gradient-to-r from-[#7C3AED] to-[#4D96FF] text-white w-14 h-14 rounded-2xl shadow-[0_10px_30px_rgba(124,58,237,0.5)] flex items-center justify-center hover:scale-105 transition-transform"
+                    className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(77,150,255,0.45)] hover:bg-[#3B82F6] hover:scale-105 transition-all flex items-center gap-2"
                 >
-                    <Plus className="w-7 h-7" />
+                    <Sparkles className="w-4 h-4" />
+                    Crear evento
+                </button>
+                <button
+                    onClick={() => {
+                        // For now, open the chat event creator with a hint for prueba
+                        setShowCreateEventModal(true);
+                    }}
+                    className="bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] hover:scale-105 transition-all flex items-center gap-2"
+                >
+                    <BookOpen className="w-4 h-4" />
+                    Crear prueba
                 </button>
             </div>
+
+            {/* Calendar View Modal */}
+            <CalendarView
+                isOpen={showCalendarView}
+                onClose={() => setShowCalendarView(false)}
+                userId={selectedChild?.user_id || currentUser?.user_id}
+                userRole="apoderado"
+            />
 
             {/* Chat Event Creator */}
             <ChatEventCreator
