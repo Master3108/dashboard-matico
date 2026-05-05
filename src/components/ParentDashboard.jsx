@@ -627,16 +627,14 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
             <div className="fixed bottom-6 right-4 z-[200] flex flex-col gap-3">
                 <button
                     onClick={() => openSmartCreator('evento')}
-                    disabled={!selectedChild}
-                    className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(77,150,255,0.35)] hover:bg-[#3B82F6] hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
+                    className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(77,150,255,0.35)] hover:bg-[#3B82F6] hover:scale-105 transition-all flex items-center gap-2"
                 >
                     <Plus className="w-4 h-4" />
                     Crear evento
                 </button>
                 <button
                     onClick={() => openSmartCreator('prueba')}
-                    disabled={!selectedChild}
-                    className="bg-[#EF4444] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(239,68,68,0.35)] hover:bg-[#DC2626] hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
+                    className="bg-[#EF4444] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(239,68,68,0.35)] hover:bg-[#DC2626] hover:scale-105 transition-all flex items-center gap-2"
                 >
                     <BookOpen className="w-4 h-4" />
                     Crear prueba
@@ -663,7 +661,7 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                 onClose={() => setShowCreateEventModal(false)}
                 userId={currentUser?.user_id}
                 userRole="apoderado"
-                studentUserId={selectedChild?.user_id}
+                studentUserId={selectedChild?.user_id || currentUser?.user_id}
                 studentName={selectedChild?.display_name || 'tu hijo'}
                 intent={creatorIntent}
                 onEventCreated={() => {

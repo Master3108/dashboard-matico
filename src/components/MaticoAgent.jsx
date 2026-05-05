@@ -13,9 +13,9 @@ const GREETING_MESSAGES = [
 ];
 
 const QUICK_ACTIONS = [
+    { label: 'Subir foto o captura de pantalla', icon: Camera, action: 'foto', highlight: true },
     { label: 'Agendar una prueba', icon: BookOpen, action: 'prueba' },
     { label: 'Agendar una tarea', icon: Calendar, action: 'tarea' },
-    { label: 'Subir foto del colegio', icon: Image, action: 'foto' },
 ];
 
 const EVENT_TYPE_CONFIG = {
@@ -55,12 +55,17 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         }, 1500);
 
         const timer2 = setTimeout(() => {
-            setBubbleText('Toca aqui para empezar');
+            setBubbleText('Sube una foto para agendar');
         }, 4000);
+
+        const timer3 = setTimeout(() => {
+            setBubbleText('Toca aqui!');
+        }, 7000);
 
         return () => {
             clearTimeout(timer1);
             clearTimeout(timer2);
+            clearTimeout(timer3);
         };
     }, [hasGreeted]);
 
@@ -86,9 +91,9 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         if (messages.length === 0) {
             const name = studentName || 'tu hijo';
             const greetings = [
-                `Hola! Soy Matico, tu asistente escolar. Estoy aqui para ayudarte a organizar todo lo de ${name}.`,
-                'Puedes enviarme una foto de cualquier comunicacion del colegio, prueba o tarea, y yo la analizo automaticamente.',
-                'Tambien puedes hablarme por voz o simplemente escribir. Que te gustaria hacer?'
+                `Hola! Soy Matico, tu asistente escolar. Voy a ayudarte a organizar las pruebas y tareas de ${name}.`,
+                'Lo mas facil es sacarle una FOTO o CAPTURA DE PANTALLA a la comunicacion del colegio, al cuaderno, o al grupo de WhatsApp donde avisan las pruebas. Yo leo la imagen y creo el evento automaticamente!',
+                'Tambien puedes hablarme por voz o escribir. Prueba subiendo una foto ahora!'
             ];
 
             greetings.forEach((text, i) => {
@@ -137,18 +142,18 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         // Remove quick actions message
         setMessages(prev => prev.filter(m => m.id !== 'quick-actions'));
 
-        if (action === 'prueba') {
+        if (action === 'foto') {
+            fileInputRef.current?.click();
+        } else if (action === 'prueba') {
             addUserMessage('Quiero agendar una prueba');
             setTimeout(() => {
-                addBotMessage('Perfecto! Puedes decirme los detalles de la prueba (materia, fecha, tema) o enviarme una foto de la comunicacion del colegio y lo hago automaticamente.');
+                addBotMessage('Dale! La forma mas rapida: sacale una foto o captura de pantalla al aviso del colegio (WhatsApp, agenda, cuaderno) y mandamela aqui. Yo extraigo la fecha, materia y todo lo demas. Si prefieres, tambien puedes escribir o dictar los detalles.');
             }, 600);
         } else if (action === 'tarea') {
             addUserMessage('Quiero agendar una tarea');
             setTimeout(() => {
-                addBotMessage('Claro! Cuentame los detalles de la tarea o mandame una foto. Que materia es y para cuando?');
+                addBotMessage('Perfecto! Mandame una foto de la tarea o del mensaje donde la asignaron y yo saco toda la info. Tambien puedes decirme: "Tarea de lenguaje para el viernes, hacer resumen del capitulo 3".');
             }, 600);
-        } else if (action === 'foto') {
-            fileInputRef.current?.click();
         }
     };
 
@@ -255,7 +260,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                     `Fecha: ${ev.event_date}${ev.start_time ? ` a las ${ev.start_time}` : ''}\n` +
                     `Materia: ${ev.subject || 'No especificada'}\n` +
                     (ev.description ? `\n${ev.description}\n` : '') +
-                    `\nYa quedo guardado en el calendario! Quieres agendar algo mas?`,
+                    `\nListo, guardado en el calendario! Tienes mas fotos de tareas o pruebas? Mandamelas y las agendo al tiro.`,
                     ev
                 );
 
@@ -398,16 +403,21 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                                 <div key={msg.id} className="flex flex-col gap-2 pl-10">
                                     {QUICK_ACTIONS.map((qa, i) => {
                                         const Icon = qa.icon;
+                                        const isHighlight = qa.highlight;
                                         return (
                                             <button
                                                 key={i}
                                                 onClick={() => handleQuickAction(qa.action)}
-                                                className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-[#7C3AED]/20 hover:border-[#7C3AED]/50 hover:shadow-md transition-all text-left"
+                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl shadow-sm border transition-all text-left ${
+                                                    isHighlight
+                                                        ? 'bg-[#7C3AED] border-[#7C3AED] hover:bg-[#6D28D9] shadow-[0_4px_15px_rgba(124,58,237,0.3)]'
+                                                        : 'bg-white border-[#7C3AED]/20 hover:border-[#7C3AED]/50 hover:shadow-md'
+                                                }`}
                                             >
-                                                <div className="w-8 h-8 bg-[#7C3AED]/10 rounded-xl flex items-center justify-center shrink-0">
-                                                    <Icon className="w-4 h-4 text-[#7C3AED]" />
+                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${isHighlight ? 'bg-white/20' : 'bg-[#7C3AED]/10'}`}>
+                                                    <Icon className={`w-4 h-4 ${isHighlight ? 'text-white' : 'text-[#7C3AED]'}`} />
                                                 </div>
-                                                <span className="text-sm font-bold text-[#2B2E4A]">{qa.label}</span>
+                                                <span className={`text-sm font-bold ${isHighlight ? 'text-white' : 'text-[#2B2E4A]'}`}>{qa.label}</span>
                                             </button>
                                         );
                                     })}
