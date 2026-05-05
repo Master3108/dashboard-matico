@@ -3,7 +3,7 @@ import {
     Calendar, Clock, BookOpen, CheckCircle, AlertTriangle, Trash2,
     ChevronLeft, ChevronRight, Bell, User, LogOut, TrendingUp,
     Award, Target, BarChart3, Plus, Mic, Send, Image, Camera,
-    MessageCircle, Sparkles, RefreshCw
+    MessageCircle, Sparkles, RefreshCw, Shield
 } from 'lucide-react';
 import ChatEventCreator from './ChatEventCreator';
 import CalendarView from './CalendarView';
@@ -49,7 +49,7 @@ const isPast = (dateStr) => {
     return dateStr < today;
 };
 
-const ParentDashboard = ({ currentUser, onLogout }) => {
+const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdmin = null }) => {
     const [children, setChildren] = useState([]);
     const [selectedChild, setSelectedChild] = useState(null);
     const [events, setEvents] = useState([]);
@@ -234,6 +234,16 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                                 </span>
                             )}
                         </div>
+                        {isAdmin && onSwitchToAdmin && (
+                            <button
+                                onClick={onSwitchToAdmin}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400/90 hover:bg-amber-300 text-[#2B2E4A] font-bold text-xs transition-all shadow-md"
+                                title="Cambiar a vista Admin"
+                            >
+                                <Shield className="w-4 h-4" />
+                                Admin
+                            </button>
+                        )}
                         <button
                             onClick={onLogout}
                             className="p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all"

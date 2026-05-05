@@ -3631,6 +3631,7 @@ const App = () => {
     const [showExamCaptureModal, setShowExamCaptureModal] = useState(false);
     const [showCreateEventModal, setShowCreateEventModal] = useState(false);
     const [showChatEventCreator, setShowChatEventCreator] = useState(false);
+    const [activeView, setActiveView] = useState('default'); // 'default' | 'parent' | 'admin'
     const [showCalendarView, setShowCalendarView] = useState(false);
 
     // INITIAL SETUP: Resolve current subject according to Weekly Plan
@@ -6066,13 +6067,34 @@ ${finalData.capsule}`;
         return <LoginPage onLogin={handleLogin} />;
     }
 
-    // Si es apoderado, mostrar panel de apoderado
+    // Si es apoderado: admin users pueden cambiar de vista, otros van directo a ParentDashboard
     if (currentUser.role === 'apoderado') {
-        return <ParentDashboard currentUser={currentUser} onLogout={handleLogout} />;
+        const showParentView = isAdminUser ? (activeView !== 'admin') : true;
+        if (showParentView) {
+            return (
+                <ParentDashboard
+                    currentUser={currentUser}
+                    onLogout={handleLogout}
+                    isAdmin={isAdminUser}
+                    onSwitchToAdmin={() => setActiveView('admin')}
+                />
+            );
+        }
+        // Si es admin y eligió vista admin, cae al dashboard normal abajo
     }
 
     return (
         <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-x-hidden">
+            {/* Botón flotante para volver al Panel Padre (solo admin con rol apoderado) */}
+            {isAdminUser && currentUser.role === 'apoderado' && activeView === 'admin' && (
+                <button
+                    onClick={() => setActiveView('parent')}
+                    className="fixed top-4 right-4 z-[900] flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#7C3AED] to-[#4D96FF] text-white font-bold text-sm rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                >
+                    <Shield className="w-4 h-4" />
+                    Panel Padre
+                </button>
+            )}
             {/* ALERTA GLOBAL CENTRADA */}
             {missedSessionAlert && (
                 <div className="fixed inset-0 z-[999] grid place-items-center p-4 md:p-10 bg-[#2B2E4A]/40 backdrop-blur-md animate-fade-in">
