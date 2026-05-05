@@ -5,7 +5,7 @@ import {
     Award, Target, BarChart3, Plus, Mic, Send, Image, Camera,
     MessageCircle, Sparkles, RefreshCw
 } from 'lucide-react';
-import CreateEventModal from './CreateEventModal';
+import ChatEventCreator from './ChatEventCreator';
 
 const EVENT_TYPE_CONFIG = {
     prueba: { label: 'Prueba', color: '#EF4444', bg: '#FEF2F2', emoji: '📝' },
@@ -601,8 +601,8 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                 </button>
             </div>
 
-            {/* Create Event Modal */}
-            <CreateEventModal
+            {/* Chat Event Creator */}
+            <ChatEventCreator
                 isOpen={showCreateEventModal}
                 onClose={() => setShowCreateEventModal(false)}
                 userId={currentUser?.user_id}
@@ -610,7 +610,6 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                 studentUserId={selectedChild?.user_id}
                 onEventCreated={(event) => {
                     console.log('[PARENT] Evento creado:', event);
-                    setShowCreateEventModal(false);
                     fetchChildEvents();
                 }}
             />
