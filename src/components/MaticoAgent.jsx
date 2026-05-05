@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Send, Mic, MicOff, Image, Camera, X, Calendar,
     CheckCircle, Loader, Sparkles, Clock, MessageCircle,
-    ChevronDown, ChevronUp, Plus, BookOpen, Monitor, UploadCloud
+    ChevronDown, ChevronUp, Plus, BookOpen, Monitor, UploadCloud, Smartphone
 } from 'lucide-react';
+import { isNativeScreenCaptureAvailable, captureNativeScreenshot, isRunningInNativeApp } from '../mobile/screenCaptureBridge';
 
 const GREETING_MESSAGES = [
     'Hola! Soy Matico, tu asistente escolar. Estoy aqui para ayudarte a organizar las tareas y pruebas de tu hijo.',
@@ -211,8 +212,26 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         if (cameraInputRef.current) cameraInputRef.current.value = '';
     };
 
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const canScreenCapture = !isMobile || isRunningInNativeApp();
+
     const captureScreen = async () => {
         try {
+            if (isNativeScreenCaptureAvailable()) {
+                const result = await captureNativeScreenshot();
+                if (result?.dataUrl) {
+                    const resp = await fetch(result.dataUrl);
+                    const blob = await resp.blob();
+                    const file = new File([blob], 'captura-nativa.png', { type: result.imageMimeType || 'image/png' });
+                    setSelectedImage(file);
+                    setImagePreview(result.dataUrl);
+                    return;
+                }
+            }
+            if (!navigator.mediaDevices?.getDisplayMedia) {
+                alert('Captura no disponible en este navegador. Usa "Subir fotos" o "Tomar foto".');
+                return;
+            }
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
             const track = stream.getVideoTracks()[0];
             const imageCapture = new ImageCapture(track);
@@ -569,13 +588,15 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                         >
                             <UploadCloud className="w-3.5 h-3.5" /> Subir fotos
                         </button>
-                        <button
-                            type="button"
-                            onClick={captureScreen}
-                            className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2 text-xs font-black text-[#2B2E4A] hover:border-[#FFD93D] flex items-center justify-center gap-1 transition-all"
-                        >
-                            <Monitor className="w-3.5 h-3.5" /> Captura
-                        </button>
+                        {canScreenCapture && (
+                            <button
+                                type="button"
+                                onClick={captureScreen}
+                                className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2 text-xs font-black text-[#2B2E4A] hover:border-[#FFD93D] flex items-center justify-center gap-1 transition-all"
+                            >
+                                {isRunningInNativeApp() ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />} Captura
+                            </button>
+                        )}
                     </div>
 
                     {/* Text + voice + send */}

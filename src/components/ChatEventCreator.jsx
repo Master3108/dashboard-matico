@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     Send, Mic, MicOff, Image, Camera, X, Calendar,
     CheckCircle, Loader, Sparkles, Clock, AlertTriangle,
-    ChevronDown, Monitor, UploadCloud
+    ChevronDown, Monitor, UploadCloud, Smartphone
 } from 'lucide-react';
+import { isNativeScreenCaptureAvailable, captureNativeScreenshot, isRunningInNativeApp } from '../mobile/screenCaptureBridge';
 
 const EVENT_TYPE_CONFIG = {
     prueba: { label: 'Prueba', color: '#EF4444', emoji: '📝' },
@@ -194,9 +195,31 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
         if (cameraInputRef.current) cameraInputRef.current.value = '';
     };
 
-    // Captura de pantalla via getDisplayMedia (web/desktop)
+    // Detectar si estamos en movil (sin soporte getDisplayMedia)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const canScreenCapture = !isMobile || isRunningInNativeApp();
+
+    // Captura de pantalla: nativo en APK, getDisplayMedia en desktop
     const captureScreen = async () => {
         try {
+            // 1. Intentar plugin nativo (APK Android)
+            if (isNativeScreenCaptureAvailable()) {
+                const result = await captureNativeScreenshot();
+                if (result?.dataUrl) {
+                    const resp = await fetch(result.dataUrl);
+                    const blob = await resp.blob();
+                    const file = new File([blob], 'captura-nativa.png', { type: result.imageMimeType || 'image/png' });
+                    setSelectedImage(file);
+                    setImagePreview(result.dataUrl);
+                    return;
+                }
+            }
+
+            // 2. Fallback: getDisplayMedia (solo desktop)
+            if (!navigator.mediaDevices?.getDisplayMedia) {
+                alert('La captura de pantalla no esta disponible en este navegador. Usa "Subir fotos" o "Tomar foto".');
+                return;
+            }
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
             const track = stream.getVideoTracks()[0];
             const imageCapture = new ImageCapture(track);
@@ -427,13 +450,15 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                         >
                             <UploadCloud className="w-4 h-4" /> Subir fotos
                         </button>
-                        <button
-                            type="button"
-                            onClick={captureScreen}
-                            className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2.5 text-xs font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-1.5 transition-all"
-                        >
-                            <Monitor className="w-4 h-4" /> Captura pantalla
-                        </button>
+                        {canScreenCapture && (
+                            <button
+                                type="button"
+                                onClick={captureScreen}
+                                className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2.5 text-xs font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-1.5 transition-all"
+                            >
+                                {isRunningInNativeApp() ? <Smartphone className="w-4 h-4" /> : <Monitor className="w-4 h-4" />} Captura pantalla
+                            </button>
+                        )}
                     </div>
 
                     {/* Text input + voice + send */}
