@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import ChatEventCreator from './ChatEventCreator';
 import CalendarView from './CalendarView';
+import MaticoAgent from './MaticoAgent';
 
 const EVENT_TYPE_CONFIG = {
     prueba: { label: 'Prueba', color: '#EF4444', bg: '#FEF2F2', emoji: '📝' },
@@ -604,38 +605,19 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                 )}
             </div>
 
-            {/* Matico mascota flotante */}
-            <div className="fixed bottom-24 left-4 z-[190] animate-pulse">
-                <div className="relative cursor-pointer group" onClick={() => setMaticoMood(m => m === 'happy' ? 'excited' : 'happy')}>
-                    {/* Perrito Matico mini */}
-                    <div className="w-16 h-16 relative flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
-                        <div className="absolute top-0 -left-1 w-4 h-6 bg-[#FFD93D] rounded-b-[30px] rounded-t-[10px] rotate-[-10deg] shadow-sm"></div>
-                        <div className="absolute top-0 -right-1 w-4 h-6 bg-[#FFD93D] rounded-b-[30px] rounded-t-[10px] rotate-[10deg] shadow-sm"></div>
-                        <div className="absolute inset-[5%] bg-[#FFD93D] rounded-[45%] shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff]"></div>
-                        <div className="relative w-full h-full flex flex-col items-center justify-center z-10 translate-y-1">
-                            <div className="flex gap-3 w-full justify-center mb-1">
-                                <div className="w-2 h-2.5 bg-[#2B2E4A] rounded-full relative">
-                                    <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-white rounded-full"></div>
-                                </div>
-                                <div className="w-2 h-2.5 bg-[#2B2E4A] rounded-full relative">
-                                    <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-white rounded-full"></div>
-                                </div>
-                            </div>
-                            <div className="w-6 h-4 bg-[#FFE88A] rounded-[40%] flex flex-col items-center justify-start pt-0.5">
-                                <div className="w-2.5 h-1.5 bg-[#2B2E4A] rounded-t-[40%] rounded-b-[50%]"></div>
-                                {maticoMood === 'happy' && <div className="w-3 h-1.5 border-b-2 border-[#2B2E4A] rounded-full"></div>}
-                                {maticoMood === 'excited' && <div className="w-3 h-1.5 bg-[#2B2E4A] rounded-b-full -mt-0.5"></div>}
-                            </div>
-                        </div>
-                    </div>
-                    {/* Speech bubble */}
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white px-3 py-1.5 rounded-xl shadow-md text-xs font-bold text-[#7C3AED] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                        {pendingEvents > 0 ? `${pendingEvents} pendientes` : 'Todo al día'}
-                    </div>
-                </div>
-            </div>
+            {/* Matico Agent - Agente conversacional con perrito */}
+            <MaticoAgent
+                userId={currentUser?.user_id}
+                userRole="apoderado"
+                studentUserId={selectedChild?.user_id}
+                studentName={selectedChild?.display_name || 'tu hijo'}
+                onEventCreated={(event) => {
+                    console.log('[PARENT] Evento creado via Matico:', event);
+                    fetchChildEvents();
+                }}
+            />
 
-            {/* 3 Floating buttons */}
+            {/* Floating buttons (right side) */}
             <div className="fixed bottom-6 right-4 z-[200] flex flex-col gap-3">
                 <button
                     onClick={() => setShowCalendarView(true)}
@@ -643,23 +625,6 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                 >
                     <Calendar className="w-4 h-4" />
                     Calendario
-                </button>
-                <button
-                    onClick={() => setShowCreateEventModal(true)}
-                    className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(77,150,255,0.45)] hover:bg-[#3B82F6] hover:scale-105 transition-all flex items-center gap-2"
-                >
-                    <Sparkles className="w-4 h-4" />
-                    Crear evento
-                </button>
-                <button
-                    onClick={() => {
-                        // For now, open the chat event creator with a hint for prueba
-                        setShowCreateEventModal(true);
-                    }}
-                    className="bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black text-sm shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] hover:scale-105 transition-all flex items-center gap-2"
-                >
-                    <BookOpen className="w-4 h-4" />
-                    Crear prueba
                 </button>
             </div>
 
@@ -669,19 +634,6 @@ const ParentDashboard = ({ currentUser, onLogout }) => {
                 onClose={() => setShowCalendarView(false)}
                 userId={selectedChild?.user_id || currentUser?.user_id}
                 userRole="apoderado"
-            />
-
-            {/* Chat Event Creator */}
-            <ChatEventCreator
-                isOpen={showCreateEventModal}
-                onClose={() => setShowCreateEventModal(false)}
-                userId={currentUser?.user_id}
-                userRole="apoderado"
-                studentUserId={selectedChild?.user_id}
-                onEventCreated={(event) => {
-                    console.log('[PARENT] Evento creado:', event);
-                    fetchChildEvents();
-                }}
             />
         </div>
     );

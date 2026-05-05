@@ -8,6 +8,7 @@ import CreateEventModal from './components/CreateEventModal';
 import ChatEventCreator from './components/ChatEventCreator';
 import CalendarView from './components/CalendarView';
 import ParentDashboard from './components/ParentDashboard';
+import MaticoAgent from './components/MaticoAgent';
 import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
 import QuestionBankManager from './components/QuestionBankManager';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntake';
@@ -6307,6 +6308,16 @@ ${finalData.capsule}`;
                     studentUserId={USER_ID}
                     onEventCreated={(event) => {
                         console.log('[CHAT-EVENT] Evento creado:', event);
+                    }}
+                />
+
+                <MaticoAgent
+                    userId={USER_ID}
+                    userRole={currentUser?.role || 'estudiante'}
+                    studentUserId={USER_ID}
+                    studentName={currentUser?.username || 'Estudiante'}
+                    onEventCreated={(event) => {
+                        console.log('[MATICO-AGENT] Evento creado:', event);
                     }}
                 />
 
