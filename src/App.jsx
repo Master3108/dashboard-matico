@@ -6084,7 +6084,7 @@ ${finalData.capsule}`;
     }
 
     return (
-        <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-hidden">
+        <div className="min-h-screen bg-[#F0F4F8] px-4 sm:px-6 lg:px-8 py-6 relative overflow-hidden">
             {/* Botón flotante para volver al Panel Padre (solo admin con rol apoderado) */}
             {isAdminUser && currentUser.role === 'apoderado' && activeView === 'admin' && (
                 <button
