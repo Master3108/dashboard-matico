@@ -8283,6 +8283,33 @@ app.post('/api/admin/link-child', async (req, res) => {
         if (!ADMIN_EMAILS.includes(admin_email)) return res.status(403).json({ success: false, error: 'No autorizado' });
         if (!child_user_id || !parent_user_id) return res.status(400).json({ success: false, error: 'Faltan parametros' });
 
+        // Check if child exists in profiles
+        let { data: existing } = await supabase.from('profiles').select('*').eq('user_id', child_user_id).maybeSingle();
+
+        // If not in profiles, check legacy users table and migrate
+        if (!existing) {
+            const { data: legacyUser } = await supabase.from('users').select('*').eq('token', child_user_id).maybeSingle();
+            if (legacyUser) {
+                console.log('[LINK-CHILD] Migrando usuario legacy a profiles:', child_user_id);
+                const { data: migrated, error: migrateErr } = await supabase.from('profiles').upsert({
+                    user_id: legacyUser.token,
+                    email: legacyUser.mail || legacyUser.email || '',
+                    display_name: legacyUser.nombre || legacyUser.name || 'Estudiante',
+                    password_hash: legacyUser.pass || legacyUser.password || '',
+                    phone: legacyUser.celular || '',
+                    region: legacyUser.region || '',
+                    commune: legacyUser.comuna || '',
+                    guardian_email: legacyUser.correo_apoderado || '',
+                    role: 'estudiante',
+                    parent_user_id: parent_user_id
+                }, { onConflict: 'user_id' }).select().single();
+                if (migrateErr) throw new Error(`Error migrando usuario: ${migrateErr.message}`);
+                return res.json({ success: true, updated: migrated, migrated_from_legacy: true });
+            }
+            return res.status(404).json({ success: false, error: 'Hijo no encontrado en profiles ni en users' });
+        }
+
+        // Update existing profile
         const { data, error } = await supabase
             .from('profiles')
             .update({ parent_user_id, role: 'estudiante' })

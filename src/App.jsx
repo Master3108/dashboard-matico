@@ -6084,7 +6084,7 @@ ${finalData.capsule}`;
     }
 
     return (
-        <div className="min-h-screen bg-[#F0F4F8] px-4 sm:px-6 lg:px-8 py-6 relative overflow-hidden">
+        <div className="min-h-screen bg-[#F0F4F8] px-4 sm:px-6 lg:px-8 py-6 relative overflow-x-hidden">
             {/* Botón flotante para volver al Panel Padre (solo admin con rol apoderado) */}
             {isAdminUser && currentUser.role === 'apoderado' && activeView === 'admin' && (
                 <button
@@ -6160,7 +6160,7 @@ ${finalData.capsule}`;
                 <div className="absolute inset-0 shadow-[inset_0_0_200px_rgba(43,46,74,0.15)] pointer-events-none"></div>
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto">
+            <div className="relative z-10 w-full max-w-7xl mx-auto pb-32 xl:pr-48">
                 {/* LOADING SCREEN WHILE FETCHING PROGRESS */}
                 {loadingProgress && (
                     <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center z-50">
@@ -6349,7 +6349,7 @@ ${finalData.capsule}`;
                     />
                 )}
 
-                <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative overflow-x-hidden">
+                <div className="space-y-6 w-full max-w-5xl mx-auto animate-fade-in relative">
                     <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">
                         <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative">
                             {/* RADIAL GLOW BEHIND MATICO */}
@@ -6533,7 +6533,7 @@ ${finalData.capsule}`;
                                         else if (idx === 2) btnStyle = "bg-[#FFD900] border-[#E5C300] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,217,0,0.6)]";
                                         else btnStyle = "bg-[#FF4B4B] border-[#D63E3E] text-white shadow-[inset_0_4px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(255,75,75,0.6)]";
 
-                                        const offsetClass = idx % 2 === 0 ? "-translate-x-12" : "translate-x-12";
+                                        const offsetClass = idx % 2 === 0 ? "sm:-translate-x-12" : "sm:translate-x-12";
 
                                         return (
                                             <div key={idx} className={`relative z-10 group ${offsetClass}`}>
