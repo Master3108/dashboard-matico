@@ -6349,7 +6349,7 @@ ${finalData.capsule}`;
                     />
                 )}
 
-                <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
+                <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative overflow-x-hidden">
                     <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">
                         <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative">
                             {/* RADIAL GLOW BEHIND MATICO */}

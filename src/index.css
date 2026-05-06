@@ -8,13 +8,18 @@
 @layer base {
   html {
     overflow-x: hidden;
-    max-width: 100vw;
+    width: 100%;
   }
   body {
-    @apply bg-[#F8FAFC] min-h-screen overflow-x-hidden;
-    max-width: 100vw;
+    @apply bg-[#F8FAFC] min-h-screen;
+    overflow-x: hidden;
+    width: 100%;
     /* Scroll nativo en Android WebView */
     -webkit-overflow-scrolling: touch;
+  }
+  #root {
+    overflow-x: hidden;
+    width: 100%;
   }
 
   /* Todos los contenedores con scroll deben funcionar en Android */
