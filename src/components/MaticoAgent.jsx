@@ -562,7 +562,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                     <div
                         className="absolute -top-14 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-2xl shadow-lg border border-gray-100 animate-fade-in cursor-pointer"
                         onClick={openChat}
-                        style={{ animation: 'fadeInUp 0.3s ease-out' }}
+                        style={{ animation: 'maticoBubbleFadeInUp 0.3s ease-out' }}
                     >
                         <p className="text-sm font-bold text-[#2B2E4A] whitespace-nowrap">{bubbleText}</p>
                         <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-gray-100 rotate-45"></div>
@@ -588,7 +588,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                 </div>
 
                 <style>{`
-                    @keyframes fadeInUp {
+                    @keyframes maticoBubbleFadeInUp {
                         from { opacity: 0; transform: translate(-50%, 10px); }
                         to { opacity: 1; transform: translate(-50%, 0); }
                     }
