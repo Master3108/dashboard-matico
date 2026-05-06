@@ -6084,7 +6084,7 @@ ${finalData.capsule}`;
     }
 
     return (
-        <div className="min-h-screen bg-[#F0F4F8] px-4 py-6 sm:px-6 relative overflow-x-hidden box-border w-full max-w-full">
+        <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-hidden">
             {/* Botón flotante para volver al Panel Padre (solo admin con rol apoderado) */}
             {isAdminUser && currentUser.role === 'apoderado' && activeView === 'admin' && (
                 <button
@@ -6349,11 +6349,11 @@ ${finalData.capsule}`;
                     />
                 )}
 
-                <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative w-full overflow-x-hidden">
+                <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
                     <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">
                         <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative">
                             {/* RADIAL GLOW BEHIND MATICO */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-[#4F46E5]/10 rounded-full blur-3xl animate-pulse"></div>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#4F46E5]/10 rounded-full blur-2xl animate-pulse pointer-events-none"></div>
 
                             <div className="relative">
                                 <MaticoAvatar
