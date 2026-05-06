@@ -45,27 +45,22 @@ const CalendarView = ({ userId, userRole = 'estudiante', isOpen, onClose }) => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState('todos'); // todos, pendiente, completado
-    const [weekOffset, setWeekOffset] = useState(0);
+    const [yearOffset, setYearOffset] = useState(0);
 
     const fetchEvents = async () => {
         if (!userId) return;
         setLoading(true);
         try {
-            const now = new Date();
-            const startOfWeek = new Date(now);
-            startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1 + (weekOffset * 7));
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(endOfWeek.getDate() + 13); // 2 semanas
-
-            const from_date = startOfWeek.toISOString().split('T')[0];
-            const to_date = endOfWeek.toISOString().split('T')[0];
+            const year = new Date().getFullYear() + yearOffset;
+            const from_date = `${year}-01-01`;
+            const to_date = `${year}-12-31`;
 
             const params = new URLSearchParams({
                 user_id: userId,
                 role: userRole,
                 from_date,
                 to_date,
-                limit: '100'
+                limit: '500'
             });
 
             const res = await fetch(`/api/calendar/events?${params}`);
@@ -80,7 +75,7 @@ const CalendarView = ({ userId, userRole = 'estudiante', isOpen, onClose }) => {
 
     useEffect(() => {
         if (isOpen) fetchEvents();
-    }, [isOpen, userId, weekOffset]);
+    }, [isOpen, userId, yearOffset]);
 
     const handleStatusChange = async (eventId, newStatus) => {
         try {
@@ -140,16 +135,16 @@ const CalendarView = ({ userId, userRole = 'estudiante', isOpen, onClose }) => {
 
                 {/* Navegación semana */}
                 <div className="px-6 py-3 flex items-center justify-between border-b border-gray-100 shrink-0">
-                    <button onClick={() => setWeekOffset(w => w - 1)} className="p-2 hover:bg-gray-100 rounded-xl">
+                    <button onClick={() => setYearOffset(y => y - 1)} className="p-2 hover:bg-gray-100 rounded-xl">
                         <ChevronLeft className="w-5 h-5 text-gray-500" />
                     </button>
                     <button
-                        onClick={() => setWeekOffset(0)}
+                        onClick={() => setYearOffset(0)}
                         className="text-sm font-bold text-[#7C3AED] hover:underline"
                     >
-                        {weekOffset === 0 ? 'Esta semana' : 'Volver a hoy'}
+                        Año escolar {new Date().getFullYear() + yearOffset}
                     </button>
-                    <button onClick={() => setWeekOffset(w => w + 1)} className="p-2 hover:bg-gray-100 rounded-xl">
+                    <button onClick={() => setYearOffset(y => y + 1)} className="p-2 hover:bg-gray-100 rounded-xl">
                         <ChevronRight className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>

@@ -445,22 +445,38 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
 
             setMessages(prev => prev.filter(m => m.id !== 'processing'));
 
-            if (data.success && data.extracted) {
-                const ev = data.extracted;
-                const typeConf = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
+            if (data.success && (data.events?.length > 0 || data.extracted)) {
+                const events = data.events || [data.extracted];
 
-                addBotMessage(
-                    `${typeConf.emoji} Listo! Evento creado:\n\n` +
-                    `**${ev.title}**\n` +
-                    `Tipo: ${typeConf.label}\n` +
-                    `Fecha: ${ev.event_date}${ev.start_time ? ` a las ${ev.start_time}` : ''}\n` +
-                    `Materia: ${ev.subject || 'No especificada'}\n` +
-                    (ev.description ? `\n${ev.description}\n` : '') +
-                    `\nListo, guardado en el calendario! Tienes mas fotos de tareas o pruebas? Mandamelas y las agendo al tiro.`,
-                    ev
-                );
+                if (events.length === 1) {
+                    const ev = events[0];
+                    const typeConf = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
 
-                if (onEventCreated) onEventCreated(data.event);
+                    addBotMessage(
+                        `${typeConf.emoji} Listo! Evento creado:\n\n` +
+                        `**${ev.title}**\n` +
+                        `Tipo: ${typeConf.label}\n` +
+                        `Fecha: ${ev.event_date}${ev.start_time ? ` a las ${ev.start_time}` : ''}\n` +
+                        `Materia: ${ev.subject || 'No especificada'}\n` +
+                        (ev.description ? `\n${ev.description}\n` : '') +
+                        `\nListo, guardado en el calendario! Tienes mas fotos de tareas o pruebas? Mandamelas y las agendo al tiro.`,
+                        ev
+                    );
+                } else {
+                    const summary = events.map(ev => {
+                        const typeConf = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
+                        return `${typeConf.emoji} **${ev.title}** - ${ev.event_date} (${ev.subject || 'Sin materia'})`;
+                    }).join('\n');
+
+                    addBotMessage(
+                        `Listo! Encontré y guardé **${events.length} eventos**:\n\n${summary}` +
+                        `${data.errors?.length ? `\n\nNo pude guardar: ${data.errors.join(', ')}` : ''}` +
+                        '\n\nQuedaron registrados para usarlos como antecedentes de seguimiento, recordatorios y planificación.',
+                        events[0]
+                    );
+                }
+
+                if (onEventCreated) onEventCreated(data.event || events[0]);
             } else {
                 addBotMessage(
                     'Mmm, no pude interpretar bien eso. ' +

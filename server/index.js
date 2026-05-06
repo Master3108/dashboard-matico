@@ -7882,8 +7882,11 @@ Responde SOLO con JSON válido, sin markdown:
             return res.status(400).json({ success: false, error: 'Debes enviar una imagen o texto' });
         }
 
-        if (!text_input && req.file) {
-            userContent.unshift({ type: 'text', text: 'Analiza esta imagen de calendario/comunicación escolar. Lee CADA celda y extrae TODOS los eventos. No omitas ninguno. Si hay evaluaciones, tareas, educación física, disertaciones, etc., incluye CADA uno como evento separado.' });
+        if (req.file) {
+            userContent.unshift({
+                type: 'text',
+                text: 'Analiza esta imagen como registro escolar integral. Lee CADA celda, CADA linea y CADA bloque de texto, aunque el usuario mencione prueba, tarea o un tipo especifico. Extrae TODOS los antecedentes agendables como eventos separados: evaluaciones, tareas, trabajos, disertaciones, presentaciones, tecnologia, musica, artes, educacion fisica, recordatorios y cualquier actividad escolar con fecha. No te quedes solo con un ramo ni con un solo evento.'
+            });
         }
 
         messages.push({ role: 'user', content: userContent });
