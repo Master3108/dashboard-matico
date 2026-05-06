@@ -4,7 +4,17 @@ import {
     CheckCircle, Loader, Sparkles, Clock, MessageCircle,
     ChevronDown, ChevronUp, Plus, BookOpen, Monitor, UploadCloud, Smartphone
 } from 'lucide-react';
-import { isNativeScreenCaptureAvailable, captureNativeScreenshot, isRunningInNativeApp } from '../mobile/screenCaptureBridge';
+import {
+    isNativeScreenCaptureAvailable,
+    startNativeCaptureSession,
+    stopNativeCaptureSession,
+    getNativeCaptureSessionState,
+    captureNowNativeSession,
+    listNativeQueuedCaptures,
+    clearNativeQueuedCaptures,
+    onNativeCaptureSessionFinalized,
+    waitForNativeScreenCapture
+} from '../mobile/screenCaptureBridge';
 
 const GREETING_MESSAGES = [
     'Hola! Soy Matico, tu asistente escolar. Estoy aqui para ayudarte a organizar las tareas y pruebas de tu hijo.',
@@ -41,11 +51,59 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
     const [bubbleText, setBubbleText] = useState('');
     const [hasGreeted, setHasGreeted] = useState(false);
 
+    // Native screen capture state
+    const [nativeCaptureSupported, setNativeCaptureSupported] = useState(false);
+    const [nativeSessionActive, setNativeSessionActive] = useState(false);
+    const [nativeQueueCount, setNativeQueueCount] = useState(0);
+    const isNativePlatform = Boolean(window?.Capacitor?.isNativePlatform?.());
+    const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
     const recognitionRef = useRef(null);
     const textareaRef = useRef(null);
+    const importNativeQueueRef = useRef(() => {});
+
+    const refreshNativeState = async () => {
+        try {
+            const state = await getNativeCaptureSessionState();
+            setNativeSessionActive(Boolean(state?.active));
+            setNativeQueueCount(Number(state?.queueCount || 0) || 0);
+        } catch {
+            setNativeSessionActive(false);
+            setNativeQueueCount(0);
+        }
+    };
+
+    useEffect(() => {
+        let cancelled = false;
+        if (isNativeScreenCaptureAvailable()) {
+            setNativeCaptureSupported(true);
+            refreshNativeState();
+        } else {
+            waitForNativeScreenCapture().then((ok) => {
+                if (cancelled) return;
+                setNativeCaptureSupported(Boolean(ok));
+                if (ok) refreshNativeState();
+            });
+        }
+        return () => { cancelled = true; };
+    }, []);
+
+    useEffect(() => {
+        if (!nativeSessionActive) return undefined;
+        const interval = setInterval(() => refreshNativeState(), 2500);
+        return () => clearInterval(interval);
+    }, [nativeSessionActive]);
+
+    useEffect(() => {
+        if (!nativeCaptureSupported) return undefined;
+        const unsubscribe = onNativeCaptureSessionFinalized(() => {
+            importNativeQueueRef.current?.();
+        });
+        return () => { unsubscribe?.(); };
+    }, [nativeCaptureSupported]);
 
     // Auto greeting sequence
     useEffect(() => {
@@ -144,7 +202,11 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         setMessages(prev => prev.filter(m => m.id !== 'quick-actions'));
 
         if (action === 'foto') {
-            fileInputRef.current?.click();
+            if (isNativePlatform) {
+                captureFromNativeApp();
+            } else {
+                fileInputRef.current?.click();
+            }
         } else if (action === 'prueba') {
             addUserMessage('Quiero agendar una prueba');
             setTimeout(() => {
@@ -212,24 +274,77 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         if (cameraInputRef.current) cameraInputRef.current.value = '';
     };
 
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const canScreenCapture = !isMobile || isRunningInNativeApp();
-
-    const captureScreen = async () => {
+    const captureFromNativeApp = async () => {
         try {
-            if (isNativeScreenCaptureAvailable()) {
-                const result = await captureNativeScreenshot();
-                if (result?.dataUrl) {
-                    const resp = await fetch(result.dataUrl);
-                    const blob = await resp.blob();
-                    const file = new File([blob], 'captura-nativa.png', { type: result.imageMimeType || 'image/png' });
-                    setSelectedImage(file);
-                    setImagePreview(result.dataUrl);
-                    return;
-                }
+            if (!nativeSessionActive) {
+                await startNativeCaptureSession();
+                await refreshNativeState();
+                addBotMessage('Listo, se activo la captura celular. Navega con el marco azul, usa "Capturar pantalla" y cuando termines toca "Finalizar". Yo importo la captura al volver.');
+                return;
             }
+            await captureNowNativeSession();
+            await refreshNativeState();
+            addBotMessage('Captura guardada en cola. Puedes capturar otra pantalla o tocar "Finalizar" en el overlay.');
+        } catch (error) {
+            const msg = String(error?.message || '');
+            if (msg.includes('overlay_permission_required')) {
+                addBotMessage('Debes activar "mostrar sobre otras apps" para ver el marco azul y el boton de captura.');
+            } else if (msg.includes('screen_capture_permission_denied')) {
+                addBotMessage('Permiso denegado. Debes aceptar "grabar o compartir pantalla" para usar la captura celular.');
+            } else if (msg.includes('native_not_available')) {
+                addBotMessage('La captura celular con marco azul requiere la app Matico instalada. En web usa "Subir fotos" o "Tomar foto".');
+            } else {
+                addBotMessage('No se pudo iniciar la captura celular. Intenta de nuevo.');
+            }
+        }
+    };
+
+    const stopNativeSession = async () => {
+        try {
+            await stopNativeCaptureSession();
+            await refreshNativeState();
+        } catch {
+            addBotMessage('No se pudo detener la sesion de captura.');
+        }
+    };
+
+    const importNativeQueue = async () => {
+        try {
+            const queued = await listNativeQueuedCaptures();
+            const rows = Array.isArray(queued?.items) ? queued.items : [];
+            if (!rows.length) {
+                addBotMessage('No hay capturas en cola para importar.');
+                return;
+            }
+
+            const row = rows[0];
+            const base64 = String(row?.imageBase64 || row?.image_base64 || '').trim();
+            const mimeType = String(row?.imageMimeType || row?.image_mime_type || 'image/jpeg').trim() || 'image/jpeg';
+            if (!base64) {
+                addBotMessage('No pude leer la captura guardada. Intenta capturar otra vez.');
+                return;
+            }
+
+            const dataUrl = `data:${mimeType};base64,${base64}`;
+            const resp = await fetch(dataUrl);
+            const blob = await resp.blob();
+            const file = new File([blob], 'captura-nativa.png', { type: mimeType });
+            setSelectedImage(file);
+            setImagePreview(dataUrl);
+            addBotMessage(`Se importo ${rows.length} captura(s). La primera quedo lista para enviar y agendar.`);
+            await clearNativeQueuedCaptures();
+            await refreshNativeState();
+        } catch {
+            addBotMessage('No se pudo importar la cola de capturas.');
+        }
+    };
+
+    importNativeQueueRef.current = importNativeQueue;
+
+    const captureScreenWeb = async () => {
+        try {
             if (!navigator.mediaDevices?.getDisplayMedia) {
-                alert('Captura no disponible en este navegador. Usa "Subir fotos" o "Tomar foto".');
+                addBotMessage('Captura no disponible en este navegador. Usa "Subir fotos" o "Tomar foto".');
                 return;
             }
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -243,7 +358,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
             canvas.getContext('2d').drawImage(bitmap, 0, 0);
             canvas.toBlob((blob) => {
                 if (blob) {
-                    const file = new File([blob], 'captura.png', { type: 'image/png' });
+                    const file = new File([blob], 'captura-pantalla.png', { type: 'image/png' });
                     setSelectedImage(file);
                     const reader = new FileReader();
                     reader.onload = (ev) => setImagePreview(ev.target.result);
@@ -573,7 +688,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                     <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageSelect} className="hidden" />
 
                     {/* Capture buttons - estilo Oraculo */}
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className={`grid gap-2 ${isNativePlatform ? 'grid-cols-2' : (isMobileUA ? 'grid-cols-2' : 'grid-cols-3')}`}>
                         <button
                             type="button"
                             onClick={openCamera}
@@ -588,16 +703,59 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                         >
                             <UploadCloud className="w-3.5 h-3.5" /> Subir fotos
                         </button>
-                        {canScreenCapture && (
+                        {!isNativePlatform && !isMobileUA && (
                             <button
                                 type="button"
-                                onClick={captureScreen}
+                                onClick={captureScreenWeb}
                                 className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2 text-xs font-black text-[#2B2E4A] hover:border-[#FFD93D] flex items-center justify-center gap-1 transition-all"
                             >
-                                {isRunningInNativeApp() ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />} Captura
+                                <Monitor className="w-3.5 h-3.5" /> Captura
+                            </button>
+                        )}
+                        {isNativePlatform && (
+                            <button
+                                type="button"
+                                onClick={nativeCaptureSupported ? captureFromNativeApp : () => addBotMessage('La captura nativa no se inicializo. Cierra y vuelve a abrir la app Matico.')}
+                                className={nativeCaptureSupported
+                                    ? 'rounded-2xl border-2 border-[#16A34A] bg-[#ECFDF3] px-2 py-2 text-xs font-black text-[#166534] hover:border-[#15803D] flex items-center justify-center gap-1 transition-all col-span-2'
+                                    : 'rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 px-2 py-2 text-xs font-black text-gray-500 flex items-center justify-center gap-1 col-span-2'
+                                }
+                            >
+                                <Smartphone className="w-3.5 h-3.5" />
+                                {nativeSessionActive ? 'Capturar ahora' : 'Captura pantalla celular'}
                             </button>
                         )}
                     </div>
+
+                    {nativeCaptureSupported && nativeSessionActive && (
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={stopNativeSession}
+                                className="flex-1 rounded-xl bg-red-100 text-red-700 px-3 py-2 text-xs font-black flex items-center justify-center gap-1.5"
+                            >
+                                <X className="w-3.5 h-3.5" /> Detener sesion
+                            </button>
+                            {nativeQueueCount > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={importNativeQueue}
+                                    className="flex-1 rounded-xl bg-[#4D96FF] text-white px-3 py-2 text-xs font-black flex items-center justify-center gap-1.5"
+                                >
+                                    Importar cola ({nativeQueueCount})
+                                </button>
+                            )}
+                        </div>
+                    )}
+                    {nativeCaptureSupported && !nativeSessionActive && nativeQueueCount > 0 && (
+                        <button
+                            type="button"
+                            onClick={importNativeQueue}
+                            className="w-full rounded-xl bg-[#4D96FF] text-white px-3 py-2 text-xs font-black flex items-center justify-center gap-1.5"
+                        >
+                            Importar cola ({nativeQueueCount})
+                        </button>
+                    )}
 
                     {/* Text + voice + send */}
                     <div className="flex items-end gap-1.5">
