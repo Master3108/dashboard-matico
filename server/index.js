@@ -7818,25 +7818,37 @@ app.post('/api/calendar/smart-create', upload.single('image'), async (req, res) 
         // Build the prompt
         const today = new Date().toISOString().split('T')[0];
         const systemPrompt = `Eres un asistente de un apoderado/padre/madre chileno que analiza imágenes y textos de tareas, pruebas y comunicaciones escolares.
-Tu trabajo es extraer la información del evento escolar y devolverla en JSON.
+Tu trabajo es hacer OCR detallado de la imagen, leer TODO el texto visible, y extraer TODOS los eventos escolares que encuentres.
 
 Fecha de hoy: ${today}
+Año escolar: ${today.substring(0, 4)}
 
-DEBES responder SOLO con un JSON válido, sin markdown ni texto extra:
+INSTRUCCIONES DE OCR:
+1. Lee CADA celda, fila y columna de cualquier tabla o calendario
+2. Identifica fechas exactas (día, mes, año) usando el contexto del calendario
+3. Extrae TODOS los eventos: pruebas, tareas, evaluaciones, trabajos, presentaciones, etc.
+4. Si es un calendario mensual, las columnas suelen ser Lunes-Viernes y las filas son semanas
+5. Presta atencion a colores: celdas amarillas/destacadas suelen ser pruebas importantes
+
+DEBES responder SOLO con un JSON válido, sin markdown ni texto extra.
+Si hay UN solo evento:
 {
-  "title": "título del evento (breve, claro)",
-  "event_type": "prueba|tarea|estudio|repaso|otro",
-  "subject": "MATEMATICA|LENGUAJE|CIENCIAS|HISTORIA|INGLES|FISICA|QUIMICA|BIOLOGIA|ARTES|MUSICA|EDUCACION_FISICA|TECNOLOGIA|OTRO",
-  "event_date": "YYYY-MM-DD",
-  "start_time": "HH:MM" o null,
-  "end_time": "HH:MM" o null,
-  "description": "descripción detallada de lo que debe hacer el estudiante",
-  "confidence": "alta|media|baja"
+  "events": [{
+    "title": "título del evento (breve, claro)",
+    "event_type": "prueba|tarea|estudio|repaso|otro",
+    "subject": "MATEMATICA|LENGUAJE|CIENCIAS|HISTORIA|INGLES|FISICA|QUIMICA|BIOLOGIA|ARTES|MUSICA|EDUCACION_FISICA|TECNOLOGIA|OTRO",
+    "event_date": "YYYY-MM-DD",
+    "start_time": "HH:MM" o null,
+    "end_time": "HH:MM" o null,
+    "description": "descripción detallada",
+    "confidence": "alta|media|baja"
+  }]
 }
 
-Si no puedes determinar la fecha exacta, usa la próxima fecha lógica (ej: si dice "lunes" y hoy es sábado, usa el próximo lunes).
-Si no puedes determinar algo, pon null o tu mejor estimación.
-El campo subject debe estar en MAYÚSCULAS con underscore.`;
+Si hay MÚLTIPLES eventos, incluye TODOS en el array "events".
+Si no puedes determinar la fecha exacta, usa la próxima fecha lógica.
+El campo subject debe estar en MAYÚSCULAS con underscore.
+Lee absolutamente todo el texto de la imagen antes de responder.`;
 
         const messages = [{ role: 'system', content: systemPrompt }];
         const userContent = [];
@@ -7872,7 +7884,7 @@ El campo subject debe estar en MAYÚSCULAS con underscore.`;
         const response = await visionClient.chat.completions.create({
             model,
             messages,
-            max_tokens: 800,
+            max_tokens: 4000,
             temperature: 0.1
         });
 
@@ -7880,45 +7892,65 @@ El campo subject debe estar en MAYÚSCULAS con underscore.`;
         console.log('[SMART-CREATE] Respuesta IA:', raw);
 
         // Parse JSON from response
-        let eventData;
+        let parsed;
         try {
             const jsonMatch = raw.match(/\{[\s\S]*\}/);
-            eventData = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+            parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
         } catch (parseErr) {
             console.error('[SMART-CREATE] Error parseando JSON:', parseErr.message);
             return res.json({
                 success: false,
-                error: 'No se pudo interpretar la imagen/texto',
+                error: 'No se pudo interpretar la imagen/texto. Intenta con una foto mas clara o escribe los detalles.',
                 raw_response: raw
             });
         }
 
-        // Create the event
+        // Normalize: support both single event (legacy) and multiple events
+        const eventsArray = Array.isArray(parsed.events) ? parsed.events
+            : (parsed.title ? [parsed] : []);
+
+        if (eventsArray.length === 0) {
+            return res.json({
+                success: false,
+                error: 'No se encontraron eventos en la imagen. Intenta con una foto mas clara.'
+            });
+        }
+
         const targetUserId = student_user_id || user_id;
-        const event = await createCalendarEvent({
-            user_id: targetUserId,
-            created_by: user_id,
-            title: eventData.title || 'Evento sin título',
-            event_type: eventData.event_type || 'otro',
-            subject: eventData.subject || null,
-            event_date: eventData.event_date || today,
-            start_time: eventData.start_time || null,
-            end_time: eventData.end_time || null,
-            description: eventData.description || null,
-            status: 'pendiente'
-        });
+        const createdEvents = [];
+        const errors = [];
+
+        for (const eventData of eventsArray) {
+            try {
+                const event = await createCalendarEvent({
+                    student_user_id: targetUserId,
+                    created_by: user_id,
+                    title: eventData.title || 'Evento sin título',
+                    event_type: eventData.event_type || 'otro',
+                    subject: eventData.subject || null,
+                    event_date: eventData.event_date || today,
+                    start_time: eventData.start_time || null,
+                    end_time: eventData.end_time || null,
+                    description: eventData.description || null
+                });
+                createdEvents.push({ ...eventData, event_id: event?.event_id });
+            } catch (evErr) {
+                console.error('[SMART-CREATE] Error creando evento:', evErr.message);
+                errors.push(`${eventData.title}: ${evErr.message}`);
+            }
+        }
 
         // Auto-notify guardian if student created it
-        if (role !== 'apoderado') {
+        if (role !== 'apoderado' && createdEvents.length > 0) {
             try {
                 const studentProfile = await getUserProfile(targetUserId);
                 if (studentProfile?.parent_user_id) {
                     await createNotification({
                         user_id: studentProfile.parent_user_id,
-                        event_id: event?.event_id,
+                        event_id: createdEvents[0]?.event_id,
                         type: 'nuevo_evento',
-                        title: `Nuevo: ${eventData.title}`,
-                        body: `${eventData.event_type} para ${eventData.event_date}`,
+                        title: `${createdEvents.length} evento(s) creado(s)`,
+                        body: createdEvents.map(e => e.title).join(', '),
                         scheduled_at: new Date().toISOString()
                     });
                 }
@@ -7929,9 +7961,15 @@ El campo subject debe estar en MAYÚSCULAS con underscore.`;
 
         res.json({
             success: true,
-            event,
-            extracted: eventData,
-            message: `Evento "${eventData.title}" creado para ${eventData.event_date}`
+            event: createdEvents[0] || null,
+            events: createdEvents,
+            extracted: createdEvents[0] || null,
+            total_created: createdEvents.length,
+            total_found: eventsArray.length,
+            errors: errors.length > 0 ? errors : undefined,
+            message: createdEvents.length === 1
+                ? `Evento "${createdEvents[0].title}" creado para ${createdEvents[0].event_date}`
+                : `${createdEvents.length} eventos creados desde la imagen`
         });
 
     } catch (err) {

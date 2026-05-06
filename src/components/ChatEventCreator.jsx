@@ -396,19 +396,31 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
             // Remove processing message
             setMessages(prev => prev.filter(m => m.id !== 'processing'));
 
-            if (data.success && data.extracted) {
-                const ev = data.extracted;
-                const typeConf = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
-
+            if (data.success && (data.events?.length > 0 || data.extracted)) {
+                const events = data.events || [data.extracted];
                 setLastCreatedEvent(data.event);
-                addBotMessage(
-                    `${typeConf.emoji} Evento creado:\n\n**${ev.title}**\nTipo: ${typeConf.label}\nFecha: ${ev.event_date}${ev.start_time ? ` a las ${ev.start_time}` : ''}\nMateria: ${ev.subject || 'No especificada'}\n${ev.description ? `\n${ev.description}` : ''}\n\nConfianza: ${ev.confidence || 'media'}`,
-                    ev
-                );
+
+                if (events.length === 1) {
+                    const ev = events[0];
+                    const typeConf = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
+                    addBotMessage(
+                        `${typeConf.emoji} Evento creado:\n\n**${ev.title}**\nTipo: ${typeConf.label}\nFecha: ${ev.event_date}${ev.start_time ? ` a las ${ev.start_time}` : ''}\nMateria: ${ev.subject || 'No especificada'}\n${ev.description ? `\n${ev.description}` : ''}\n\nConfianza: ${ev.confidence || 'media'}`,
+                        ev
+                    );
+                } else {
+                    const summary = events.map(ev => {
+                        const tc = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
+                        return `${tc.emoji} **${ev.title}** - ${ev.event_date} (${ev.subject || 'Sin materia'})`;
+                    }).join('\n');
+                    addBotMessage(
+                        `Se crearon **${events.length} eventos** desde la imagen:\n\n${summary}${data.errors?.length ? `\n\nErrores: ${data.errors.join(', ')}` : ''}`,
+                        events[0]
+                    );
+                }
 
                 if (onEventCreated) onEventCreated(data.event);
             } else {
-                addBotMessage(`No pude interpretar bien eso. ${data.error || 'Intenta con otra foto o describe el evento con más detalle.'}`);
+                addBotMessage(`No pude interpretar bien eso. ${data.error || 'Intenta con otra foto mas clara o describe el evento con mas detalle.'}`);
             }
         } catch (err) {
             setMessages(prev => prev.filter(m => m.id !== 'processing'));
