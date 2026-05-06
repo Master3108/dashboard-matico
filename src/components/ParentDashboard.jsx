@@ -179,6 +179,36 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         }
     };
 
+    const handleCleanDuplicates = async () => {
+        const targetUserId = selectedChild?.user_id || currentUser?.user_id;
+        if (!targetUserId) return;
+        if (!confirm('Limpiar eventos duplicados del año escolar mostrado? Se conservará un solo registro de cada evento.')) return;
+
+        const year = new Date().getFullYear() + yearOffset;
+        try {
+            const res = await fetch('/api/calendar/dedupe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: targetUserId,
+                    role: selectedChild?.user_id ? 'estudiante' : 'apoderado',
+                    from_date: `${year}-01-01`,
+                    to_date: `${year}-12-31`
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Listo: se eliminaron ${data.deleted || 0} duplicado(s).`);
+                await fetchChildEvents();
+            } else {
+                alert(data.error || 'No se pudieron limpiar duplicados.');
+            }
+        } catch (err) {
+            console.error('[PARENT] Error limpiando duplicados:', err);
+            alert('No se pudieron limpiar duplicados.');
+        }
+    };
+
     // --- Compute stats ---
     const totalQuizzes = progress.filter(p => p.event_type === 'quiz_completed' || p.event_type === 'session_completed').length;
     const avgScore = totalQuizzes > 0
@@ -492,7 +522,13 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 </button>
                             </div>
 
-                            <div className="flex justify-end mb-3">
+                            <div className="flex justify-end gap-2 mb-3">
+                                <button
+                                    onClick={handleCleanDuplicates}
+                                    className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-red-100 transition-all"
+                                >
+                                    <Trash2 className="w-3 h-3" /> Limpiar duplicados
+                                </button>
                                 <button
                                     onClick={() => openSmartCreator('evento')}
                                     className="flex items-center gap-1 bg-[#4D96FF] text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-[#3B82F6] transition-all"

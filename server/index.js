@@ -7844,10 +7844,68 @@ const tokenSimilarity = (a = '', b = '') => {
     return intersection / union;
 };
 
+const CALENDAR_EVENT_STOPWORDS = new Set([
+    'evaluacion', 'prueba', 'control', 'actividad', 'trabajo', 'tarea', 'disertacion',
+    'presentacion', 'educacion', 'fisica', 'matematica', 'matematicas', 'lenguaje',
+    'tecnologia', 'musica', 'historia', 'ciencias', 'artes', 'ingles', 'otro',
+    'a', 'b', 'y', 'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'en',
+    'para', 'con', 'por', 'se', 'debe', 'sobre', 'simple'
+]);
+
+const extractCalendarCourseTags = (event = {}) => {
+    const text = normalizeCalendarText(`${event.title || ''} ${event.description || ''} ${event.course || ''} ${event.class || ''}`);
+    const tags = new Set();
+    const directMatches = text.matchAll(/\b([1-8])\s*(?:o|º|°)?\s*([ab])\b/g);
+    for (const match of directMatches) tags.add(`${match[1]}${match[2]}`);
+
+    const bothMatches = text.matchAll(/\b([1-8])\s*(?:o|º|°)?\s*a\s*y\s*b\b/g);
+    for (const match of bothMatches) {
+        tags.add(`${match[1]}a`);
+        tags.add(`${match[1]}b`);
+    }
+
+    return [...tags].sort();
+};
+
+const calendarContentTokens = (event = {}) => {
+    const subjectText = normalizeCalendarText(event.subject || '').split(' ');
+    const subjectWords = new Set(subjectText.filter(Boolean));
+    return normalizeCalendarText(`${event.title || ''} ${event.description || ''}`)
+        .split(' ')
+        .filter(token =>
+            token.length > 2 &&
+            !/^\d+$/.test(token) &&
+            !/^[1-8][ab]$/.test(token) &&
+            !CALENDAR_EVENT_STOPWORDS.has(token) &&
+            !subjectWords.has(token)
+        );
+};
+
+const calendarContentSimilarity = (candidate = {}, existing = {}) => {
+    const aTokens = new Set(calendarContentTokens(candidate));
+    const bTokens = new Set(calendarContentTokens(existing));
+    if (!aTokens.size || !bTokens.size) return 0;
+
+    let intersection = 0;
+    aTokens.forEach(token => {
+        if (bTokens.has(token)) intersection += 1;
+    });
+
+    const union = new Set([...aTokens, ...bTokens]).size || 1;
+    const smaller = Math.min(aTokens.size, bTokens.size) || 1;
+    return Math.max(intersection / union, intersection / smaller);
+};
+
 const isSameCalendarEvent = (candidate = {}, existing = {}) => {
     if ((candidate.event_date || '') !== (existing.event_date || '')) return false;
     if (normalizeCalendarText(candidate.subject || '') !== normalizeCalendarText(existing.subject || '')) return false;
-    if (normalizeCalendarText(candidate.event_type || 'otro') !== normalizeCalendarText(existing.event_type || 'otro')) return false;
+
+    const candidateCourses = extractCalendarCourseTags(candidate);
+    const existingCourses = extractCalendarCourseTags(existing);
+    if (candidateCourses.length && existingCourses.length) {
+        const hasSharedCourse = candidateCourses.some(course => existingCourses.includes(course));
+        if (!hasSharedCourse) return false;
+    }
 
     const candidateTitle = normalizeCalendarText(candidate.title || '');
     const existingTitle = normalizeCalendarText(existing.title || '');
@@ -7859,7 +7917,8 @@ const isSameCalendarEvent = (candidate = {}, existing = {}) => {
 
     const candidateBody = `${candidate.title || ''} ${candidate.description || ''}`;
     const existingBody = `${existing.title || ''} ${existing.description || ''}`;
-    return tokenSimilarity(candidateBody, existingBody) >= 0.82;
+    return tokenSimilarity(candidateBody, existingBody) >= 0.68 ||
+        calendarContentSimilarity(candidate, existing) >= 0.55;
 };
 
 // Smart event creation via AI Vision
@@ -8099,6 +8158,56 @@ Responde SOLO con JSON válido, sin markdown:
 
     } catch (err) {
         console.error('[SMART-CREATE] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/calendar/dedupe', async (req, res) => {
+    try {
+        const { user_id, role = 'estudiante', from_date, to_date, dry_run } = req.body;
+        if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+
+        const events = await listCalendarEvents({
+            user_id,
+            role,
+            from_date,
+            to_date,
+            limit: 2000
+        });
+
+        const keep = [];
+        const duplicates = [];
+
+        for (const event of events) {
+            const existing = keep.find(candidate => isSameCalendarEvent(event, candidate));
+            if (existing) {
+                duplicates.push({
+                    event_id: event.event_id,
+                    title: event.title,
+                    event_date: event.event_date,
+                    subject: event.subject,
+                    duplicate_of: existing.event_id
+                });
+            } else {
+                keep.push(event);
+            }
+        }
+
+        if (String(dry_run || '').toLowerCase() !== 'true') {
+            for (const duplicate of duplicates) {
+                await deleteCalendarEvent(duplicate.event_id);
+            }
+        }
+
+        res.json({
+            success: true,
+            total_events: events.length,
+            total_duplicates: duplicates.length,
+            deleted: String(dry_run || '').toLowerCase() === 'true' ? 0 : duplicates.length,
+            duplicates
+        });
+    } catch (err) {
+        console.error('[CALENDAR] Error limpiando duplicados:', err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
