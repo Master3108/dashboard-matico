@@ -896,7 +896,7 @@ export async function listCalendarEvents({ user_id, role = 'estudiante', from_da
     let query = supabase.from('calendar_events').select('*');
 
     if (role === 'apoderado') {
-        query = query.eq('created_by', user_id);
+        query = query.or(`created_by.eq.${user_id},student_user_id.eq.${user_id}`);
     } else {
         query = query.eq('student_user_id', user_id);
     }

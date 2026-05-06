@@ -79,9 +79,10 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         }
     }, [currentUser?.user_id]);
 
-    // Fetch child events
+    // Fetch child events (or own events if no child linked)
     const fetchChildEvents = useCallback(async () => {
-        if (!selectedChild?.user_id) return;
+        const targetUserId = selectedChild?.user_id || currentUser?.user_id;
+        if (!targetUserId) return;
         try {
             const now = new Date();
             const startOfWeek = new Date(now);
@@ -92,9 +93,11 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             const from_date = startOfWeek.toISOString().split('T')[0];
             const to_date = endOfWeek.toISOString().split('T')[0];
 
+            // If no child linked, query as apoderado to see events created by this user
+            const queryRole = selectedChild?.user_id ? 'estudiante' : 'apoderado';
             const params = new URLSearchParams({
-                user_id: selectedChild.user_id,
-                role: 'estudiante',
+                user_id: targetUserId,
+                role: queryRole,
                 from_date,
                 to_date,
                 limit: '100'
@@ -106,7 +109,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         } catch (err) {
             console.error('[PARENT] Error cargando eventos:', err);
         }
-    }, [selectedChild?.user_id, weekOffset]);
+    }, [selectedChild?.user_id, currentUser?.user_id, weekOffset]);
 
     // Fetch child progress
     const fetchChildProgress = useCallback(async () => {
