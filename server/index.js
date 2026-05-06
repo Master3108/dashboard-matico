@@ -7817,38 +7817,48 @@ app.post('/api/calendar/smart-create', upload.single('image'), async (req, res) 
 
         // Build the prompt
         const today = new Date().toISOString().split('T')[0];
-        const systemPrompt = `Eres un asistente de un apoderado/padre/madre chileno que analiza imágenes y textos de tareas, pruebas y comunicaciones escolares.
-Tu trabajo es hacer OCR detallado de la imagen, leer TODO el texto visible, y extraer TODOS los eventos escolares que encuentres.
+        const systemPrompt = `Eres un asistente experto en OCR que analiza calendarios e imágenes escolares chilenas.
+Tu trabajo: leer ABSOLUTAMENTE TODO el texto de la imagen y extraer CADA evento escolar como JSON.
 
 Fecha de hoy: ${today}
 Año escolar: ${today.substring(0, 4)}
 
-INSTRUCCIONES DE OCR:
-1. Lee CADA celda, fila y columna de cualquier tabla o calendario
-2. Identifica fechas exactas (día, mes, año) usando el contexto del calendario
-3. Extrae TODOS los eventos: pruebas, tareas, evaluaciones, trabajos, presentaciones, etc.
-4. Si es un calendario mensual, las columnas suelen ser Lunes-Viernes y las filas son semanas
-5. Presta atencion a colores: celdas amarillas/destacadas suelen ser pruebas importantes
+PROCESO OBLIGATORIO PASO A PASO:
+1. PRIMERO identifica el mes y año del calendario (ej: MAYO 2026)
+2. Identifica las columnas (LUNES=col1, MARTES=col2, MIÉRCOLES=col3, JUEVES=col4, VIERNES=col5)
+3. Identifica los números de día en cada celda
+4. Lee el texto de CADA celda que tenga contenido, fila por fila, de izquierda a derecha
+5. Para cada texto encontrado, crea un evento con la fecha exacta (año-mes-día)
 
-DEBES responder SOLO con un JSON válido, sin markdown ni texto extra.
-Si hay UN solo evento:
+TIPOS DE EVENTOS A DETECTAR:
+- EVALUACIÓN/PRUEBA de cualquier materia → event_type: "prueba"
+- Educación Física (actividad, no evaluación) → event_type: "otro"
+- Disertación/Presentación → event_type: "tarea"
+- Trabajo grupal → event_type: "tarea"
+- FERIADO/DIA ESPECIAL → NO incluir como evento
+
+IMPORTANTE:
+- NO omitas ningún evento. Si hay 15 eventos en la imagen, debes retornar 15.
+- Cada celda puede tener MÚLTIPLES eventos (separados por saltos de línea o títulos en negrita)
+- Lee texto pequeño, texto en negrita, texto normal, TODO.
+- Si una celda dice "EVALUACIÓN LENGUAJE: 2° A y B" eso es UN evento tipo prueba.
+- Si una celda dice "EVALUACIÓN MATEMÁTICA: 2° A y B" y debajo "EVALUACIÓN MÚSICA: 2°B", eso son DOS eventos.
+
+Responde SOLO con JSON válido, sin markdown:
 {
-  "events": [{
-    "title": "título del evento (breve, claro)",
-    "event_type": "prueba|tarea|estudio|repaso|otro",
-    "subject": "MATEMATICA|LENGUAJE|CIENCIAS|HISTORIA|INGLES|FISICA|QUIMICA|BIOLOGIA|ARTES|MUSICA|EDUCACION_FISICA|TECNOLOGIA|OTRO",
-    "event_date": "YYYY-MM-DD",
-    "start_time": "HH:MM" o null,
-    "end_time": "HH:MM" o null,
-    "description": "descripción detallada",
-    "confidence": "alta|media|baja"
-  }]
-}
-
-Si hay MÚLTIPLES eventos, incluye TODOS en el array "events".
-Si no puedes determinar la fecha exacta, usa la próxima fecha lógica.
-El campo subject debe estar en MAYÚSCULAS con underscore.
-Lee absolutamente todo el texto de la imagen antes de responder.`;
+  "events": [
+    {
+      "title": "nombre claro del evento",
+      "event_type": "prueba|tarea|estudio|repaso|otro",
+      "subject": "MATEMATICA|LENGUAJE|CIENCIAS|HISTORIA|INGLES|FISICA|QUIMICA|BIOLOGIA|ARTES|MUSICA|EDUCACION_FISICA|TECNOLOGIA|OTRO",
+      "event_date": "YYYY-MM-DD",
+      "start_time": null,
+      "end_time": null,
+      "description": "contenidos/detalles exactos copiados de la imagen",
+      "confidence": "alta|media|baja"
+    }
+  ]
+}`;
 
         const messages = [{ role: 'system', content: systemPrompt }];
         const userContent = [];
@@ -7873,7 +7883,7 @@ Lee absolutamente todo el texto de la imagen antes de responder.`;
         }
 
         if (!text_input && req.file) {
-            userContent.unshift({ type: 'text', text: 'Analiza esta imagen de una comunicación/tarea/prueba escolar y extrae los datos del evento.' });
+            userContent.unshift({ type: 'text', text: 'Analiza esta imagen de calendario/comunicación escolar. Lee CADA celda y extrae TODOS los eventos. No omitas ninguno. Si hay evaluaciones, tareas, educación física, disertaciones, etc., incluye CADA uno como evento separado.' });
         }
 
         messages.push({ role: 'user', content: userContent });
