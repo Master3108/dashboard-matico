@@ -6,8 +6,13 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
   body {
     @apply bg-[#F8FAFC] min-h-screen overflow-x-hidden;
+    max-width: 100vw;
     /* Scroll nativo en Android WebView */
     -webkit-overflow-scrolling: touch;
   }
