@@ -76,6 +76,15 @@ const NOTEBOOK_QUIZ_THRESHOLD = 80;
 
 app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
 
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        status: 'ok',
+        service: 'matico-server',
+        timestamp: new Date().toISOString()
+    });
+});
+
 const PORT = process.env.PORT || 3001;
 const QUIZ_BATCH_SIZE = 3;
 const QUIZ_PHASE_QUESTIONS = 15;
@@ -7806,6 +7815,53 @@ app.post('/api/calendar/events', async (req, res) => {
     }
 });
 
+const normalizeCalendarText = (value = '') => String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const calendarEventSignature = (event = {}) => [
+    event.event_date || '',
+    normalizeCalendarText(event.event_type || 'otro'),
+    normalizeCalendarText(event.subject || ''),
+    normalizeCalendarText(event.title || ''),
+    normalizeCalendarText(event.description || ''),
+    normalizeCalendarText(event.session_number || '')
+].join('|');
+
+const tokenSimilarity = (a = '', b = '') => {
+    const aTokens = new Set(normalizeCalendarText(a).split(' ').filter(Boolean));
+    const bTokens = new Set(normalizeCalendarText(b).split(' ').filter(Boolean));
+    if (!aTokens.size || !bTokens.size) return 0;
+    let intersection = 0;
+    aTokens.forEach(token => {
+        if (bTokens.has(token)) intersection += 1;
+    });
+    const union = new Set([...aTokens, ...bTokens]).size || 1;
+    return intersection / union;
+};
+
+const isSameCalendarEvent = (candidate = {}, existing = {}) => {
+    if ((candidate.event_date || '') !== (existing.event_date || '')) return false;
+    if (normalizeCalendarText(candidate.subject || '') !== normalizeCalendarText(existing.subject || '')) return false;
+    if (normalizeCalendarText(candidate.event_type || 'otro') !== normalizeCalendarText(existing.event_type || 'otro')) return false;
+
+    const candidateTitle = normalizeCalendarText(candidate.title || '');
+    const existingTitle = normalizeCalendarText(existing.title || '');
+    const candidateDescription = normalizeCalendarText(candidate.description || '');
+    const existingDescription = normalizeCalendarText(existing.description || '');
+
+    if (candidateTitle && existingTitle && candidateTitle === existingTitle) return true;
+    if (candidateDescription && existingDescription && candidateDescription === existingDescription) return true;
+
+    const candidateBody = `${candidate.title || ''} ${candidate.description || ''}`;
+    const existingBody = `${existing.title || ''} ${existing.description || ''}`;
+    return tokenSimilarity(candidateBody, existingBody) >= 0.82;
+};
+
 // Smart event creation via AI Vision
 app.post('/api/calendar/smart-create', upload.single('image'), async (req, res) => {
     try {
@@ -7931,11 +7987,25 @@ Responde SOLO con JSON válido, sin markdown:
 
         const targetUserId = student_user_id || user_id;
         const createdEvents = [];
+        const skippedDuplicates = [];
+        const batchSignatures = new Set();
         const errors = [];
+        const detectedYears = eventsArray
+            .map(eventData => String(eventData.event_date || '').slice(0, 4))
+            .filter(year => /^\d{4}$/.test(year));
+        const minYear = detectedYears.length ? Math.min(...detectedYears.map(Number)) : Number(today.substring(0, 4));
+        const maxYear = detectedYears.length ? Math.max(...detectedYears.map(Number)) : Number(today.substring(0, 4));
+        const existingEvents = await listCalendarEvents({
+            user_id: targetUserId,
+            role: 'estudiante',
+            from_date: `${minYear}-01-01`,
+            to_date: `${maxYear}-12-31`,
+            limit: 1000
+        });
 
         for (const eventData of eventsArray) {
             try {
-                const event = await createCalendarEvent({
+                const normalizedEvent = {
                     student_user_id: targetUserId,
                     created_by: user_id,
                     title: eventData.title || 'Evento sin título',
@@ -7945,7 +8015,22 @@ Responde SOLO con JSON válido, sin markdown:
                     start_time: eventData.start_time || null,
                     end_time: eventData.end_time || null,
                     description: eventData.description || null
-                });
+                };
+                const signature = calendarEventSignature(normalizedEvent);
+                const duplicateInBatch = batchSignatures.has(signature);
+                const duplicateExisting = existingEvents.some(existing => isSameCalendarEvent(normalizedEvent, existing));
+
+                if (duplicateInBatch || duplicateExisting) {
+                    skippedDuplicates.push({
+                        ...eventData,
+                        reason: duplicateInBatch ? 'duplicado_en_imagen' : 'ya_existia'
+                    });
+                    continue;
+                }
+
+                const event = await createCalendarEvent(normalizedEvent);
+                batchSignatures.add(signature);
+                existingEvents.push({ ...normalizedEvent, event_id: event?.event_id });
                 createdEvents.push({ ...eventData, event_id: event?.event_id });
             } catch (evErr) {
                 console.error('[SMART-CREATE] Error creando evento:', evErr.message);
@@ -7979,10 +8064,14 @@ Responde SOLO con JSON válido, sin markdown:
             extracted: createdEvents[0] || null,
             total_created: createdEvents.length,
             total_found: eventsArray.length,
+            total_skipped_duplicates: skippedDuplicates.length,
+            skipped_duplicates: skippedDuplicates,
             errors: errors.length > 0 ? errors : undefined,
-            message: createdEvents.length === 1
+            message: createdEvents.length === 0 && skippedDuplicates.length > 0
+                ? `${skippedDuplicates.length} evento(s) ya existian, no se duplicaron`
+                : createdEvents.length === 1
                 ? `Evento "${createdEvents[0].title}" creado para ${createdEvents[0].event_date}`
-                : `${createdEvents.length} eventos creados desde la imagen`
+                : `${createdEvents.length} eventos creados desde la imagen${skippedDuplicates.length ? `, ${skippedDuplicates.length} duplicado(s) omitidos` : ''}`
         });
 
     } catch (err) {

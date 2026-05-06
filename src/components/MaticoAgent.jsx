@@ -445,10 +445,15 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
 
             setMessages(prev => prev.filter(m => m.id !== 'processing'));
 
-            if (data.success && (data.events?.length > 0 || data.extracted)) {
+            if (data.success && (data.events?.length > 0 || data.extracted || data.total_skipped_duplicates > 0)) {
                 const events = data.events || [data.extracted];
 
-                if (events.length === 1) {
+                if (events.length === 0 && data.total_skipped_duplicates > 0) {
+                    addBotMessage(
+                        `No dupliqué nada: ${data.total_skipped_duplicates} evento(s) de esta imagen ya estaban registrados. Mantengo un solo registro para que los recordatorios y el seguimiento no se repitan.`,
+                        null
+                    );
+                } else if (events.length === 1) {
                     const ev = events[0];
                     const typeConf = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
 
@@ -470,6 +475,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
 
                     addBotMessage(
                         `Listo! Encontré y guardé **${events.length} eventos**:\n\n${summary}` +
+                        `${data.total_skipped_duplicates ? `\n\nOmití ${data.total_skipped_duplicates} duplicado(s) que ya estaban registrados.` : ''}` +
                         `${data.errors?.length ? `\n\nNo pude guardar: ${data.errors.join(', ')}` : ''}` +
                         '\n\nQuedaron registrados para usarlos como antecedentes de seguimiento, recordatorios y planificación.',
                         events[0]
