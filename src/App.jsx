@@ -6084,7 +6084,7 @@ ${finalData.capsule}`;
     }
 
     return (
-        <div className="min-h-screen bg-[#F0F4F8] p-6 relative overflow-x-hidden">
+        <div className="min-h-screen bg-[#F0F4F8] px-4 py-6 sm:px-6 relative overflow-x-hidden box-border w-full max-w-full">
             {/* Botón flotante para volver al Panel Padre (solo admin con rol apoderado) */}
             {isAdminUser && currentUser.role === 'apoderado' && activeView === 'admin' && (
                 <button
@@ -6284,22 +6284,22 @@ ${finalData.capsule}`;
 
                 {/* Botones flotantes: solo para estudiantes, no para admin-apoderado */}
                 {currentUser.role !== 'apoderado' && (
-                    <div className="fixed bottom-6 right-6 z-[205] flex flex-col gap-3">
+                    <div className="fixed bottom-6 right-3 sm:right-6 z-[205] flex flex-col gap-2 sm:gap-3">
                         <button
                             onClick={() => setShowCalendarView(true)}
-                            className="bg-[#10B981] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(16,185,129,0.45)] hover:bg-[#059669] transition-all"
+                            className="bg-[#10B981] text-white px-3 py-2 sm:px-4 sm:py-3 rounded-2xl text-sm sm:text-base font-black shadow-[0_10px_25px_rgba(16,185,129,0.45)] hover:bg-[#059669] transition-all"
                         >
                             Calendario
                         </button>
                         <button
                             onClick={() => setShowChatEventCreator(true)}
-                            className="bg-[#4D96FF] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(77,150,255,0.45)] hover:bg-[#3B82F6] transition-all"
+                            className="bg-[#4D96FF] text-white px-3 py-2 sm:px-4 sm:py-3 rounded-2xl text-sm sm:text-base font-black shadow-[0_10px_25px_rgba(77,150,255,0.45)] hover:bg-[#3B82F6] transition-all"
                         >
                             Crear evento
                         </button>
                         <button
                             onClick={() => setShowOraclePrepModal(true)}
-                            className="bg-[#7C3AED] text-white px-4 py-3 rounded-2xl font-black shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] transition-all"
+                            className="bg-[#7C3AED] text-white px-3 py-2 sm:px-4 sm:py-3 rounded-2xl text-sm sm:text-base font-black shadow-[0_10px_25px_rgba(124,58,237,0.45)] hover:bg-[#6D28D9] transition-all"
                         >
                             Crear prueba
                         </button>
@@ -6349,7 +6349,7 @@ ${finalData.capsule}`;
                     />
                 )}
 
-                <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative">
+                <div className="space-y-6 max-w-5xl mx-auto animate-fade-in relative w-full overflow-x-hidden">
                     <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-8 animate-fade-in-up">
                         <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative">
                             {/* RADIAL GLOW BEHIND MATICO */}
