@@ -49,6 +49,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
     const [isListening, setIsListening] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [lastCreatedEvent, setLastCreatedEvent] = useState(null);
+    const [eventReviews, setEventReviews] = useState({});
 
     // Native screen capture state
     const [nativeCaptureSupported, setNativeCaptureSupported] = useState(false);
@@ -123,6 +124,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
         setSelectedImage(null);
         setImagePreview(null);
         setLastCreatedEvent(null);
+        setEventReviews({});
     }, [isOpen, intent, studentName]);
 
     useEffect(() => {
@@ -198,6 +200,83 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
             imageUrl,
             timestamp: new Date()
         }]);
+    };
+
+    const addEventReviewMessage = (events = []) => {
+        const reviewId = `review-${Date.now()}`;
+        const items = events.map((event, index) => ({
+            ...event,
+            reviewItemId: `${reviewId}-${index}`,
+            selected: true
+        }));
+        setEventReviews(prev => ({ ...prev, [reviewId]: items }));
+        setMessages(prev => [...prev, {
+            id: reviewId,
+            type: 'event-review',
+            reviewId,
+            timestamp: new Date()
+        }]);
+    };
+
+    const toggleReviewItem = (reviewId, reviewItemId) => {
+        setEventReviews(prev => ({
+            ...prev,
+            [reviewId]: (prev[reviewId] || []).map(item =>
+                item.reviewItemId === reviewItemId ? { ...item, selected: !item.selected } : item
+            )
+        }));
+    };
+
+    const confirmReviewEvents = async (reviewId) => {
+        const selectedEvents = (eventReviews[reviewId] || []).filter(item => item.selected);
+        if (selectedEvents.length === 0) {
+            addBotMessage('No agendé nada. Si quieres, marca al menos un evento de la lista.');
+            return;
+        }
+
+        setIsProcessing(true);
+        setMessages(prev => [...prev, { id: 'processing', type: 'processing', timestamp: new Date() }]);
+
+        try {
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('role', userRole || 'estudiante');
+            if (studentUserId) formData.append('student_user_id', studentUserId);
+            formData.append('events_json', JSON.stringify(selectedEvents.map(({ reviewItemId, selected, ...event }) => event)));
+
+            const res = await fetch('/api/calendar/smart-create', { method: 'POST', body: formData });
+            const data = await res.json();
+            setMessages(prev => prev.filter(m => m.id !== 'processing'));
+
+            if (data.success) {
+                const created = data.events || [];
+                if (created.length === 0 && data.total_skipped_duplicates > 0) {
+                    addBotMessage(`No dupliqué nada: ${data.total_skipped_duplicates} evento(s) ya estaban registrados.`);
+                } else {
+                    const summary = created.map(ev => {
+                        const tc = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
+                        return `${tc.emoji} **${ev.title}** - ${ev.event_date} (${ev.subject || 'Sin materia'})`;
+                    }).join('\n');
+                    addBotMessage(
+                        `Agendé **${created.length} evento(s)**:\n\n${summary}${data.total_skipped_duplicates ? `\n\nOmití ${data.total_skipped_duplicates} duplicado(s).` : ''}`,
+                        created[0] || null
+                    );
+                }
+                setEventReviews(prev => ({
+                    ...prev,
+                    [reviewId]: (prev[reviewId] || []).map(item => ({ ...item, locked: true }))
+                }));
+                onEventCreated?.(data.event || data.events?.[0]);
+            } else {
+                addBotMessage(data.error || 'No pude agendar esos eventos. Intenta de nuevo.');
+            }
+        } catch (err) {
+            setMessages(prev => prev.filter(m => m.id !== 'processing'));
+            addBotMessage('Hubo un error al agendar. Intenta de nuevo.');
+            console.error('[CHAT-EVENT] Error confirmando eventos:', err);
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const handleImageSelect = (e) => {
@@ -386,6 +465,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 : userText;
             if (directedText) formData.append('text_input', directedText);
             if (userImage) formData.append('image', userImage);
+            formData.append('dry_run', 'true');
 
             const res = await fetch('/api/calendar/smart-create', {
                 method: 'POST',
@@ -396,34 +476,9 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
             // Remove processing message
             setMessages(prev => prev.filter(m => m.id !== 'processing'));
 
-            if (data.success && (data.events?.length > 0 || data.extracted || data.total_skipped_duplicates > 0)) {
-                const events = data.events || [data.extracted];
-                setLastCreatedEvent(data.event);
-
-                if (events.length === 0 && data.total_skipped_duplicates > 0) {
-                    addBotMessage(
-                        `No dupliqué nada: ${data.total_skipped_duplicates} evento(s) de esta imagen ya estaban registrados para este estudiante.`,
-                        null
-                    );
-                } else if (events.length === 1) {
-                    const ev = events[0];
-                    const typeConf = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
-                    addBotMessage(
-                        `${typeConf.emoji} Evento creado:\n\n**${ev.title}**\nTipo: ${typeConf.label}\nFecha: ${ev.event_date}${ev.start_time ? ` a las ${ev.start_time}` : ''}\nMateria: ${ev.subject || 'No especificada'}\n${ev.description ? `\n${ev.description}` : ''}\n\nConfianza: ${ev.confidence || 'media'}`,
-                        ev
-                    );
-                } else {
-                    const summary = events.map(ev => {
-                        const tc = EVENT_TYPE_CONFIG[ev.event_type] || EVENT_TYPE_CONFIG.otro;
-                        return `${tc.emoji} **${ev.title}** - ${ev.event_date} (${ev.subject || 'Sin materia'})`;
-                    }).join('\n');
-                    addBotMessage(
-                        `Se crearon **${events.length} eventos** desde la imagen:\n\n${summary}${data.total_skipped_duplicates ? `\n\nOmití ${data.total_skipped_duplicates} duplicado(s) que ya estaban registrados.` : ''}${data.errors?.length ? `\n\nErrores: ${data.errors.join(', ')}` : ''}`,
-                        events[0]
-                    );
-                }
-
-                if (onEventCreated) onEventCreated(data.event);
+            if (data.success && data.events?.length > 0) {
+                addBotMessage(`Encontré **${data.events.length} evento(s)**. Te los dejo marcados en verde; desmarca lo que no quieras agendar y confirma.`);
+                addEventReviewMessage(data.events);
             } else {
                 addBotMessage(`No pude interpretar bien eso. ${data.error || 'Intenta con otra foto mas clara o describe el evento con mas detalle.'}`);
             }
@@ -478,6 +533,74 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                                             <Loader className="w-4 h-4 text-[#7C3AED] animate-spin" />
                                             <span className="text-sm text-gray-500 font-bold">Analizando...</span>
                                         </div>
+                                    </div>
+                                </div>
+                            );
+                        }
+
+                        if (msg.type === 'event-review') {
+                            const reviewItems = eventReviews[msg.reviewId] || [];
+                            const selectedCount = reviewItems.filter(item => item.selected).length;
+                            const locked = reviewItems.some(item => item.locked);
+
+                            return (
+                                <div key={msg.id} className="flex items-start gap-2">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-[#4D96FF] to-[#7C3AED] rounded-xl flex items-center justify-center shrink-0">
+                                        <Sparkles className="w-4 h-4 text-white" />
+                                    </div>
+                                    <div className="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm max-w-[90%] w-full">
+                                        <p className="text-sm font-black text-[#2B2E4A] mb-2">Revisa antes de agendar</p>
+                                        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                            {reviewItems.map(item => {
+                                                const typeConf = EVENT_TYPE_CONFIG[item.event_type] || EVENT_TYPE_CONFIG.otro;
+                                                return (
+                                                    <button
+                                                        key={item.reviewItemId}
+                                                        type="button"
+                                                        onClick={() => !locked && toggleReviewItem(msg.reviewId, item.reviewItemId)}
+                                                        className={`w-full text-left rounded-xl border px-3 py-2 transition-all ${
+                                                            item.selected
+                                                                ? 'bg-green-50 border-green-200'
+                                                                : 'bg-gray-50 border-gray-200 opacity-70'
+                                                        }`}
+                                                    >
+                                                        <div className="flex gap-2">
+                                                            <span className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                                                                item.selected ? 'bg-green-500 text-white' : 'bg-white border border-gray-300 text-transparent'
+                                                            }`}>
+                                                                <CheckCircle className="w-3.5 h-3.5" />
+                                                            </span>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-black text-[#2B2E4A]">{typeConf.emoji} {item.title}</p>
+                                                                <p className="text-[11px] text-gray-500 font-bold">
+                                                                    {item.event_date} · {item.subject || 'Sin materia'} · {typeConf.label}
+                                                                </p>
+                                                                {item.description && (
+                                                                    <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">{item.description}</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {!locked && (
+                                            <button
+                                                type="button"
+                                                onClick={() => confirmReviewEvents(msg.reviewId)}
+                                                disabled={isProcessing || selectedCount === 0}
+                                                className={`mt-3 w-full rounded-xl px-3 py-2 text-sm font-black transition-all ${
+                                                    selectedCount > 0 && !isProcessing
+                                                        ? 'bg-[#10B981] text-white hover:bg-[#059669]'
+                                                        : 'bg-gray-100 text-gray-400'
+                                                }`}
+                                            >
+                                                Agendar seleccionados ({selectedCount})
+                                            </button>
+                                        )}
+                                        {locked && (
+                                            <p className="mt-3 text-xs font-bold text-green-600">Lista procesada</p>
+                                        )}
                                     </div>
                                 </div>
                             );

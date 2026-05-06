@@ -7865,15 +7865,27 @@ const isSameCalendarEvent = (candidate = {}, existing = {}) => {
 // Smart event creation via AI Vision
 app.post('/api/calendar/smart-create', upload.single('image'), async (req, res) => {
     try {
-        const { user_id, student_user_id, text_input, role } = req.body;
+        const { user_id, student_user_id, text_input, role, dry_run, events_json } = req.body;
         if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
 
-        const visionClient = openaiVisionClient || kimiVisionClient;
-        if (!visionClient) return res.status(500).json({ success: false, error: 'No hay cliente de IA Vision configurado' });
-
-        // Build the prompt
         const today = new Date().toISOString().split('T')[0];
-        const systemPrompt = `Eres un asistente experto en OCR que analiza calendarios e imágenes escolares chilenas.
+        let eventsArray = [];
+
+        if (events_json) {
+            try {
+                const parsedEvents = JSON.parse(events_json);
+                eventsArray = Array.isArray(parsedEvents) ? parsedEvents : [];
+            } catch {
+                return res.status(400).json({ success: false, error: 'Lista de eventos invalida' });
+            }
+        }
+
+        if (eventsArray.length === 0) {
+            const visionClient = openaiVisionClient || kimiVisionClient;
+            if (!visionClient) return res.status(500).json({ success: false, error: 'No hay cliente de IA Vision configurado' });
+
+            // Build the prompt
+            const systemPrompt = `Eres un asistente experto en OCR que analiza calendarios e imágenes escolares chilenas.
 Tu trabajo: leer ABSOLUTAMENTE TODO el texto de la imagen y extraer CADA evento escolar como JSON.
 
 Fecha de hoy: ${today}
@@ -7916,72 +7928,83 @@ Responde SOLO con JSON válido, sin markdown:
   ]
 }`;
 
-        const messages = [{ role: 'system', content: systemPrompt }];
-        const userContent = [];
+            const messages = [{ role: 'system', content: systemPrompt }];
+            const userContent = [];
 
-        // Add text if provided
-        if (text_input) {
-            userContent.push({ type: 'text', text: text_input });
-        }
+            // Add text if provided
+            if (text_input) {
+                userContent.push({ type: 'text', text: text_input });
+            }
 
-        // Add image if provided
-        if (req.file) {
-            const base64 = req.file.buffer.toString('base64');
-            const mimeType = req.file.mimetype || 'image/jpeg';
-            userContent.push({
-                type: 'image_url',
-                image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' }
+            // Add image if provided
+            if (req.file) {
+                const base64 = req.file.buffer.toString('base64');
+                const mimeType = req.file.mimetype || 'image/jpeg';
+                userContent.push({
+                    type: 'image_url',
+                    image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' }
+                });
+            }
+
+            if (userContent.length === 0) {
+                return res.status(400).json({ success: false, error: 'Debes enviar una imagen o texto' });
+            }
+
+            if (req.file) {
+                userContent.unshift({
+                    type: 'text',
+                    text: 'Analiza esta imagen como registro escolar integral. Lee CADA celda, CADA linea y CADA bloque de texto, aunque el usuario mencione prueba, tarea o un tipo especifico. Extrae TODOS los antecedentes agendables como eventos separados: evaluaciones, tareas, trabajos, disertaciones, presentaciones, tecnologia, musica, artes, educacion fisica, recordatorios y cualquier actividad escolar con fecha. No te quedes solo con un ramo ni con un solo evento.'
+                });
+            }
+
+            messages.push({ role: 'user', content: userContent });
+
+            console.log('[SMART-CREATE] Analizando con IA...', { hasImage: !!req.file, hasText: !!text_input });
+
+            const model = openaiVisionClient ? OPENAI_VISION_MODEL : NOTEBOOK_VISION_MODEL;
+            const response = await visionClient.chat.completions.create({
+                model,
+                messages,
+                max_tokens: 4000,
+                temperature: 0.1
             });
+
+            const raw = response.choices?.[0]?.message?.content || '';
+            console.log('[SMART-CREATE] Respuesta IA:', raw);
+
+            // Parse JSON from response
+            let parsed;
+            try {
+                const jsonMatch = raw.match(/\{[\s\S]*\}/);
+                parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+            } catch (parseErr) {
+                console.error('[SMART-CREATE] Error parseando JSON:', parseErr.message);
+                return res.json({
+                    success: false,
+                    error: 'No se pudo interpretar la imagen/texto. Intenta con una foto mas clara o escribe los detalles.',
+                    raw_response: raw
+                });
+            }
+
+            // Normalize: support both single event (legacy) and multiple events
+            eventsArray = Array.isArray(parsed.events) ? parsed.events
+                : (parsed.title ? [parsed] : []);
         }
-
-        if (userContent.length === 0) {
-            return res.status(400).json({ success: false, error: 'Debes enviar una imagen o texto' });
-        }
-
-        if (req.file) {
-            userContent.unshift({
-                type: 'text',
-                text: 'Analiza esta imagen como registro escolar integral. Lee CADA celda, CADA linea y CADA bloque de texto, aunque el usuario mencione prueba, tarea o un tipo especifico. Extrae TODOS los antecedentes agendables como eventos separados: evaluaciones, tareas, trabajos, disertaciones, presentaciones, tecnologia, musica, artes, educacion fisica, recordatorios y cualquier actividad escolar con fecha. No te quedes solo con un ramo ni con un solo evento.'
-            });
-        }
-
-        messages.push({ role: 'user', content: userContent });
-
-        console.log('[SMART-CREATE] Analizando con IA...', { hasImage: !!req.file, hasText: !!text_input });
-
-        const model = openaiVisionClient ? OPENAI_VISION_MODEL : NOTEBOOK_VISION_MODEL;
-        const response = await visionClient.chat.completions.create({
-            model,
-            messages,
-            max_tokens: 4000,
-            temperature: 0.1
-        });
-
-        const raw = response.choices?.[0]?.message?.content || '';
-        console.log('[SMART-CREATE] Respuesta IA:', raw);
-
-        // Parse JSON from response
-        let parsed;
-        try {
-            const jsonMatch = raw.match(/\{[\s\S]*\}/);
-            parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-        } catch (parseErr) {
-            console.error('[SMART-CREATE] Error parseando JSON:', parseErr.message);
-            return res.json({
-                success: false,
-                error: 'No se pudo interpretar la imagen/texto. Intenta con una foto mas clara o escribe los detalles.',
-                raw_response: raw
-            });
-        }
-
-        // Normalize: support both single event (legacy) and multiple events
-        const eventsArray = Array.isArray(parsed.events) ? parsed.events
-            : (parsed.title ? [parsed] : []);
 
         if (eventsArray.length === 0) {
             return res.json({
                 success: false,
                 error: 'No se encontraron eventos en la imagen. Intenta con una foto mas clara.'
+            });
+        }
+
+        if (String(dry_run || '').toLowerCase() === 'true') {
+            return res.json({
+                success: true,
+                preview_only: true,
+                events: eventsArray,
+                total_found: eventsArray.length,
+                message: `${eventsArray.length} evento(s) encontrados para revisar`
             });
         }
 
