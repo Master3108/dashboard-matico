@@ -8275,6 +8275,28 @@ app.delete('/api/calendar/events/:event_id', async (req, res) => {
     }
 });
 
+// Admin: vincular hijo a apoderado
+app.post('/api/admin/link-child', async (req, res) => {
+    try {
+        const { admin_email, child_user_id, parent_user_id } = req.body;
+        const ADMIN_EMAILS = ['joseantonio.olguinr@gmail.com'];
+        if (!ADMIN_EMAILS.includes(admin_email)) return res.status(403).json({ success: false, error: 'No autorizado' });
+        if (!child_user_id || !parent_user_id) return res.status(400).json({ success: false, error: 'Faltan parametros' });
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .update({ parent_user_id, role: 'estudiante' })
+            .eq('user_id', child_user_id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json({ success: true, updated: data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Perfil y relaciones apoderado-hijo
 app.get('/api/profile', async (req, res) => {
     try {
