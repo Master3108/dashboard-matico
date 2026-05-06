@@ -11,6 +11,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import { supabase } from './db/supabaseClient.js';
 import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions, sampleGeneratedQuestions } from './generatedQuestionBank.js';
 import { recordAdaptiveEvent, getAdaptiveSnapshot, backfillAdaptiveProfileFromProgressRows } from './adaptiveProfileStore.js';
 import { getCurriculumContext } from './curriculumCatalog.js';
@@ -8208,6 +8209,30 @@ app.post('/api/calendar/dedupe', async (req, res) => {
         });
     } catch (err) {
         console.error('[CALENDAR] Error limpiando duplicados:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Admin: borrar todos los eventos de un usuario (solo admin)
+app.delete('/api/calendar/events/purge', async (req, res) => {
+    try {
+        const { user_id, admin_email } = req.query;
+        const ADMIN_EMAILS = ['joseantonio.olguinr@gmail.com'];
+        if (!ADMIN_EMAILS.includes(admin_email)) {
+            return res.status(403).json({ success: false, error: 'No autorizado' });
+        }
+        if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+
+        const { data, error } = await supabase
+            .from('calendar_events')
+            .delete()
+            .or(`created_by.eq.${user_id},student_user_id.eq.${user_id}`)
+            .select();
+
+        if (error) throw error;
+        res.json({ success: true, deleted: data?.length || 0 });
+    } catch (err) {
+        console.error('[PURGE] Error:', err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });

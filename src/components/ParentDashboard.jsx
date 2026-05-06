@@ -143,8 +143,11 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         if (selectedChild) {
             fetchChildEvents();
             fetchChildProgress();
+        } else if (currentUser?.user_id) {
+            // No child linked — fetch events created by this user
+            fetchChildEvents();
         }
-    }, [selectedChild, fetchChildEvents, fetchChildProgress]);
+    }, [selectedChild, currentUser?.user_id, fetchChildEvents, fetchChildProgress]);
 
     useEffect(() => {
         fetchNotifications();
