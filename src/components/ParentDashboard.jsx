@@ -161,6 +161,24 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         setShowCreateEventModal(true);
     };
 
+    const handleDeleteEvent = async (event) => {
+        const title = event?.title || 'este evento';
+        if (!confirm(`Eliminar "${title}" del calendario?`)) return;
+
+        try {
+            const res = await fetch(`/api/calendar/events/${event.event_id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                setEvents(prev => prev.filter(item => item.event_id !== event.event_id));
+            } else {
+                alert(data.error || 'No se pudo eliminar el evento.');
+            }
+        } catch (err) {
+            console.error('[PARENT] Error eliminando evento:', err);
+            alert('No se pudo eliminar el evento.');
+        }
+    };
+
     // --- Compute stats ---
     const totalQuizzes = progress.filter(p => p.event_type === 'quiz_completed' || p.event_type === 'session_completed').length;
     const avgScore = totalQuizzes > 0
@@ -533,6 +551,14 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                                     <span className="text-xs font-bold px-2 py-0.5 rounded-lg" style={{ backgroundColor: statusConf.color + '20', color: statusConf.color }}>
                                                                         {statusConf.label}
                                                                     </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleDeleteEvent(event)}
+                                                                        className="p-1.5 rounded-lg bg-white/70 text-red-500 hover:bg-red-50 hover:text-red-600 transition-all"
+                                                                        title="Eliminar evento"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                             {event.status === 'completado' && event.result_score != null && (
