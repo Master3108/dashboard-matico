@@ -8347,6 +8347,148 @@ app.get('/api/profile', async (req, res) => {
     }
 });
 
+// =====================================================================
+// MIGRACIÓN: Google Sheets progress_log → Supabase progress_log
+// =====================================================================
+app.post('/api/admin/migrate-sheets-to-supabase', async (req, res) => {
+    try {
+        const { admin_email, dry_run = false } = req.body;
+        const ADMIN_EMAILS = ['joseantonio.olguinr@gmail.com'];
+        if (!ADMIN_EMAILS.includes(admin_email)) {
+            return res.status(403).json({ success: false, error: 'No autorizado' });
+        }
+
+        console.log('[MIGRATION] Iniciando migración de Google Sheets → Supabase...');
+
+        // 1. Leer todo el Sheet
+        const sheets = await getSheetsClient();
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId: SPREADSHEET_ID,
+            range: 'progress_log!A:U'
+        });
+        const allRows = response.data.values || [];
+        // Skip header row
+        const dataRows = allRows.length > 1 ? allRows.slice(1) : allRows;
+        console.log(`[MIGRATION] Filas totales en Sheet: ${dataRows.length}`);
+
+        // 2. Leer IDs existentes en Supabase para evitar duplicados
+        const { data: existingRows, error: fetchErr } = await supabase
+            .from('progress_log')
+            .select('user_id, event_type, created_at, session, subject')
+            .limit(10000);
+        if (fetchErr) console.warn('[MIGRATION] Error leyendo existentes:', fetchErr.message);
+
+        // Build a fingerprint set to detect duplicates
+        const existingFingerprints = new Set();
+        (existingRows || []).forEach(r => {
+            const fp = `${r.user_id}|${r.event_type}|${r.session}|${r.subject}|${String(r.created_at || '').substring(0, 16)}`;
+            existingFingerprints.add(fp);
+        });
+        console.log(`[MIGRATION] Registros existentes en Supabase: ${existingFingerprints.size}`);
+
+        // 3. Mapear filas del Sheet al schema de Supabase
+        // PROGRESS_LOG_HEADERS:
+        // 0=timestamp, 1=user_id, 2=subject, 3=session, 4=event_type,
+        // 5=phase, 6=subLevel, 7=levelName, 8=score, 9=xp,
+        // 10=grade, 11=topic, 12=totalQuestions, 13=sourceMode,
+        // 14=batchIndex, 15=batchSize, 16=correctAnswers, 17=wrongAnswers,
+        // 18=wrongQuestionDetails, 19=weakness, 20=improvementPlan
+        const toInsert = [];
+        const skipped = [];
+
+        for (const row of dataRows) {
+            const timestamp = row[0] || null;
+            const user_id = row[1] || null;
+            const event_type = row[4] || null;
+            const session = row[3] || null;
+            const subject = row[2] || null;
+
+            if (!user_id) { skipped.push({ reason: 'no user_id', row: row.slice(0, 5) }); continue; }
+
+            // Check duplicate
+            const fp = `${user_id}|${event_type}|${session}|${subject}|${String(timestamp || '').substring(0, 16)}`;
+            if (existingFingerprints.has(fp)) {
+                skipped.push({ reason: 'duplicate', user_id, event_type, session });
+                continue;
+            }
+
+            const safeNum = (val) => val !== '' && val != null && !isNaN(Number(val)) ? Number(val) : null;
+            const safeStr = (val) => (val && String(val).trim()) || null;
+            const safeJson = (val) => {
+                if (!val || String(val).trim() === '') return null;
+                try { return JSON.parse(val); } catch { return String(val); }
+            };
+
+            toInsert.push({
+                created_at: timestamp || new Date().toISOString(),
+                user_id,
+                user_email: null,
+                grade: safeStr(row[10]),
+                subject: safeStr(row[2]),
+                session: safeNum(row[3]),
+                phase: safeNum(row[5]),
+                sub_level: safeStr(row[6]),
+                level_name: safeStr(row[7]),
+                event_type: safeStr(row[4]),
+                score: safeNum(row[8]),
+                xp: safeNum(row[9]),
+                topic: safeStr(row[11]),
+                total_questions: safeNum(row[12]),
+                correct_answers: safeNum(row[16]),
+                wrong_answers: safeNum(row[17]),
+                wrong_question_details: safeJson(row[18]),
+                weakness: safeJson(row[19]),
+                improvement_plan: safeJson(row[20]),
+                source_mode: safeStr(row[13]) || 'migrated_from_sheets',
+                batch_index: safeNum(row[14]),
+                batch_size: safeNum(row[15]),
+            });
+        }
+
+        console.log(`[MIGRATION] Para insertar: ${toInsert.length}, Omitidos: ${skipped.length}`);
+
+        if (dry_run) {
+            return res.json({
+                success: true,
+                dry_run: true,
+                total_sheet_rows: dataRows.length,
+                to_insert: toInsert.length,
+                skipped: skipped.length,
+                skipped_reasons: skipped.slice(0, 20),
+                sample_rows: toInsert.slice(0, 5)
+            });
+        }
+
+        // 4. Insertar en batches de 50
+        let inserted = 0;
+        let errors = [];
+        const BATCH_SIZE = 50;
+        for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
+            const batch = toInsert.slice(i, i + BATCH_SIZE);
+            const { error: insertErr } = await supabase.from('progress_log').insert(batch);
+            if (insertErr) {
+                console.error(`[MIGRATION] Error batch ${i}-${i + batch.length}:`, insertErr.message);
+                errors.push({ batch_start: i, error: insertErr.message });
+            } else {
+                inserted += batch.length;
+            }
+        }
+
+        console.log(`[MIGRATION] Completado. Insertados: ${inserted}, Errores: ${errors.length}`);
+        res.json({
+            success: true,
+            total_sheet_rows: dataRows.length,
+            inserted,
+            skipped: skipped.length,
+            errors: errors.length > 0 ? errors : undefined
+        });
+
+    } catch (err) {
+        console.error('[MIGRATION] Error general:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 app.get('/api/parent/student-history', async (req, res) => {
     try {
         const { student_user_id, student_email, parent_email, limit } = req.query;
