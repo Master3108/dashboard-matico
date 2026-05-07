@@ -465,28 +465,33 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div className="bg-gradient-to-br from-[#F5F3FF] to-[#EDE9FE] rounded-2xl p-3 text-center">
                                 <Award className="w-6 h-6 text-[#7C3AED] mx-auto mb-1" />
-                                <p className="text-2xl font-black text-[#7C3AED]">{totalXP}</p>
+                                <p className="text-2xl font-black text-[#7C3AED]">{totalXP.toLocaleString()}</p>
                                 <p className="text-xs font-bold text-[#9094A6]">XP Total</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Puntos ganados por actividad</p>
                             </div>
                             <div className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-2xl p-3 text-center">
                                 <Target className="w-6 h-6 text-[#3B82F6] mx-auto mb-1" />
                                 <p className="text-2xl font-black text-[#3B82F6]">{totalQuizzes}</p>
                                 <p className="text-xs font-bold text-[#9094A6]">Evaluaciones</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Quizzes completados</p>
                             </div>
                             <div className="bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] rounded-2xl p-3 text-center">
                                 <TrendingUp className="w-6 h-6 text-[#10B981] mx-auto mb-1" />
                                 <p className="text-2xl font-black text-[#10B981]">{avgScore}%</p>
                                 <p className="text-xs font-bold text-[#9094A6]">Promedio</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Nota media en quizzes</p>
                             </div>
                             <div className="bg-gradient-to-br from-[#FFF7ED] to-[#FFEDD5] rounded-2xl p-3 text-center">
                                 <Calendar className="w-6 h-6 text-[#F59E0B] mx-auto mb-1" />
                                 <p className="text-2xl font-black text-[#F59E0B]">{pendingEvents}</p>
                                 <p className="text-xs font-bold text-[#9094A6]">Pendientes</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Pruebas por realizar</p>
                             </div>
-                            <div className="bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] rounded-2xl p-3 text-center col-span-2 md:col-span-4">
-                                <FileText className="w-6 h-6 text-[#10B981] mx-auto mb-1" />
-                                <p className="text-2xl font-black text-[#10B981]">{totalAntecedentes}</p>
-                                <p className="text-xs font-bold text-[#9094A6]">Antecedentes cargados desde la base de datos</p>
+                            <div className="bg-gradient-to-br from-[#F0F4FF] to-[#E0E7FF] rounded-2xl p-3 text-center col-span-2 md:col-span-4">
+                                <FileText className="w-6 h-6 text-[#6366F1] mx-auto mb-1" />
+                                <p className="text-2xl font-black text-[#6366F1]">{totalAntecedentes}</p>
+                                <p className="text-xs font-bold text-[#9094A6]">Actividades Registradas</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Total de acciones en la plataforma</p>
                             </div>
                         </div>
                     </div>
