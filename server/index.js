@@ -8350,7 +8350,7 @@ app.get('/api/profile', async (req, res) => {
 app.get('/api/parent/student-history', async (req, res) => {
     try {
         const { student_user_id, student_email, parent_email, limit } = req.query;
-        const maxRows = Math.min(Number(limit) || 80, 300);
+        const maxRows = Math.min(Number(limit) || 300, 500);
         const idSet = new Set([student_user_id].filter(Boolean).map(String));
         const email = String(student_email || '').trim().toLowerCase();
         const parentEmail = String(parent_email || '').trim().toLowerCase();
@@ -8464,17 +8464,39 @@ app.get('/api/parent/student-history', async (req, res) => {
                     .filter(row => idSet.has(String(row?.[1] || '')))
                     .slice(-maxRows)
                     .reverse()
-                    .map((row, index) => ({
-                        id: `legacy-progress-${row[0] || index}`,
-                        source: 'legacy_progress',
-                        type: row[4] || 'progreso',
-                        title: row[12] || row[7] || row[2] || 'Actividad registrada',
-                        subject: row[2] || '',
-                        date: row[0] || '',
-                        score: row[8] !== '' && row[8] != null ? Number(row[8]) : null,
-                        xp: row[9] !== '' && row[9] != null ? Number(row[9]) : 0,
-                        detail: row[13] ? `${row[13]} preguntas` : (row[3] ? `Sesion ${row[3]}` : '')
-                    }));
+                    .map((row, index) => {
+                        // Column mapping from PROGRESS_LOG_HEADERS:
+                        // 0=timestamp, 1=user_id, 2=subject, 3=session, 4=event_type,
+                        // 5=phase, 6=subLevel, 7=levelName, 8=score, 9=xp,
+                        // 10=grade, 11=topic, 12=totalQuestions, 13=sourceMode,
+                        // 14=batchIndex, 15=batchSize, 16=correctAnswers, 17=wrongAnswers
+                        const score = row[8] !== '' && row[8] != null ? Number(row[8]) : null;
+                        const totalQ = row[12] !== '' && row[12] != null ? Number(row[12]) : null;
+                        const correctAns = row[16] !== '' && row[16] != null ? Number(row[16]) : null;
+                        // Build detail with "X/Y correctas" format for proper % calculation
+                        let detail = '';
+                        if (totalQ && (correctAns != null || score != null)) {
+                            const correct = correctAns != null ? correctAns : score;
+                            detail = `${correct}/${totalQ} correctas`;
+                        } else if (totalQ) {
+                            detail = `${totalQ} preguntas`;
+                        } else if (row[3]) {
+                            detail = `Sesion ${row[3]}`;
+                        }
+                        return {
+                            id: `legacy-progress-${row[0] || index}`,
+                            source: 'legacy_progress',
+                            type: row[4] || 'progreso',
+                            title: row[11] || row[7] || row[2] || 'Actividad registrada',
+                            subject: row[2] || '',
+                            date: row[0] || '',
+                            score,
+                            xp: row[9] !== '' && row[9] != null ? Number(row[9]) : 0,
+                            detail,
+                            total_questions: totalQ,
+                            correct_answers: correctAns != null ? correctAns : score
+                        };
+                    });
             } catch (err) {
                 console.warn('[PARENT-HISTORY] progress_log legacy omitido:', err.message);
                 return [];

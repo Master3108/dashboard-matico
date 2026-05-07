@@ -276,24 +276,31 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         p.event_type === 'session_completed' || p.event_type === 'prep_exam_completed'
     ).length;
 
-    // Promedio: calcular porcentaje real (correctas/total*100), no promediar scores crudos
+    // Promedio: calcular porcentaje real (correctas/total*100)
     const computeAvgScore = () => {
-        // Intentar desde historyItems con detail "X/Y correctas"
         const pctValues = [];
         for (const item of historyItems) {
             if (!completedQuizTypes.has(item.type) && item.source !== 'quiz') continue;
+
+            // Prioridad 1: campos directos total_questions y correct_answers
+            if (item.total_questions > 0 && item.correct_answers != null) {
+                pctValues.push(Math.round((Number(item.correct_answers) / Number(item.total_questions)) * 100));
+                continue;
+            }
+            // Prioridad 2: detail con formato "X/Y correctas"
             const match = String(item.detail || '').match(/(\d+)\/(\d+)/);
             if (match) {
                 const correct = Number(match[1]);
                 const total = Number(match[2]);
-                if (total > 0) pctValues.push(Math.round((correct / total) * 100));
-            } else if (item.score != null) {
-                // Si score parece porcentaje (0-100), usarlo directamente
+                if (total > 0) { pctValues.push(Math.round((correct / total) * 100)); continue; }
+            }
+            // Prioridad 3: score que parece porcentaje (solo si no hay total_questions)
+            if (item.score != null && !item.total_questions) {
                 const s = Number(item.score);
-                if (Number.isFinite(s)) pctValues.push(s);
+                if (Number.isFinite(s) && s > 0 && s <= 100) pctValues.push(s);
             }
         }
-        // Fallback: progress_log con correct_answers y total_questions
+        // Fallback: progress_log de Supabase
         if (pctValues.length === 0) {
             for (const p of progress) {
                 if (!completedQuizTypes.has(p.event_type)) continue;
