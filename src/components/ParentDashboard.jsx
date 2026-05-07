@@ -265,12 +265,31 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     };
 
     // --- Compute stats ---
-    const totalQuizzes = progress.filter(p => p.event_type === 'quiz_completed' || p.event_type === 'session_completed').length;
-    const avgScore = totalQuizzes > 0
-        ? Math.round(progress.filter(p => p.score != null).reduce((sum, p) => sum + (p.score || 0), 0) / Math.max(progress.filter(p => p.score != null).length, 1))
+    const historyItems = studentHistory.items || [];
+    const scoreValues = historyItems
+        .map(item => Number(item.score))
+        .filter(score => Number.isFinite(score));
+    const fallbackScoreValues = progress
+        .map(item => Number(item.score))
+        .filter(score => Number.isFinite(score));
+    const quizLikeTypes = new Set(['quiz_completed', 'session_completed', 'prep_exam_completed', 'evaluacion']);
+    const totalQuizzesFromHistory = historyItems.filter(item =>
+        item.source === 'quiz' ||
+        quizLikeTypes.has(item.type) ||
+        (item.score != null && ['progress', 'legacy_progress'].includes(item.source))
+    ).length;
+    const totalQuizzes = totalQuizzesFromHistory || progress.filter(p => p.event_type === 'quiz_completed' || p.event_type === 'session_completed').length;
+    const scoresForAverage = scoreValues.length ? scoreValues : fallbackScoreValues;
+    const avgScore = scoresForAverage.length
+        ? Math.round(scoresForAverage.reduce((sum, score) => sum + score, 0) / scoresForAverage.length)
         : 0;
-    const totalXP = progress.reduce((sum, p) => sum + (p.xp || 0), 0);
-    const pendingEvents = events.filter(e => e.status === 'pendiente').length;
+    const totalXPFromHistory = historyItems.reduce((sum, item) => sum + (Number(item.xp) || 0), 0);
+    const totalXP = totalXPFromHistory || progress.reduce((sum, p) => sum + (p.xp || 0), 0);
+    const pendingEventsFromHistory = historyItems.filter(item =>
+        ['calendar', 'reminder'].includes(item.source) &&
+        String(item.status || '').toLowerCase() === 'pendiente'
+    ).length;
+    const pendingEvents = Math.max(events.filter(e => e.status === 'pendiente').length, pendingEventsFromHistory);
     const completedEvents = events.filter(e => e.status === 'completado').length;
     const totalAntecedentes = studentHistory.summary?.total || studentHistory.items.length || 0;
 

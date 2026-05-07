@@ -8472,6 +8472,7 @@ app.get('/api/parent/student-history', async (req, res) => {
                         subject: row[2] || '',
                         date: row[0] || '',
                         score: row[8] !== '' && row[8] != null ? Number(row[8]) : null,
+                        xp: row[9] !== '' && row[9] != null ? Number(row[9]) : 0,
                         detail: row[13] ? `${row[13]} preguntas` : (row[3] ? `Sesion ${row[3]}` : '')
                     }));
             } catch (err) {
@@ -8510,6 +8511,7 @@ app.get('/api/parent/student-history', async (req, res) => {
                 subject: row.subject || '',
                 date: row.created_at,
                 score: row.score,
+                xp: row.xp || 0,
                 detail: row.total_questions ? `${row.correct_answers || 0}/${row.total_questions} correctas` : ''
             })),
             ...quizRows.map(row => ({
