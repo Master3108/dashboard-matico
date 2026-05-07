@@ -126,8 +126,8 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const targetUserId = selectedChild?.user_id || currentUser?.user_id;
         if (!targetUserId) return;
         try {
-            // Last 30 days
-            const from = new Date(Date.now() - 30 * 86400000).toISOString();
+            // Last 90 days
+            const from = new Date(Date.now() - 90 * 86400000).toISOString();
             const res = await fetch(`/api/study-sessions?student_user_id=${targetUserId}&from_date=${from}`);
             const data = await res.json();
             if (data.success) setStudySessions(data.sessions || []);
@@ -331,18 +331,48 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const todayMinutes = todaySessions.reduce((sum, s) => sum + (s.total_minutes || 0), 0);
     const studyGoalMinutes = 45;
     const studyProgress = Math.min(100, Math.round((todayMinutes / studyGoalMinutes) * 100));
+    const totalStudyMinutes = studySessions.reduce((sum, s) => sum + (s.total_minutes || 0), 0);
+    const totalStudyDays = new Set(studySessions.map(s => s.start_time?.substring(0, 10)).filter(Boolean)).size;
 
-    // Weekly data (last 7 days)
-    const weeklyStudy = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        const dateStr = d.toISOString().split('T')[0];
-        const dayLabel = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.getDay()];
-        const mins = studySessions
-            .filter(s => s.start_time?.startsWith(dateStr))
-            .reduce((sum, s) => sum + (s.total_minutes || 0), 0);
-        return { day: dayLabel, date: dateStr, minutes: mins };
+    // Weekly data: if no recent data, show last 7 days with activity
+    const hasRecentActivity = studySessions.some(s => {
+        const diff = Date.now() - new Date(s.start_time).getTime();
+        return diff < 7 * 86400000;
     });
+
+    let weeklyStudy;
+    let weekLabel;
+    if (hasRecentActivity) {
+        weekLabel = 'ÚLTIMOS 7 DÍAS';
+        weeklyStudy = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            const dateStr = d.toISOString().split('T')[0];
+            const dayLabel = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.getDay()];
+            const mins = studySessions
+                .filter(s => s.start_time?.startsWith(dateStr))
+                .reduce((sum, s) => sum + (s.total_minutes || 0), 0);
+            return { day: dayLabel, date: dateStr, minutes: mins };
+        });
+    } else {
+        // Show the most active period — group by day, take last 7 unique days
+        const dayMap = {};
+        for (const s of studySessions) {
+            const d = s.start_time?.substring(0, 10);
+            if (!d) continue;
+            dayMap[d] = (dayMap[d] || 0) + (s.total_minutes || 0);
+        }
+        const activeDays = Object.entries(dayMap).sort((a, b) => a[0].localeCompare(b[0])).slice(-7);
+        weekLabel = activeDays.length > 0
+            ? `ACTIVIDAD RECIENTE (${activeDays.length} días)`
+            : 'ÚLTIMOS 7 DÍAS';
+        weeklyStudy = activeDays.map(([dateStr, mins]) => {
+            const d = new Date(dateStr + 'T12:00:00');
+            const dayLabel = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.getDay()];
+            const shortDate = `${d.getDate()}/${d.getMonth() + 1}`;
+            return { day: `${dayLabel} ${shortDate}`, date: dateStr, minutes: mins };
+        });
+    }
     const weekTotalMinutes = weeklyStudy.reduce((s, d) => s + d.minutes, 0);
     const weekMaxMinutes = Math.max(...weeklyStudy.map(d => d.minutes), 1);
 
@@ -548,48 +578,78 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                                                 <span className="text-xs font-bold text-green-600">Estudiando ahora</span>
                                             </div>
+                                        ) : todayMinutes > 0 ? (
+                                            <p className="text-xs font-bold text-[#9094A6]">Hoy: {todayMinutes} min</p>
+                                        ) : totalStudyMinutes > 0 ? (
+                                            <p className="text-xs font-bold text-[#9094A6]">{totalStudyDays} días de estudio registrados</p>
                                         ) : (
-                                            <p className="text-xs font-bold text-[#9094A6]">
-                                                {todayMinutes > 0 ? `Hoy: ${todayMinutes} min` : 'Sin actividad hoy'}
-                                            </p>
+                                            <p className="text-xs font-bold text-[#9094A6]">Sin actividad registrada</p>
                                         )}
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-3xl font-black text-[#7C3AED]">{todayMinutes}<span className="text-base font-bold text-[#9094A6]"> min</span></p>
-                                    <p className="text-xs font-bold text-[#9094A6]">Meta: {studyGoalMinutes} min</p>
+                                    {todayMinutes > 0 ? (
+                                        <>
+                                            <p className="text-3xl font-black text-[#7C3AED]">{todayMinutes}<span className="text-base font-bold text-[#9094A6]"> min</span></p>
+                                            <p className="text-xs font-bold text-[#9094A6]">Meta: {studyGoalMinutes} min</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="text-3xl font-black text-[#7C3AED]">{totalStudyMinutes > 60 ? `${Math.round(totalStudyMinutes / 60)}` : totalStudyMinutes}<span className="text-base font-bold text-[#9094A6]">{totalStudyMinutes > 60 ? ' hrs' : ' min'}</span></p>
+                                            <p className="text-xs font-bold text-[#9094A6]">Tiempo acumulado</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Progress bar */}
-                            <div className="mb-4">
-                                <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden relative">
-                                    <div
-                                        className="h-full rounded-full transition-all duration-700 ease-out relative"
-                                        style={{
-                                            width: `${studyProgress}%`,
-                                            background: studyProgress >= 100
-                                                ? 'linear-gradient(90deg, #10B981, #34D399)'
-                                                : studyProgress >= 50
-                                                    ? 'linear-gradient(90deg, #7C3AED, #4D96FF)'
-                                                    : 'linear-gradient(90deg, #F59E0B, #FBBF24)'
-                                        }}
-                                    >
-                                        <div className="absolute inset-0 bg-white/20 animate-pulse rounded-full"></div>
+                            {/* Progress bar — solo si hay actividad hoy */}
+                            {todayMinutes > 0 && (
+                                <div className="mb-4">
+                                    <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden relative">
+                                        <div
+                                            className="h-full rounded-full transition-all duration-700 ease-out relative"
+                                            style={{
+                                                width: `${studyProgress}%`,
+                                                background: studyProgress >= 100
+                                                    ? 'linear-gradient(90deg, #10B981, #34D399)'
+                                                    : studyProgress >= 50
+                                                        ? 'linear-gradient(90deg, #7C3AED, #4D96FF)'
+                                                        : 'linear-gradient(90deg, #F59E0B, #FBBF24)'
+                                            }}
+                                        >
+                                            <div className="absolute inset-0 bg-white/20 animate-pulse rounded-full"></div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between mt-1">
+                                        <span className="text-[10px] font-bold text-[#9094A6]">{studyProgress}%</span>
+                                        <span className="text-[10px] font-bold text-[#9094A6]">
+                                            {studyProgress >= 100 ? 'Meta cumplida!' : `Faltan ${studyGoalMinutes - todayMinutes} min`}
+                                        </span>
                                     </div>
                                 </div>
-                                <div className="flex justify-between mt-1">
-                                    <span className="text-[10px] font-bold text-[#9094A6]">{studyProgress}%</span>
-                                    <span className="text-[10px] font-bold text-[#9094A6]">
-                                        {studyProgress >= 100 ? 'Meta cumplida!' : `Faltan ${studyGoalMinutes - todayMinutes} min`}
-                                    </span>
+                            )}
+                            {/* Resumen acumulado cuando no hay actividad hoy */}
+                            {todayMinutes === 0 && totalStudyMinutes > 0 && (
+                                <div className="mb-4 flex items-center gap-3 bg-[#F5F3FF] rounded-xl p-3">
+                                    <div className="flex-1 text-center border-r border-[#E5E7EB]">
+                                        <p className="text-lg font-black text-[#7C3AED]">{totalStudyDays}</p>
+                                        <p className="text-[10px] font-bold text-[#9094A6]">Días activos</p>
+                                    </div>
+                                    <div className="flex-1 text-center border-r border-[#E5E7EB]">
+                                        <p className="text-lg font-black text-[#7C3AED]">{Math.round(totalStudyMinutes / 60 * 10) / 10}</p>
+                                        <p className="text-[10px] font-bold text-[#9094A6]">Horas totales</p>
+                                    </div>
+                                    <div className="flex-1 text-center">
+                                        <p className="text-lg font-black text-[#7C3AED]">{totalStudyDays > 0 ? Math.round(totalStudyMinutes / totalStudyDays) : 0}</p>
+                                        <p className="text-[10px] font-bold text-[#9094A6]">Min/día promedio</p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Weekly chart */}
                             <div className="mb-3">
                                 <div className="flex items-center justify-between mb-2">
-                                    <p className="text-xs font-black text-[#2B2E4A] uppercase tracking-wider">Últimos 7 días</p>
+                                    <p className="text-xs font-black text-[#2B2E4A] uppercase tracking-wider">{weekLabel}</p>
                                     <p className="text-xs font-bold text-[#9094A6]">{weekTotalMinutes} min total</p>
                                 </div>
                                 <div className="flex items-end gap-1.5 h-20">

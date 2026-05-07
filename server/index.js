@@ -8832,12 +8832,83 @@ app.get('/api/study-sessions', async (req, res) => {
     try {
         const { student_user_id, from_date, to_date } = req.query;
         if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
-        const sessions = await getStudySessions(student_user_id, from_date, to_date);
+        let sessions = await getStudySessions(student_user_id, from_date, to_date);
+
+        // Si no hay sesiones reales, derivar del progress_log
+        if ((!sessions || sessions.length === 0)) {
+            const derivedSessions = await deriveStudySessionsFromProgress(student_user_id, from_date, to_date);
+            if (derivedSessions.length > 0) sessions = derivedSessions;
+        }
+
         res.json({ success: true, sessions });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+
+// Derivar sesiones de estudio a partir del progress_log (timestamps agrupados por día)
+async function deriveStudySessionsFromProgress(student_user_id, from_date, to_date) {
+    try {
+        let query = supabase
+            .from('progress_log')
+            .select('created_at, subject, event_type, session')
+            .eq('user_id', student_user_id)
+            .order('created_at', { ascending: true });
+
+        if (from_date) query = query.gte('created_at', from_date);
+        if (to_date) query = query.lte('created_at', to_date);
+
+        const { data: rows, error } = await query.limit(2000);
+        if (error || !rows?.length) return [];
+
+        // Agrupar por día + subject
+        const dayGroups = {};
+        for (const row of rows) {
+            if (!row.created_at) continue;
+            const day = row.created_at.substring(0, 10); // YYYY-MM-DD
+            const key = `${day}|${row.subject || 'GENERAL'}`;
+            if (!dayGroups[key]) dayGroups[key] = { day, subject: row.subject || 'GENERAL', timestamps: [], events: [] };
+            dayGroups[key].timestamps.push(new Date(row.created_at).getTime());
+            dayGroups[key].events.push(row.event_type);
+        }
+
+        // Convertir cada grupo a una "sesión" con duración
+        const sessions = [];
+        for (const [key, group] of Object.entries(dayGroups)) {
+            const sorted = group.timestamps.sort((a, b) => a - b);
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
+            // Duración = diferencia entre primera y última actividad
+            let durationMs = last - first;
+            // Si solo hay 1 actividad, asignar ~5 min estimados
+            if (sorted.length === 1) durationMs = 5 * 60 * 1000;
+            // Mínimo 2 min, máximo 180 min (cap razonable)
+            const totalMinutes = Math.max(2, Math.min(180, Math.round(durationMs / 60000)));
+
+            const hasCompletion = group.events.some(e =>
+                e === 'session_completed' || e === 'prep_exam_completed' || e === 'prep_exam_reviewed'
+            );
+
+            sessions.push({
+                id: `derived-${key}`,
+                student_user_id,
+                subject: group.subject,
+                type: 'derived',
+                status: 'completed',
+                start_time: new Date(first).toISOString(),
+                end_time: new Date(last).toISOString(),
+                total_minutes: totalMinutes,
+                milestones: { activities: sorted.length, has_completion: hasCompletion },
+                derived: true
+            });
+        }
+
+        return sessions.sort((a, b) => b.start_time.localeCompare(a.start_time));
+    } catch (err) {
+        console.error('[DERIVE_STUDY] Error:', err.message);
+        return [];
+    }
+}
 
 // Sesión activa actual
 app.get('/api/study-sessions/active', async (req, res) => {
