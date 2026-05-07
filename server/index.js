@@ -8351,14 +8351,60 @@ app.get('/api/parent/student-history', async (req, res) => {
     try {
         const { student_user_id, student_email, parent_email, limit } = req.query;
         const maxRows = Math.min(Number(limit) || 80, 300);
-        const ids = [student_user_id].filter(Boolean).map(String);
+        const idSet = new Set([student_user_id].filter(Boolean).map(String));
         const email = String(student_email || '').trim().toLowerCase();
         const parentEmail = String(parent_email || '').trim().toLowerCase();
         const canUseEmailFallback = Boolean(email && email !== parentEmail);
 
-        if (!ids.length && !email) {
+        if (!idSet.size && !email) {
             return res.status(400).json({ success: false, error: 'Falta student_user_id o student_email' });
         }
+
+        const addIdentityAliases = async () => {
+            const emails = new Set();
+            if (email) emails.add(email);
+
+            for (const id of [...idSet]) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('user_id,email')
+                    .eq('user_id', id)
+                    .maybeSingle();
+                if (profile?.user_id) idSet.add(String(profile.user_id));
+                if (profile?.email) emails.add(String(profile.email).trim().toLowerCase());
+
+                const { data: legacyByToken } = await supabase
+                    .from('users')
+                    .select('token,mail')
+                    .eq('token', id)
+                    .maybeSingle();
+                if (legacyByToken?.token) idSet.add(String(legacyByToken.token));
+                if (legacyByToken?.mail) emails.add(String(legacyByToken.mail).trim().toLowerCase());
+            }
+
+            for (const candidateEmail of emails) {
+                if (!candidateEmail || candidateEmail === parentEmail) continue;
+
+                const { data: profilesByEmail } = await supabase
+                    .from('profiles')
+                    .select('user_id,email')
+                    .ilike('email', candidateEmail);
+                (profilesByEmail || []).forEach(row => {
+                    if (row?.user_id) idSet.add(String(row.user_id));
+                });
+
+                const { data: legacyByEmail } = await supabase
+                    .from('users')
+                    .select('token,mail')
+                    .ilike('mail', candidateEmail);
+                (legacyByEmail || []).forEach(row => {
+                    if (row?.token) idSet.add(String(row.token));
+                });
+            }
+        };
+
+        await addIdentityAliases();
+        const ids = [...idSet];
 
         const mergeRows = (rows, keyName) => {
             const seen = new Set();
@@ -8405,6 +8451,35 @@ app.get('/api/parent/student-history', async (req, res) => {
             }
         };
 
+        const readLegacySheetProgress = async () => {
+            if (!ids.length) return [];
+            try {
+                const sheets = await getSheetsClient();
+                const response = await sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'progress_log!A:U'
+                });
+                const rows = response.data.values || [];
+                return rows
+                    .filter(row => idSet.has(String(row?.[1] || '')))
+                    .slice(-maxRows)
+                    .reverse()
+                    .map((row, index) => ({
+                        id: `legacy-progress-${row[0] || index}`,
+                        source: 'legacy_progress',
+                        type: row[4] || 'progreso',
+                        title: row[12] || row[7] || row[2] || 'Actividad registrada',
+                        subject: row[2] || '',
+                        date: row[0] || '',
+                        score: row[8] !== '' && row[8] != null ? Number(row[8]) : null,
+                        detail: row[13] ? `${row[13]} preguntas` : (row[3] ? `Sesion ${row[3]}` : '')
+                    }));
+            } catch (err) {
+                console.warn('[PARENT-HISTORY] progress_log legacy omitido:', err.message);
+                return [];
+            }
+        };
+
         const [
             progressRows,
             quizRows,
@@ -8412,7 +8487,8 @@ app.get('/api/parent/student-history', async (req, res) => {
             reminderRows,
             notebookRows,
             studyRowsModern,
-            studyRowsLegacy
+            studyRowsLegacy,
+            legacyProgressItems
         ] = await Promise.all([
             safeRead({ table: 'progress_log', idColumn: 'user_id', emailColumn: 'user_email' }),
             safeRead({ table: 'quiz_results', idColumn: 'user_id', emailColumn: 'user_email' }),
@@ -8420,7 +8496,8 @@ app.get('/api/parent/student-history', async (req, res) => {
             safeRead({ table: 'exam_reminders', idColumn: 'user_id', emailColumn: 'student_email' }),
             safeRead({ table: 'notebook_submissions', idColumn: 'user_id', emailColumn: 'user_email' }),
             safeRead({ table: 'study_sessions', idColumn: 'student_user_id', emailColumn: null, order: 'start_time' }),
-            safeRead({ table: 'study_sessions', idColumn: 'user_id', emailColumn: 'user_email' })
+            safeRead({ table: 'study_sessions', idColumn: 'user_id', emailColumn: 'user_email' }),
+            readLegacySheetProgress()
         ]);
 
         const studyRows = mergeRows([...studyRowsModern, ...studyRowsLegacy], 'session_id');
@@ -8484,7 +8561,8 @@ app.get('/api/parent/student-history', async (req, res) => {
                 date: row.start_time || row.completed_at || row.created_at,
                 status: row.status || (row.end_time ? 'completado' : 'en_progreso'),
                 detail: row.total_minutes ? `${row.total_minutes} min` : ''
-            }))
+            })),
+            ...legacyProgressItems
         ].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, maxRows);
 
         res.json({
@@ -8496,8 +8574,10 @@ app.get('/api/parent/student-history', async (req, res) => {
                 reminders: reminderRows.length,
                 evidences: notebookRows.length,
                 study_sessions: studyRows.length,
+                legacy_progress: legacyProgressItems.length,
                 total: items.length
             },
+            identity_aliases: ids,
             items
         });
     } catch (err) {

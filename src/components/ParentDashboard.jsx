@@ -823,7 +823,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                             <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mb-4">
                                 {[
                                     ['Eventos', studentHistory.summary?.calendar_events || 0],
-                                    ['Progreso', studentHistory.summary?.progress || 0],
+                                    ['Progreso', (studentHistory.summary?.progress || 0) + (studentHistory.summary?.legacy_progress || 0)],
                                     ['Quizzes', studentHistory.summary?.quizzes || 0],
                                     ['Evidencias', studentHistory.summary?.evidences || 0],
                                     ['Estudio', studentHistory.summary?.study_sessions || 0],
