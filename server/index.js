@@ -8593,58 +8593,6 @@ app.get('/api/parent/student-history', async (req, res) => {
             }
         };
 
-        const readLegacySheetProgress = async () => {
-            if (!ids.length) return [];
-            try {
-                const sheets = await getSheetsClient();
-                const response = await sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'progress_log!A:U'
-                });
-                const rows = response.data.values || [];
-                return rows
-                    .filter(row => idSet.has(String(row?.[1] || '')))
-                    .slice(-maxRows)
-                    .reverse()
-                    .map((row, index) => {
-                        // Column mapping from PROGRESS_LOG_HEADERS:
-                        // 0=timestamp, 1=user_id, 2=subject, 3=session, 4=event_type,
-                        // 5=phase, 6=subLevel, 7=levelName, 8=score, 9=xp,
-                        // 10=grade, 11=topic, 12=totalQuestions, 13=sourceMode,
-                        // 14=batchIndex, 15=batchSize, 16=correctAnswers, 17=wrongAnswers
-                        const score = row[8] !== '' && row[8] != null ? Number(row[8]) : null;
-                        const totalQ = row[12] !== '' && row[12] != null ? Number(row[12]) : null;
-                        const correctAns = row[16] !== '' && row[16] != null ? Number(row[16]) : null;
-                        // Build detail with "X/Y correctas" format for proper % calculation
-                        let detail = '';
-                        if (totalQ && (correctAns != null || score != null)) {
-                            const correct = correctAns != null ? correctAns : score;
-                            detail = `${correct}/${totalQ} correctas`;
-                        } else if (totalQ) {
-                            detail = `${totalQ} preguntas`;
-                        } else if (row[3]) {
-                            detail = `Sesion ${row[3]}`;
-                        }
-                        return {
-                            id: `legacy-progress-${row[0] || index}`,
-                            source: 'legacy_progress',
-                            type: row[4] || 'progreso',
-                            title: row[11] || row[7] || row[2] || 'Actividad registrada',
-                            subject: row[2] || '',
-                            date: row[0] || '',
-                            score,
-                            xp: row[9] !== '' && row[9] != null ? Number(row[9]) : 0,
-                            detail,
-                            total_questions: totalQ,
-                            correct_answers: correctAns != null ? correctAns : score
-                        };
-                    });
-            } catch (err) {
-                console.warn('[PARENT-HISTORY] progress_log legacy omitido:', err.message);
-                return [];
-            }
-        };
-
         const [
             progressRows,
             quizRows,
@@ -8652,8 +8600,7 @@ app.get('/api/parent/student-history', async (req, res) => {
             reminderRows,
             notebookRows,
             studyRowsModern,
-            studyRowsLegacy,
-            legacyProgressItems
+            studyRowsLegacy
         ] = await Promise.all([
             safeRead({ table: 'progress_log', idColumn: 'user_id', emailColumn: 'user_email' }),
             safeRead({ table: 'quiz_results', idColumn: 'user_id', emailColumn: 'user_email' }),
@@ -8661,8 +8608,7 @@ app.get('/api/parent/student-history', async (req, res) => {
             safeRead({ table: 'exam_reminders', idColumn: 'user_id', emailColumn: 'student_email' }),
             safeRead({ table: 'notebook_submissions', idColumn: 'user_id', emailColumn: 'user_email' }),
             safeRead({ table: 'study_sessions', idColumn: 'student_user_id', emailColumn: null, order: 'start_time' }),
-            safeRead({ table: 'study_sessions', idColumn: 'user_id', emailColumn: 'user_email' }),
-            readLegacySheetProgress()
+            safeRead({ table: 'study_sessions', idColumn: 'user_id', emailColumn: 'user_email' })
         ]);
 
         const studyRows = mergeRows([...studyRowsModern, ...studyRowsLegacy], 'session_id');
@@ -8676,7 +8622,9 @@ app.get('/api/parent/student-history', async (req, res) => {
                 date: row.created_at,
                 score: row.score,
                 xp: row.xp || 0,
-                detail: row.total_questions ? `${row.correct_answers || 0}/${row.total_questions} correctas` : ''
+                detail: row.total_questions ? `${row.correct_answers || 0}/${row.total_questions} correctas` : '',
+                total_questions: row.total_questions || null,
+                correct_answers: row.correct_answers != null ? row.correct_answers : row.score
             })),
             ...quizRows.map(row => ({
                 id: `quiz-${row.id || row.created_at}`,
@@ -8728,7 +8676,6 @@ app.get('/api/parent/student-history', async (req, res) => {
                 status: row.status || (row.end_time ? 'completado' : 'en_progreso'),
                 detail: row.total_minutes ? `${row.total_minutes} min` : ''
             })),
-            ...legacyProgressItems
         ].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, maxRows);
 
         res.json({
@@ -8740,7 +8687,6 @@ app.get('/api/parent/student-history', async (req, res) => {
                 reminders: reminderRows.length,
                 evidences: notebookRows.length,
                 study_sessions: studyRows.length,
-                legacy_progress: legacyProgressItems.length,
                 total: items.length
             },
             identity_aliases: ids,
