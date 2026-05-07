@@ -266,23 +266,48 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
     // --- Compute stats ---
     const historyItems = studentHistory.items || [];
-    const scoreValues = historyItems
-        .map(item => Number(item.score))
-        .filter(score => Number.isFinite(score));
-    const fallbackScoreValues = progress
-        .map(item => Number(item.score))
-        .filter(score => Number.isFinite(score));
-    const quizLikeTypes = new Set(['quiz_completed', 'session_completed', 'prep_exam_completed', 'evaluacion']);
-    const totalQuizzesFromHistory = historyItems.filter(item =>
+
+    // Quizzes: solo contar evaluaciones realmente completadas
+    const completedQuizTypes = new Set(['session_completed', 'prep_exam_completed', 'prep_exam_reviewed']);
+    const totalQuizzes = historyItems.filter(item =>
         item.source === 'quiz' ||
-        quizLikeTypes.has(item.type) ||
-        (item.score != null && ['progress', 'legacy_progress'].includes(item.source))
+        completedQuizTypes.has(item.type)
+    ).length || progress.filter(p =>
+        p.event_type === 'session_completed' || p.event_type === 'prep_exam_completed'
     ).length;
-    const totalQuizzes = totalQuizzesFromHistory || progress.filter(p => p.event_type === 'quiz_completed' || p.event_type === 'session_completed').length;
-    const scoresForAverage = scoreValues.length ? scoreValues : fallbackScoreValues;
-    const avgScore = scoresForAverage.length
-        ? Math.round(scoresForAverage.reduce((sum, score) => sum + score, 0) / scoresForAverage.length)
-        : 0;
+
+    // Promedio: calcular porcentaje real (correctas/total*100), no promediar scores crudos
+    const computeAvgScore = () => {
+        // Intentar desde historyItems con detail "X/Y correctas"
+        const pctValues = [];
+        for (const item of historyItems) {
+            if (!completedQuizTypes.has(item.type) && item.source !== 'quiz') continue;
+            const match = String(item.detail || '').match(/(\d+)\/(\d+)/);
+            if (match) {
+                const correct = Number(match[1]);
+                const total = Number(match[2]);
+                if (total > 0) pctValues.push(Math.round((correct / total) * 100));
+            } else if (item.score != null) {
+                // Si score parece porcentaje (0-100), usarlo directamente
+                const s = Number(item.score);
+                if (Number.isFinite(s)) pctValues.push(s);
+            }
+        }
+        // Fallback: progress_log con correct_answers y total_questions
+        if (pctValues.length === 0) {
+            for (const p of progress) {
+                if (!completedQuizTypes.has(p.event_type)) continue;
+                const correct = Number(p.correct_answers || 0);
+                const total = Number(p.total_questions || 0);
+                if (total > 0) pctValues.push(Math.round((correct / total) * 100));
+            }
+        }
+        return pctValues.length > 0
+            ? Math.round(pctValues.reduce((s, v) => s + v, 0) / pctValues.length)
+            : 0;
+    };
+    const avgScore = computeAvgScore();
+
     const totalXPFromHistory = historyItems.reduce((sum, item) => sum + (Number(item.xp) || 0), 0);
     const totalXP = totalXPFromHistory || progress.reduce((sum, p) => sum + (p.xp || 0), 0);
     const pendingEventsFromHistory = historyItems.filter(item =>
@@ -439,7 +464,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                             <div className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-2xl p-3 text-center">
                                 <Target className="w-6 h-6 text-[#3B82F6] mx-auto mb-1" />
                                 <p className="text-2xl font-black text-[#3B82F6]">{totalQuizzes}</p>
-                                <p className="text-xs font-bold text-[#9094A6]">Quizzes</p>
+                                <p className="text-xs font-bold text-[#9094A6]">Evaluaciones</p>
                             </div>
                             <div className="bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] rounded-2xl p-3 text-center">
                                 <TrendingUp className="w-6 h-6 text-[#10B981] mx-auto mb-1" />
