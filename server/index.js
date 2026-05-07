@@ -8830,17 +8830,51 @@ app.post('/api/study-sessions/end', async (req, res) => {
 // Obtener sesiones de estudio (para parent dashboard)
 app.get('/api/study-sessions', async (req, res) => {
     try {
-        const { student_user_id, from_date, to_date } = req.query;
-        if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
-        let sessions = await getStudySessions(student_user_id, from_date, to_date);
+        const { student_user_id, student_email, parent_email, from_date, to_date } = req.query;
+        if (!student_user_id && !student_email) return res.status(400).json({ success: false, error: 'Falta student_user_id o student_email' });
 
-        // Si no hay sesiones reales, derivar del progress_log
-        if ((!sessions || sessions.length === 0)) {
-            const derivedSessions = await deriveStudySessionsFromProgress(student_user_id, from_date, to_date);
-            if (derivedSessions.length > 0) sessions = derivedSessions;
+        const idSet = new Set([student_user_id].filter(Boolean).map(String));
+        const email = String(student_email || '').trim().toLowerCase();
+        const parentEmail = String(parent_email || '').trim().toLowerCase();
+        const emails = new Set(email ? [email] : []);
+
+        for (const id of [...idSet]) {
+            const { data: profile } = await supabase.from('profiles').select('user_id,email').eq('user_id', id).maybeSingle();
+            if (profile?.user_id) idSet.add(String(profile.user_id));
+            if (profile?.email) emails.add(String(profile.email).trim().toLowerCase());
+
+            const { data: legacy } = await supabase.from('users').select('token,mail').eq('token', id).maybeSingle();
+            if (legacy?.token) idSet.add(String(legacy.token));
+            if (legacy?.mail) emails.add(String(legacy.mail).trim().toLowerCase());
         }
 
-        res.json({ success: true, sessions });
+        for (const candidateEmail of emails) {
+            if (!candidateEmail || candidateEmail === parentEmail) continue;
+            const { data: profileRows } = await supabase.from('profiles').select('user_id').ilike('email', candidateEmail);
+            (profileRows || []).forEach(row => row?.user_id && idSet.add(String(row.user_id)));
+            const { data: legacyRows } = await supabase.from('users').select('token').ilike('mail', candidateEmail);
+            (legacyRows || []).forEach(row => row?.token && idSet.add(String(row.token)));
+        }
+
+        const ids = [...idSet];
+        const byKey = new Map();
+        const addSessions = (rows = []) => {
+            for (const row of rows) {
+                const key = row.session_id || row.id || `${row.student_user_id || row.user_id}-${row.start_time || row.completed_at || row.created_at}-${row.subject || ''}`;
+                if (!byKey.has(key)) byKey.set(key, row);
+            }
+        };
+
+        for (const id of ids) {
+            addSessions(await getStudySessions(id, from_date, to_date));
+            addSessions(await deriveStudySessionsFromProgress(id, from_date, to_date));
+        }
+
+        const sessions = [...byKey.values()].sort((a, b) =>
+            String(b.start_time || b.completed_at || b.created_at || '').localeCompare(String(a.start_time || a.completed_at || a.created_at || ''))
+        );
+
+        res.json({ success: true, sessions, identity_aliases: ids });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

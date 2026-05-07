@@ -124,11 +124,18 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     // Fetch study sessions
     const fetchStudySessions = useCallback(async () => {
         const targetUserId = selectedChild?.user_id || currentUser?.user_id;
-        if (!targetUserId) return;
+        const targetEmail = selectedChild?.email || currentUser?.email || '';
+        const parentEmail = currentUser?.email || '';
+        if (!targetUserId && !targetEmail) return;
         try {
-            // Last 90 days
-            const from = new Date(Date.now() - 90 * 86400000).toISOString();
-            const res = await fetch(`/api/study-sessions?student_user_id=${targetUserId}&from_date=${from}`);
+            const fromDate = new Date();
+            fromDate.setHours(0, 0, 0, 0);
+            fromDate.setDate(fromDate.getDate() - 6);
+            const params = new URLSearchParams({ from_date: fromDate.toISOString() });
+            if (targetUserId) params.set('student_user_id', targetUserId);
+            if (targetEmail) params.set('student_email', targetEmail);
+            if (parentEmail) params.set('parent_email', parentEmail);
+            const res = await fetch(`/api/study-sessions?${params}`);
             const data = await res.json();
             if (data.success) setStudySessions(data.sessions || []);
         } catch (err) {
@@ -140,7 +147,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             const data2 = await res2.json();
             setActiveStudy(data2.success && data2.is_studying ? data2.session : null);
         } catch (_) {}
-    }, [selectedChild?.user_id, currentUser?.user_id]);
+    }, [selectedChild?.user_id, selectedChild?.email, currentUser?.user_id, currentUser?.email]);
 
     const fetchStudentHistory = useCallback(async () => {
         const targetUserId = selectedChild?.user_id || currentUser?.user_id;
@@ -327,12 +334,13 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
     // --- Study time stats ---
     const today = new Date().toISOString().split('T')[0];
-    const todaySessions = studySessions.filter(s => s.start_time?.startsWith(today));
-    const todayMinutes = todaySessions.reduce((sum, s) => sum + (s.total_minutes || 0), 0);
+    const getStudyDate = (session) => session?.start_time || session?.completed_at || session?.created_at || '';
+    const todaySessions = studySessions.filter(s => getStudyDate(s).startsWith(today));
+    const todayMinutes = todaySessions.reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
     const studyGoalMinutes = 45;
     const studyProgress = Math.min(100, Math.round((todayMinutes / studyGoalMinutes) * 100));
-    const totalStudyMinutes = studySessions.reduce((sum, s) => sum + (s.total_minutes || 0), 0);
-    const totalStudyDays = new Set(studySessions.map(s => s.start_time?.substring(0, 10)).filter(Boolean)).size;
+    let totalStudyMinutes = studySessions.reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
+    let totalStudyDays = new Set(studySessions.map(s => getStudyDate(s).substring(0, 10)).filter(Boolean)).size;
 
     // Weekly data: if no recent data, show last 7 days with activity
     const hasRecentActivity = studySessions.some(s => {
@@ -373,8 +381,24 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             return { day: `${dayLabel} ${shortDate}`, date: dateStr, minutes: mins };
         });
     }
+    weekLabel = 'ULTIMOS 7 DIAS';
+    weeklyStudy = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setHours(12, 0, 0, 0);
+        d.setDate(d.getDate() - (6 - i));
+        const dateStr = d.toISOString().split('T')[0];
+        const dayLabel = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'][d.getDay()];
+        const mins = studySessions
+            .filter(s => getStudyDate(s).startsWith(dateStr))
+            .reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
+        return { day: dayLabel, date: dateStr, minutes: mins };
+    });
     const weekTotalMinutes = weeklyStudy.reduce((s, d) => s + d.minutes, 0);
     const weekMaxMinutes = Math.max(...weeklyStudy.map(d => d.minutes), 1);
+    totalStudyMinutes = weekTotalMinutes;
+    totalStudyDays = weeklyStudy.filter(d => d.minutes > 0).length;
+    const totalStudyHours = Math.round((totalStudyMinutes / 60) * 10) / 10;
+    const avgStudyMinutes = totalStudyDays > 0 ? Math.round(totalStudyMinutes / totalStudyDays) : 0;
 
     // Group events by date
     const groupedEvents = {};
@@ -588,17 +612,11 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    {todayMinutes > 0 ? (
-                                        <>
-                                            <p className="text-3xl font-black text-[#7C3AED]">{todayMinutes}<span className="text-base font-bold text-[#9094A6]"> min</span></p>
-                                            <p className="text-xs font-bold text-[#9094A6]">Meta: {studyGoalMinutes} min</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <p className="text-3xl font-black text-[#7C3AED]">{totalStudyMinutes > 60 ? `${Math.round(totalStudyMinutes / 60)}` : totalStudyMinutes}<span className="text-base font-bold text-[#9094A6]">{totalStudyMinutes > 60 ? ' hrs' : ' min'}</span></p>
-                                            <p className="text-xs font-bold text-[#9094A6]">Tiempo acumulado</p>
-                                        </>
-                                    )}
+                                    <p className="text-3xl font-black text-[#7C3AED]">
+                                        {totalStudyMinutes >= 60 ? totalStudyHours : totalStudyMinutes}
+                                        <span className="text-base font-bold text-[#9094A6]">{totalStudyMinutes >= 60 ? ' hrs' : ' min'}</span>
+                                    </p>
+                                    <p className="text-xs font-bold text-[#9094A6]">Tiempo acumulado</p>
                                 </div>
                             </div>
 
@@ -629,18 +647,18 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 </div>
                             )}
                             {/* Resumen acumulado cuando no hay actividad hoy */}
-                            {todayMinutes === 0 && totalStudyMinutes > 0 && (
+                            {totalStudyMinutes > 0 && (
                                 <div className="mb-4 flex items-center gap-3 bg-[#F5F3FF] rounded-xl p-3">
                                     <div className="flex-1 text-center border-r border-[#E5E7EB]">
                                         <p className="text-lg font-black text-[#7C3AED]">{totalStudyDays}</p>
                                         <p className="text-[10px] font-bold text-[#9094A6]">Días activos</p>
                                     </div>
                                     <div className="flex-1 text-center border-r border-[#E5E7EB]">
-                                        <p className="text-lg font-black text-[#7C3AED]">{Math.round(totalStudyMinutes / 60 * 10) / 10}</p>
+                                        <p className="text-lg font-black text-[#7C3AED]">{totalStudyHours}</p>
                                         <p className="text-[10px] font-bold text-[#9094A6]">Horas totales</p>
                                     </div>
                                     <div className="flex-1 text-center">
-                                        <p className="text-lg font-black text-[#7C3AED]">{totalStudyDays > 0 ? Math.round(totalStudyMinutes / totalStudyDays) : 0}</p>
+                                        <p className="text-lg font-black text-[#7C3AED]">{avgStudyMinutes}</p>
                                         <p className="text-[10px] font-bold text-[#9094A6]">Min/día promedio</p>
                                     </div>
                                 </div>
