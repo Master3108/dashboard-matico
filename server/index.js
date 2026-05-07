@@ -8347,6 +8347,165 @@ app.get('/api/profile', async (req, res) => {
     }
 });
 
+app.get('/api/parent/student-history', async (req, res) => {
+    try {
+        const { student_user_id, student_email, parent_email, limit } = req.query;
+        const maxRows = Math.min(Number(limit) || 80, 300);
+        const ids = [student_user_id].filter(Boolean).map(String);
+        const email = String(student_email || '').trim().toLowerCase();
+        const parentEmail = String(parent_email || '').trim().toLowerCase();
+        const canUseEmailFallback = Boolean(email && email !== parentEmail);
+
+        if (!ids.length && !email) {
+            return res.status(400).json({ success: false, error: 'Falta student_user_id o student_email' });
+        }
+
+        const mergeRows = (rows, keyName) => {
+            const seen = new Set();
+            return (rows || []).filter((row) => {
+                const key = row?.[keyName] || row?.id || row?.created_at || JSON.stringify(row);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        };
+
+        const readByIdentity = async ({ table, idColumn = 'user_id', emailColumn = 'user_email', select = '*', order = 'created_at' }) => {
+            const batches = [];
+
+            for (const id of ids) {
+                const { data, error } = await supabase
+                    .from(table)
+                    .select(select)
+                    .eq(idColumn, id)
+                    .order(order, { ascending: false })
+                    .limit(maxRows);
+                if (!error && data?.length) batches.push(...data);
+            }
+
+            if (canUseEmailFallback && emailColumn) {
+                const { data, error } = await supabase
+                    .from(table)
+                    .select(select)
+                    .ilike(emailColumn, email)
+                    .order(order, { ascending: false })
+                    .limit(maxRows);
+                if (!error && data?.length) batches.push(...data);
+            }
+
+            return mergeRows(batches, table === 'calendar_events' || table === 'exam_reminders' ? 'event_id' : 'id');
+        };
+
+        const safeRead = async (config) => {
+            try {
+                return await readByIdentity(config);
+            } catch (err) {
+                console.warn(`[PARENT-HISTORY] ${config.table} omitido:`, err.message);
+                return [];
+            }
+        };
+
+        const [
+            progressRows,
+            quizRows,
+            calendarRows,
+            reminderRows,
+            notebookRows,
+            studyRowsModern,
+            studyRowsLegacy
+        ] = await Promise.all([
+            safeRead({ table: 'progress_log', idColumn: 'user_id', emailColumn: 'user_email' }),
+            safeRead({ table: 'quiz_results', idColumn: 'user_id', emailColumn: 'user_email' }),
+            safeRead({ table: 'calendar_events', idColumn: 'student_user_id', emailColumn: null, order: 'created_at' }),
+            safeRead({ table: 'exam_reminders', idColumn: 'user_id', emailColumn: 'student_email' }),
+            safeRead({ table: 'notebook_submissions', idColumn: 'user_id', emailColumn: 'user_email' }),
+            safeRead({ table: 'study_sessions', idColumn: 'student_user_id', emailColumn: null, order: 'start_time' }),
+            safeRead({ table: 'study_sessions', idColumn: 'user_id', emailColumn: 'user_email' })
+        ]);
+
+        const studyRows = mergeRows([...studyRowsModern, ...studyRowsLegacy], 'session_id');
+        const items = [
+            ...progressRows.map(row => ({
+                id: `progress-${row.id || row.created_at}`,
+                source: 'progress',
+                type: row.event_type || 'progreso',
+                title: row.topic || row.level_name || row.subject || 'Actividad registrada',
+                subject: row.subject || '',
+                date: row.created_at,
+                score: row.score,
+                detail: row.total_questions ? `${row.correct_answers || 0}/${row.total_questions} correctas` : ''
+            })),
+            ...quizRows.map(row => ({
+                id: `quiz-${row.id || row.created_at}`,
+                source: 'quiz',
+                type: 'evaluacion',
+                title: row.topic || 'Resultado de quiz',
+                subject: row.subject || '',
+                date: row.created_at,
+                score: row.score,
+                detail: row.correct_answers != null ? `${row.correct_answers} correctas` : ''
+            })),
+            ...calendarRows.map(row => ({
+                id: `calendar-${row.event_id}`,
+                source: 'calendar',
+                type: row.event_type || 'evento',
+                title: row.title || 'Evento de calendario',
+                subject: row.subject || '',
+                date: row.event_date || row.created_at,
+                status: row.status || '',
+                detail: row.description || ''
+            })),
+            ...reminderRows.map(row => ({
+                id: `reminder-${row.event_id}`,
+                source: 'reminder',
+                type: 'recordatorio',
+                title: row.title || 'Recordatorio de evaluación',
+                subject: row.subject || '',
+                date: row.exam_date || row.created_at,
+                status: row.status || '',
+                detail: row.notes || row.source || ''
+            })),
+            ...notebookRows.map(row => ({
+                id: `notebook-${row.id || row.created_at}`,
+                source: 'notebook',
+                type: 'evidencia',
+                title: row.file_name || 'Evidencia subida',
+                subject: row.metadata?.subject || '',
+                date: row.created_at,
+                status: row.status || '',
+                detail: row.metadata?.summary || row.mime_type || ''
+            })),
+            ...studyRows.map(row => ({
+                id: `study-${row.session_id || row.id || row.created_at || row.start_time}`,
+                source: 'study',
+                type: 'estudio',
+                title: row.subject ? `Estudio ${row.subject}` : 'Sesion de estudio',
+                subject: row.subject || '',
+                date: row.start_time || row.completed_at || row.created_at,
+                status: row.status || (row.end_time ? 'completado' : 'en_progreso'),
+                detail: row.total_minutes ? `${row.total_minutes} min` : ''
+            }))
+        ].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, maxRows);
+
+        res.json({
+            success: true,
+            summary: {
+                progress: progressRows.length,
+                quizzes: quizRows.length,
+                calendar_events: calendarRows.length,
+                reminders: reminderRows.length,
+                evidences: notebookRows.length,
+                study_sessions: studyRows.length,
+                total: items.length
+            },
+            items
+        });
+    } catch (err) {
+        console.error('[PARENT-HISTORY] Error cargando antecedentes:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Progreso del hijo (para dashboard de apoderado)
 app.get('/api/progress/child', async (req, res) => {
     try {

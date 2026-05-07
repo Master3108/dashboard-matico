@@ -3,7 +3,7 @@ import {
     Calendar, Clock, BookOpen, CheckCircle, AlertTriangle, Trash2,
     ChevronLeft, ChevronRight, Bell, User, LogOut, TrendingUp,
     Award, Target, BarChart3, Plus, Mic, Send, Image, Camera,
-    MessageCircle, Sparkles, RefreshCw, Shield
+    MessageCircle, Sparkles, RefreshCw, Shield, FileText
 } from 'lucide-react';
 import ChatEventCreator from './ChatEventCreator';
 import CalendarView from './CalendarView';
@@ -65,6 +65,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const [maticoMood, setMaticoMood] = useState('happy');
     const [studySessions, setStudySessions] = useState([]);
     const [activeStudy, setActiveStudy] = useState(null);
+    const [studentHistory, setStudentHistory] = useState({ summary: {}, items: [] });
 
     // Fetch profile + children
     const fetchProfile = useCallback(async () => {
@@ -141,6 +142,31 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         } catch (_) {}
     }, [selectedChild?.user_id, currentUser?.user_id]);
 
+    const fetchStudentHistory = useCallback(async () => {
+        const targetUserId = selectedChild?.user_id || currentUser?.user_id;
+        const targetEmail = selectedChild?.email || currentUser?.email || '';
+        const parentEmail = currentUser?.email || '';
+        if (!targetUserId && !targetEmail) return;
+
+        try {
+            const params = new URLSearchParams({ limit: '120' });
+            if (targetUserId) params.set('student_user_id', targetUserId);
+            if (targetEmail) params.set('student_email', targetEmail);
+            if (parentEmail) params.set('parent_email', parentEmail);
+
+            const res = await fetch(`/api/parent/student-history?${params}`);
+            const data = await res.json();
+            if (data.success) {
+                setStudentHistory({
+                    summary: data.summary || {},
+                    items: data.items || []
+                });
+            }
+        } catch (err) {
+            console.error('[PARENT] Error cargando antecedentes:', err);
+        }
+    }, [selectedChild?.user_id, selectedChild?.email, currentUser?.user_id, currentUser?.email]);
+
     // Fetch notifications
     const fetchNotifications = useCallback(async () => {
         if (!currentUser?.user_id) return;
@@ -167,11 +193,13 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             fetchChildEvents();
             fetchChildProgress();
             fetchStudySessions();
+            fetchStudentHistory();
         } else if (currentUser?.user_id) {
             fetchChildEvents();
             fetchStudySessions();
+            fetchStudentHistory();
         }
-    }, [selectedChild, currentUser?.user_id, fetchChildEvents, fetchChildProgress, fetchStudySessions]);
+    }, [selectedChild, currentUser?.user_id, fetchChildEvents, fetchChildProgress, fetchStudySessions, fetchStudentHistory]);
 
     useEffect(() => {
         fetchNotifications();
@@ -179,7 +207,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        await Promise.all([fetchChildEvents(), fetchChildProgress(), fetchNotifications()]);
+        await Promise.all([fetchChildEvents(), fetchChildProgress(), fetchNotifications(), fetchStudentHistory()]);
         setRefreshing(false);
     };
 
@@ -244,6 +272,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const totalXP = progress.reduce((sum, p) => sum + (p.xp || 0), 0);
     const pendingEvents = events.filter(e => e.status === 'pendiente').length;
     const completedEvents = events.filter(e => e.status === 'completado').length;
+    const totalAntecedentes = studentHistory.summary?.total || studentHistory.items.length || 0;
 
     // --- Study time stats ---
     const today = new Date().toISOString().split('T')[0];
@@ -403,6 +432,11 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 <p className="text-2xl font-black text-[#F59E0B]">{pendingEvents}</p>
                                 <p className="text-xs font-bold text-[#9094A6]">Pendientes</p>
                             </div>
+                            <div className="bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] rounded-2xl p-3 text-center col-span-2 md:col-span-4">
+                                <FileText className="w-6 h-6 text-[#10B981] mx-auto mb-1" />
+                                <p className="text-2xl font-black text-[#10B981]">{totalAntecedentes}</p>
+                                <p className="text-xs font-bold text-[#9094A6]">Antecedentes cargados desde la base de datos</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -414,6 +448,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                     {[
                         { key: 'resumen', label: 'Resumen', icon: BarChart3 },
                         { key: 'calendario', label: 'Calendario', icon: Calendar },
+                        { key: 'antecedentes', label: 'Antecedentes', icon: FileText },
                         { key: 'progreso', label: 'Progreso', icon: TrendingUp },
                     ].map(tab => {
                         const Icon = tab.icon;
@@ -756,6 +791,86 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                         </div>
                                                     );
                                                 })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ANTECEDENTES */}
+                {activeTab === 'antecedentes' && (
+                    <div className="space-y-4">
+                        <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                                <div>
+                                    <h3 className="font-black text-[#2B2E4A]">Historial de antecedentes</h3>
+                                    <p className="text-xs font-bold text-[#9094A6]">
+                                        Información encontrada en calendario, progreso, evidencias y sesiones.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={fetchStudentHistory}
+                                    className="p-2 rounded-xl bg-[#F5F3FF] text-[#7C3AED] hover:bg-[#EDE9FE] transition-all"
+                                    title="Actualizar antecedentes"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mb-4">
+                                {[
+                                    ['Eventos', studentHistory.summary?.calendar_events || 0],
+                                    ['Progreso', studentHistory.summary?.progress || 0],
+                                    ['Quizzes', studentHistory.summary?.quizzes || 0],
+                                    ['Evidencias', studentHistory.summary?.evidences || 0],
+                                    ['Estudio', studentHistory.summary?.study_sessions || 0],
+                                    ['Recordatorios', studentHistory.summary?.reminders || 0],
+                                ].map(([label, value]) => (
+                                    <div key={label} className="rounded-2xl bg-gray-50 p-3 text-center">
+                                        <p className="text-xl font-black text-[#2B2E4A]">{value}</p>
+                                        <p className="text-[10px] font-bold text-[#9094A6]">{label}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {studentHistory.items.length === 0 ? (
+                                <div className="text-center py-8 text-gray-300">
+                                    <FileText className="w-12 h-12 mx-auto mb-3" />
+                                    <p className="font-bold">No hay antecedentes visibles para este estudiante</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {studentHistory.items.map(item => (
+                                        <div key={item.id} className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                        <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-[#7C3AED] text-white uppercase">
+                                                            {item.type}
+                                                        </span>
+                                                        {item.subject && (
+                                                            <span className="text-[10px] font-bold text-gray-500">{item.subject}</span>
+                                                        )}
+                                                        {item.status && (
+                                                            <span className="text-[10px] font-bold text-[#10B981] bg-green-50 px-2 py-0.5 rounded-lg">{item.status}</span>
+                                                        )}
+                                                    </div>
+                                                    <p className="font-black text-sm text-[#2B2E4A] truncate">{item.title}</p>
+                                                    {item.detail && (
+                                                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.detail}</p>
+                                                    )}
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    {item.score != null && (
+                                                        <p className="text-sm font-black text-[#7C3AED]">{item.score}%</p>
+                                                    )}
+                                                    <p className="text-[10px] font-bold text-[#9094A6]">
+                                                        {item.date ? new Date(item.date).toLocaleDateString('es-CL') : ''}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

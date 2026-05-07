@@ -944,12 +944,43 @@ export async function getUserProfile(user_id) {
 }
 
 export async function getChildrenProfiles(parent_user_id) {
+    const { data: parentProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', parent_user_id)
+        .maybeSingle();
+
+    const guardianEmail = String(parentProfile?.email || '').trim().toLowerCase();
+    const children = [];
+
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('parent_user_id', parent_user_id);
-    if (error) return [];
-    return data || [];
+    if (!error && data?.length) children.push(...data);
+
+    if (guardianEmail) {
+        const { data: byGuardianEmail } = await supabase
+            .from('profiles')
+            .select('*')
+            .ilike('guardian_email', guardianEmail);
+        if (byGuardianEmail?.length) children.push(...byGuardianEmail);
+
+        const { data: legacyChildren } = await supabase
+            .from('users')
+            .select('*')
+            .ilike('correo_apoderado', guardianEmail);
+        if (legacyChildren?.length) children.push(...legacyChildren.map(mapLegacyUserToLegacy));
+    }
+
+    const seen = new Set();
+    return children.filter((child) => {
+        const key = child.user_id || child.token || child.email || child.mail;
+        if (key === parent_user_id) return false;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 export async function createNotification({ user_id, event_id, type = 'reminder', title, body, scheduled_at }) {
