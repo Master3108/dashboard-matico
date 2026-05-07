@@ -54,7 +54,12 @@ import {
     createNotification,
     listUnreadNotifications,
     markNotificationRead,
-    getChildProgressSummary
+    getChildProgressSummary,
+    createStudySession,
+    addStudyMilestone,
+    endStudySession,
+    getStudySessions,
+    getActiveStudySession
 } from './db/runtimeWrites.js';
 
 dotenv.config();
@@ -8370,6 +8375,126 @@ app.put('/api/notifications/:notif_id/read', async (req, res) => {
     try {
         await markNotificationRead(req.params.notif_id);
         res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// =====================================================================
+// STUDY SESSIONS (hora de estudio)
+// =====================================================================
+
+// Crear tabla si no existe (auto-migration)
+app.post('/api/study-sessions/init-table', async (req, res) => {
+    try {
+        const { error } = await supabase.rpc('exec_sql', {
+            query: `
+                CREATE TABLE IF NOT EXISTS study_sessions (
+                    session_id TEXT PRIMARY KEY,
+                    student_user_id TEXT NOT NULL,
+                    subject TEXT DEFAULT '',
+                    session_number INTEGER DEFAULT 0,
+                    type TEXT DEFAULT 'daily',
+                    start_time TIMESTAMPTZ DEFAULT now(),
+                    end_time TIMESTAMPTZ,
+                    total_minutes INTEGER DEFAULT 0,
+                    milestones JSONB DEFAULT '[]'::jsonb,
+                    created_at TIMESTAMPTZ DEFAULT now()
+                );
+                CREATE INDEX IF NOT EXISTS idx_study_sessions_student ON study_sessions(student_user_id);
+                CREATE INDEX IF NOT EXISTS idx_study_sessions_start ON study_sessions(start_time);
+            `
+        });
+        if (error) {
+            // If rpc doesn't exist, try direct insert to test table existence
+            console.warn('[STUDY] rpc exec_sql not available, trying direct approach:', error.message);
+            return res.json({ success: true, message: 'Table must be created manually in Supabase SQL editor', sql: `
+CREATE TABLE IF NOT EXISTS study_sessions (
+    session_id TEXT PRIMARY KEY,
+    student_user_id TEXT NOT NULL,
+    subject TEXT DEFAULT '',
+    session_number INTEGER DEFAULT 0,
+    type TEXT DEFAULT 'daily',
+    start_time TIMESTAMPTZ DEFAULT now(),
+    end_time TIMESTAMPTZ,
+    total_minutes INTEGER DEFAULT 0,
+    milestones JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_study_sessions_student ON study_sessions(student_user_id);
+CREATE INDEX IF NOT EXISTS idx_study_sessions_start ON study_sessions(start_time);
+            `.trim() });
+        }
+        res.json({ success: true, message: 'Table created' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Iniciar sesión de estudio
+app.post('/api/study-sessions/start', async (req, res) => {
+    try {
+        const { student_user_id, subject, session_number, type } = req.body;
+        if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
+
+        // Check if there's already an active session
+        const active = await getActiveStudySession(student_user_id);
+        if (active) {
+            return res.json({ success: true, session: active, already_active: true });
+        }
+
+        const session = await createStudySession({ student_user_id, subject, session_number, type });
+        console.log(`[STUDY] Sesión iniciada: ${session.session_id} para ${student_user_id} (${type}/${subject})`);
+        res.json({ success: true, session });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Agregar hito
+app.post('/api/study-sessions/milestone', async (req, res) => {
+    try {
+        const { session_id, milestone } = req.body;
+        if (!session_id || !milestone) return res.status(400).json({ success: false, error: 'Faltan parametros' });
+        await addStudyMilestone(session_id, milestone);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Finalizar sesión de estudio
+app.post('/api/study-sessions/end', async (req, res) => {
+    try {
+        const { session_id } = req.body;
+        if (!session_id) return res.status(400).json({ success: false, error: 'Falta session_id' });
+        const session = await endStudySession(session_id);
+        console.log(`[STUDY] Sesión finalizada: ${session_id} — ${session.total_minutes} min`);
+        res.json({ success: true, session });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Obtener sesiones de estudio (para parent dashboard)
+app.get('/api/study-sessions', async (req, res) => {
+    try {
+        const { student_user_id, from_date, to_date } = req.query;
+        if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
+        const sessions = await getStudySessions(student_user_id, from_date, to_date);
+        res.json({ success: true, sessions });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Sesión activa actual
+app.get('/api/study-sessions/active', async (req, res) => {
+    try {
+        const { student_user_id } = req.query;
+        if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
+        const session = await getActiveStudySession(student_user_id);
+        res.json({ success: true, session, is_studying: !!session });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

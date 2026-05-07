@@ -984,6 +984,95 @@ export async function markNotificationRead(notif_id) {
 }
 
 // =====================================================================
+// STUDY SESSIONS (hora de estudio)
+// =====================================================================
+
+export async function createStudySession({ student_user_id, subject, session_number, type = 'daily' }) {
+    const session_id = `SS-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
+    const { data, error } = await supabase
+        .from('study_sessions')
+        .insert({
+            session_id,
+            student_user_id,
+            subject,
+            session_number,
+            type,
+            start_time: new Date().toISOString(),
+            milestones: [],
+            total_minutes: 0
+        })
+        .select()
+        .single();
+    if (error) throw new Error(`createStudySession: ${error.message}`);
+    return data;
+}
+
+export async function addStudyMilestone(session_id, milestone_name) {
+    const { data: session } = await supabase
+        .from('study_sessions')
+        .select('milestones')
+        .eq('session_id', session_id)
+        .single();
+
+    const milestones = session?.milestones || [];
+    milestones.push({ name: milestone_name, at: new Date().toISOString() });
+
+    const { error } = await supabase
+        .from('study_sessions')
+        .update({ milestones })
+        .eq('session_id', session_id);
+    if (error) throw new Error(`addStudyMilestone: ${error.message}`);
+    return { success: true };
+}
+
+export async function endStudySession(session_id) {
+    const { data: session } = await supabase
+        .from('study_sessions')
+        .select('start_time')
+        .eq('session_id', session_id)
+        .single();
+
+    if (!session) throw new Error('Session not found');
+    const start = new Date(session.start_time);
+    const end = new Date();
+    const total_minutes = Math.round((end - start) / 60000);
+
+    const { data, error } = await supabase
+        .from('study_sessions')
+        .update({ end_time: end.toISOString(), total_minutes })
+        .eq('session_id', session_id)
+        .select()
+        .single();
+    if (error) throw new Error(`endStudySession: ${error.message}`);
+    return data;
+}
+
+export async function getStudySessions(student_user_id, from_date = null, to_date = null) {
+    let query = supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('student_user_id', student_user_id)
+        .order('start_time', { ascending: false });
+    if (from_date) query = query.gte('start_time', from_date);
+    if (to_date) query = query.lte('start_time', to_date);
+    const { data, error } = await query.limit(100);
+    if (error) return [];
+    return data || [];
+}
+
+export async function getActiveStudySession(student_user_id) {
+    const { data } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('student_user_id', student_user_id)
+        .is('end_time', null)
+        .order('start_time', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    return data || null;
+}
+
+// =====================================================================
 // PROGRESS SUMMARY (for parent dashboard)
 // =====================================================================
 export async function getChildProgressSummary(child_user_id, limit = 50) {

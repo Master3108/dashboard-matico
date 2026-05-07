@@ -3577,6 +3577,66 @@ const App = () => {
     //NEW: CONTEXT STATE FOR VIDEO/PASTE
     const [doubtContext, setDoubtContext] = useState(null);
 
+    // STUDY SESSION TRACKING (hora de estudio)
+    const [activeStudySession, setActiveStudySession] = useState(null);
+
+    const startStudyTimer = async (type = 'daily') => {
+        if (activeStudySession) return activeStudySession; // Already active
+        try {
+            const res = await fetch('/api/study-sessions/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_user_id: USER_ID,
+                    subject: currentSubject,
+                    session_number: TODAYS_SESSION?.session || 0,
+                    type
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.session) {
+                setActiveStudySession(data.session);
+                console.log(`[STUDY] Timer iniciado: ${data.session.session_id} (${type})`);
+                return data.session;
+            }
+        } catch (err) {
+            console.error('[STUDY] Error iniciando timer:', err);
+        }
+        return null;
+    };
+
+    const addStudyMilestone = async (milestone) => {
+        if (!activeStudySession?.session_id) return;
+        try {
+            await fetch('/api/study-sessions/milestone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: activeStudySession.session_id, milestone })
+            });
+            console.log(`[STUDY] Hito: ${milestone}`);
+        } catch (err) {
+            console.error('[STUDY] Error agregando hito:', err);
+        }
+    };
+
+    const endStudyTimer = async () => {
+        if (!activeStudySession?.session_id) return;
+        try {
+            const res = await fetch('/api/study-sessions/end', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: activeStudySession.session_id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                console.log(`[STUDY] Timer finalizado: ${data.session.total_minutes} min`);
+                setActiveStudySession(null);
+            }
+        } catch (err) {
+            console.error('[STUDY] Error finalizando timer:', err);
+        }
+    };
+
     // INTERACTIVE QUIZ STATE
     const [showInteractiveQuiz, setShowInteractiveQuiz] = useState(false);
     const [quizQuestions, setQuizQuestions] = useState([]);
@@ -4171,6 +4231,10 @@ const App = () => {
         setIsPrepExamMode(true);
         setQuizQuestions(normalizedQuestions);
         setShowInteractiveQuiz(true);
+
+        // STUDY TIMER: Iniciar para Oracle/Prep
+        await startStudyTimer('oracle');
+        await addStudyMilestone('oracle_quiz_iniciado');
 
         if (payload.practice_guide) {
             setAiContent(payload.practice_guide);
@@ -5427,6 +5491,11 @@ const App = () => {
         setCurrentQuizPhase(phaseToUse);
         setIsTheoryNotebookMandatory(Boolean(mandatory));
         markTheoryStatus({ started: true, phase: phaseToUse });
+
+        // STUDY TIMER: Iniciar al abrir teoría lúdica
+        await startStudyTimer('daily');
+        await addStudyMilestone('teoria_ludica_iniciada');
+
         await callAgent(currentSubject, 'start_route', theoryTopic, null, null, theoryTopic);
     };
 
@@ -5529,6 +5598,7 @@ const App = () => {
                 setPendingQuizQuestions([]);
                 setIsCallingN8N(false);
                 setLoadingMessage("");
+                await addStudyMilestone('quiz_iniciado');
                 prefetchNextPhaseBatch(currentQuizPhase);
             } else {
                 throw new Error('No se pudieron cargar las preguntas.');
@@ -5626,6 +5696,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
     const handleTheoryNotebookComplete = async () => {
         setShowTheoryNotebookMission(false);
         setIsTheoryNotebookMandatory(false);
+        await addStudyMilestone('cuaderno_completado');
         await launchQuizAfterTheoryNotebook();
     };
 
@@ -5760,6 +5831,10 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 xp_reward: 300
             });
             console.log("[SAVE] 'session_completed' guardado en Google Sheets correctamente");
+
+            // STUDY TIMER: Finalizar al completar todas las fases
+            await addStudyMilestone('quiz_completado');
+            await endStudyTimer();
 
             alert('SESIóN COMPLETA\\n\\nHaz dominado: ' + TODAYS_SESSION.topic + '\\n\\nPuntaje Final: ' + finalStats.correct + '/' + QUIZ_TOTAL_QUESTIONS + '\\n\\n+300 XP');
 
@@ -6707,6 +6782,10 @@ ${finalData.capsule}`;
                                         weak_sessions: report.weakSessions.map(item => item.session).join(','),
                                         xp_reward: 150
                                     });
+
+                                    // STUDY TIMER: Finalizar Oracle/Prep
+                                    await addStudyMilestone('oracle_quiz_completado');
+                                    await endStudyTimer();
 
                                     setPrepExamReport(report);
                                     setShowPrepExamResults(true);
