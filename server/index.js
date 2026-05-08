@@ -9804,35 +9804,47 @@ async function deriveStudySessionsFromProgress(student_user_id, from_date, to_da
             dayGroups[key].events.push(row.event_type);
         }
 
-        // Convertir cada grupo a una "sesión" con duración
+        // Convertir cada grupo a sesiones segmentadas por gaps de 30 min
+        const GAP_MS = 30 * 60 * 1000; // 30 min gap = nueva sesión
+        const MAX_SESSION_MIN = 90; // cap por sesión
         const sessions = [];
         for (const [key, group] of Object.entries(dayGroups)) {
             const sorted = group.timestamps.sort((a, b) => a - b);
-            const first = sorted[0];
-            const last = sorted[sorted.length - 1];
-            // Duración = diferencia entre primera y última actividad
-            let durationMs = last - first;
-            // Si solo hay 1 actividad, asignar ~5 min estimados
-            if (sorted.length === 1) durationMs = 5 * 60 * 1000;
-            // Mínimo 2 min, máximo 180 min (cap razonable)
-            const totalMinutes = Math.max(2, Math.min(180, Math.round(durationMs / 60000)));
+            // Segmentar: si hay gap > 30 min entre eventos, cortar
+            const segments = [[sorted[0]]];
+            for (let i = 1; i < sorted.length; i++) {
+                if (sorted[i] - sorted[i - 1] > GAP_MS) {
+                    segments.push([sorted[i]]);
+                } else {
+                    segments[segments.length - 1].push(sorted[i]);
+                }
+            }
 
             const hasCompletion = group.events.some(e =>
                 e === 'session_completed' || e === 'prep_exam_completed' || e === 'prep_exam_reviewed'
             );
 
-            sessions.push({
-                id: `derived-${key}`,
-                student_user_id,
-                subject: group.subject,
-                type: 'derived',
-                status: 'completed',
-                start_time: new Date(first).toISOString(),
-                end_time: new Date(last).toISOString(),
-                total_minutes: totalMinutes,
-                milestones: { activities: sorted.length, has_completion: hasCompletion },
-                derived: true
-            });
+            for (let si = 0; si < segments.length; si++) {
+                const seg = segments[si];
+                const first = seg[0];
+                const last = seg[seg.length - 1];
+                let durationMs = last - first;
+                if (seg.length === 1) durationMs = 5 * 60 * 1000;
+                const totalMinutes = Math.max(2, Math.min(MAX_SESSION_MIN, Math.round(durationMs / 60000)));
+
+                sessions.push({
+                    id: `derived-${key}-s${si}`,
+                    student_user_id,
+                    subject: group.subject,
+                    type: 'derived',
+                    status: 'completed',
+                    start_time: new Date(first).toISOString(),
+                    end_time: new Date(last).toISOString(),
+                    total_minutes: totalMinutes,
+                    milestones: { activities: seg.length, has_completion: hasCompletion },
+                    derived: true
+                });
+            }
         }
 
         return sessions.sort((a, b) => b.start_time.localeCompare(a.start_time));
