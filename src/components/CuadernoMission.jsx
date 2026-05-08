@@ -926,9 +926,6 @@ const CuadernoMission = ({
                                             <button onClick={openCamera} className="flex-1 bg-[#2B2E4A] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
                                                 <Camera size={18} /> Agregar otra página
                                             </button>
-                                            <button type="button" onClick={openExtraUploadPicker} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                                                <UploadCloud size={18} /> Subir otra página
-                                            </button>
                                             <input ref={extraUploadInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
                                         </div>
                                         <button
@@ -936,7 +933,7 @@ const CuadernoMission = ({
                                             onClick={openExtraMultiGalleryPicker}
                                             className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
                                         >
-                                            <UploadCloud size={18} /> Subir varias páginas (galeria)
+                                            <UploadCloud size={18} /> Subir imagenes
                                         </button>
                                         {!isNativePlatform && (
                                             <button
