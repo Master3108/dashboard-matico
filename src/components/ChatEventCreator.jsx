@@ -24,6 +24,8 @@ const EVENT_TYPE_CONFIG = {
     otro: { label: 'Otro', color: '#6B7280', emoji: '📌' }
 };
 
+const MAX_EVENT_IMAGES = 10;
+
 const getWelcomeMessage = (intent, studentName) => {
     const name = studentName || 'el estudiante';
 
@@ -284,8 +286,12 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
     };
 
     const handleImageSelect = (e) => {
-        const files = Array.from(e.target.files || []).filter(file => file.type?.startsWith('image/')).slice(0, 10);
+        const rawFiles = Array.from(e.target.files || []).filter(file => file.type?.startsWith('image/'));
+        const files = rawFiles.slice(0, MAX_EVENT_IMAGES);
         if (!files.length) return;
+        if (rawFiles.length > MAX_EVENT_IMAGES) {
+            addBotMessage(`Puedes subir hasta ${MAX_EVENT_IMAGES} imagenes por evento. Tome las primeras ${MAX_EVENT_IMAGES}.`);
+        }
         setSelectedImages(files);
         setSelectedImage(files[0]);
         Promise.all(files.map(file => new Promise((resolve) => {
@@ -394,7 +400,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
             }
             const importedFiles = [];
             const importedPreviews = [];
-            for (let i = 0; i < Math.min(rows.length, 10); i += 1) {
+            for (let i = 0; i < Math.min(rows.length, MAX_EVENT_IMAGES); i += 1) {
                 const row = rows[i];
                 const base64 = String(row?.imageBase64 || row?.image_base64 || '').trim();
                 const mimeType = String(row?.imageMimeType || row?.image_mime_type || 'image/jpeg').trim() || 'image/jpeg';
@@ -497,7 +503,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 ? `Crear una prueba para ${studentName || 'el estudiante'}. ${userText}`.trim()
                 : userText;
             if (directedText) formData.append('text_input', directedText);
-            userImages.slice(0, 10).forEach((imageFile) => formData.append('images', imageFile));
+            userImages.slice(0, MAX_EVENT_IMAGES).forEach((imageFile) => formData.append('images', imageFile));
             formData.append('dry_run', 'true');
 
             const res = await fetch('/api/calendar/smart-create', {
@@ -692,7 +698,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 {(imagePreviews.length > 0 || imagePreview) && (
                     <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 shrink-0">
                         <div className="flex items-center gap-2 overflow-x-auto">
-                            {(imagePreviews.length ? imagePreviews : [imagePreview]).slice(0, 10).map((preview, index) => (
+                            {(imagePreviews.length ? imagePreviews : [imagePreview]).slice(0, MAX_EVENT_IMAGES).map((preview, index) => (
                                 <img key={`${preview}-${index}`} src={preview} alt={`Preview ${index + 1}`} className="h-20 w-16 rounded-xl object-cover bg-gray-100" />
                             ))}
                             <button
@@ -701,7 +707,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                             >
                                 <X className="w-3 h-3" />
                             </button>
-                            <span className="text-xs font-black text-[#64748B] shrink-0">{(imagePreviews.length || 1)}/10</span>
+                            <span className="text-xs font-black text-[#64748B] shrink-0">{(imagePreviews.length || 1)}/{MAX_EVENT_IMAGES}</span>
                         </div>
                     </div>
                 )}
@@ -709,7 +715,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 {/* Input area */}
                 <div className="px-3 py-3 bg-white border-t border-gray-100 shrink-0 space-y-2">
                     {/* Hidden file inputs */}
-                    <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden" />
+                    <input ref={fileInputRef} type="file" accept="image/*" multiple onClick={(e) => { e.currentTarget.value = ''; }} onChange={handleImageSelect} className="hidden" />
                     <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageSelect} className="hidden" />
 
                     {/* Capture buttons row - estilo Oraculo */}

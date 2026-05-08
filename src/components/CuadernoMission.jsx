@@ -182,9 +182,11 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
     const extraMultiGalleryInputRef = useRef(null);
 
     const openMultiGalleryPicker = () => {
+        if (multiGalleryInputRef.current) multiGalleryInputRef.current.value = '';
         multiGalleryInputRef.current?.click();
     };
     const openExtraMultiGalleryPicker = () => {
+        if (extraMultiGalleryInputRef.current) extraMultiGalleryInputRef.current.value = '';
         extraMultiGalleryInputRef.current?.click();
     };
 
@@ -368,6 +370,20 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         img.src = objectUrl;
     });
 
+    const loadImageFromFile = (file) => new Promise((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(img);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error('Una imagen no es valida o esta danada.'));
+        };
+        img.src = objectUrl;
+    });
+
     // Soporta multiples archivos en una sola seleccion. En el input nativo con
     // capture=environment siempre llega 1, pero en el selector de galeria con
     // multiple llegan N y se encolan todas.
@@ -381,11 +397,40 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
         if (files.length > remainingSlots) {
             setFeedback(`Solo se agregaron ${remainingSlots} paginas: el maximo es ${MAX_PAGES}.`);
         }
-        for (const file of toProcess) {
-            // eslint-disable-next-line no-await-in-loop
-            await addPageFromFile(file);
+
+        if (toProcess.length === 1) {
+            await addPageFromFile(toProcess[0]);
+            event.target.value = '';
+            return;
         }
-        event.target.value = '';
+
+        setIsGeneratingPdf(true);
+        setStatus('processing');
+
+        try {
+            const nextPages = [...(scanAssets?.pages || [])];
+            const scanId = scanAssets?.scanId || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+            for (const file of toProcess) {
+                // eslint-disable-next-line no-await-in-loop
+                const img = await loadImageFromFile(file);
+                nextPages.push(buildPageAsset(img, nextPages.length + 1));
+            }
+
+            await rebuildAssets(nextPages, scanId);
+            stopCamera();
+            setAnalysis(null);
+            setSuggestion('');
+            setSubmissionId('');
+            setFeedback(`PDF listo con ${nextPages.length} paginas. Puedes agregar mas hojas o enviarlo a Profe Matico.`);
+            setStatus('preview');
+        } catch (error) {
+            setStatus('error');
+            setFeedback(error.message || 'No se pudieron procesar las imagenes.');
+        } finally {
+            setIsGeneratingPdf(false);
+            event.target.value = '';
+        }
     };
 
     const openUploadPicker = () => {
