@@ -3470,7 +3470,7 @@ const App = () => {
 
         let studySessionForProgress = null;
         if (USER_ID && currentUser?.role !== 'apoderado') {
-            studySessionForProgress = await startStudyTimer('activity');
+            studySessionForProgress = await startStudyTimer('activity', payload.subject || currentSubject);
             await addStudyMilestone(`progreso_${type}`, studySessionForProgress || activeStudySession);
         }
 
@@ -3594,15 +3594,37 @@ const App = () => {
     // STUDY SESSION TRACKING (hora de estudio)
     const [activeStudySession, setActiveStudySession] = useState(null);
 
-    const startStudyTimer = async (type = 'daily') => {
-        if (activeStudySession) return activeStudySession; // Already active
+    const startStudyTimer = async (type = 'daily', subjectOverride = null) => {
+        const requestedSubject = subjectOverride || currentSubject;
+        if (activeStudySession?.session_id) {
+            const activeType = String(activeStudySession.type || '').toLowerCase();
+            const requestedType = String(type || 'daily').toLowerCase();
+            const activeSubject = String(activeStudySession.subject || '').trim().toUpperCase();
+            const nextSubject = String(requestedSubject || '').trim().toUpperCase();
+            const shouldReplaceActive =
+                (activeType === 'app_entry' && requestedType !== 'app_entry') ||
+                (requestedType !== 'app_entry' && activeSubject && nextSubject && activeSubject !== nextSubject);
+
+            if (!shouldReplaceActive) return activeStudySession; // Already active
+
+            try {
+                await fetch('/api/study-sessions/end', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: activeStudySession.session_id })
+                });
+            } catch (err) {
+                console.warn('[STUDY] No se pudo cerrar timer anterior:', err);
+            }
+            setActiveStudySession(null);
+        }
         try {
             const res = await fetch('/api/study-sessions/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     student_user_id: USER_ID,
-                    subject: currentSubject,
+                    subject: requestedSubject,
                     session_number: TODAYS_SESSION?.session || 0,
                     type
                 })
@@ -3659,7 +3681,7 @@ const App = () => {
         let openedSession = null;
 
         const bootStudyProtocol = async () => {
-            const session = await startStudyTimer('app_entry');
+            const session = await startStudyTimer('app_entry', currentSubject);
             if (cancelled || !session) return;
             openedSession = session;
             await addStudyMilestone('ingreso_a_matico', session);
@@ -3668,7 +3690,8 @@ const App = () => {
             }, 60000);
         };
 
-        bootStudyProtocol();
+        // No registrar "entrada a Matico" como estudio real: al iniciar la app
+        // currentSubject parte en MATEMATICA y contaminaba el dashboard del apoderado.
 
         const closeSession = () => {
             const sessionId = openedSession?.session_id || activeStudySession?.session_id;
@@ -4304,8 +4327,8 @@ const App = () => {
         setShowInteractiveQuiz(true);
 
         // STUDY TIMER: Iniciar para Oracle/Prep
-        await startStudyTimer('oracle');
-        await addStudyMilestone('oracle_quiz_iniciado');
+        const oracleStudySession = await startStudyTimer('oracle', subject);
+        await addStudyMilestone('oracle_quiz_iniciado', oracleStudySession);
 
         if (payload.practice_guide) {
             setAiContent(payload.practice_guide);
@@ -5615,8 +5638,8 @@ const App = () => {
         markTheoryStatus({ started: true, phase: phaseToUse });
 
         // STUDY TIMER: Iniciar al abrir teoría lúdica
-        await startStudyTimer('daily');
-        await addStudyMilestone('teoria_ludica_iniciada');
+        const theoryStudySession = await startStudyTimer('daily', currentSubject);
+        await addStudyMilestone('teoria_ludica_iniciada', theoryStudySession);
 
         await callAgent(currentSubject, 'start_route', theoryTopic, null, null, theoryTopic);
     };

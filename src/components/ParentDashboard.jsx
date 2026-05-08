@@ -455,10 +455,45 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const correct = getActivityCorrect(item);
         return total > 0 ? Math.max(0, total - correct) : 0;
     };
+    const parseStudyMilestones = (value) => {
+        if (Array.isArray(value)) return value;
+        if (!value) return [];
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (_) {
+                return [];
+            }
+        }
+        return [];
+    };
+    const isRealStudySession = (session = {}) => {
+        const type = String(session.type || '').toLowerCase();
+        if (type !== 'app_entry') return true;
+
+        const milestoneText = parseStudyMilestones(session.milestones)
+            .map(milestone => String(milestone?.name || milestone || '').toLowerCase())
+            .join(' ');
+        const realStudySignals = [
+            'teoria',
+            'quiz',
+            'cuaderno',
+            'oracle',
+            'prep_exam',
+            'reading_completed',
+            'video_completed',
+            'session_completed',
+            'phase_completed'
+        ];
+        return realStudySignals.some(signal => milestoneText.includes(signal));
+    };
+    const realStudySessions = studySessions.filter(isRealStudySession);
+    const realActiveStudy = activeStudy && isRealStudySession(activeStudy) ? activeStudy : null;
     const historySubjects = ['TODAS', ...Array.from(new Set(historyItems.map(item => item.subject).filter(Boolean))).sort()];
     const summarySubjects = ['TODAS', ...Array.from(new Set([
         ...historyItems.map(item => item.subject).filter(Boolean),
-        ...studySessions.map(item => item.subject).filter(Boolean),
+        ...realStudySessions.map(item => item.subject).filter(Boolean),
         ...events.map(item => item.subject).filter(Boolean),
         'MATEMATICA', 'QUIMICA', 'FISICA', 'BIOLOGIA', 'HISTORIA', 'LENGUAJE'
     ].map(normalizeSubject).filter(Boolean))).sort()];
@@ -466,7 +501,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const dateKey = getDateKey(item.date);
         return isWithinSummaryRange(dateKey) && matchesSummarySubject(item.subject);
     });
-    const summaryStudySessions = studySessions.filter(session => {
+    const summaryStudySessions = realStudySessions.filter(session => {
         const dateKey = getDateKey(getStudyDate(session));
         return isWithinSummaryRange(dateKey) && matchesSummarySubject(session.subject);
     });
@@ -492,7 +527,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const parsed = new Date(String(rawDate).length <= 10 ? `${rawDate}T12:00:00` : rawDate).getTime();
         return Number.isFinite(parsed) ? parsed : 0;
     };
-    const summaryStudyActivityItems = studySessions
+    const summaryStudyActivityItems = realStudySessions
         .filter(session => matchesSummarySubject(session.subject))
         .map(session => ({
             ...session,
@@ -509,14 +544,14 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         matchesSummarySubject(item.subject)
     );
     const summaryAllRealActivities = [
-        ...(activeStudy && matchesSummarySubject(activeStudy.subject) ? [{
-            ...activeStudy,
+        ...(realActiveStudy && matchesSummarySubject(realActiveStudy.subject) ? [{
+            ...realActiveStudy,
             source: 'study',
             type: 'study',
-            subject: activeStudy.subject || 'General',
-            title: `Estudio ${activeStudy.subject || 'General'}`,
+            subject: realActiveStudy.subject || 'General',
+            title: `Estudio ${realActiveStudy.subject || 'General'}`,
             date: new Date().toISOString(),
-            duration_minutes: Number(activeStudy.total_minutes || 0)
+            duration_minutes: Number(realActiveStudy.total_minutes || 0)
         }] : []),
         ...summaryStudyActivityItems,
         ...summaryHistoryActivityItems
@@ -532,17 +567,17 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         : '';
     const summaryLastActivityMinutes = summaryLastActivityDate && summaryLastActivity
         ? (Number(summaryLastActivity.duration_minutes || summaryLastActivity.total_minutes || 0) ||
-            studySessions.filter(s => getDateKey(getStudyDate(s)) === summaryLastActivityDate && normalizeSubject(s.subject) === normalizeSubject(summaryLastActivity.subject)).reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0))
+            realStudySessions.filter(s => getDateKey(getStudyDate(s)) === summaryLastActivityDate && normalizeSubject(s.subject) === normalizeSubject(summaryLastActivity.subject)).reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0))
         : 0;
     const summaryHasTodayActivity = historyItems.some(item =>
         getDateKey(item.date) === today &&
         !['calendar', 'reminder', 'daily_report'].includes(String(item.source || '')) &&
         String(item.type || '') !== 'reporte_diario' &&
         matchesSummarySubject(item.subject)
-    ) || studySessions.some(session =>
+    ) || realStudySessions.some(session =>
         getDateKey(getStudyDate(session)) === today &&
         matchesSummarySubject(session.subject)
-    ) || Boolean(activeStudy && matchesSummarySubject(activeStudy.subject));
+    ) || Boolean(realActiveStudy && matchesSummarySubject(realActiveStudy.subject));
     const futurePendingEvents = events
         .filter(event =>
             String(event.status || '').toLowerCase() === 'pendiente' &&
@@ -570,15 +605,15 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     };
 
     // --- Study time stats ---
-    const todaySessions = studySessions.filter(s => getDateKey(getStudyDate(s)) === today && matchesSummarySubject(s.subject));
+    const todaySessions = realStudySessions.filter(s => getDateKey(getStudyDate(s)) === today && matchesSummarySubject(s.subject));
     const todayMinutes = todaySessions.reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
     const studyGoalMinutes = 45;
     const studyProgress = Math.min(100, Math.round((todayMinutes / studyGoalMinutes) * 100));
-    let totalStudyMinutes = studySessions.reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
-    let totalStudyDays = new Set(studySessions.map(s => getDateKey(getStudyDate(s))).filter(Boolean)).size;
+    let totalStudyMinutes = realStudySessions.reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
+    let totalStudyDays = new Set(realStudySessions.map(s => getDateKey(getStudyDate(s))).filter(Boolean)).size;
 
     // Weekly data: if no recent data, show last 7 days with activity
-    const hasRecentActivity = studySessions.some(s => {
+    const hasRecentActivity = realStudySessions.some(s => {
         const diff = Date.now() - new Date(s.start_time).getTime();
         return diff < 7 * 86400000;
     });
@@ -592,7 +627,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             d.setDate(d.getDate() - (6 - i));
             const dateStr = d.toISOString().split('T')[0];
             const dayLabel = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.getDay()];
-            const mins = studySessions
+            const mins = realStudySessions
                 .filter(s => getDateKey(getStudyDate(s)) === dateStr)
                 .reduce((sum, s) => sum + (s.total_minutes || 0), 0);
             return { day: dayLabel, date: dateStr, minutes: mins };
@@ -600,7 +635,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     } else {
         // Show the most active period — group by day, take last 7 unique days
         const dayMap = {};
-        for (const s of studySessions) {
+        for (const s of realStudySessions) {
             const d = getDateKey(getStudyDate(s));
             if (!d) continue;
             dayMap[d] = (dayMap[d] || 0) + (s.total_minutes || 0);
@@ -623,7 +658,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         d.setDate(d.getDate() - (6 - i));
         const dateStr = d.toISOString().split('T')[0];
         const dayLabel = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'][d.getDay()];
-        const mins = studySessions
+        const mins = realStudySessions
             .filter(s => getDateKey(getStudyDate(s)) === dateStr && matchesSummarySubject(s.subject))
             .reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
         return { day: dayLabel, date: dateStr, minutes: mins };

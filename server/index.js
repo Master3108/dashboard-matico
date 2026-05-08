@@ -9683,7 +9683,24 @@ app.post('/api/study-sessions/start', async (req, res) => {
         // Check if there's already an active session
         const active = await getActiveStudySession(student_user_id);
         if (active) {
-            return res.json({ success: true, session: active, already_active: true });
+            const activeType = String(active.type || '').toLowerCase();
+            const requestedType = String(type || 'daily').toLowerCase();
+            const activeSubject = String(active.subject || '').trim().toUpperCase();
+            const requestedSubject = String(subject || '').trim().toUpperCase();
+            const shouldReplaceActive =
+                (activeType === 'app_entry' && requestedType !== 'app_entry') ||
+                (requestedType !== 'app_entry' && requestedSubject && activeSubject && activeSubject !== requestedSubject);
+
+            if (!shouldReplaceActive) {
+                return res.json({ success: true, session: active, already_active: true });
+            }
+
+            try {
+                await endStudySession(active.session_id);
+                console.log(`[STUDY] Sesión activa cerrada por cambio real: ${active.session_id} (${activeType}/${activeSubject})`);
+            } catch (closeErr) {
+                console.warn('[STUDY] No se pudo cerrar sesión activa anterior:', closeErr.message);
+            }
         }
 
         const session = await createStudySession({ student_user_id, subject, session_number, type });
