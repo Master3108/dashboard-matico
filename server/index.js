@@ -9314,16 +9314,11 @@ app.get('/api/parent/student-history', async (req, res) => {
             return mode ? `Origen: ${mode}` : '';
         };
         const describeCalendarSource = (row = {}) => {
-            const text = `${row.title || ''} ${row.description || ''} ${row.subject || ''}`.toLowerCase();
-            const isBookOrExternal = /principito|libro|lectura|cap[ií]tulo|gu[ií]a|cuaderno|or[aá]culo|material|texto/i.test(text);
-            const isPending = String(row.status || '').toLowerCase() === 'pendiente';
-            const label = isBookOrExternal
-                ? 'Externa: prueba/evento registrado desde libro, guia, cuaderno o antecedente fuera de la ruta normal'
-                : 'Evento de calendario: no corresponde por si solo a un quiz completado';
-            const reason = isPending
-                ? 'Evento pendiente. Todavia no hay resultado final de quiz o estudio asociado a este evento.'
-                : '';
-            return { label, reason, isExternal: isBookOrExternal };
+            const isFuture = row.event_date && row.event_date >= dateOnlyInSantiago();
+            const label = isFuture
+                ? 'Evento de calendario: sirve para recordar y preparar estudio antes de la fecha.'
+                : 'Evento de calendario registrado.';
+            return { label, reason: '', isExternal: false };
         };
         const hasEvidenceOnDay = (subject, day) => [...notebookRows, ...ocrRows].some(row =>
             dateOnly(row.created_at) === day && (!subject || normalizeSubject(row.subject || row.metadata?.subject || '') === subject)
