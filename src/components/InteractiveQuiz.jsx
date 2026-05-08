@@ -412,6 +412,22 @@ const InteractiveQuiz = ({ questions, onComplete, onClose, phase, sessionId, sub
                     setIsFinished(false);
                     return;
                 }
+                if (result?.continueQuiz && Array.isArray(result.questions) && result.questions.length > 0 && isMountedRef.current) {
+                    shouldKeepFinishedState = false;
+                    setActiveQuestions(result.questions.map(validateMath));
+                    setCurrentQuestion(0);
+                    setSelectedAnswer(null);
+                    setIsAnswered(false);
+                    setScore({ correct: 0, incorrect: 0 });
+                    setWrongAnswers([]);
+                    setShowExplanation(false);
+                    setShowMiniLesson(false);
+                    setLives(MAX_LIVES);
+                    setTimeLeft(getTimeLimit(0));
+                    setIsSubmittingResults(false);
+                    setIsFinished(false);
+                    return;
+                }
             }
         } catch (error) {
             console.error("[QUIZ] Error saving quiz results:", error);

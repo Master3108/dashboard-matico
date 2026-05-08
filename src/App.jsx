@@ -5883,7 +5883,6 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             console.log('[QUIZ] Avanzando a Fase ' + nextPhase + ' (' + nextLevel + ')...');
 
             setIsCallingN8N(true);
-            setShowInteractiveQuiz(false);
             resetNormalQuizBatchLoading();
 
             try {
@@ -5913,6 +5912,11 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                     setShowInteractiveQuiz(true);
                     prefetchNextPhaseBatch(nextPhase);
                     console.log('[QUIZ] Fase ' + nextPhase + ' iniciada con ' + nextQuestions.length + ' preguntas iniciales');
+                    return {
+                        continueQuiz: true,
+                        questions: nextQuestions,
+                        phase: nextPhase
+                    };
                 } else {
                     alert('Error al cargar la siguiente fase. Por favor intenta de nuevo.');
                     setIsCallingN8N(false);
@@ -5922,6 +5926,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
                 alert('Error al preparar la siguiente fase.');
                 setIsCallingN8N(false);
             }
+            return null;
         } else {
             console.log('[QUIZ] Todas las 3 fases completadas');
             setShowInteractiveQuiz(false);
@@ -5963,6 +5968,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             setAllWrongAnswers([]);
             markSessionComplete(currentSubject, TODAYS_SESSION.session);
         }
+        return null;
     };
 
     const restartQuizPhaseFromZero = async (phaseNumber, wrongAnswers = []) => {
@@ -6930,7 +6936,7 @@ ${finalData.capsule}`;
                                 }
 
                                 console.log(`Quiz Fase ${currentQuizPhase} completado:`, score, 'errores:', wrongAnswers?.length);
-                                await onQuizPhaseComplete(score, wrongAnswers || []);
+                                return await onQuizPhaseComplete(score, wrongAnswers || []);
                             }}
                             onClose={() => {
                                 setShowInteractiveQuiz(false);
