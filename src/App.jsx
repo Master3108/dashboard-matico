@@ -5561,9 +5561,12 @@ const App = () => {
         const serverTheoryCompleted = Boolean(serverProgress?.current_theory_completed);
         const currentSessionNumber = Number(TODAYS_SESSION.session || 0);
         const serverSessionCompleted = Number(serverProgress?.last_completed_session || 0) >= currentSessionNumber;
+        const localSessionCompleted = readStoredList(completedSessionsStorageKey)
+            .includes(`${currentSubject}_${currentSessionNumber}`);
+        const sessionCompleted = serverSessionCompleted || localSessionCompleted;
 
         let currentPhase = Math.min(3, Math.max(1, Number(localProgress.currentPhase || 1)));
-        if (serverSessionInProgress === currentSessionNumber && serverPhaseCompleted > 0) {
+        if (!sessionCompleted && serverSessionInProgress === currentSessionNumber && serverPhaseCompleted > 0) {
             currentPhase = Math.max(currentPhase, Math.min(3, serverPhaseCompleted + 1));
         }
 
@@ -5577,7 +5580,7 @@ const App = () => {
             serverSessionInProgress === currentSessionNumber
         );
 
-        const questionsCompleted = serverSessionCompleted
+        const questionsCompleted = sessionCompleted
             ? QUIZ_TOTAL_QUESTIONS
             : ((currentPhase - 1) * QUIZ_PHASE_QUESTIONS);
 
@@ -5585,8 +5588,8 @@ const App = () => {
             currentPhase,
             currentLevel: QUIZ_PHASE_LEVELS[currentPhase] || 'Basico',
             sessionStarted,
-            sessionCompleted: serverSessionCompleted,
-            requiresMandatoryTheory: !sessionStarted && !serverSessionCompleted,
+            sessionCompleted,
+            requiresMandatoryTheory: !sessionStarted && !sessionCompleted,
             questionsCompleted,
             localProgress
         };
@@ -6689,11 +6692,18 @@ ${finalData.capsule}`;
                                                 3: "bg-red-100 text-red-700 border-red-300"
                                             };
 
-                                            if (progress.currentPhase <= 3) {
+                                            if (!progress.sessionCompleted && progress.currentPhase <= 3) {
                                                 const questionsCompleted = (progress.currentPhase - 1) * QUIZ_PHASE_QUESTIONS;
                                                 return (
                                                     <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 ${phaseColors[progress.currentPhase]} animate-pulse`}>
                                                         Siguiente Nivel: {phaseNames[progress.currentPhase]} | {questionsCompleted}/{QUIZ_TOTAL_QUESTIONS} preguntas completadas
+                                                    </div>
+                                                );
+                                            }
+                                            if (progress.sessionCompleted) {
+                                                return (
+                                                    <div className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full text-xs font-black border-2 bg-green-100 text-green-700 border-green-300">
+                                                        Sesion completada | {QUIZ_TOTAL_QUESTIONS}/{QUIZ_TOTAL_QUESTIONS} preguntas completadas
                                                     </div>
                                                 );
                                             }
