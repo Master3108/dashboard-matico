@@ -500,7 +500,8 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         : '';
     const summaryHasTodayActivity = historyItems.some(item =>
         getDateKey(item.date) === today &&
-        !['calendar', 'reminder'].includes(String(item.source || '')) &&
+        !['calendar', 'reminder', 'daily_report'].includes(String(item.source || '')) &&
+        String(item.type || '') !== 'reporte_diario' &&
         matchesSummarySubject(item.subject)
     ) || studySessions.some(session =>
         getDateKey(getStudyDate(session)) === today &&
