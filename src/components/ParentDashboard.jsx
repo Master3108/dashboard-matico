@@ -490,7 +490,8 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         !['calendar', 'reminder'].includes(String(item.source || ''))
     ).slice(0, 5);
     const summaryLastActivity = historyItems.find(item =>
-        !['calendar', 'reminder'].includes(String(item.source || '')) &&
+        !['calendar', 'reminder', 'daily_report'].includes(String(item.source || '')) &&
+        String(item.type || '') !== 'reporte_diario' &&
         matchesSummarySubject(item.subject)
     );
     const summaryLastActivityDate = getDateKey(summaryLastActivity?.date);
@@ -793,15 +794,30 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 <p className="text-xs font-bold text-[#9094A6]">Proximas pruebas</p>
                                 <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Solo futuras</p>
                             </div>
-                            <div className="bg-gradient-to-br from-[#F0F4FF] to-[#E0E7FF] rounded-2xl p-3 text-center col-span-2 md:col-span-4">
-                                <FileText className="w-6 h-6 text-[#6366F1] mx-auto mb-1" />
-                                <p className="text-lg font-black text-[#6366F1]">
-                                    {summaryLastActivity ? `${summaryLastActivity.subject || 'General'}: ${summaryLastActivity.title || summaryLastActivity.topic || summaryLastActivity.type || 'ultima actividad'}` : 'Sin ultima sesion'}
-                                </p>
-                                <p className="text-xs font-bold text-[#9094A6]">Ultima sesion real</p>
-                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">
-                                    {summaryLastActivityLabel || 'Sin fecha registrada'}
-                                </p>
+                            <div className="bg-gradient-to-br from-[#F0F4FF] to-[#E0E7FF] rounded-2xl p-4 col-span-2 md:col-span-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <FileText className="w-6 h-6 text-[#6366F1]" />
+                                        <div>
+                                            <p className="text-sm font-black text-[#6366F1]">
+                                                {summaryLastActivity ? `${summaryLastActivity.subject || 'General'}: ${summaryLastActivity.title || summaryLastActivity.type || 'Actividad'}` : 'Sin ultima sesion'}
+                                            </p>
+                                            <p className="text-[10px] font-bold text-[#9094A6]">
+                                                Ultima sesion real · {summaryLastActivityLabel || 'Sin fecha'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {summaryLastActivity && (
+                                        <div className="flex items-center gap-3">
+                                            {summaryLastActivity.detail && (
+                                                <span className="text-xs font-black text-[#6366F1] bg-white/60 px-2 py-1 rounded-lg">{summaryLastActivity.detail}</span>
+                                            )}
+                                            {summaryLastActivity.score != null && (
+                                                <span className="text-xs font-black text-[#6366F1] bg-white/60 px-2 py-1 rounded-lg">Score: {summaryLastActivity.score}</span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
