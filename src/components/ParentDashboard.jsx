@@ -499,8 +499,8 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const summaryLastActivityLabel = summaryLastActivityDate
         ? new Date(`${summaryLastActivityDate}T12:00:00`).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
         : '';
-    const summaryLastActivityMinutes = summaryLastActivityDate
-        ? studySessions.filter(s => getDateKey(getStudyDate(s)) === summaryLastActivityDate).reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0)
+    const summaryLastActivityMinutes = summaryLastActivityDate && summaryLastActivity
+        ? studySessions.filter(s => getDateKey(getStudyDate(s)) === summaryLastActivityDate && s.subject === summaryLastActivity.subject).reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0)
         : 0;
     const summaryHasTodayActivity = historyItems.some(item =>
         getDateKey(item.date) === today &&
@@ -801,9 +801,9 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full"></div>
                                 {summaryLastActivity ? (
                                     <div className="relative">
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">Ultima sesion real · {summaryLastActivityLabel}</p>
-                                        <h2 className="text-2xl font-black leading-tight">{summaryLastActivity.subject || 'General'}</h2>
-                                        <p className="text-lg font-bold text-white/90">{summaryLastActivity.title || summaryLastActivity.topic || summaryLastActivity.type || 'Actividad'}</p>
+                                        <p className="text-base font-black uppercase tracking-widest text-red-300 mb-2">Ultima sesion real · {summaryLastActivityLabel}{summaryDaysWithoutSession > 0 ? ` · hace ${summaryDaysWithoutSession} dia(s)` : ''}</p>
+                                        <h2 className="text-3xl font-black leading-tight">{summaryLastActivity.subject || 'General'}</h2>
+                                        <p className="text-xl font-bold text-white/90">{summaryLastActivity.title || summaryLastActivity.topic || summaryLastActivity.type || 'Actividad'}</p>
                                         <div className="flex flex-wrap items-center gap-3 mt-3">
                                             {summaryLastActivityMinutes > 0 && (
                                                 <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{summaryLastActivityMinutes} min estudiando</span>
