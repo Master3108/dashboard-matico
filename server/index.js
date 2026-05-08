@@ -9298,10 +9298,20 @@ app.get('/api/parent/student-history', async (req, res) => {
                 : null;
             const score = toNumberOrNull(row.score);
             const correct = total && directCorrect === null && score !== null && score <= total ? score : directCorrect;
+            const computedWrong = total !== null && correct !== null ? Math.max(0, total - correct) : null;
             const wrongDirect = toNumberOrNull(row.wrong_answers);
-            const wrong = wrongDirect !== null ? wrongDirect : (total !== null && correct !== null ? Math.max(0, total - correct) : null);
+            const wrong = computedWrong !== null ? Math.max(computedWrong, wrongDirect || 0) : wrongDirect;
             const percent = total && correct !== null ? Math.round((correct / total) * 100) : (score !== null && !total ? score : null);
             return { total, correct, wrong, percent };
+        };
+        const describePrepSource = (sourceMode = '', hasEvidence = false) => {
+            const mode = String(sourceMode || '').trim();
+            if (mode === 'oracle_notebook') return 'Externa: creada desde guia/cuaderno/foto subida al Oraculo';
+            if (mode === 'oracle_manual_evidence') return 'Externa: Oraculo por tema/libro con evidencia adjunta';
+            if (mode === 'oracle_manual') return 'Externa: Oraculo por tema, libro o solicitud libre';
+            if (mode === 'prep_exam_evidence' || hasEvidence) return 'Externa: preparacion con guia, imagen o antecedente adjunto';
+            if (mode === 'prep_exam') return 'Ruta normal: sesiones Matico seleccionadas';
+            return mode ? `Origen: ${mode}` : '';
         };
         const hasEvidenceOnDay = (subject, day) => [...notebookRows, ...ocrRows].some(row =>
             dateOnly(row.created_at) === day && (!subject || normalizeSubject(row.subject || row.metadata?.subject || '') === subject)
@@ -9321,7 +9331,9 @@ app.get('/api/parent/student-history', async (req, res) => {
             const improvementPlan = parseMaybeJson(row.improvement_plan, '');
             const subject = normalizeSubject(row.subject || '');
             const day = dateOnly(row.created_at);
+            const sourceMode = String(row.source_mode || '').trim();
             const activityGroupId = `${row.event_type || 'progress'}|${subject}|${sessionKey(row.session)}|${day}`;
+            const hasEvidence = hasEvidenceOnDay(subject, day);
             return {
                 id: `progress-${row.id || row.created_at}`,
                 source: 'progress',
@@ -9341,11 +9353,13 @@ app.get('/api/parent/student-history', async (req, res) => {
                 weakness,
                 improvement_plan: improvementPlan,
                 evidence_summary: evidenceSummaryFor(subject, day),
-                has_evidence: hasEvidenceOnDay(subject, day),
+                has_evidence: hasEvidence,
                 activity_group_id: activityGroupId,
                 metadata: {
                     level_name: row.level_name || '',
-                    source_mode: row.source_mode || '',
+                    source_mode: sourceMode,
+                    source_label: describePrepSource(sourceMode, hasEvidence),
+                    is_external_source: ['oracle_notebook', 'oracle_manual', 'oracle_manual_evidence', 'prep_exam_evidence'].includes(sourceMode) || (String(row.event_type || '').startsWith('prep_exam') && hasEvidence),
                     selected_sessions: row.selected_sessions || row.session || '',
                     raw_score: row.score
                 }
@@ -9365,6 +9379,7 @@ app.get('/api/parent/student-history', async (req, res) => {
                 started_count: 0,
                 completed_count: 0,
                 attempts: [],
+                metadata: { ...(item.metadata || {}) },
                 activity_group_id: key
             };
             current.date = String(item.date || '') > String(current.date || '') ? item.date : current.date;
@@ -9383,9 +9398,15 @@ app.get('/api/parent/student-history', async (req, res) => {
                 current.weakness = item.weakness;
                 current.improvement_plan = item.improvement_plan;
                 current.xp = item.xp;
+                current.metadata = { ...(current.metadata || {}), ...(item.metadata || {}) };
             }
             current.evidence_summary = current.evidence_summary || item.evidence_summary;
             current.has_evidence = current.has_evidence || item.has_evidence;
+            current.metadata = {
+                ...(current.metadata || {}),
+                source_label: current.metadata?.source_label || item.metadata?.source_label || '',
+                is_external_source: Boolean(current.metadata?.is_external_source || item.metadata?.is_external_source)
+            };
             prepGroups.set(key, current);
         });
 
@@ -9395,7 +9416,12 @@ app.get('/api/parent/student-history', async (req, res) => {
             ...progressItems.filter(item => !groupedPrepIds.has(item.id)),
             ...[...prepGroups.values()].map(group => ({
                 ...group,
-                status: group.completed_count > 0 ? 'completado' : 'iniciado',
+                status: group.completed_count > 0 ? 'completado' : 'iniciado sin resultado',
+                incomplete_reason: group.completed_count > 0 ? '' : 'Prueba iniciada, pero no hay resultado final. El alumno no termino el quiz o salio antes de enviar las respuestas.',
+                metadata: {
+                    ...(group.metadata || {}),
+                    incomplete_reason: group.completed_count > 0 ? '' : 'Prueba iniciada, pero no hay resultado final. El alumno no termino el quiz o salio antes de enviar las respuestas.'
+                },
                 duration_minutes: (() => {
                     const times = group.attempts.map(item => new Date(item.date).getTime()).filter(Number.isFinite);
                     if (times.length < 2) return null;

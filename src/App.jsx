@@ -4113,6 +4113,7 @@ const App = () => {
 
         try {
             const totalBatches = Math.ceil(questionCount / 5);
+            const sourceMode = overrides.sourceMode || (evidencePayload.length > 0 ? 'prep_exam_evidence' : 'prep_exam');
             const config = {
                 subject,
                 sessions: sortedSessions,
@@ -4120,6 +4121,7 @@ const App = () => {
                 totalBatches,
                 topics: selectedDetails.map(item => item.topic),
                 evidences: Array.isArray(overrides.evidences) ? overrides.evidences : prepExamEvidences,
+                sourceMode,
                 sessionDetails: selectedDetails.map(item => ({
                     session: item.session,
                     topic: item.topic,
@@ -4135,6 +4137,7 @@ const App = () => {
                 selected_sessions: sortedSessions.join(','),
                 topic: selectedDetails.map(item => `S${item.session}: ${item.topic}`).join(' | '),
                 question_count: questionCount,
+                source_mode: sourceMode,
                 xp_reward: 0
             });
 
@@ -4247,6 +4250,7 @@ const App = () => {
             questionCount,
             sessions: [session],
             evidences: prepExamEvidences,
+            sourceMode: prepExamEvidences.length > 0 ? 'oracle_manual_evidence' : 'oracle_manual',
             sessionDetails: [{
                 session,
                 topic,
@@ -6904,6 +6908,7 @@ ${finalData.capsule}`;
                                         weakness: report.conceptGaps?.length ? `Dificultades en: ${report.conceptGaps.join(', ')}` : '',
                                         improvement_plan: report.reviewPlan?.map(item => item.action).join(' '),
                                         weak_sessions: report.weakSessions.map(item => item.session).join(','),
+                                        source_mode: prepExamConfig.sourceMode || 'prep_exam',
                                         xp_reward: 150
                                     });
 

@@ -1277,8 +1277,11 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                         const detectedConcepts = parseHistoryList(item.metadata?.detected_concepts);
                                         const missingConcepts = parseHistoryList(item.metadata?.missing_concepts);
                                         const attempts = parseHistoryList(item.attempts);
+                                        const sourceLabel = stringifyHistoryText(item.metadata?.source_label);
+                                        const incompleteReason = stringifyHistoryText(item.incomplete_reason || item.metadata?.incomplete_reason);
+                                        const isExternalSource = Boolean(item.metadata?.is_external_source);
                                         const isExpanded = Boolean(expandedHistoryItems[item.id]);
-                                        const hasMore = attempts.length > 1 || wrongDetails.length > 0 || weakness || improvementPlan || item.ocr_text || item.image_url || item.evidence_summary || detectedConcepts.length || missingConcepts.length;
+                                        const hasMore = attempts.length > 1 || wrongDetails.length > 0 || weakness || improvementPlan || sourceLabel || incompleteReason || item.ocr_text || item.image_url || item.evidence_summary || detectedConcepts.length || missingConcepts.length;
                                         return (
                                         <div key={item.id} className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
                                             <div className="flex items-start justify-between gap-3">
@@ -1298,6 +1301,9 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                         )}
                                                         {item.has_evidence && (
                                                             <span className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded-lg">evidencia</span>
+                                                        )}
+                                                        {isExternalSource && (
+                                                            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg">externa</span>
                                                         )}
                                                     </div>
                                                     <p className="font-black text-sm text-[#2B2E4A] truncate">{item.title}</p>
@@ -1322,8 +1328,16 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                                 {item.duration_minutes} min
                                                             </span>
                                                         )}
+                                                        {incompleteReason && (
+                                                            <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg">
+                                                                sin resultado final
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {item.detail && <p className="text-xs text-gray-500 mt-2 line-clamp-2">{item.detail}</p>}
+                                                    {incompleteReason && (
+                                                        <p className="text-xs font-bold text-amber-700 mt-2">{incompleteReason}</p>
+                                                    )}
                                                 </div>
                                                 <div className="text-right shrink-0">
                                                     {score != null && (
@@ -1345,6 +1359,21 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                             </div>
                                             {isExpanded && (
                                                 <div className="mt-4 space-y-3 border-t border-gray-200 pt-3">
+                                                    {sourceLabel && (
+                                                        <div className="rounded-xl bg-orange-50 p-3">
+                                                            <p className="text-[10px] font-black uppercase text-orange-600">Origen de la prueba</p>
+                                                            <p className="text-xs font-bold text-[#2B2E4A] mt-1">{sourceLabel}</p>
+                                                        </div>
+                                                    )}
+                                                    {incompleteReason && (
+                                                        <div className="rounded-xl bg-amber-50 p-3">
+                                                            <p className="text-[10px] font-black uppercase text-amber-700">Dónde quedó</p>
+                                                            <p className="text-xs font-bold text-[#2B2E4A] mt-1">{incompleteReason}</p>
+                                                            {item.total_questions > 0 && (
+                                                                <p className="text-xs text-gray-600 mt-1">Tenía {item.total_questions} preguntas programadas, pero no existe cierre con correctas/malas.</p>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     {attempts.length > 1 && (
                                                         <div className="rounded-xl bg-white p-3">
                                                             <p className="text-[10px] font-black uppercase text-purple-500 mb-2">Intentos del mismo flujo</p>
