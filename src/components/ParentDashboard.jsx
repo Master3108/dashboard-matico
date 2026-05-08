@@ -510,7 +510,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             duration_minutes: Number(session.total_minutes || 0)
         }));
     const summaryHistoryActivityItems = historyItems.filter(item =>
-        !['calendar', 'reminder', 'daily_report'].includes(String(item.source || '')) &&
+        !['calendar', 'reminder', 'daily_report', 'study'].includes(String(item.source || '')) &&
         String(item.type || '') !== 'reporte_diario' &&
         matchesSummarySubject(item.subject)
     );
