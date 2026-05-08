@@ -46,6 +46,8 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
     const [inputText, setInputText] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [imagePreviews, setImagePreviews] = useState([]);
     const [isListening, setIsListening] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [lastCreatedEvent, setLastCreatedEvent] = useState(null);
@@ -123,6 +125,8 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
         setInputText('');
         setSelectedImage(null);
         setImagePreview(null);
+        setSelectedImages([]);
+        setImagePreviews([]);
         setLastCreatedEvent(null);
         setEventReviews({});
     }, [isOpen, intent, studentName]);
@@ -280,12 +284,19 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
     };
 
     const handleImageSelect = (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setSelectedImage(file);
-        const reader = new FileReader();
-        reader.onload = (ev) => setImagePreview(ev.target.result);
-        reader.readAsDataURL(file);
+        const files = Array.from(e.target.files || []).filter(file => file.type?.startsWith('image/')).slice(0, 10);
+        if (!files.length) return;
+        setSelectedImages(files);
+        setSelectedImage(files[0]);
+        Promise.all(files.map(file => new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => resolve(ev.target.result);
+            reader.onerror = () => resolve('');
+            reader.readAsDataURL(file);
+        }))).then((previews) => {
+            setImagePreviews(previews.filter(Boolean));
+            setImagePreview(previews[0] || null);
+        });
     };
 
     // Abre camara nativa en movil, getUserMedia en desktop
@@ -315,8 +326,12 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 if (blob) {
                     const file = new File([blob], 'foto-camara.png', { type: 'image/png' });
                     setSelectedImage(file);
+                    setSelectedImages([file]);
                     const reader = new FileReader();
-                    reader.onload = (ev) => setImagePreview(ev.target.result);
+                    reader.onload = (ev) => {
+                        setImagePreview(ev.target.result);
+                        setImagePreviews([ev.target.result]);
+                    };
                     reader.readAsDataURL(file);
                 }
             }, 'image/png');
@@ -332,6 +347,8 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
     const removeImage = () => {
         setSelectedImage(null);
         setImagePreview(null);
+        setSelectedImages([]);
+        setImagePreviews([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
         if (cameraInputRef.current) cameraInputRef.current.value = '';
     };
@@ -375,18 +392,25 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 addBotMessage('No hay capturas en cola para importar.');
                 return;
             }
-            // Tomar la primera captura de la cola como imagen seleccionada
-            const row = rows[0];
-            const base64 = String(row?.imageBase64 || row?.image_base64 || '').trim();
-            const mimeType = String(row?.imageMimeType || row?.image_mime_type || 'image/jpeg').trim() || 'image/jpeg';
-            if (base64) {
+            const importedFiles = [];
+            const importedPreviews = [];
+            for (let i = 0; i < Math.min(rows.length, 10); i += 1) {
+                const row = rows[i];
+                const base64 = String(row?.imageBase64 || row?.image_base64 || '').trim();
+                const mimeType = String(row?.imageMimeType || row?.image_mime_type || 'image/jpeg').trim() || 'image/jpeg';
+                if (!base64) continue;
                 const dataUrl = `data:${mimeType};base64,${base64}`;
                 const resp = await fetch(dataUrl);
                 const blob = await resp.blob();
-                const file = new File([blob], 'captura-nativa.png', { type: mimeType });
-                setSelectedImage(file);
-                setImagePreview(dataUrl);
-                addBotMessage(`Se importo ${rows.length} captura(s). La primera esta lista para enviar.`);
+                importedFiles.push(new File([blob], `captura-nativa-${i + 1}.png`, { type: mimeType }));
+                importedPreviews.push(dataUrl);
+            }
+            if (importedFiles.length) {
+                setSelectedImages(importedFiles);
+                setSelectedImage(importedFiles[0]);
+                setImagePreviews(importedPreviews);
+                setImagePreview(importedPreviews[0] || null);
+                addBotMessage(`Se importo ${importedFiles.length} captura(s). Estan listas para enviar.`);
             }
             await clearNativeQueuedCaptures();
             await refreshNativeState();
@@ -417,8 +441,12 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 if (blob) {
                     const file = new File([blob], 'captura-pantalla.png', { type: 'image/png' });
                     setSelectedImage(file);
+                    setSelectedImages([file]);
                     const reader = new FileReader();
-                    reader.onload = (ev) => setImagePreview(ev.target.result);
+                    reader.onload = (ev) => {
+                        setImagePreview(ev.target.result);
+                        setImagePreviews([ev.target.result]);
+                    };
                     reader.readAsDataURL(file);
                 }
             }, 'image/png');
@@ -429,22 +457,27 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
 
     const handleSend = async () => {
         if (isProcessing) return;
-        if (!inputText.trim() && !selectedImage) return;
+        if (!inputText.trim() && selectedImages.length === 0 && !selectedImage) return;
 
         // Stop listening if active
         if (isListening) stopListening();
 
         const userText = inputText.trim();
-        const userImage = selectedImage;
-        const userImagePreview = imagePreview;
+        const userImages = selectedImages.length ? selectedImages : (selectedImage ? [selectedImage] : []);
+        const userImagePreview = imagePreviews[0] || imagePreview;
 
         // Add user message
-        addUserMessage(userText || (userImage ? (intent === 'prueba' ? 'Imagen de prueba enviada' : 'Imagen enviada') : ''), userImagePreview);
+        addUserMessage(
+            userText || (userImages.length ? (intent === 'prueba' ? `${userImages.length} imagen(es) de prueba enviadas` : `${userImages.length} imagen(es) enviadas`) : ''),
+            userImagePreview
+        );
 
         // Clear inputs
         setInputText('');
         setSelectedImage(null);
         setImagePreview(null);
+        setSelectedImages([]);
+        setImagePreviews([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
 
         // Processing
@@ -464,7 +497,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 ? `Crear una prueba para ${studentName || 'el estudiante'}. ${userText}`.trim()
                 : userText;
             if (directedText) formData.append('text_input', directedText);
-            if (userImage) formData.append('image', userImage);
+            userImages.slice(0, 10).forEach((imageFile) => formData.append('images', imageFile));
             formData.append('dry_run', 'true');
 
             const res = await fetch('/api/calendar/smart-create', {
@@ -656,16 +689,19 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                 </div>
 
                 {/* Image preview */}
-                {imagePreview && (
+                {(imagePreviews.length > 0 || imagePreview) && (
                     <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 shrink-0">
-                        <div className="relative inline-block">
-                            <img src={imagePreview} alt="Preview" className="h-20 rounded-xl object-cover" />
+                        <div className="flex items-center gap-2 overflow-x-auto">
+                            {(imagePreviews.length ? imagePreviews : [imagePreview]).slice(0, 10).map((preview, index) => (
+                                <img key={`${preview}-${index}`} src={preview} alt={`Preview ${index + 1}`} className="h-20 w-16 rounded-xl object-cover bg-gray-100" />
+                            ))}
                             <button
                                 onClick={removeImage}
-                                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md"
+                                className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md shrink-0"
                             >
                                 <X className="w-3 h-3" />
                             </button>
+                            <span className="text-xs font-black text-[#64748B] shrink-0">{(imagePreviews.length || 1)}/10</span>
                         </div>
                     </div>
                 )}
@@ -778,9 +814,9 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
 
                         <button
                             onClick={handleSend}
-                            disabled={isProcessing || (!inputText.trim() && !selectedImage)}
+                            disabled={isProcessing || (!inputText.trim() && selectedImages.length === 0 && !selectedImage)}
                             className={`p-2.5 rounded-xl transition-all shrink-0 ${
-                                (inputText.trim() || selectedImage) && !isProcessing
+                                (inputText.trim() || selectedImages.length > 0 || selectedImage) && !isProcessing
                                     ? 'bg-[#7C3AED] text-white shadow-lg shadow-purple-500/30 hover:bg-[#6D28D9]'
                                     : 'bg-gray-100 text-gray-300'
                             }`}

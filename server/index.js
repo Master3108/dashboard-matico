@@ -77,8 +77,11 @@ const PEDAGOGICAL_ASSETS_UPLOADS_DIR = path.join(LOCAL_UPLOADS_DIR, 'quiz-assets
 const DATA_DIR = path.join(__dirname, 'data');
 const IMAGE_GENERATION_RUNTIME_CONFIG_FILE = path.join(DATA_DIR, 'image_generation_runtime_config.json');
 const NOTEBOOK_SUBMISSIONS_FILE = path.join(DATA_DIR, 'notebook_submissions.json');
-const NOTEBOOK_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const NOTEBOOK_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
 const NOTEBOOK_QUIZ_THRESHOLD = 80;
+const PRIORITY_STUDY_SUBJECTS = ['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'HISTORIA', 'LENGUAJE', 'COMPETENCIA_LECTORA'];
+const STUDY_STALE_DAYS = 7;
+const SMART_CREATE_MAX_IMAGES = 10;
 
 app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
 
@@ -2137,7 +2140,8 @@ const expireNotebookSubmissionIfNeeded = async (submission = {}) => {
     return updateNotebookSubmission(submission.id, (current) => ({
         ...current,
         status: 'expired',
-        public_url: resolveNotebookPublicUrl(current),
+        public_url: '',
+        image_expired: true,
         error: null
     }));
 };
@@ -2156,7 +2160,8 @@ const cleanupExpiredNotebookSubmissions = async () => {
         submissions[submissionId] = {
             ...submission,
             status: 'expired',
-            public_url: resolveNotebookPublicUrl(submission),
+            public_url: '',
+            image_expired: true,
             updated_at: new Date().toISOString(),
             error: null
         };
@@ -2428,6 +2433,7 @@ RESPONDE SOLO JSON VALIDO CON ESTA FORMA:
         analysis_result: normalized,
         public_url: current.public_url || resolveNotebookPublicUrl(current)
     }));
+    await recordNotebookOcr(submission, normalized);
 
     if (normalized.xp_reward > 0 && submission.user_id) {
         try {
@@ -3469,6 +3475,421 @@ const sendEmailSafe = async (to, subject, htmlBody) => {
     } catch (err) {
         console.error(`[EMAIL] Error enviando a ${to}:`, err.message);
     }
+};
+
+const normalizeSubjectCode = (value = '') => {
+    const raw = String(value || '').trim().toUpperCase();
+    const normalized = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (normalized.includes('MAT')) return 'MATEMATICA';
+    if (normalized.includes('BIO')) return 'BIOLOGIA';
+    if (normalized.includes('FIS')) return 'FISICA';
+    if (normalized.includes('QUI')) return 'QUIMICA';
+    if (normalized.includes('HIST')) return 'HISTORIA';
+    if (normalized.includes('LENG') || normalized.includes('LECT')) return 'LENGUAJE';
+    return raw || 'GENERAL';
+};
+
+const dateOnlyInSantiago = (date = new Date()) => {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Santiago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).formatToParts(date).reduce((acc, part) => {
+        acc[part.type] = part.value;
+        return acc;
+    }, {});
+    return `${parts.year}-${parts.month}-${parts.day}`;
+};
+
+const addDaysToDateOnly = (dateStr, days) => {
+    const d = new Date(`${dateStr}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+};
+
+const getProfileByAnyId = async (userId = '') => {
+    if (!userId) return null;
+    const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (data) return data;
+
+    const { data: legacy } = await supabase
+        .from('users')
+        .select('*')
+        .eq('token', userId)
+        .maybeSingle();
+    if (!legacy) return null;
+    return {
+        user_id: legacy.token,
+        email: legacy.mail,
+        display_name: legacy.nombre,
+        guardian_email: legacy.correo_apoderado,
+        parent_user_id: null,
+        fcm_token: null
+    };
+};
+
+const resolveParentProfileForStudent = async (studentProfile = {}) => {
+    if (studentProfile?.parent_user_id) {
+        const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', studentProfile.parent_user_id)
+            .maybeSingle();
+        if (data) return data;
+    }
+
+    const guardianEmail = String(studentProfile?.guardian_email || studentProfile?.correo_apoderado || '').trim();
+    if (!guardianEmail) return null;
+    const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('email', guardianEmail)
+        .maybeSingle();
+    return data || { user_id: '', email: guardianEmail, display_name: 'Apoderado', fcm_token: null };
+};
+
+const createSmartNotification = async ({
+    user_id,
+    event_id = null,
+    type = 'info',
+    title,
+    body = '',
+    scheduled_at = new Date().toISOString(),
+    priority = 'normal',
+    payload = {},
+    sent_push = false,
+    sent_email = false,
+    sent_at = null
+} = {}) => {
+    if (!user_id || !title) return null;
+    const row = {
+        user_id,
+        event_id,
+        type,
+        title,
+        body,
+        scheduled_at,
+        priority,
+        payload,
+        sent_push,
+        sent_email,
+        sent_at
+    };
+    const { data, error } = await supabase.from('notifications').insert(row).select().maybeSingle();
+    if (error) {
+        await createNotification({ user_id, event_id, type, title, body, scheduled_at });
+        return null;
+    }
+    return data;
+};
+
+const sendPushNotification = async ({ token, title, body, payload = {} } = {}) => {
+    const serverKey = process.env.FCM_SERVER_KEY || process.env.FIREBASE_SERVER_KEY;
+    if (!token || !serverKey) {
+        return { ok: false, reason: !token ? 'missing_token' : 'missing_fcm_server_key' };
+    }
+    try {
+        const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+            method: 'POST',
+            headers: {
+                Authorization: `key=${serverKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                to: token,
+                priority: 'high',
+                notification: { title, body, sound: 'default' },
+                data: Object.fromEntries(Object.entries(payload || {}).map(([key, value]) => [key, String(value ?? '')]))
+            })
+        });
+        if (!response.ok) return { ok: false, reason: `fcm_${response.status}` };
+        return { ok: true };
+    } catch (error) {
+        return { ok: false, reason: error.message || 'push_failed' };
+    }
+};
+
+const recordStudyAlert = async ({
+    student_user_id,
+    parent_user_id = '',
+    subject = '',
+    alert_type,
+    title,
+    body = '',
+    severity = 'info',
+    event_id = null,
+    report_id = null,
+    payload = {}
+} = {}) => {
+    try {
+        const { data, error } = await supabase.from('study_alerts').insert({
+            student_user_id,
+            parent_user_id: parent_user_id || null,
+            subject: subject || null,
+            alert_type,
+            title,
+            body,
+            severity,
+            event_id,
+            report_id,
+            payload
+        }).select().maybeSingle();
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.warn('[STUDY_ALERT] omitido:', error.message);
+        return null;
+    }
+};
+
+const recordNotebookOcr = async (submission = {}, analysis = {}) => {
+    try {
+        const { error } = await supabase.from('notebook_ocr_records').upsert({
+            submission_id: submission.id,
+            user_id: submission.user_id || null,
+            user_email: submission.email || submission.user_email || null,
+            subject: normalizeSubjectCode(submission.subject || analysis.subject || ''),
+            session_id: submission.session_id || null,
+            phase: submission.phase || null,
+            topic: submission.topic || '',
+            ocr_text: analysis.ocr_text || '',
+            detected_concepts: analysis.detected_concepts || [],
+            missing_concepts: analysis.missing_concepts || [],
+            interpretation_score: Number(analysis.interpretation_score || 0),
+            quiz_ready: Boolean(analysis.quiz_ready),
+            tier: analysis.tier || '',
+            feedback: analysis.feedback || '',
+            suggestion: analysis.suggestion || '',
+            page_count: Number(submission.page_count || 1) || 1,
+            image_available_until: submission.expires_at || null,
+            public_url: submission.public_url || '',
+            metadata: {
+                status: submission.status,
+                scan_id: submission.scan_id,
+                file_name: submission.file_name,
+                xp_reward: analysis.xp_reward || 0
+            }
+        }, { onConflict: 'submission_id' });
+        if (error) throw error;
+    } catch (error) {
+        console.warn('[NOTEBOOK_OCR] No se pudo persistir OCR:', error.message);
+    }
+};
+
+const buildDailyReportHtml = (report = {}) => {
+    const rows = (report.subjects || []).map(item => `
+        <tr>
+            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escapeHtml(item.subject)}</td>
+            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escapeHtml(String(item.study_minutes || 0))} min</td>
+            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escapeHtml(String(item.quiz_correct || 0))}/${escapeHtml(String(item.quiz_total || 0))}</td>
+            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escapeHtml(String(item.notebook_score || 0))}%</td>
+        </tr>
+    `).join('');
+    return `
+        <div style="font-family:Segoe UI,Arial,sans-serif;max-width:680px;margin:0 auto;color:#1f2937;">
+            <h1 style="color:#4f46e5;">Reporte diario Matico</h1>
+            <p><strong>${escapeHtml(report.student_name || 'Matias')}</strong> ${report.studied_today ? 'estudio hoy.' : 'no registra estudio hoy.'}</p>
+            <p>${escapeHtml(report.summary_text || '')}</p>
+            <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+                <thead><tr style="background:#f8fafc;"><th style="text-align:left;padding:8px;">Materia</th><th style="text-align:left;padding:8px;">Estudio</th><th style="text-align:left;padding:8px;">Quiz</th><th style="text-align:left;padding:8px;">Cuaderno</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="4" style="padding:12px;">Sin actividad registrada.</td></tr>'}</tbody>
+            </table>
+            <p style="margin-top:16px;color:#64748b;">Imagenes de cuaderno disponibles por 3 dias; el OCR queda guardado para consulta.</p>
+        </div>
+    `;
+};
+
+const buildDailyReportForStudent = async ({ student_user_id, report_date = dateOnlyInSantiago(), send = false } = {}) => {
+    if (!student_user_id) throw new Error('Falta student_user_id');
+    const studentProfile = await getProfileByAnyId(student_user_id);
+    const parentProfile = await resolveParentProfileForStudent(studentProfile || {});
+    const nextDate = addDaysToDateOnly(report_date, 1);
+    const fromIso = `${report_date}T00:00:00-04:00`;
+    const toIso = `${nextDate}T00:00:00-04:00`;
+
+    const [studyRes, progressRes, calendarRes, ocrRes] = await Promise.all([
+        supabase.from('study_sessions').select('*').eq('student_user_id', student_user_id).gte('start_time', fromIso).lt('start_time', toIso),
+        supabase.from('progress_log').select('*').eq('user_id', student_user_id).gte('created_at', fromIso).lt('created_at', toIso),
+        supabase.from('calendar_events').select('*').eq('student_user_id', student_user_id).eq('event_date', report_date),
+        supabase.from('notebook_ocr_records').select('*').eq('user_id', student_user_id).gte('created_at', fromIso).lt('created_at', toIso)
+    ]);
+
+    const studyRows = studyRes.data || [];
+    const progressRows = progressRes.data || [];
+    const calendarRows = calendarRes.data || [];
+    const ocrRows = ocrRes.data || [];
+    const subjectMap = new Map();
+    const ensureSubject = (subject) => {
+        const key = normalizeSubjectCode(subject || 'GENERAL');
+        if (!subjectMap.has(key)) {
+            subjectMap.set(key, {
+                subject: key,
+                study_minutes: 0,
+                quiz_total: 0,
+                quiz_correct: 0,
+                quiz_wrong: 0,
+                notebook_score: 0,
+                notebook_pages: 0,
+                notebook_ocr: '',
+                events: []
+            });
+        }
+        return subjectMap.get(key);
+    };
+
+    studyRows.forEach(row => {
+        const item = ensureSubject(row.subject);
+        item.study_minutes += Number(row.total_minutes || 0);
+    });
+    progressRows.forEach(row => {
+        const item = ensureSubject(row.subject);
+        const total = Number(row.total_questions || 0);
+        const correct = Number(row.correct_answers || 0);
+        item.quiz_total += total;
+        item.quiz_correct += correct;
+        item.quiz_wrong += Number(row.wrong_answers || Math.max(0, total - correct));
+    });
+    calendarRows.forEach(row => {
+        ensureSubject(row.subject).events.push(row.title || row.event_type || 'Evento');
+    });
+    ocrRows.forEach(row => {
+        const item = ensureSubject(row.subject);
+        item.notebook_score = Math.max(item.notebook_score, Number(row.interpretation_score || 0));
+        item.notebook_pages += Number(row.page_count || 0);
+        if (!item.notebook_ocr && row.ocr_text) item.notebook_ocr = String(row.ocr_text).slice(0, 600);
+    });
+
+    const subjects = [...subjectMap.values()].sort((a, b) => a.subject.localeCompare(b.subject));
+    const totalMinutes = studyRows.reduce((sum, row) => sum + (Number(row.total_minutes) || 0), 0);
+    const totalQuestions = subjects.reduce((sum, row) => sum + row.quiz_total, 0);
+    const totalCorrect = subjects.reduce((sum, row) => sum + row.quiz_correct, 0);
+    const studiedToday = totalMinutes > 0 || progressRows.length > 0 || ocrRows.length > 0;
+    const staleAlerts = [];
+    const sinceIso = `${addDaysToDateOnly(report_date, -STUDY_STALE_DAYS)}T00:00:00-04:00`;
+
+    for (const subject of PRIORITY_STUDY_SUBJECTS) {
+        const [recentStudy, recentProgress, recentOcr] = await Promise.all([
+            supabase.from('study_sessions').select('session_id').eq('student_user_id', student_user_id).eq('subject', subject).gte('start_time', sinceIso).limit(1),
+            supabase.from('progress_log').select('id').eq('user_id', student_user_id).eq('subject', subject).gte('created_at', sinceIso).limit(1),
+            supabase.from('notebook_ocr_records').select('id').eq('user_id', student_user_id).eq('subject', subject).gte('created_at', sinceIso).limit(1)
+        ]);
+        if (!(recentStudy.data?.length || recentProgress.data?.length || recentOcr.data?.length)) {
+            staleAlerts.push(subject);
+        }
+    }
+
+    const summaryText = studiedToday
+        ? `Hoy registro ${totalMinutes} minutos de estudio y ${totalCorrect}/${totalQuestions || 0} respuestas correctas.`
+        : 'Hoy no hay evidencia de estudio, quiz ni cuaderno revisado.';
+    const payload = {
+        report_date,
+        student_user_id,
+        student_name: studentProfile?.display_name || studentProfile?.nombre || 'Matias',
+        parent_user_id: parentProfile?.user_id || '',
+        parent_email: parentProfile?.email || studentProfile?.guardian_email || '',
+        studied_today: studiedToday,
+        total_minutes: totalMinutes,
+        quiz_total: totalQuestions,
+        quiz_correct: totalCorrect,
+        quiz_wrong: Math.max(0, totalQuestions - totalCorrect),
+        notebook_count: ocrRows.length,
+        subjects,
+        stale_subjects: staleAlerts,
+        summary_text: summaryText,
+        generated_at: new Date().toISOString()
+    };
+
+    let reportId = null;
+    try {
+        const { data, error } = await supabase.from('daily_reports').upsert({
+            student_user_id,
+            parent_user_id: payload.parent_user_id || null,
+            report_date,
+            payload,
+            studied_today: studiedToday,
+            total_minutes: totalMinutes,
+            quiz_total: totalQuestions,
+            quiz_correct: totalCorrect,
+            quiz_wrong: payload.quiz_wrong,
+            notebook_count: ocrRows.length,
+            status: send ? 'sending' : 'generated'
+        }, { onConflict: 'student_user_id,report_date' }).select().maybeSingle();
+        if (!error && data?.report_id) reportId = data.report_id;
+    } catch (error) {
+        console.warn('[DAILY_REPORT] No se pudo guardar reporte:', error.message);
+    }
+
+    if (send && !studiedToday) {
+        await recordStudyAlert({
+            student_user_id,
+            parent_user_id: payload.parent_user_id,
+            alert_type: 'no_study_today',
+            title: 'Matias no registra estudio hoy',
+            body: summaryText,
+            severity: 'high',
+            report_id: reportId,
+            payload
+        });
+    }
+    if (send) {
+        for (const subject of staleAlerts) {
+            await recordStudyAlert({
+                student_user_id,
+                parent_user_id: payload.parent_user_id,
+                subject,
+                alert_type: 'stale_subject',
+                title: `${subject}: sin estudio reciente`,
+                body: `No hay actividad de ${subject} en los ultimos ${STUDY_STALE_DAYS} dias.`,
+                severity: 'medium',
+                report_id: reportId,
+                payload: { report_date, subject }
+            });
+        }
+    }
+
+    if (send && payload.parent_user_id) {
+        const title = `Reporte Matico ${report_date}`;
+        const body = studiedToday
+            ? `${payload.student_name}: ${totalMinutes} min, ${totalCorrect}/${totalQuestions || 0} correctas.`
+            : `${payload.student_name} no registra estudio hoy.`;
+        const pushResult = await sendPushNotification({
+            token: parentProfile?.fcm_token,
+            title,
+            body,
+            payload: { type: 'daily_report', report_id: reportId || '', report_date }
+        });
+        let sentEmail = false;
+        if (!pushResult.ok && payload.parent_email) {
+            await sendEmailSafe(payload.parent_email, title, buildDailyReportHtml(payload));
+            sentEmail = true;
+        }
+        await createSmartNotification({
+            user_id: payload.parent_user_id,
+            type: 'daily_report',
+            title,
+            body,
+            priority: studiedToday ? 'normal' : 'high',
+            payload: { ...payload, push_result: pushResult.reason || 'ok' },
+            sent_push: pushResult.ok,
+            sent_email: sentEmail,
+            sent_at: new Date().toISOString()
+        });
+        if (reportId) {
+            await supabase.from('daily_reports').update({
+                status: pushResult.ok ? 'sent_push' : (sentEmail ? 'sent_email' : 'notified'),
+                sent_push: pushResult.ok,
+                sent_email: sentEmail,
+                sent_at: new Date().toISOString()
+            }).eq('report_id', reportId);
+        }
+    }
+
+    return { ...payload, report_id: reportId };
 };
 
 const logToSheet = async (
@@ -7778,6 +8199,102 @@ cron.schedule('30 8 * * *', async () => {
     }
 }, { timezone: 'America/Santiago' });
 
+cron.schedule('30 13 * * *', async () => {
+    try {
+        const today = dateOnlyInSantiago();
+        const targetDate = addDaysToDateOnly(today, 2);
+        const { data: events, error } = await supabase
+            .from('calendar_events')
+            .select('*')
+            .eq('event_date', targetDate)
+            .in('event_type', ['prueba', 'tarea', 'estudio', 'repaso'])
+            .neq('status', 'cancelado')
+            .limit(500);
+        if (error) throw error;
+
+        for (const event of events || []) {
+            const { data: existing } = await supabase
+                .from('study_alerts')
+                .select('alert_id')
+                .eq('event_id', event.event_id)
+                .eq('alert_type', 'event_d2_1330')
+                .maybeSingle();
+            if (existing) continue;
+
+            const studentProfile = await getProfileByAnyId(event.student_user_id);
+            const parentProfile = await resolveParentProfileForStudent(studentProfile || {});
+            const title = `En 2 dias: ${event.title}`;
+            const body = `${event.subject || 'Evento'} programado para ${event.event_date}${event.start_time ? ` a las ${event.start_time}` : ''}.`;
+            await recordStudyAlert({
+                student_user_id: event.student_user_id,
+                parent_user_id: parentProfile?.user_id || '',
+                subject: event.subject || '',
+                alert_type: 'event_d2_1330',
+                title,
+                body,
+                severity: event.event_type === 'prueba' ? 'high' : 'medium',
+                event_id: event.event_id,
+                payload: event
+            });
+            const push = await sendPushNotification({
+                token: parentProfile?.fcm_token,
+                title,
+                body,
+                payload: { type: 'event_d2', event_id: event.event_id }
+            });
+            let sentEmail = false;
+            if (!push.ok && parentProfile?.email) {
+                await sendEmailSafe(parentProfile.email, title, `<p>${escapeHtml(body)}</p>`);
+                sentEmail = true;
+            }
+            if (parentProfile?.user_id) {
+                await createSmartNotification({
+                    user_id: parentProfile.user_id,
+                    event_id: event.event_id,
+                    type: 'event_d2_1330',
+                    title,
+                    body,
+                    priority: event.event_type === 'prueba' ? 'high' : 'normal',
+                    payload: event,
+                    sent_push: push.ok,
+                    sent_email: sentEmail,
+                    sent_at: new Date().toISOString()
+                });
+            }
+        }
+    } catch (error) {
+        console.error('[CRON_EVENT_D2_1330] Error:', error.message);
+    }
+}, { timezone: 'America/Santiago' });
+
+cron.schedule('0 20 * * *', async () => {
+    try {
+        const reportDate = dateOnlyInSantiago();
+        const { data: profileStudents } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('role', 'estudiante')
+            .limit(500);
+        const { data: legacyStudents } = await supabase
+            .from('users')
+            .select('token')
+            .limit(500);
+        const ids = new Set();
+        (profileStudents || []).forEach(row => row?.user_id && ids.add(String(row.user_id)));
+        (legacyStudents || []).forEach(row => row?.token && ids.add(String(row.token)));
+
+        for (const student_user_id of ids) {
+            try {
+                await buildDailyReportForStudent({ student_user_id, report_date: reportDate, send: true });
+            } catch (error) {
+                console.error('[CRON_DAILY_REPORT] Error estudiante:', student_user_id, error.message);
+            }
+        }
+    } catch (error) {
+        console.error('[CRON_DAILY_REPORT] Error:', error.message);
+    }
+}, { timezone: 'America/Santiago' });
+
 cron.schedule('15 3 * * *', async () => {
     try {
         const expiredCount = await cleanupExpiredNotebookSubmissions();
@@ -7928,7 +8445,10 @@ const isSameCalendarEvent = (candidate = {}, existing = {}) => {
 };
 
 // Smart event creation via AI Vision
-app.post('/api/calendar/smart-create', upload.single('image'), async (req, res) => {
+app.post('/api/calendar/smart-create', upload.fields([
+    { name: 'images', maxCount: SMART_CREATE_MAX_IMAGES },
+    { name: 'image', maxCount: SMART_CREATE_MAX_IMAGES }
+]), async (req, res) => {
     try {
         const { user_id, student_user_id, text_input, role, dry_run, events_json } = req.body;
         if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
@@ -8001,30 +8521,40 @@ Responde SOLO con JSON válido, sin markdown:
                 userContent.push({ type: 'text', text: text_input });
             }
 
-            // Add image if provided
-            if (req.file) {
-                const base64 = req.file.buffer.toString('base64');
-                const mimeType = req.file.mimetype || 'image/jpeg';
+            const uploadedImages = [
+                ...(Array.isArray(req.files?.images) ? req.files.images : []),
+                ...(Array.isArray(req.files?.image) ? req.files.image : []),
+                ...(req.file ? [req.file] : [])
+            ].slice(0, SMART_CREATE_MAX_IMAGES);
+
+            // Add images if provided
+            uploadedImages.forEach((file, index) => {
+                const base64 = file.buffer.toString('base64');
+                const mimeType = file.mimetype || 'image/jpeg';
+                userContent.push({
+                    type: 'text',
+                    text: `Imagen ${index + 1} de ${uploadedImages.length}.`
+                });
                 userContent.push({
                     type: 'image_url',
                     image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' }
                 });
-            }
+            });
 
             if (userContent.length === 0) {
                 return res.status(400).json({ success: false, error: 'Debes enviar una imagen o texto' });
             }
 
-            if (req.file) {
+            if (uploadedImages.length > 0) {
                 userContent.unshift({
                     type: 'text',
-                    text: 'Analiza esta imagen como registro escolar integral. Lee CADA celda, CADA linea y CADA bloque de texto, aunque el usuario mencione prueba, tarea o un tipo especifico. Extrae TODOS los antecedentes agendables como eventos separados: evaluaciones, tareas, trabajos, disertaciones, presentaciones, tecnologia, musica, artes, educacion fisica, recordatorios y cualquier actividad escolar con fecha. No te quedes solo con un ramo ni con un solo evento.'
+                    text: 'Analiza estas imagenes como un registro escolar integral. Lee CADA celda, CADA linea y CADA bloque de texto de TODAS las imagenes, aunque el usuario mencione prueba, tarea o un tipo especifico. Extrae TODOS los antecedentes agendables como eventos separados: evaluaciones, tareas, trabajos, disertaciones, presentaciones, tecnologia, musica, artes, educacion fisica, recordatorios y cualquier actividad escolar con fecha. No te quedes solo con un ramo ni con un solo evento.'
                 });
             }
 
             messages.push({ role: 'user', content: userContent });
 
-            console.log('[SMART-CREATE] Analizando con IA...', { hasImage: !!req.file, hasText: !!text_input });
+            console.log('[SMART-CREATE] Analizando con IA...', { imageCount: uploadedImages.length, hasText: !!text_input });
 
             const model = openaiVisionClient ? OPENAI_VISION_MODEL : NOTEBOOK_VISION_MODEL;
             const response = await visionClient.chat.completions.create({
@@ -8489,6 +9019,21 @@ app.post('/api/admin/migrate-sheets-to-supabase', async (req, res) => {
     }
 });
 
+app.get('/api/parent/daily-report', async (req, res) => {
+    try {
+        const { student_user_id, report_date, send } = req.query;
+        const report = await buildDailyReportForStudent({
+            student_user_id,
+            report_date: report_date || dateOnlyInSantiago(),
+            send: String(send || '').toLowerCase() === 'true'
+        });
+        res.json({ success: true, report });
+    } catch (err) {
+        console.error('[DAILY_REPORT] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 app.get('/api/parent/student-history', async (req, res) => {
     try {
         const { student_user_id, student_email, parent_email, limit } = req.query;
@@ -8599,6 +9144,9 @@ app.get('/api/parent/student-history', async (req, res) => {
             calendarRows,
             reminderRows,
             notebookRows,
+            ocrRows,
+            reportRows,
+            alertRows,
             studyRowsModern,
             studyRowsLegacy
         ] = await Promise.all([
@@ -8607,6 +9155,9 @@ app.get('/api/parent/student-history', async (req, res) => {
             safeRead({ table: 'calendar_events', idColumn: 'student_user_id', emailColumn: null, order: 'created_at' }),
             safeRead({ table: 'exam_reminders', idColumn: 'user_id', emailColumn: 'student_email' }),
             safeRead({ table: 'notebook_submissions', idColumn: 'user_id', emailColumn: 'user_email' }),
+            safeRead({ table: 'notebook_ocr_records', idColumn: 'user_id', emailColumn: 'user_email' }),
+            safeRead({ table: 'daily_reports', idColumn: 'student_user_id', emailColumn: null, order: 'created_at' }),
+            safeRead({ table: 'study_alerts', idColumn: 'student_user_id', emailColumn: null, order: 'created_at' }),
             safeRead({ table: 'study_sessions', idColumn: 'student_user_id', emailColumn: null, order: 'start_time' }),
             safeRead({ table: 'study_sessions', idColumn: 'user_id', emailColumn: 'user_email' })
         ]);
@@ -8664,7 +9215,44 @@ app.get('/api/parent/student-history', async (req, res) => {
                 subject: row.metadata?.subject || '',
                 date: row.created_at,
                 status: row.status || '',
-                detail: row.metadata?.summary || row.mime_type || ''
+                detail: row.metadata?.summary || row.mime_type || '',
+                image_url: row.public_url || ''
+            })),
+            ...ocrRows.map(row => ({
+                id: `ocr-${row.id || row.submission_id || row.created_at}`,
+                source: 'notebook_ocr',
+                type: 'cuaderno_ocr',
+                title: row.topic || 'Cuaderno transcrito',
+                subject: row.subject || '',
+                date: row.created_at,
+                status: row.quiz_ready ? 'quiz listo' : 'revisar',
+                score: row.interpretation_score,
+                detail: row.ocr_text || row.feedback || '',
+                image_url: row.public_url && (!row.image_available_until || new Date(row.image_available_until).getTime() > Date.now()) ? row.public_url : '',
+                metadata: row.metadata || {}
+            })),
+            ...reportRows.map(row => ({
+                id: `report-${row.report_id || row.created_at}`,
+                source: 'daily_report',
+                type: 'reporte_diario',
+                title: `Reporte diario ${row.report_date || ''}`,
+                subject: '',
+                date: row.created_at || row.report_date,
+                status: row.status || '',
+                score: row.quiz_total ? Math.round((Number(row.quiz_correct || 0) / Number(row.quiz_total || 1)) * 100) : null,
+                detail: row.payload?.summary_text || `${row.total_minutes || 0} min de estudio`,
+                metadata: row.payload || {}
+            })),
+            ...alertRows.map(row => ({
+                id: `alert-${row.alert_id || row.created_at}`,
+                source: 'study_alert',
+                type: row.alert_type || 'alerta',
+                title: row.title || 'Alerta de estudio',
+                subject: row.subject || '',
+                date: row.created_at,
+                status: row.severity || '',
+                detail: row.body || '',
+                metadata: row.payload || {}
             })),
             ...studyRows.map(row => ({
                 id: `study-${row.session_id || row.id || row.created_at || row.start_time}`,
@@ -8685,7 +9273,9 @@ app.get('/api/parent/student-history', async (req, res) => {
                 quizzes: quizRows.length,
                 calendar_events: calendarRows.length,
                 reminders: reminderRows.length,
-                evidences: notebookRows.length,
+                evidences: notebookRows.length + ocrRows.length,
+                daily_reports: reportRows.length,
+                alerts: alertRows.length,
                 study_sessions: studyRows.length,
                 total: items.length
             },

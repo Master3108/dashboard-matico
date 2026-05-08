@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Camera, CheckCircle, Clipboard, Download, Monitor, RotateCcw, Sparkles, Star, Trash2, UploadCloud, Video, X, Smartphone } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import {
     captureNowNativeSession,
     clearNativeQueuedCaptures,
@@ -113,7 +114,6 @@ const buildPdfFromPages = async (pages, subject, sessionId, scanId) => {
         throw new Error('No hay páginas para generar el PDF.');
     }
 
-    const { jsPDF } = await import('jspdf');
     const first = pages[0];
     const firstLandscape = first.width > first.height;
     const pdf = new jsPDF({

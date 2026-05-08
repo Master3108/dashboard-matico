@@ -66,6 +66,12 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const [studySessions, setStudySessions] = useState([]);
     const [activeStudy, setActiveStudy] = useState(null);
     const [studentHistory, setStudentHistory] = useState({ summary: {}, items: [] });
+    const [dailyReport, setDailyReport] = useState(null);
+    const [timelineRange, setTimelineRange] = useState('7d');
+    const [timelineSubject, setTimelineSubject] = useState('TODAS');
+    const [timelineType, setTimelineType] = useState('todos');
+    const [customFromDate, setCustomFromDate] = useState('');
+    const [customToDate, setCustomToDate] = useState('');
 
     // Fetch profile + children
     const fetchProfile = useCallback(async () => {
@@ -174,6 +180,19 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         }
     }, [selectedChild?.user_id, selectedChild?.email, currentUser?.user_id, currentUser?.email]);
 
+    const fetchDailyReport = useCallback(async () => {
+        const targetUserId = selectedChild?.user_id || currentUser?.user_id;
+        if (!targetUserId) return;
+        try {
+            const params = new URLSearchParams({ student_user_id: targetUserId });
+            const res = await fetch(`/api/parent/daily-report?${params}`);
+            const data = await res.json();
+            if (data.success) setDailyReport(data.report || null);
+        } catch (err) {
+            console.error('[PARENT] Error cargando reporte diario:', err);
+        }
+    }, [selectedChild?.user_id, currentUser?.user_id]);
+
     // Fetch notifications
     const fetchNotifications = useCallback(async () => {
         if (!currentUser?.user_id) return;
@@ -201,12 +220,14 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             fetchChildProgress();
             fetchStudySessions();
             fetchStudentHistory();
+            fetchDailyReport();
         } else if (currentUser?.user_id) {
             fetchChildEvents();
             fetchStudySessions();
             fetchStudentHistory();
+            fetchDailyReport();
         }
-    }, [selectedChild, currentUser?.user_id, fetchChildEvents, fetchChildProgress, fetchStudySessions, fetchStudentHistory]);
+    }, [selectedChild, currentUser?.user_id, fetchChildEvents, fetchChildProgress, fetchStudySessions, fetchStudentHistory, fetchDailyReport]);
 
     useEffect(() => {
         fetchNotifications();
@@ -214,7 +235,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        await Promise.all([fetchChildEvents(), fetchChildProgress(), fetchNotifications(), fetchStudentHistory()]);
+        await Promise.all([fetchChildEvents(), fetchChildProgress(), fetchNotifications(), fetchStudentHistory(), fetchDailyReport()]);
         setRefreshing(false);
     };
 
@@ -411,6 +432,51 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
     // Recent progress (last 10)
     const recentProgress = progress.slice(0, 10);
+    const timelineItems = (studentHistory.items || []).map(item => ({
+        ...item,
+        dateKey: item.date ? String(item.date).slice(0, 10) : '',
+        subjectKey: item.subject || '',
+        typeKey: item.source || item.type || 'otro'
+    }));
+    const timelineSubjects = ['TODAS', ...Array.from(new Set(timelineItems.map(item => item.subjectKey).filter(Boolean))).sort()];
+    const timelineTypes = [
+        { value: 'todos', label: 'Todos' },
+        { value: 'study', label: 'Estudio' },
+        { value: 'progress', label: 'Quiz' },
+        { value: 'notebook_ocr', label: 'Cuaderno' },
+        { value: 'calendar', label: 'Eventos' },
+        { value: 'study_alert', label: 'Alertas' },
+        { value: 'daily_report', label: 'Reportes' }
+    ];
+    const getRangeStart = () => {
+        if (timelineRange === 'custom') return customFromDate || '';
+        const days = timelineRange === 'today' ? 0 : (timelineRange === '30d' ? 29 : 6);
+        const d = new Date();
+        d.setHours(12, 0, 0, 0);
+        d.setDate(d.getDate() - days);
+        return d.toISOString().split('T')[0];
+    };
+    const getRangeEnd = () => {
+        if (timelineRange === 'custom') return customToDate || '';
+        const d = new Date();
+        d.setHours(12, 0, 0, 0);
+        return d.toISOString().split('T')[0];
+    };
+    const rangeStart = getRangeStart();
+    const rangeEnd = getRangeEnd();
+    const filteredTimeline = timelineItems.filter(item => {
+        if (rangeStart && item.dateKey && item.dateKey < rangeStart) return false;
+        if (rangeEnd && item.dateKey && item.dateKey > rangeEnd) return false;
+        if (timelineSubject !== 'TODAS' && item.subjectKey !== timelineSubject) return false;
+        if (timelineType !== 'todos' && item.typeKey !== timelineType && item.type !== timelineType) return false;
+        return true;
+    });
+    const lastRealActivity = timelineItems.find(item => !['calendar', 'reminder'].includes(item.source));
+    const lastActivityDate = lastRealActivity?.dateKey || '';
+    const isLastActivityToday = lastActivityDate === today;
+    const lastActivityLabel = lastActivityDate
+        ? new Date(`${lastActivityDate}T12:00:00`).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+        : '';
 
     if (loading) {
         return (
@@ -557,6 +623,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 <div className="flex gap-1 bg-white rounded-2xl p-1 shadow-sm">
                     {[
                         { key: 'resumen', label: 'Resumen', icon: BarChart3 },
+                        { key: 'timeline', label: 'Timeline', icon: FileText },
                         { key: 'calendario', label: 'Calendario', icon: Calendar },
                         { key: 'antecedentes', label: 'Antecedentes', icon: FileText },
                         { key: 'progreso', label: 'Progreso', icon: TrendingUp },
@@ -818,6 +885,123 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 </div>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* TIMELINE */}
+                {activeTab === 'timeline' && (
+                    <div className="space-y-4">
+                        {!isLastActivityToday && lastActivityDate && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-4 flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                                <div>
+                                    <p className="font-black text-amber-800">Ultima informacion disponible: {lastActivityLabel}</p>
+                                    <p className="text-sm font-bold text-amber-700">
+                                        {selectedChild?.display_name || 'Matias'} no ha hecho otra sesion registrada despues de esa fecha.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {dailyReport && (
+                            <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
+                                <div className="flex items-center justify-between gap-3 mb-3">
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-widest text-[#7C3AED]">Reporte de hoy</p>
+                                        <h3 className="font-black text-[#2B2E4A]">{dailyReport.studied_today ? 'Con estudio registrado' : 'Sin estudio registrado'}</h3>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-xl text-xs font-black ${dailyReport.studied_today ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                        {dailyReport.total_minutes || 0} min
+                                    </span>
+                                </div>
+                                <p className="text-sm text-[#64748B] font-bold">{dailyReport.summary_text}</p>
+                                {dailyReport.stale_subjects?.length > 0 && (
+                                    <p className="mt-2 text-xs font-bold text-amber-700">
+                                        Sin estudio reciente: {dailyReport.stale_subjects.join(', ')}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                                <div>
+                                    <h3 className="font-black text-[#2B2E4A]">Linea de tiempo</h3>
+                                    <p className="text-xs font-bold text-[#9094A6]">Tarjetas conectadas por fecha, materia y tipo.</p>
+                                </div>
+                                <button
+                                    onClick={() => { fetchStudentHistory(); fetchDailyReport(); }}
+                                    className="p-2 rounded-xl bg-[#F5F3FF] text-[#7C3AED] hover:bg-[#EDE9FE] transition-all"
+                                    title="Actualizar timeline"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="grid md:grid-cols-4 gap-2 mb-4">
+                                <select value={timelineRange} onChange={(e) => setTimelineRange(e.target.value)} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold text-[#2B2E4A]">
+                                    <option value="today">Hoy</option>
+                                    <option value="7d">7 dias</option>
+                                    <option value="30d">30 dias</option>
+                                    <option value="custom">Rango</option>
+                                </select>
+                                <select value={timelineSubject} onChange={(e) => setTimelineSubject(e.target.value)} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold text-[#2B2E4A]">
+                                    {timelineSubjects.map(subject => <option key={subject} value={subject}>{subject === 'TODAS' ? 'Todas las materias' : subject}</option>)}
+                                </select>
+                                <select value={timelineType} onChange={(e) => setTimelineType(e.target.value)} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold text-[#2B2E4A]">
+                                    {timelineTypes.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
+                                </select>
+                                <div className="text-xs font-bold text-[#9094A6] flex items-center justify-end">
+                                    {filteredTimeline.length} tarjeta(s)
+                                </div>
+                            </div>
+
+                            {timelineRange === 'custom' && (
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                    <input type="date" value={customFromDate} onChange={(e) => setCustomFromDate(e.target.value)} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold text-[#2B2E4A]" />
+                                    <input type="date" value={customToDate} onChange={(e) => setCustomToDate(e.target.value)} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold text-[#2B2E4A]" />
+                                </div>
+                            )}
+
+                            {filteredTimeline.length === 0 ? (
+                                <div className="text-center py-8 text-gray-300">
+                                    <FileText className="w-12 h-12 mx-auto mb-3" />
+                                    <p className="font-bold">No hay tarjetas para estos filtros</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {filteredTimeline.map(item => {
+                                        const isAlert = item.source === 'study_alert';
+                                        const isNotebook = item.source === 'notebook_ocr';
+                                        const isReport = item.source === 'daily_report';
+                                        return (
+                                            <div key={item.id} className={`rounded-2xl border p-4 ${isAlert ? 'bg-amber-50 border-amber-200' : isReport ? 'bg-indigo-50 border-indigo-100' : 'bg-gray-50 border-gray-100'}`}>
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg uppercase ${isAlert ? 'bg-amber-500 text-white' : isNotebook ? 'bg-green-600 text-white' : isReport ? 'bg-indigo-600 text-white' : 'bg-[#7C3AED] text-white'}`}>
+                                                                {item.type || item.source}
+                                                            </span>
+                                                            {item.subject && <span className="text-[10px] font-bold text-gray-500">{item.subject}</span>}
+                                                            {item.status && <span className="text-[10px] font-bold text-gray-500">{item.status}</span>}
+                                                        </div>
+                                                        <p className="font-black text-sm text-[#2B2E4A] truncate">{item.title}</p>
+                                                        {item.detail && <p className="text-xs text-gray-500 mt-1 line-clamp-3">{item.detail}</p>}
+                                                        {item.image_url && (
+                                                            <img src={item.image_url} alt="Cuaderno" className="mt-3 h-32 w-full max-w-xs rounded-xl object-cover border border-gray-200 bg-white" />
+                                                        )}
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                        {item.score != null && <p className="text-sm font-black text-[#7C3AED]">{item.score}%</p>}
+                                                        <p className="text-[10px] font-bold text-[#9094A6]">{item.date ? new Date(item.date).toLocaleDateString('es-CL') : ''}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
