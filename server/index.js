@@ -9279,20 +9279,135 @@ app.get('/api/parent/student-history', async (req, res) => {
         ]);
 
         const studyRows = mergeRows([...studyRowsModern, ...studyRowsLegacy], 'session_id');
-        const items = [
-            ...progressRows.map(row => ({
+        const parseMaybeJson = (value, fallback = null) => {
+            if (value === null || value === undefined || value === '') return fallback;
+            if (typeof value !== 'string') return value;
+            try { return JSON.parse(value); } catch { return value; }
+        };
+        const dateOnly = (value = '') => String(value || '').slice(0, 10);
+        const normalizeSubject = (value = '') => normalizeSubjectCode(value || '').toUpperCase();
+        const sessionKey = (value = '') => String(value || '').split(',').map(v => v.trim()).filter(Boolean).join(',');
+        const toNumberOrNull = (value) => {
+            const n = Number(value);
+            return Number.isFinite(n) ? n : null;
+        };
+        const buildScoreFields = (row = {}) => {
+            const total = toNumberOrNull(row.total_questions);
+            const directCorrect = row.correct_answers !== null && row.correct_answers !== undefined
+                ? toNumberOrNull(row.correct_answers)
+                : null;
+            const score = toNumberOrNull(row.score);
+            const correct = total && directCorrect === null && score !== null && score <= total ? score : directCorrect;
+            const wrongDirect = toNumberOrNull(row.wrong_answers);
+            const wrong = wrongDirect !== null ? wrongDirect : (total !== null && correct !== null ? Math.max(0, total - correct) : null);
+            const percent = total && correct !== null ? Math.round((correct / total) * 100) : (score !== null && !total ? score : null);
+            return { total, correct, wrong, percent };
+        };
+        const hasEvidenceOnDay = (subject, day) => [...notebookRows, ...ocrRows].some(row =>
+            dateOnly(row.created_at) === day && (!subject || normalizeSubject(row.subject || row.metadata?.subject || '') === subject)
+        );
+        const evidenceSummaryFor = (subject, day) => {
+            const matches = [
+                ...notebookRows.map(row => ({ kind: 'imagen/pdf', subject: row.metadata?.subject || '', date: row.created_at })),
+                ...ocrRows.map(row => ({ kind: 'OCR cuaderno', subject: row.subject || '', date: row.created_at, score: row.interpretation_score }))
+            ].filter(row => dateOnly(row.date) === day && (!subject || normalizeSubject(row.subject || '') === subject));
+            if (!matches.length) return '';
+            return matches.map(row => row.score != null ? `${row.kind} (${row.score}%)` : row.kind).join(', ');
+        };
+        const progressItems = progressRows.map(row => {
+            const scoreFields = buildScoreFields(row);
+            const wrongQuestionDetails = parseMaybeJson(row.wrong_question_details, []);
+            const weakness = parseMaybeJson(row.weakness, '');
+            const improvementPlan = parseMaybeJson(row.improvement_plan, '');
+            const subject = normalizeSubject(row.subject || '');
+            const day = dateOnly(row.created_at);
+            const activityGroupId = `${row.event_type || 'progress'}|${subject}|${sessionKey(row.session)}|${day}`;
+            return {
                 id: `progress-${row.id || row.created_at}`,
                 source: 'progress',
                 type: row.event_type || 'progreso',
                 title: row.topic || row.level_name || row.subject || 'Actividad registrada',
-                subject: row.subject || '',
+                subject,
+                session: row.session || null,
                 date: row.created_at,
-                score: row.score,
+                score: scoreFields.percent,
+                score_percent: scoreFields.percent,
                 xp: row.xp || 0,
-                detail: row.total_questions ? `${row.correct_answers || 0}/${row.total_questions} correctas` : '',
-                total_questions: row.total_questions || null,
-                correct_answers: row.correct_answers != null ? row.correct_answers : row.score
-            })),
+                detail: scoreFields.total ? `${scoreFields.correct || 0}/${scoreFields.total} correctas, ${scoreFields.wrong || 0} incorrectas` : '',
+                total_questions: scoreFields.total,
+                correct_answers: scoreFields.correct,
+                wrong_answers: scoreFields.wrong,
+                wrong_question_details: wrongQuestionDetails,
+                weakness,
+                improvement_plan: improvementPlan,
+                evidence_summary: evidenceSummaryFor(subject, day),
+                has_evidence: hasEvidenceOnDay(subject, day),
+                activity_group_id: activityGroupId,
+                metadata: {
+                    level_name: row.level_name || '',
+                    source_mode: row.source_mode || '',
+                    selected_sessions: row.selected_sessions || row.session || '',
+                    raw_score: row.score
+                }
+            };
+        });
+
+        const prepGroups = new Map();
+        progressItems.forEach(item => {
+            if (!String(item.type || '').startsWith('prep_exam_')) return;
+            const key = `prep_exam|${item.subject}|${sessionKey(item.session)}|${dateOnly(item.date)}`;
+            const current = prepGroups.get(key) || {
+                ...item,
+                id: `prep-${key}`,
+                source: 'progress',
+                type: 'prep_exam_activity',
+                title: item.title || 'Ensayo de prueba',
+                started_count: 0,
+                completed_count: 0,
+                attempts: [],
+                activity_group_id: key
+            };
+            current.date = String(item.date || '') > String(current.date || '') ? item.date : current.date;
+            current.started_count += item.type === 'prep_exam_started' ? 1 : 0;
+            current.completed_count += item.type === 'prep_exam_completed' ? 1 : 0;
+            current.attempts.push(item);
+            if (item.type === 'prep_exam_completed') {
+                current.title = item.title || current.title;
+                current.score = item.score;
+                current.score_percent = item.score_percent;
+                current.total_questions = item.total_questions;
+                current.correct_answers = item.correct_answers;
+                current.wrong_answers = item.wrong_answers;
+                current.detail = item.detail;
+                current.wrong_question_details = item.wrong_question_details;
+                current.weakness = item.weakness;
+                current.improvement_plan = item.improvement_plan;
+                current.xp = item.xp;
+            }
+            current.evidence_summary = current.evidence_summary || item.evidence_summary;
+            current.has_evidence = current.has_evidence || item.has_evidence;
+            prepGroups.set(key, current);
+        });
+
+        const groupedPrepIds = new Set();
+        prepGroups.forEach(group => group.attempts.forEach(item => groupedPrepIds.add(item.id)));
+        const normalizedProgressItems = [
+            ...progressItems.filter(item => !groupedPrepIds.has(item.id)),
+            ...[...prepGroups.values()].map(group => ({
+                ...group,
+                status: group.completed_count > 0 ? 'completado' : 'iniciado',
+                duration_minutes: (() => {
+                    const times = group.attempts.map(item => new Date(item.date).getTime()).filter(Number.isFinite);
+                    if (times.length < 2) return null;
+                    const minutes = Math.round((Math.max(...times) - Math.min(...times)) / 60000);
+                    return minutes > 0 ? minutes : null;
+                })(),
+                detail: group.detail || `${group.started_count} inicio(s), ${group.completed_count} completado(s)`
+            }))
+        ];
+
+        const items = [
+            ...normalizedProgressItems,
             ...quizRows.map(row => ({
                 id: `quiz-${row.id || row.created_at}`,
                 source: 'quiz',
@@ -9301,7 +9416,11 @@ app.get('/api/parent/student-history', async (req, res) => {
                 subject: row.subject || '',
                 date: row.created_at,
                 score: row.score,
-                detail: row.correct_answers != null ? `${row.correct_answers} correctas` : ''
+                score_percent: row.score,
+                detail: row.correct_answers != null ? `${row.correct_answers} correctas` : '',
+                correct_answers: row.correct_answers ?? null,
+                total_questions: row.total_questions ?? null,
+                wrong_answers: row.wrong_answers ?? null
             })),
             ...calendarRows.map(row => ({
                 id: `calendar-${row.event_id}`,
@@ -9332,7 +9451,10 @@ app.get('/api/parent/student-history', async (req, res) => {
                 date: row.created_at,
                 status: row.status || '',
                 detail: row.metadata?.summary || row.mime_type || '',
-                image_url: row.public_url || ''
+                image_url: row.public_url || '',
+                evidence_summary: row.file_name || row.mime_type || 'Evidencia subida',
+                has_evidence: true,
+                activity_group_id: `evidence|${normalizeSubject(row.metadata?.subject || '')}|${dateOnly(row.created_at)}`
             })),
             ...ocrRows.map(row => ({
                 id: `ocr-${row.id || row.submission_id || row.created_at}`,
@@ -9343,9 +9465,20 @@ app.get('/api/parent/student-history', async (req, res) => {
                 date: row.created_at,
                 status: row.quiz_ready ? 'quiz listo' : 'revisar',
                 score: row.interpretation_score,
+                score_percent: row.interpretation_score,
                 detail: row.ocr_text || row.feedback || '',
+                ocr_text: row.ocr_text || '',
                 image_url: row.public_url && (!row.image_available_until || new Date(row.image_available_until).getTime() > Date.now()) ? row.public_url : '',
-                metadata: row.metadata || {}
+                evidence_summary: `Cuaderno OCR${row.interpretation_score != null ? ` ${row.interpretation_score}%` : ''}`,
+                has_evidence: Boolean(row.public_url || row.ocr_text),
+                activity_group_id: `notebook|${normalizeSubject(row.subject || '')}|${dateOnly(row.created_at)}`,
+                metadata: {
+                    ...(row.metadata || {}),
+                    feedback: row.feedback || '',
+                    detected_concepts: row.detected_concepts || row.metadata?.detected_concepts || [],
+                    missing_concepts: row.missing_concepts || row.metadata?.missing_concepts || [],
+                    quiz_ready: Boolean(row.quiz_ready)
+                }
             })),
             ...reportRows.map(row => ({
                 id: `report-${row.report_id || row.created_at}`,
@@ -9356,7 +9489,12 @@ app.get('/api/parent/student-history', async (req, res) => {
                 date: row.created_at || row.report_date,
                 status: row.status || '',
                 score: row.quiz_total ? Math.round((Number(row.quiz_correct || 0) / Number(row.quiz_total || 1)) * 100) : null,
+                score_percent: row.quiz_total ? Math.round((Number(row.quiz_correct || 0) / Number(row.quiz_total || 1)) * 100) : null,
                 detail: row.payload?.summary_text || `${row.total_minutes || 0} min de estudio`,
+                duration_minutes: Number(row.total_minutes || 0) || null,
+                correct_answers: Number(row.quiz_correct || 0) || null,
+                wrong_answers: Number(row.quiz_wrong || 0) || null,
+                total_questions: Number(row.quiz_total || 0) || null,
                 metadata: row.payload || {}
             })),
             ...alertRows.map(row => ({
@@ -9378,7 +9516,9 @@ app.get('/api/parent/student-history', async (req, res) => {
                 subject: row.subject || '',
                 date: row.start_time || row.completed_at || row.created_at,
                 status: row.status || (row.end_time ? 'completado' : 'en_progreso'),
-                detail: row.total_minutes ? `${row.total_minutes} min` : ''
+                detail: row.total_minutes ? `${row.total_minutes} min` : '',
+                duration_minutes: Number(row.total_minutes || 0) || null,
+                metadata: { milestones: row.milestones || [] }
             })),
         ].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, maxRows);
 

@@ -72,6 +72,12 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const [timelineType, setTimelineType] = useState('todos');
     const [customFromDate, setCustomFromDate] = useState('');
     const [customToDate, setCustomToDate] = useState('');
+    const [historySubjectFilter, setHistorySubjectFilter] = useState('TODAS');
+    const [historyTypeFilter, setHistoryTypeFilter] = useState('todos');
+    const [historyRangeFilter, setHistoryRangeFilter] = useState('30d');
+    const [historyOnlyErrors, setHistoryOnlyErrors] = useState(false);
+    const [historyOnlyEvidence, setHistoryOnlyEvidence] = useState(false);
+    const [expandedHistoryItems, setExpandedHistoryItems] = useState({});
 
     // Fetch profile + children
     const fetchProfile = useCallback(async () => {
@@ -323,8 +329,8 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 if (total > 0) { pctValues.push(Math.round((correct / total) * 100)); continue; }
             }
             // Prioridad 3: score que parece porcentaje (solo si no hay total_questions)
-            if (item.score != null && !item.total_questions) {
-                const s = Number(item.score);
+            if ((item.score_percent != null || item.score != null) && !item.total_questions) {
+                const s = Number(item.score_percent ?? item.score);
                 if (Number.isFinite(s) && s > 0 && s <= 100) pctValues.push(s);
             }
         }
@@ -352,6 +358,61 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const pendingEvents = Math.max(events.filter(e => e.status === 'pendiente').length, pendingEventsFromHistory);
     const completedEvents = events.filter(e => e.status === 'completado').length;
     const totalAntecedentes = studentHistory.summary?.total || studentHistory.items.length || 0;
+    const parseHistoryList = (value) => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'object') return [value];
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+            } catch {
+                return value.trim() ? [value] : [];
+            }
+        }
+        return [];
+    };
+    const stringifyHistoryText = (value) => {
+        if (!value) return '';
+        if (typeof value === 'string') return value;
+        try { return JSON.stringify(value); } catch { return String(value); }
+    };
+    const getHistoryScore = (item) => {
+        if (item?.score_percent != null) return Number(item.score_percent);
+        if (item?.total_questions > 0 && item?.correct_answers != null) {
+            return Math.round((Number(item.correct_answers || 0) / Number(item.total_questions)) * 100);
+        }
+        return item?.score != null ? Number(item.score) : null;
+    };
+    const getHistoryKind = (item) => {
+        const source = String(item.source || '');
+        const type = String(item.type || '');
+        if (type.includes('prep_exam')) return 'ensayo';
+        if (type.includes('cuaderno') || source.includes('notebook')) return 'cuaderno';
+        if (source === 'study') return 'estudio';
+        if (source === 'calendar' || source === 'reminder') return 'evento';
+        if (type.includes('alert')) return 'alerta';
+        if (type.includes('quiz') || type.includes('session_completed') || source === 'quiz') return 'quiz';
+        return 'progreso';
+    };
+    const historySubjects = ['TODAS', ...Array.from(new Set(historyItems.map(item => item.subject).filter(Boolean))).sort()];
+    const filteredHistoryItems = historyItems.filter(item => {
+        if (historySubjectFilter !== 'TODAS' && item.subject !== historySubjectFilter) return false;
+        if (historyTypeFilter !== 'todos' && getHistoryKind(item) !== historyTypeFilter) return false;
+        if (historyOnlyErrors && !(Number(item.wrong_answers || 0) > 0 || parseHistoryList(item.wrong_question_details).length > 0)) return false;
+        if (historyOnlyEvidence && !(item.has_evidence || item.image_url || item.ocr_text || item.evidence_summary)) return false;
+        if (historyRangeFilter !== 'todos') {
+            const days = historyRangeFilter === 'hoy' ? 1 : Number(historyRangeFilter.replace('d', '')) || 30;
+            const itemTime = item.date ? new Date(item.date).getTime() : 0;
+            if (!itemTime) return false;
+            const since = Date.now() - days * 86400000;
+            if (itemTime < since) return false;
+        }
+        return true;
+    });
+    const toggleHistoryItem = (id) => {
+        setExpandedHistoryItems(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
     // --- Study time stats ---
     const today = new Date().toISOString().split('T')[0];
@@ -1154,19 +1215,79 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 ))}
                             </div>
 
-                            {studentHistory.items.length === 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+                                <select
+                                    value={historySubjectFilter}
+                                    onChange={(e) => setHistorySubjectFilter(e.target.value)}
+                                    className="rounded-2xl bg-gray-50 border border-gray-100 px-3 py-2 text-xs font-black text-[#2B2E4A] outline-none"
+                                >
+                                    {historySubjects.map(subject => <option key={subject} value={subject}>{subject}</option>)}
+                                </select>
+                                <select
+                                    value={historyTypeFilter}
+                                    onChange={(e) => setHistoryTypeFilter(e.target.value)}
+                                    className="rounded-2xl bg-gray-50 border border-gray-100 px-3 py-2 text-xs font-black text-[#2B2E4A] outline-none"
+                                >
+                                    <option value="todos">Todos</option>
+                                    <option value="ensayo">Ensayos</option>
+                                    <option value="quiz">Quiz</option>
+                                    <option value="cuaderno">Cuaderno</option>
+                                    <option value="estudio">Estudio</option>
+                                    <option value="evento">Eventos</option>
+                                </select>
+                                <select
+                                    value={historyRangeFilter}
+                                    onChange={(e) => setHistoryRangeFilter(e.target.value)}
+                                    className="rounded-2xl bg-gray-50 border border-gray-100 px-3 py-2 text-xs font-black text-[#2B2E4A] outline-none"
+                                >
+                                    <option value="hoy">Hoy</option>
+                                    <option value="7d">7 dias</option>
+                                    <option value="30d">30 dias</option>
+                                    <option value="todos">Todo</option>
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={() => setHistoryOnlyErrors(prev => !prev)}
+                                    className={`rounded-2xl px-3 py-2 text-xs font-black border ${historyOnlyErrors ? 'bg-red-50 text-red-600 border-red-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+                                >
+                                    Solo errores
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setHistoryOnlyEvidence(prev => !prev)}
+                                    className={`rounded-2xl px-3 py-2 text-xs font-black border ${historyOnlyEvidence ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+                                >
+                                    Con evidencia
+                                </button>
+                            </div>
+
+                            {filteredHistoryItems.length === 0 ? (
                                 <div className="text-center py-8 text-gray-300">
                                     <FileText className="w-12 h-12 mx-auto mb-3" />
                                     <p className="font-bold">No hay antecedentes visibles para este estudiante</p>
                                 </div>
                             ) : (
-                                <div className="space-y-2">
-                                    {studentHistory.items.map(item => (
-                                        <div key={item.id} className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                                <div className="space-y-3">
+                                    {filteredHistoryItems.map(item => {
+                                        const kind = getHistoryKind(item);
+                                        const score = getHistoryScore(item);
+                                        const wrongDetails = parseHistoryList(item.wrong_question_details);
+                                        const weakness = stringifyHistoryText(item.weakness);
+                                        const improvementPlan = stringifyHistoryText(item.improvement_plan);
+                                        const detectedConcepts = parseHistoryList(item.metadata?.detected_concepts);
+                                        const missingConcepts = parseHistoryList(item.metadata?.missing_concepts);
+                                        const attempts = parseHistoryList(item.attempts);
+                                        const isExpanded = Boolean(expandedHistoryItems[item.id]);
+                                        const hasMore = attempts.length > 1 || wrongDetails.length > 0 || weakness || improvementPlan || item.ocr_text || item.image_url || item.evidence_summary || detectedConcepts.length || missingConcepts.length;
+                                        return (
+                                        <div key={item.id} className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0">
                                                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                                                         <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-[#7C3AED] text-white uppercase">
+                                                            {kind}
+                                                        </span>
+                                                        <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-white text-gray-500 uppercase">
                                                             {item.type}
                                                         </span>
                                                         {item.subject && (
@@ -1175,23 +1296,142 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                         {item.status && (
                                                             <span className="text-[10px] font-bold text-[#10B981] bg-green-50 px-2 py-0.5 rounded-lg">{item.status}</span>
                                                         )}
+                                                        {item.has_evidence && (
+                                                            <span className="text-[10px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded-lg">evidencia</span>
+                                                        )}
                                                     </div>
                                                     <p className="font-black text-sm text-[#2B2E4A] truncate">{item.title}</p>
-                                                    {item.detail && (
-                                                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.detail}</p>
-                                                    )}
+                                                    <div className="flex flex-wrap gap-2 mt-2">
+                                                        {attempts.length > 1 && (
+                                                            <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-lg">
+                                                                {attempts.length} registros agrupados
+                                                            </span>
+                                                        )}
+                                                        {item.total_questions > 0 && (
+                                                            <span className="text-xs font-bold text-gray-600 bg-white px-2 py-1 rounded-lg">
+                                                                {item.correct_answers || 0}/{item.total_questions} correctas
+                                                            </span>
+                                                        )}
+                                                        {item.wrong_answers != null && (
+                                                            <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">
+                                                                {item.wrong_answers} malas
+                                                            </span>
+                                                        )}
+                                                        {item.duration_minutes > 0 && (
+                                                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
+                                                                {item.duration_minutes} min
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {item.detail && <p className="text-xs text-gray-500 mt-2 line-clamp-2">{item.detail}</p>}
                                                 </div>
                                                 <div className="text-right shrink-0">
-                                                    {item.score != null && (
-                                                        <p className="text-sm font-black text-[#7C3AED]">{item.score}%</p>
+                                                    {score != null && (
+                                                        <p className={`text-sm font-black ${score >= 70 ? 'text-green-500' : score >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>{score}%</p>
                                                     )}
                                                     <p className="text-[10px] font-bold text-[#9094A6]">
                                                         {item.date ? new Date(item.date).toLocaleDateString('es-CL') : ''}
                                                     </p>
+                                                    {hasMore && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleHistoryItem(item.id)}
+                                                            className="mt-2 text-[10px] font-black text-[#7C3AED] bg-white px-2 py-1 rounded-lg border border-purple-100"
+                                                        >
+                                                            {isExpanded ? 'Ocultar' : 'Ver detalle'}
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
+                                            {isExpanded && (
+                                                <div className="mt-4 space-y-3 border-t border-gray-200 pt-3">
+                                                    {attempts.length > 1 && (
+                                                        <div className="rounded-xl bg-white p-3">
+                                                            <p className="text-[10px] font-black uppercase text-purple-500 mb-2">Intentos del mismo flujo</p>
+                                                            <div className="space-y-1">
+                                                                {attempts.slice(0, 10).map((attempt, index) => {
+                                                                    const attemptScore = getHistoryScore(attempt);
+                                                                    return (
+                                                                        <div key={`${attempt.id || index}`} className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-2 py-1.5">
+                                                                            <span className="text-[11px] font-bold text-gray-600 truncate">{attempt.type} · {attempt.title}</span>
+                                                                            <span className="text-[11px] font-black text-[#2B2E4A] shrink-0">
+                                                                                {attempt.total_questions ? `${attempt.correct_answers || 0}/${attempt.total_questions}` : ''}
+                                                                                {attemptScore != null ? ` · ${attemptScore}%` : ''}
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {item.evidence_summary && (
+                                                        <div className="rounded-xl bg-white p-3">
+                                                            <p className="text-[10px] font-black uppercase text-blue-500">Evidencia</p>
+                                                            <p className="text-xs font-bold text-[#2B2E4A] mt-1">{item.evidence_summary}</p>
+                                                        </div>
+                                                    )}
+                                                    {item.image_url && (
+                                                        <img src={item.image_url} alt="Evidencia" className="max-h-64 w-full rounded-xl object-contain bg-white border border-gray-100" />
+                                                    )}
+                                                    {wrongDetails.length > 0 ? (
+                                                        <div className="rounded-xl bg-white p-3">
+                                                            <p className="text-[10px] font-black uppercase text-red-500 mb-2">Errores registrados</p>
+                                                            <div className="space-y-2">
+                                                                {wrongDetails.slice(0, 8).map((wrong, index) => (
+                                                                    <div key={index} className="rounded-lg bg-red-50 p-2">
+                                                                        <p className="text-xs font-black text-[#2B2E4A]">{typeof wrong === 'string' ? wrong : (wrong.question || `Error ${index + 1}`)}</p>
+                                                                        {typeof wrong !== 'string' && (
+                                                                            <p className="text-[11px] text-gray-600 mt-1">
+                                                                                Niño: {wrong.user_answer || wrong.selected_answer || 'sin dato'} · Correcta: {wrong.correct_answer || 'sin dato'}
+                                                                            </p>
+                                                                        )}
+                                                                        {typeof wrong !== 'string' && wrong.explanation && (
+                                                                            <p className="text-[11px] text-gray-500 mt-1">{wrong.explanation}</p>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ) : (Number(item.wrong_answers || 0) > 0 && (
+                                                        <div className="rounded-xl bg-white p-3 text-xs font-bold text-gray-500">
+                                                            Sin detalle de errores registrado para esta actividad antigua.
+                                                        </div>
+                                                    ))}
+                                                    {weakness && (
+                                                        <div className="rounded-xl bg-yellow-50 p-3">
+                                                            <p className="text-[10px] font-black uppercase text-yellow-600">Falencia</p>
+                                                            <p className="text-xs font-bold text-[#2B2E4A] mt-1">{weakness}</p>
+                                                        </div>
+                                                    )}
+                                                    {improvementPlan && (
+                                                        <div className="rounded-xl bg-green-50 p-3">
+                                                            <p className="text-[10px] font-black uppercase text-green-600">Próximo paso sugerido</p>
+                                                            <p className="text-xs font-bold text-[#2B2E4A] mt-1">{improvementPlan}</p>
+                                                        </div>
+                                                    )}
+                                                    {(detectedConcepts.length > 0 || missingConcepts.length > 0) && (
+                                                        <div className="grid md:grid-cols-2 gap-2">
+                                                            <div className="rounded-xl bg-white p-3">
+                                                                <p className="text-[10px] font-black uppercase text-green-600">Conceptos detectados</p>
+                                                                <p className="text-xs text-gray-600 mt-1">{detectedConcepts.join(', ') || 'Sin datos'}</p>
+                                                            </div>
+                                                            <div className="rounded-xl bg-white p-3">
+                                                                <p className="text-[10px] font-black uppercase text-red-500">Conceptos faltantes</p>
+                                                                <p className="text-xs text-gray-600 mt-1">{missingConcepts.join(', ') || 'Sin datos'}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {item.ocr_text && (
+                                                        <div className="rounded-xl bg-white p-3">
+                                                            <p className="text-[10px] font-black uppercase text-purple-500">OCR cuaderno</p>
+                                                            <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap line-clamp-6">{item.ocr_text}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>

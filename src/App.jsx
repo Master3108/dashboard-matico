@@ -6898,6 +6898,11 @@ ${finalData.capsule}`;
                                         selected_sessions: prepExamConfig.sessions.join(','),
                                         score: report.totalCorrect,
                                         total_questions: report.totalQuestions,
+                                        correct_answers: report.totalCorrect,
+                                        wrong_answers: report.totalIncorrect,
+                                        wrong_question_details: serializeWrongQuestionDetails(finalWrongAnswers),
+                                        weakness: report.conceptGaps?.length ? `Dificultades en: ${report.conceptGaps.join(', ')}` : '',
+                                        improvement_plan: report.reviewPlan?.map(item => item.action).join(' '),
                                         weak_sessions: report.weakSessions.map(item => item.session).join(','),
                                         xp_reward: 150
                                     });
