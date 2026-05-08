@@ -486,21 +486,53 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const summaryEvidenceItems = summaryHistoryItems.filter(item =>
         item.has_evidence || item.image_url || item.ocr_text || item.evidence_summary
     );
-    const summaryRecentActivities = summaryHistoryItems.filter(item =>
-        !['calendar', 'reminder'].includes(String(item.source || ''))
-    ).slice(0, 5);
-    const summaryLastActivity = historyItems.find(item =>
+    const getActivityTimestamp = (item) => {
+        const rawDate = item?.date || item?.start_time || item?.completed_at || item?.created_at || '';
+        if (!rawDate) return 0;
+        const parsed = new Date(String(rawDate).length <= 10 ? `${rawDate}T12:00:00` : rawDate).getTime();
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+    const summaryStudyActivityItems = studySessions
+        .filter(session => matchesSummarySubject(session.subject))
+        .map(session => ({
+            ...session,
+            source: 'study',
+            type: 'study',
+            subject: session.subject || 'General',
+            title: `Estudio ${session.subject || 'General'}`,
+            date: getStudyDate(session),
+            duration_minutes: Number(session.total_minutes || 0)
+        }));
+    const summaryHistoryActivityItems = historyItems.filter(item =>
         !['calendar', 'reminder', 'daily_report'].includes(String(item.source || '')) &&
         String(item.type || '') !== 'reporte_diario' &&
         matchesSummarySubject(item.subject)
     );
+    const summaryAllRealActivities = [
+        ...(activeStudy && matchesSummarySubject(activeStudy.subject) ? [{
+            ...activeStudy,
+            source: 'study',
+            type: 'study',
+            subject: activeStudy.subject || 'General',
+            title: `Estudio ${activeStudy.subject || 'General'}`,
+            date: new Date().toISOString(),
+            duration_minutes: Number(activeStudy.total_minutes || 0)
+        }] : []),
+        ...summaryStudyActivityItems,
+        ...summaryHistoryActivityItems
+    ].filter(item => getDateKey(item.date)).sort((a, b) => getActivityTimestamp(b) - getActivityTimestamp(a));
+    const summaryRecentActivities = summaryAllRealActivities
+        .filter(item => isWithinSummaryRange(getDateKey(item.date)))
+        .slice(0, 5);
+    const summaryLastActivity = summaryAllRealActivities[0];
     const summaryLastActivityDate = getDateKey(summaryLastActivity?.date);
     const summaryDaysWithoutSession = summaryLastActivityDate ? daysBetween(summaryLastActivityDate) : null;
     const summaryLastActivityLabel = summaryLastActivityDate
         ? new Date(`${summaryLastActivityDate}T12:00:00`).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
         : '';
     const summaryLastActivityMinutes = summaryLastActivityDate && summaryLastActivity
-        ? studySessions.filter(s => getDateKey(getStudyDate(s)) === summaryLastActivityDate && s.subject === summaryLastActivity.subject).reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0)
+        ? (Number(summaryLastActivity.duration_minutes || summaryLastActivity.total_minutes || 0) ||
+            studySessions.filter(s => getDateKey(getStudyDate(s)) === summaryLastActivityDate && normalizeSubject(s.subject) === normalizeSubject(summaryLastActivity.subject)).reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0))
         : 0;
     const summaryHasTodayActivity = historyItems.some(item =>
         getDateKey(item.date) === today &&
