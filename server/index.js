@@ -9313,6 +9313,18 @@ app.get('/api/parent/student-history', async (req, res) => {
             if (mode === 'prep_exam') return 'Ruta normal: sesiones Matico seleccionadas';
             return mode ? `Origen: ${mode}` : '';
         };
+        const describeCalendarSource = (row = {}) => {
+            const text = `${row.title || ''} ${row.description || ''} ${row.subject || ''}`.toLowerCase();
+            const isBookOrExternal = /principito|libro|lectura|cap[ií]tulo|gu[ií]a|cuaderno|or[aá]culo|material|texto/i.test(text);
+            const isPending = String(row.status || '').toLowerCase() === 'pendiente';
+            const label = isBookOrExternal
+                ? 'Externa: prueba/evento registrado desde libro, guia, cuaderno o antecedente fuera de la ruta normal'
+                : 'Evento de calendario: no corresponde por si solo a un quiz completado';
+            const reason = isPending
+                ? 'Evento pendiente. Todavia no hay resultado final de quiz o estudio asociado a este evento.'
+                : '';
+            return { label, reason, isExternal: isBookOrExternal };
+        };
         const hasEvidenceOnDay = (subject, day) => [...notebookRows, ...ocrRows].some(row =>
             dateOnly(row.created_at) === day && (!subject || normalizeSubject(row.subject || row.metadata?.subject || '') === subject)
         );
@@ -9449,14 +9461,27 @@ app.get('/api/parent/student-history', async (req, res) => {
                 wrong_answers: row.wrong_answers ?? null
             })),
             ...calendarRows.map(row => ({
-                id: `calendar-${row.event_id}`,
-                source: 'calendar',
-                type: row.event_type || 'evento',
-                title: row.title || 'Evento de calendario',
-                subject: row.subject || '',
-                date: row.event_date || row.created_at,
-                status: row.status || '',
-                detail: row.description || ''
+                ...(() => {
+                    const source = describeCalendarSource(row);
+                    return {
+                        id: `calendar-${row.event_id}`,
+                        source: 'calendar',
+                        type: row.event_type || 'evento',
+                        title: row.title || 'Evento de calendario',
+                        subject: normalizeSubject(row.subject || ''),
+                        date: row.event_date || row.created_at,
+                        status: row.status || '',
+                        detail: row.description || '',
+                        score: null,
+                        score_percent: null,
+                        incomplete_reason: source.reason,
+                        metadata: {
+                            source_label: source.label,
+                            is_external_source: source.isExternal,
+                            incomplete_reason: source.reason
+                        }
+                    };
+                })()
             })),
             ...reminderRows.map(row => ({
                 id: `reminder-${row.event_id}`,

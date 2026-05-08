@@ -382,6 +382,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         if (item?.total_questions > 0 && item?.correct_answers != null) {
             return Math.round((Number(item.correct_answers || 0) / Number(item.total_questions)) * 100);
         }
+        if (['calendar', 'reminder', 'study'].includes(String(item?.source || ''))) return null;
         return item?.score != null ? Number(item.score) : null;
     };
     const getHistoryKind = (item) => {
