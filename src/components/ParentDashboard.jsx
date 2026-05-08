@@ -386,8 +386,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const today = getSantiagoDateKey();
     const getDateKey = (value) => {
         if (!value) return '';
-        if (typeof value === 'string') return value.slice(0, 10);
-        try { return new Date(value).toISOString().slice(0, 10); } catch { return ''; }
+        try { return getSantiagoDateKey(new Date(value)); } catch { return ''; }
     };
     const getStudyDate = (session) => session?.start_time || session?.completed_at || session?.created_at || '';
     const daysBetween = (fromDateKey, toDateKey = today) => {
@@ -534,12 +533,12 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     };
 
     // --- Study time stats ---
-    const todaySessions = studySessions.filter(s => getStudyDate(s).startsWith(today) && matchesSummarySubject(s.subject));
+    const todaySessions = studySessions.filter(s => getDateKey(getStudyDate(s)) === today && matchesSummarySubject(s.subject));
     const todayMinutes = todaySessions.reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
     const studyGoalMinutes = 45;
     const studyProgress = Math.min(100, Math.round((todayMinutes / studyGoalMinutes) * 100));
     let totalStudyMinutes = studySessions.reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
-    let totalStudyDays = new Set(studySessions.map(s => getStudyDate(s).substring(0, 10)).filter(Boolean)).size;
+    let totalStudyDays = new Set(studySessions.map(s => getDateKey(getStudyDate(s))).filter(Boolean)).size;
 
     // Weekly data: if no recent data, show last 7 days with activity
     const hasRecentActivity = studySessions.some(s => {
@@ -557,7 +556,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             const dateStr = d.toISOString().split('T')[0];
             const dayLabel = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.getDay()];
             const mins = studySessions
-                .filter(s => s.start_time?.startsWith(dateStr))
+                .filter(s => getDateKey(getStudyDate(s)) === dateStr)
                 .reduce((sum, s) => sum + (s.total_minutes || 0), 0);
             return { day: dayLabel, date: dateStr, minutes: mins };
         });
@@ -565,7 +564,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         // Show the most active period — group by day, take last 7 unique days
         const dayMap = {};
         for (const s of studySessions) {
-            const d = s.start_time?.substring(0, 10);
+            const d = getDateKey(getStudyDate(s));
             if (!d) continue;
             dayMap[d] = (dayMap[d] || 0) + (s.total_minutes || 0);
         }
@@ -588,7 +587,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const dateStr = d.toISOString().split('T')[0];
         const dayLabel = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'][d.getDay()];
         const mins = studySessions
-            .filter(s => getStudyDate(s).startsWith(dateStr) && matchesSummarySubject(s.subject))
+            .filter(s => getDateKey(getStudyDate(s)) === dateStr && matchesSummarySubject(s.subject))
             .reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
         return { day: dayLabel, date: dateStr, minutes: mins };
     });

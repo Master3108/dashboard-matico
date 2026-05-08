@@ -9787,11 +9787,17 @@ async function deriveStudySessionsFromProgress(student_user_id, from_date, to_da
         const { data: rows, error } = await query.limit(2000);
         if (error || !rows?.length) return [];
 
-        // Agrupar por día + subject
+        // Agrupar por día LOCAL (Chile UTC-4) + subject
+        const toChileDate = (utcStr) => {
+            const d = new Date(utcStr);
+            // Chile = UTC-4 (simplificado, no considera horario verano)
+            d.setHours(d.getHours() - 4);
+            return d.toISOString().substring(0, 10);
+        };
         const dayGroups = {};
         for (const row of rows) {
             if (!row.created_at) continue;
-            const day = row.created_at.substring(0, 10); // YYYY-MM-DD
+            const day = toChileDate(row.created_at);
             const key = `${day}|${row.subject || 'GENERAL'}`;
             if (!dayGroups[key]) dayGroups[key] = { day, subject: row.subject || 'GENERAL', timestamps: [], events: [] };
             dayGroups[key].timestamps.push(new Date(row.created_at).getTime());
