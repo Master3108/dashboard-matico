@@ -797,30 +797,28 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 <p className="text-xs font-bold text-[#9094A6]">Proximas pruebas</p>
                                 <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Solo futuras</p>
                             </div>
-                            <div className="bg-gradient-to-br from-[#F0F4FF] to-[#E0E7FF] rounded-2xl p-4 col-span-2 md:col-span-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <FileText className="w-6 h-6 text-[#6366F1]" />
-                                        <div>
-                                            <p className="text-sm font-black text-[#6366F1]">
-                                                {summaryLastActivity ? `${summaryLastActivity.subject || 'General'}: ${summaryLastActivity.title || summaryLastActivity.type || 'Actividad'}` : 'Sin ultima sesion'}
-                                            </p>
-                                            <p className="text-[10px] font-bold text-[#9094A6]">
-                                                Ultima sesion real · {summaryLastActivityLabel || 'Sin fecha'}
-                                            </p>
+                            <div className="bg-gradient-to-br from-[#6366F1] to-[#7C3AED] rounded-2xl p-5 col-span-2 md:col-span-4 text-white relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full"></div>
+                                {summaryLastActivity ? (
+                                    <div className="relative">
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">Ultima sesion real · {summaryLastActivityLabel}</p>
+                                        <h2 className="text-2xl font-black leading-tight">{summaryLastActivity.subject || 'General'}</h2>
+                                        <p className="text-lg font-bold text-white/90">{summaryLastActivity.title || summaryLastActivity.topic || summaryLastActivity.type || 'Actividad'}</p>
+                                        <div className="flex flex-wrap items-center gap-3 mt-3">
+                                            {summaryLastActivityMinutes > 0 && (
+                                                <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{summaryLastActivityMinutes} min estudiando</span>
+                                            )}
+                                            {getActivityTotal(summaryLastActivity) > 0 && (
+                                                <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{getActivityCorrect(summaryLastActivity)}/{getActivityTotal(summaryLastActivity)} correctas</span>
+                                            )}
+                                            {getActivityTotal(summaryLastActivity) > 0 && (
+                                                <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{Math.round((getActivityCorrect(summaryLastActivity) / getActivityTotal(summaryLastActivity)) * 100)}%</span>
+                                            )}
                                         </div>
                                     </div>
-                                    {summaryLastActivity && (
-                                        <div className="flex items-center gap-3">
-                                            {summaryLastActivity.detail && (
-                                                <span className="text-xs font-black text-[#6366F1] bg-white/60 px-2 py-1 rounded-lg">{summaryLastActivity.detail}</span>
-                                            )}
-                                            {summaryLastActivity.score != null && (
-                                                <span className="text-xs font-black text-[#6366F1] bg-white/60 px-2 py-1 rounded-lg">Score: {summaryLastActivity.score}</span>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                                ) : (
+                                    <p className="text-lg font-black text-white/60">Sin ultima sesion registrada</p>
+                                )}
                             </div>
                         </div>
                     </div>
