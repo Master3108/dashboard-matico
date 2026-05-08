@@ -897,11 +897,16 @@ const CuadernoMission = ({
                                         <img src={page.previewUrl} alt={`Página ${index + 1}`} className="w-full h-40 object-contain bg-slate-50" />
                                         <div className="p-3 flex items-center justify-between text-xs text-slate-600">
                                             <span>Página {index + 1}</span>
-                                            {status === 'preview' && (
-                                                <button onClick={() => removePage(page.id)} className="text-red-500 hover:text-red-700 flex items-center gap-1">
-                                                    <Trash2 size={14} /> Quitar
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={downloadPDF} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-bold" title="Descargar PDF">
+                                                    <Download size={14} /> PDF
                                                 </button>
-                                            )}
+                                                {status === 'preview' && (
+                                                    <button onClick={() => removePage(page.id)} className="text-red-500 hover:text-red-700 flex items-center gap-1">
+                                                        <Trash2 size={14} /> Quitar
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -916,10 +921,6 @@ const CuadernoMission = ({
                             </div>
 
                             <div className="flex flex-col gap-3">
-                                <button onClick={downloadPDF} className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                                    <Download size={18} /> Descargar PDF
-                                </button>
-
                                 {status === 'preview' && pages.length < MAX_PAGES && (
                                     <>
                                         <div className="flex flex-col sm:flex-row gap-3">
