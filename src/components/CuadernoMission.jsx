@@ -917,6 +917,15 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                         >
                                             <UploadCloud size={18} /> Subir varias páginas (galeria)
                                         </button>
+                                        {!isNativePlatform && (
+                                            <button
+                                                type="button"
+                                                onClick={captureScreen}
+                                                className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 flex items-center justify-center gap-2"
+                                            >
+                                                <Monitor size={18} /> Capturar otra pantalla
+                                            </button>
+                                        )}
                                         <input
                                             ref={extraMultiGalleryInputRef}
                                             type="file"
