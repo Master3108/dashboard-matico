@@ -455,38 +455,9 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const correct = getActivityCorrect(item);
         return total > 0 ? Math.max(0, total - correct) : 0;
     };
-    const parseStudyMilestones = (value) => {
-        if (Array.isArray(value)) return value;
-        if (!value) return [];
-        if (typeof value === 'string') {
-            try {
-                const parsed = JSON.parse(value);
-                return Array.isArray(parsed) ? parsed : [];
-            } catch (_) {
-                return [];
-            }
-        }
-        return [];
-    };
     const isRealStudySession = (session = {}) => {
         const type = String(session.type || '').toLowerCase();
-        if (type !== 'app_entry') return true;
-
-        const milestoneText = parseStudyMilestones(session.milestones)
-            .map(milestone => String(milestone?.name || milestone || '').toLowerCase())
-            .join(' ');
-        const realStudySignals = [
-            'teoria',
-            'quiz',
-            'cuaderno',
-            'oracle',
-            'prep_exam',
-            'reading_completed',
-            'video_completed',
-            'session_completed',
-            'phase_completed'
-        ];
-        return realStudySignals.some(signal => milestoneText.includes(signal));
+        return type !== 'app_entry';
     };
     const realStudySessions = studySessions.filter(isRealStudySession);
     const realActiveStudy = activeStudy && isRealStudySession(activeStudy) ? activeStudy : null;
