@@ -155,7 +155,20 @@ const buildPdfFromPages = async (pages, subject, sessionId, scanId) => {
     };
 };
 
-const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onComplete, onSkip, userEmail, userId }) => {
+const CuadernoMission = ({
+    sessionId,
+    phase,
+    subject,
+    topic,
+    readingContent,
+    copyText = '',
+    completeLabel = 'Comenzar quiz',
+    allowSkip = true,
+    onComplete,
+    onSkip,
+    userEmail,
+    userId
+}) => {
     const [status, setStatus] = useState('idle');
     const [feedback, setFeedback] = useState('');
     const [suggestion, setSuggestion] = useState('');
@@ -781,6 +794,14 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                 <div className="p-6">
                     {status === 'idle' && (
                         <div className="space-y-4">
+                            {copyText && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900">
+                                    <p className="font-black mb-2">Copia esto en tu cuaderno para calcular tu porcentaje:</p>
+                                    <div className="bg-white rounded-lg border border-blue-100 p-3 whitespace-pre-wrap leading-relaxed font-semibold text-slate-800">
+                                        {copyText}
+                                    </div>
+                                </div>
+                            )}
                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
                                 Escribe en tu cuaderno con tus palabras, resume las ideas principales y corrige tus errores. Puedes enviar hasta {MAX_PAGES} páginas en un solo PDF.
                             </div>
@@ -853,7 +874,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                     Importar cola ({nativeQueueCount})
                                 </button>
                             )}
-                            {onSkip && <button onClick={onSkip} className="w-full text-sm text-slate-400 hover:text-slate-600 py-2">Saltar por ahora</button>}
+                            {onSkip && allowSkip && <button onClick={onSkip} className="w-full text-sm text-slate-400 hover:text-slate-600 py-2">Saltar por ahora</button>}
                         </div>
                     )}
 
@@ -990,7 +1011,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                         <Star size={20} className="text-yellow-500" /> +{analysis.xp_reward || 0} XP
                                     </div>
                                     <button onClick={() => onComplete?.(analysis.xp_reward || 0, analysis.tier || 'plata')} className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-xl font-bold">
-                                        Comenzar quiz
+                                        {completeLabel}
                                     </button>
                                 </div>
                             ) : (
@@ -1015,7 +1036,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                             </button>
                                         )}
                                     </div>
-                                    {retryCount >= 2 && onSkip && (
+                                    {retryCount >= 2 && onSkip && allowSkip && (
                                         <button onClick={onSkip} className="w-full bg-slate-100 text-slate-600 py-2 rounded-xl font-medium text-sm">
                                             Seguir sin quiz (saltar cuaderno)
                                         </button>
@@ -1040,7 +1061,7 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                                         Continuar al quiz
                                     </button>
                                 ) : (
-                                    onSkip && <button onClick={onSkip} className="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl">Saltar</button>
+                                    onSkip && allowSkip && <button onClick={onSkip} className="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl">Saltar</button>
                                 )}
                             </div>
                             {canBypassProviderFailure && (

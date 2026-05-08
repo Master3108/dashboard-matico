@@ -47,9 +47,7 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
 
     const handleCuadernoSkip = () => {
         setShowCuaderno(false);
-        setTimeout(() => {
-            onComplete();
-        }, 500);
+        setUnderstood(false);
     };
 
     const progress = ((30 - timeLeft) / 30) * 100;
@@ -62,6 +60,14 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
         if (typeof q === 'string') return q;
         return q.question || q.text || q.title || JSON.stringify(q);
     };
+    const getOptionText = (letter) => question?.options?.[letter] || letter || '';
+    const correctionCopyText = [
+        `Pregunta: ${getQuestionText(question)}`,
+        `Mi respuesta fue: ${selectedAnswer}) ${getOptionText(selectedAnswer)}`,
+        `Respuesta correcta: ${correctAnswer}) ${getOptionText(correctAnswer)}`,
+        `Correccion: ${explanation || 'Escribe con tus palabras por que la respuesta correcta resuelve la pregunta.'}`,
+        'En mis palabras: ahora entiendo que...'
+    ].filter(Boolean).join('\n\n');
 
     return (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[250] p-4 backdrop-blur-md animate-fadeIn">
@@ -167,6 +173,19 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                         </div>
                     </div>
 
+                    <div className="bg-white rounded-2xl p-6 shadow-md border-2 border-orange-200">
+                        <h3 className="font-black text-orange-700 text-lg mb-3 flex items-center gap-2">
+                            <Camera className="w-5 h-5" />
+                            Copia esto en tu cuaderno para desbloquear la siguiente pregunta
+                        </h3>
+                        <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed font-semibold">
+                            {correctionCopyText}
+                        </div>
+                        <p className="text-xs font-bold text-orange-700 mt-3">
+                            Profe Matico calculara el porcentaje de comprension leyendo la foto de tu cuaderno. Debes escribirlo a mano y con tus palabras.
+                        </p>
+                    </div>
+
                     {/* Action Area */}
                     {timeLeft > 0 ? (
                         // STILL READING - No button, just message
@@ -209,7 +228,7 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                                 </>
                             ) : (
                                 <>
-                                    He Comprendido
+                                    Revisar cuaderno para avanzar
                                     <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
@@ -223,7 +242,10 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                     sessionId={sessionId || 1}
                     subject={subject || 'Materia'}
                     topic="Corrección Error"
-                    readingContent={readingContent || explanation || ''}
+                    readingContent={correctionCopyText || readingContent || explanation || ''}
+                    copyText={correctionCopyText}
+                    completeLabel="He comprendido, siguiente pregunta"
+                    allowSkip={false}
                     onComplete={handleCuadernoComplete}
                     onSkip={handleCuadernoSkip}
                     userEmail={userEmail}
