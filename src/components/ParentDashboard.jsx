@@ -514,6 +514,85 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         String(item.type || '') !== 'reporte_diario' &&
         matchesSummarySubject(item.subject)
     );
+    const aggregateSummaryHistoryActivities = (items) => {
+        const phaseGroups = new Map();
+        const consumedIds = new Set();
+
+        items.forEach(item => {
+            if (String(item.type || '') !== 'phase_completed' || getActivityTotal(item) <= 0) return;
+            const dateKey = getDateKey(item.date);
+            const subjectKey = normalizeSubject(item.subject || '');
+            const sessionKey = item.session || item.metadata?.selected_sessions || '';
+            if (!dateKey || !subjectKey || !sessionKey) return;
+
+            const groupKey = `${dateKey}|${subjectKey}|${sessionKey}|${item.title || item.topic || ''}`;
+            if (!phaseGroups.has(groupKey)) {
+                phaseGroups.set(groupKey, {
+                    key: groupKey,
+                    dateKey,
+                    subject: item.subject,
+                    session: item.session,
+                    title: item.title || item.topic || `Sesion ${item.session}`,
+                    phases: new Map()
+                });
+            }
+
+            const phaseKey = String(item.phase || item.sub_level || item.metadata?.level_name || phaseGroups.get(groupKey).phases.size + 1);
+            const group = phaseGroups.get(groupKey);
+            const previous = group.phases.get(phaseKey);
+            if (!previous || getActivityTimestamp(item) >= getActivityTimestamp(previous)) {
+                group.phases.set(phaseKey, item);
+            }
+        });
+
+        const aggregated = [];
+        phaseGroups.forEach(group => {
+            const phaseItems = Array.from(group.phases.values()).sort((a, b) => getActivityTimestamp(a) - getActivityTimestamp(b));
+            if (phaseItems.length === 0) return;
+            phaseItems.forEach(item => consumedIds.add(item.id));
+
+            const relatedItems = items.filter(item =>
+                getDateKey(item.date) === group.dateKey &&
+                normalizeSubject(item.subject) === normalizeSubject(group.subject) &&
+                String(item.session || item.metadata?.selected_sessions || '') === String(group.session || '')
+            );
+            const startTs = Math.min(...relatedItems.map(getActivityTimestamp).filter(Boolean));
+            const endTs = Math.max(...phaseItems.map(getActivityTimestamp).filter(Boolean));
+            const durationFromStudy = realStudySessions
+                .filter(s => getDateKey(getStudyDate(s)) === group.dateKey && normalizeSubject(s.subject) === normalizeSubject(group.subject))
+                .reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
+            const durationFromDates = startTs && endTs ? Math.max(1, Math.round((endTs - startTs) / 60000)) : 0;
+            const totalQuestions = phaseItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
+            const correctAnswers = phaseItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
+            const wrongAnswers = phaseItems.reduce((sum, item) => {
+                const wrong = getActivityWrong(item);
+                const inferredWrong = Math.max(0, getActivityTotal(item) - getActivityCorrect(item));
+                return sum + Math.max(wrong, inferredWrong);
+            }, 0);
+
+            aggregated.push({
+                ...phaseItems[phaseItems.length - 1],
+                id: `summary-session-${group.key}`,
+                type: 'session_completed',
+                title: group.title,
+                date: new Date(endTs || getActivityTimestamp(phaseItems[phaseItems.length - 1])).toISOString(),
+                started_at: startTs ? new Date(startTs).toISOString() : phaseItems[0].date,
+                duration_minutes: durationFromStudy || durationFromDates,
+                total_questions: totalQuestions,
+                correct_answers: correctAnswers,
+                wrong_answers: wrongAnswers,
+                detail: `${correctAnswers}/${totalQuestions} correctas, ${wrongAnswers} incorrectas`,
+                score_percent: totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0,
+                phases_completed: phaseItems.length
+            });
+        });
+
+        return [
+            ...aggregated,
+            ...items.filter(item => !consumedIds.has(item.id))
+        ];
+    };
+    const summaryGroupedHistoryActivityItems = aggregateSummaryHistoryActivities(summaryHistoryActivityItems);
     const summaryAllRealActivities = [
         ...(realActiveStudy && matchesSummarySubject(realActiveStudy.subject) ? [{
             ...realActiveStudy,
@@ -525,7 +604,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             duration_minutes: Number(realActiveStudy.total_minutes || 0)
         }] : []),
         ...summaryStudyActivityItems,
-        ...summaryHistoryActivityItems
+        ...summaryGroupedHistoryActivityItems
     ].filter(item => getDateKey(item.date)).sort((a, b) => getActivityTimestamp(b) - getActivityTimestamp(a));
     const summaryRecentActivities = summaryAllRealActivities
         .filter(item => isWithinSummaryRange(getDateKey(item.date)))
@@ -536,6 +615,13 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const summaryLastActivityLabel = summaryLastActivityDate
         ? new Date(`${summaryLastActivityDate}T12:00:00`).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
         : '';
+    const formatActivityTime = (rawDate) => {
+        if (!rawDate) return '';
+        const parsed = new Date(rawDate);
+        if (!Number.isFinite(parsed.getTime())) return '';
+        return parsed.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    };
+    const summaryLastActivityStartLabel = formatActivityTime(summaryLastActivity?.started_at || summaryLastActivity?.start_time || summaryLastActivity?.date);
     const summaryLastActivityMinutes = summaryLastActivityDate && summaryLastActivity
         ? (Number(summaryLastActivity.duration_minutes || summaryLastActivity.total_minutes || 0) ||
             realStudySessions.filter(s => getDateKey(getStudyDate(s)) === summaryLastActivityDate && normalizeSubject(s.subject) === normalizeSubject(summaryLastActivity.subject)).reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0))
@@ -846,8 +932,14 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                             {summaryLastActivityMinutes > 0 && (
                                                 <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{summaryLastActivityMinutes} min estudiando</span>
                                             )}
+                                            {summaryLastActivityStartLabel && (
+                                                <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">Inicio {summaryLastActivityStartLabel}</span>
+                                            )}
                                             {getActivityTotal(summaryLastActivity) > 0 && (
                                                 <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{getActivityCorrect(summaryLastActivity)}/{getActivityTotal(summaryLastActivity)} correctas</span>
+                                            )}
+                                            {getActivityWrong(summaryLastActivity) > 0 && (
+                                                <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{getActivityWrong(summaryLastActivity)} malas</span>
                                             )}
                                             {getActivityTotal(summaryLastActivity) > 0 && (
                                                 <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{Math.round((getActivityCorrect(summaryLastActivity) / getActivityTotal(summaryLastActivity)) * 100)}%</span>
@@ -1020,10 +1112,22 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                     <p className="text-[10px] font-bold text-white/70 uppercase">Tiempo estudio</p>
                                                 </div>
                                             )}
+                                            {summaryLastActivityStartLabel && (
+                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
+                                                    <p className="text-2xl font-black">{summaryLastActivityStartLabel}</p>
+                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Inicio</p>
+                                                </div>
+                                            )}
                                             {getActivityTotal(summaryLastActivity) > 0 && (
                                                 <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
                                                     <p className="text-2xl font-black">{getActivityCorrect(summaryLastActivity)}/{getActivityTotal(summaryLastActivity)}</p>
                                                     <p className="text-[10px] font-bold text-white/70 uppercase">Correctas</p>
+                                                </div>
+                                            )}
+                                            {getActivityWrong(summaryLastActivity) > 0 && (
+                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
+                                                    <p className="text-2xl font-black">{getActivityWrong(summaryLastActivity)}</p>
+                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Malas</p>
                                                 </div>
                                             )}
                                             {getActivityTotal(summaryLastActivity) > 0 && (
