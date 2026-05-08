@@ -3460,6 +3460,12 @@ const App = () => {
     const saveProgress = async (type, payload) => {
         console.log("SAVING PROGRESS:", type, payload);
 
+        let studySessionForProgress = null;
+        if (USER_ID && currentUser?.role !== 'apoderado') {
+            studySessionForProgress = await startStudyTimer('activity');
+            await addStudyMilestone(`progreso_${type}`, studySessionForProgress || activeStudySession);
+        }
+
         // Optimistic UI Update for XP
         if (type === 'xp_gain' || type === 'theory_completed' || type === 'phase_completed' || type === 'prep_exam_completed' || type === 'prep_exam_reviewed') {
             const amount = payload.xp_reward || payload.amount || 0;
@@ -3605,13 +3611,14 @@ const App = () => {
         return null;
     };
 
-    const addStudyMilestone = async (milestone) => {
-        if (!activeStudySession?.session_id) return;
+    const addStudyMilestone = async (milestone, sessionOverride = null) => {
+        const session = sessionOverride || activeStudySession;
+        if (!session?.session_id) return;
         try {
             await fetch('/api/study-sessions/milestone', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: activeStudySession.session_id, milestone })
+                body: JSON.stringify({ session_id: session.session_id, milestone })
             });
             console.log(`[STUDY] Hito: ${milestone}`);
         } catch (err) {
@@ -3636,6 +3643,58 @@ const App = () => {
             console.error('[STUDY] Error finalizando timer:', err);
         }
     };
+
+    useEffect(() => {
+        if (!USER_ID || currentUser?.role === 'apoderado') return;
+        let cancelled = false;
+        let heartbeatId = null;
+        let openedSession = null;
+
+        const bootStudyProtocol = async () => {
+            const session = await startStudyTimer('app_entry');
+            if (cancelled || !session) return;
+            openedSession = session;
+            await addStudyMilestone('ingreso_a_matico', session);
+            heartbeatId = setInterval(() => {
+                addStudyMilestone('actividad_en_matico', session);
+            }, 60000);
+        };
+
+        bootStudyProtocol();
+
+        const closeSession = () => {
+            const sessionId = openedSession?.session_id || activeStudySession?.session_id;
+            if (!sessionId) return;
+            try {
+                const payload = JSON.stringify({ session_id: sessionId });
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('/api/study-sessions/end', new Blob([payload], { type: 'application/json' }));
+                } else {
+                    fetch('/api/study-sessions/end', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: payload,
+                        keepalive: true
+                    });
+                }
+            } catch (_) {}
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') closeSession();
+        };
+
+        window.addEventListener('beforeunload', closeSession);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            cancelled = true;
+            if (heartbeatId) clearInterval(heartbeatId);
+            window.removeEventListener('beforeunload', closeSession);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            closeSession();
+        };
+    }, [USER_ID, currentUser?.role, currentSubject]);
 
     // INTERACTIVE QUIZ STATE
     const [showInteractiveQuiz, setShowInteractiveQuiz] = useState(false);
@@ -6175,6 +6234,10 @@ ${finalData.capsule}`;
                 <div className="fixed inset-0 z-[999] grid place-items-center p-4 md:p-10 bg-[#2B2E4A]/40 backdrop-blur-md animate-fade-in">
                     <div className="w-full max-w-2xl animate-clay-pop">
                         <div className="bg-amber-50 border-4 border-amber-200 rounded-[40px] p-8 flex flex-col md:flex-row items-center md:items-start gap-6 shadow-[0_40px_120px_rgba(0,0,0,0.4)] relative overflow-hidden group">
+                            {/* Close button */}
+                            <button onClick={() => setMissedSessionAlert(null)} className="absolute top-3 right-3 bg-white/30 hover:bg-white/60 rounded-full p-1.5 transition-colors z-10">
+                                <X className="w-5 h-5 text-amber-800" />
+                            </button>
                             {/* Background Decoration */}
                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
                                 <Clock className="w-32 h-32 text-amber-600" />

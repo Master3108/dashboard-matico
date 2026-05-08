@@ -1041,16 +1041,20 @@ export async function createStudySession({ student_user_id, subject, session_num
 export async function addStudyMilestone(session_id, milestone_name) {
     const { data: session } = await supabase
         .from('study_sessions')
-        .select('milestones')
+        .select('milestones,start_time')
         .eq('session_id', session_id)
         .single();
 
     const milestones = session?.milestones || [];
     milestones.push({ name: milestone_name, at: new Date().toISOString() });
+    const startedAt = session?.start_time ? new Date(session.start_time) : null;
+    const total_minutes = startedAt
+        ? Math.max(1, Math.round((Date.now() - startedAt.getTime()) / 60000))
+        : 1;
 
     const { error } = await supabase
         .from('study_sessions')
-        .update({ milestones })
+        .update({ milestones, total_minutes })
         .eq('session_id', session_id);
     if (error) throw new Error(`addStudyMilestone: ${error.message}`);
     return { success: true };
@@ -1066,7 +1070,7 @@ export async function endStudySession(session_id) {
     if (!session) throw new Error('Session not found');
     const start = new Date(session.start_time);
     const end = new Date();
-    const total_minutes = Math.round((end - start) / 60000);
+    const total_minutes = Math.max(1, Math.round((end - start) / 60000));
 
     const { data, error } = await supabase
         .from('study_sessions')

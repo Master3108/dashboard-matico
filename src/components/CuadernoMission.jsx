@@ -719,14 +719,13 @@ const CuadernoMission = ({ sessionId, phase, subject, topic, readingContent, onC
                             <p className="text-sm opacity-90 mt-1">PDF automático multipágina y desbloqueo del quiz por comprensión</p>
                         </div>
                     </div>
-                    {/* X arriba a la derecha: cierra el modal y vuelve a Teoria Ludica.
-                        Si el % de interpretacion es menor al 80% se avisa al alumno antes de cerrar. */}
-                    {typeof onSkip === 'function' && status !== 'camera' && (
+                    {/* X arriba a la derecha: cierra el modal */}
+                    {status !== 'camera' && (
                         <button
                             type="button"
-                            onClick={handleCloseModal}
-                            aria-label="Cerrar y volver a Teoria Ludica"
-                            title="Cerrar y volver a Teoria Ludica"
+                            onClick={typeof onSkip === 'function' ? handleCloseModal : onComplete}
+                            aria-label="Cerrar"
+                            title="Cerrar"
                             className="absolute top-3 right-3 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors"
                         >
                             <X size={20} />
