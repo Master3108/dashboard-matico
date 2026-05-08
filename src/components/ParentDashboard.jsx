@@ -476,14 +476,6 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const dateKey = getDateKey(getStudyDate(session));
         return isWithinSummaryRange(dateKey) && matchesSummarySubject(session.subject);
     });
-    const summaryResultItems = summaryHistoryItems.filter(item => {
-        const kind = getHistoryKind(item);
-        return ['quiz', 'ensayo'].includes(kind) && getActivityTotal(item) > 0;
-    });
-    const summaryCorrectAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
-    const summaryWrongAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityWrong(item), 0);
-    const summaryTotalQuestions = summaryResultItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
-    const summaryScorePercent = summaryTotalQuestions > 0 ? Math.round((summaryCorrectAnswers / summaryTotalQuestions) * 100) : 0;
     const summaryTotalMinutes = summaryStudySessions.reduce((sum, item) => sum + (Number(item.total_minutes) || 0), 0);
     const summaryIncompleteItems = summaryHistoryItems.filter(item =>
         String(item.status || '').toLowerCase().includes('iniciado') ||
@@ -593,6 +585,15 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         ];
     };
     const summaryGroupedHistoryActivityItems = aggregateSummaryHistoryActivities(summaryHistoryActivityItems);
+    const summaryResultItems = summaryGroupedHistoryActivityItems.filter(item => {
+        const kind = getHistoryKind(item);
+        return ['quiz', 'ensayo'].includes(kind) && getActivityTotal(item) > 0;
+    });
+    const summaryCorrectAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
+    const summaryWrongAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityWrong(item), 0);
+    const summaryTotalQuestions = summaryResultItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
+    const summaryScorePercent = summaryTotalQuestions > 0 ? Math.round((summaryCorrectAnswers / summaryTotalQuestions) * 100) : 0;
+    const summaryLatestResult = [...summaryResultItems].sort((a, b) => getActivityTimestamp(b) - getActivityTimestamp(a))[0] || null;
     const summaryAllRealActivities = [
         ...(realActiveStudy && matchesSummarySubject(realActiveStudy.subject) ? [{
             ...realActiveStudy,
@@ -1076,6 +1077,16 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                     <p className="text-sm font-bold text-[#64748B] pb-1">{summaryCorrectAnswers}/{summaryTotalQuestions} correctas</p>
                                 </div>
                                 <p className="text-sm font-bold text-[#EF4444]">{summaryWrongAnswers} incorrectas en el filtro</p>
+                                {summaryLatestResult && (
+                                    <div className="mt-4 rounded-2xl bg-[#F8FAFC] border border-gray-100 p-3">
+                                        <p className="text-xs font-black uppercase tracking-widest text-[#7C3AED]">Ultimo resultado</p>
+                                        <p className="text-sm font-black text-[#2B2E4A]">{summaryLatestResult.subject} · {summaryLatestResult.title || summaryLatestResult.topic}</p>
+                                        <p className="text-xs font-bold text-[#64748B]">
+                                            {getActivityCorrect(summaryLatestResult)}/{getActivityTotal(summaryLatestResult)} correctas · {getActivityWrong(summaryLatestResult)} malas
+                                            {summaryLatestResult.started_at ? ` · inicio ${formatActivityTime(summaryLatestResult.started_at)}` : ''}
+                                        </p>
+                                    </div>
+                                )}
                                 {summaryResultItems.length === 0 && (
                                     <p className="mt-3 text-xs font-bold text-[#9094A6]">No hay quiz o prueba terminada para este filtro.</p>
                                 )}
