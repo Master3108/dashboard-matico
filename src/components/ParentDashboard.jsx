@@ -499,6 +499,9 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const summaryLastActivityLabel = summaryLastActivityDate
         ? new Date(`${summaryLastActivityDate}T12:00:00`).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
         : '';
+    const summaryLastActivityMinutes = summaryLastActivityDate
+        ? studySessions.filter(s => getDateKey(getStudyDate(s)) === summaryLastActivityDate).reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0)
+        : 0;
     const summaryHasTodayActivity = historyItems.some(item =>
         getDateKey(item.date) === today &&
         !['calendar', 'reminder', 'daily_report'].includes(String(item.source || '')) &&
@@ -966,21 +969,37 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#F59E0B]">Ultima sesion</p>
-                                <h3 className="font-black text-[#2B2E4A] text-lg mb-3">{summaryLastActivity?.subject || 'Sin materia'}</h3>
+                            <div className="bg-gradient-to-br from-[#6366F1] to-[#7C3AED] rounded-3xl p-6 shadow-lg text-white relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-bl-full"></div>
+                                <p className="text-xs font-black uppercase tracking-widest text-white/70 mb-2">Ultima sesion</p>
                                 {summaryLastActivity ? (
                                     <>
-                                        <p className="font-black text-[#2B2E4A]">{summaryLastActivity.title || summaryLastActivity.topic || summaryLastActivity.type || 'Actividad registrada'}</p>
-                                        <p className="text-sm font-bold text-[#64748B] mt-1">{summaryLastActivityLabel}</p>
-                                        {getActivityTotal(summaryLastActivity) > 0 && (
-                                            <p className="text-sm font-bold text-[#64748B] mt-2">
-                                                {getActivityCorrect(summaryLastActivity)}/{getActivityTotal(summaryLastActivity)} correctas, {getActivityWrong(summaryLastActivity)} malas.
-                                            </p>
-                                        )}
+                                        <h2 className="font-black text-3xl leading-tight mb-1">{summaryLastActivity.subject || 'General'}</h2>
+                                        <p className="font-bold text-xl text-white/90 mb-3">{summaryLastActivity.title || summaryLastActivity.topic || summaryLastActivity.type || 'Actividad registrada'}</p>
+                                        <p className="font-bold text-base text-white/80 capitalize mb-4">{summaryLastActivityLabel}{summaryDaysWithoutSession > 0 ? ` · hace ${summaryDaysWithoutSession} dia(s)` : ''}</p>
+                                        <div className="flex flex-wrap gap-3">
+                                            {summaryLastActivityMinutes > 0 && (
+                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
+                                                    <p className="text-2xl font-black">{summaryLastActivityMinutes} min</p>
+                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Tiempo estudio</p>
+                                                </div>
+                                            )}
+                                            {getActivityTotal(summaryLastActivity) > 0 && (
+                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
+                                                    <p className="text-2xl font-black">{getActivityCorrect(summaryLastActivity)}/{getActivityTotal(summaryLastActivity)}</p>
+                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Correctas</p>
+                                                </div>
+                                            )}
+                                            {getActivityTotal(summaryLastActivity) > 0 && (
+                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
+                                                    <p className="text-2xl font-black">{Math.round((getActivityCorrect(summaryLastActivity) / getActivityTotal(summaryLastActivity)) * 100)}%</p>
+                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Rendimiento</p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </>
                                 ) : (
-                                    <p className="text-sm font-bold text-[#9094A6]">No hay sesion real registrada.</p>
+                                    <h2 className="font-black text-2xl text-white/60">No hay sesion registrada</h2>
                                 )}
                             </div>
                         </div>
