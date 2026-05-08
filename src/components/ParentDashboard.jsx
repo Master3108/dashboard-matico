@@ -70,6 +70,10 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const [timelineRange, setTimelineRange] = useState('7d');
     const [timelineSubject, setTimelineSubject] = useState('TODAS');
     const [timelineType, setTimelineType] = useState('todos');
+    const [summaryRangeFilter, setSummaryRangeFilter] = useState('today');
+    const [summarySubjectFilter, setSummarySubjectFilter] = useState('TODAS');
+    const [summaryFromDate, setSummaryFromDate] = useState('');
+    const [summaryToDate, setSummaryToDate] = useState('');
     const [customFromDate, setCustomFromDate] = useState('');
     const [customToDate, setCustomToDate] = useState('');
     const [historySubjectFilter, setHistorySubjectFilter] = useState('TODAS');
@@ -351,11 +355,6 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
     const totalXPFromHistory = historyItems.reduce((sum, item) => sum + (Number(item.xp) || 0), 0);
     const totalXP = totalXPFromHistory || progress.reduce((sum, p) => sum + (p.xp || 0), 0);
-    const pendingEventsFromHistory = historyItems.filter(item =>
-        ['calendar', 'reminder'].includes(item.source) &&
-        String(item.status || '').toLowerCase() === 'pendiente'
-    ).length;
-    const pendingEvents = Math.max(events.filter(e => e.status === 'pendiente').length, pendingEventsFromHistory);
     const completedEvents = events.filter(e => e.status === 'completado').length;
     const totalAntecedentes = studentHistory.summary?.total || studentHistory.items.length || 0;
     const parseHistoryList = (value) => {
@@ -377,6 +376,50 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         if (typeof value === 'string') return value;
         try { return JSON.stringify(value); } catch { return String(value); }
     };
+    const getSantiagoDateKey = (date = new Date()) => {
+        try {
+            return date.toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+        } catch {
+            return date.toISOString().split('T')[0];
+        }
+    };
+    const today = getSantiagoDateKey();
+    const getDateKey = (value) => {
+        if (!value) return '';
+        if (typeof value === 'string') return value.slice(0, 10);
+        try { return new Date(value).toISOString().slice(0, 10); } catch { return ''; }
+    };
+    const getStudyDate = (session) => session?.start_time || session?.completed_at || session?.created_at || '';
+    const daysBetween = (fromDateKey, toDateKey = today) => {
+        if (!fromDateKey) return null;
+        const from = new Date(`${fromDateKey}T12:00:00`);
+        const to = new Date(`${toDateKey}T12:00:00`);
+        return Math.max(0, Math.floor((to - from) / 86400000));
+    };
+    const normalizeSubject = (subject = '') => String(subject || '').trim().toUpperCase();
+    const matchesSummarySubject = (subject) => {
+        if (summarySubjectFilter === 'TODAS') return true;
+        return normalizeSubject(subject) === normalizeSubject(summarySubjectFilter);
+    };
+    const getSummaryRangeStart = () => {
+        if (summaryRangeFilter === 'custom') return summaryFromDate || '';
+        const days = summaryRangeFilter === 'today' ? 0 : (summaryRangeFilter === '30d' ? 29 : 6);
+        const d = new Date(`${today}T12:00:00`);
+        d.setDate(d.getDate() - days);
+        return getSantiagoDateKey(d);
+    };
+    const getSummaryRangeEnd = () => {
+        if (summaryRangeFilter === 'custom') return summaryToDate || '';
+        return today;
+    };
+    const isWithinSummaryRange = (dateKey) => {
+        if (!dateKey) return false;
+        const start = getSummaryRangeStart();
+        const end = getSummaryRangeEnd();
+        if (start && dateKey < start) return false;
+        if (end && dateKey > end) return false;
+        return true;
+    };
     const getHistoryScore = (item) => {
         if (item?.score_percent != null) return Number(item.score_percent);
         if (item?.total_questions > 0 && item?.correct_answers != null) {
@@ -396,7 +439,82 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         if (type.includes('quiz') || type.includes('session_completed') || source === 'quiz') return 'quiz';
         return 'progreso';
     };
+    const getActivityTotal = (item) => {
+        const total = Number(item?.total_questions || 0);
+        if (total > 0) return total;
+        const match = String(item?.detail || '').match(/(\d+)\/(\d+)/);
+        return match ? Number(match[2]) : 0;
+    };
+    const getActivityCorrect = (item) => {
+        if (item?.correct_answers != null) return Number(item.correct_answers || 0);
+        const match = String(item?.detail || '').match(/(\d+)\/(\d+)/);
+        return match ? Number(match[1]) : 0;
+    };
+    const getActivityWrong = (item) => {
+        if (item?.wrong_answers != null) return Number(item.wrong_answers || 0);
+        const total = getActivityTotal(item);
+        const correct = getActivityCorrect(item);
+        return total > 0 ? Math.max(0, total - correct) : 0;
+    };
     const historySubjects = ['TODAS', ...Array.from(new Set(historyItems.map(item => item.subject).filter(Boolean))).sort()];
+    const summarySubjects = ['TODAS', ...Array.from(new Set([
+        ...historyItems.map(item => item.subject).filter(Boolean),
+        ...studySessions.map(item => item.subject).filter(Boolean),
+        ...events.map(item => item.subject).filter(Boolean),
+        'MATEMATICA', 'QUIMICA', 'FISICA', 'BIOLOGIA', 'HISTORIA', 'LENGUAJE'
+    ].map(normalizeSubject).filter(Boolean))).sort()];
+    const summaryHistoryItems = historyItems.filter(item => {
+        const dateKey = getDateKey(item.date);
+        return isWithinSummaryRange(dateKey) && matchesSummarySubject(item.subject);
+    });
+    const summaryStudySessions = studySessions.filter(session => {
+        const dateKey = getDateKey(getStudyDate(session));
+        return isWithinSummaryRange(dateKey) && matchesSummarySubject(session.subject);
+    });
+    const summaryResultItems = summaryHistoryItems.filter(item => {
+        const kind = getHistoryKind(item);
+        return ['quiz', 'ensayo'].includes(kind) && getActivityTotal(item) > 0;
+    });
+    const summaryCorrectAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
+    const summaryWrongAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityWrong(item), 0);
+    const summaryTotalQuestions = summaryResultItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
+    const summaryScorePercent = summaryTotalQuestions > 0 ? Math.round((summaryCorrectAnswers / summaryTotalQuestions) * 100) : 0;
+    const summaryTotalMinutes = summaryStudySessions.reduce((sum, item) => sum + (Number(item.total_minutes) || 0), 0);
+    const summaryIncompleteItems = summaryHistoryItems.filter(item =>
+        String(item.status || '').toLowerCase().includes('iniciado') ||
+        String(item.incomplete_reason || '').trim()
+    );
+    const summaryEvidenceItems = summaryHistoryItems.filter(item =>
+        item.has_evidence || item.image_url || item.ocr_text || item.evidence_summary
+    );
+    const summaryRecentActivities = summaryHistoryItems.filter(item =>
+        !['calendar', 'reminder'].includes(String(item.source || ''))
+    ).slice(0, 5);
+    const summaryLastActivity = historyItems.find(item =>
+        !['calendar', 'reminder'].includes(String(item.source || '')) &&
+        matchesSummarySubject(item.subject)
+    );
+    const summaryLastActivityDate = getDateKey(summaryLastActivity?.date);
+    const summaryDaysWithoutSession = summaryLastActivityDate ? daysBetween(summaryLastActivityDate) : null;
+    const summaryLastActivityLabel = summaryLastActivityDate
+        ? new Date(`${summaryLastActivityDate}T12:00:00`).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+        : '';
+    const summaryHasTodayActivity = historyItems.some(item =>
+        getDateKey(item.date) === today &&
+        !['calendar', 'reminder'].includes(String(item.source || '')) &&
+        matchesSummarySubject(item.subject)
+    ) || studySessions.some(session =>
+        getDateKey(getStudyDate(session)) === today &&
+        matchesSummarySubject(session.subject)
+    ) || Boolean(activeStudy && matchesSummarySubject(activeStudy.subject));
+    const futurePendingEvents = events
+        .filter(event =>
+            String(event.status || '').toLowerCase() === 'pendiente' &&
+            getDateKey(event.event_date) >= today &&
+            matchesSummarySubject(event.subject)
+        )
+        .sort((a, b) => getDateKey(a.event_date).localeCompare(getDateKey(b.event_date)));
+    const pendingEvents = futurePendingEvents.length;
     const filteredHistoryItems = historyItems.filter(item => {
         if (historySubjectFilter !== 'TODAS' && item.subject !== historySubjectFilter) return false;
         if (historyTypeFilter !== 'todos' && getHistoryKind(item) !== historyTypeFilter) return false;
@@ -416,9 +534,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     };
 
     // --- Study time stats ---
-    const today = new Date().toISOString().split('T')[0];
-    const getStudyDate = (session) => session?.start_time || session?.completed_at || session?.created_at || '';
-    const todaySessions = studySessions.filter(s => getStudyDate(s).startsWith(today));
+    const todaySessions = studySessions.filter(s => getStudyDate(s).startsWith(today) && matchesSummarySubject(s.subject));
     const todayMinutes = todaySessions.reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
     const studyGoalMinutes = 45;
     const studyProgress = Math.min(100, Math.round((todayMinutes / studyGoalMinutes) * 100));
@@ -472,7 +588,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const dateStr = d.toISOString().split('T')[0];
         const dayLabel = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'][d.getDay()];
         const mins = studySessions
-            .filter(s => getStudyDate(s).startsWith(dateStr))
+            .filter(s => getStudyDate(s).startsWith(dateStr) && matchesSummarySubject(s.subject))
             .reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
         return { day: dayLabel, date: dateStr, minutes: mins };
     });
@@ -645,35 +761,47 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
                         {/* Stats grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className="bg-gradient-to-br from-[#F5F3FF] to-[#EDE9FE] rounded-2xl p-3 text-center">
-                                <Award className="w-6 h-6 text-[#7C3AED] mx-auto mb-1" />
-                                <p className="text-2xl font-black text-[#7C3AED]">{totalXP.toLocaleString()}</p>
-                                <p className="text-xs font-bold text-[#9094A6]">XP Total</p>
-                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Puntos ganados por actividad</p>
+                            <div className={`rounded-2xl p-3 text-center ${summaryHasTodayActivity ? 'bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5]' : 'bg-gradient-to-br from-[#FEF2F2] to-[#FEE2E2]'}`}>
+                                {summaryHasTodayActivity ? (
+                                    <CheckCircle className="w-6 h-6 text-[#10B981] mx-auto mb-1" />
+                                ) : (
+                                    <AlertTriangle className="w-6 h-6 text-[#EF4444] mx-auto mb-1" />
+                                )}
+                                <p className={`text-xl font-black ${summaryHasTodayActivity ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                                    {summaryHasTodayActivity ? 'Estudio hoy' : 'Sin sesion hoy'}
+                                </p>
+                                <p className="text-xs font-bold text-[#9094A6]">Estado de sesion</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">
+                                    {summaryDaysWithoutSession === 0 ? 'Actividad registrada hoy' : summaryDaysWithoutSession != null ? `Hace ${summaryDaysWithoutSession} dia(s)` : 'Sin registro real'}
+                                </p>
                             </div>
                             <div className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-2xl p-3 text-center">
-                                <Target className="w-6 h-6 text-[#3B82F6] mx-auto mb-1" />
-                                <p className="text-2xl font-black text-[#3B82F6]">{totalQuizzes}</p>
-                                <p className="text-xs font-bold text-[#9094A6]">Evaluaciones</p>
-                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Quizzes completados</p>
+                                <Clock className="w-6 h-6 text-[#3B82F6] mx-auto mb-1" />
+                                <p className="text-2xl font-black text-[#3B82F6]">{todayMinutes}</p>
+                                <p className="text-xs font-bold text-[#9094A6]">Min hoy</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">{summaryTotalMinutes} min en filtro</p>
                             </div>
-                            <div className="bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] rounded-2xl p-3 text-center">
-                                <TrendingUp className="w-6 h-6 text-[#10B981] mx-auto mb-1" />
-                                <p className="text-2xl font-black text-[#10B981]">{avgScore}%</p>
-                                <p className="text-xs font-bold text-[#9094A6]">Promedio</p>
-                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Nota media en quizzes</p>
+                            <div className="bg-gradient-to-br from-[#F5F3FF] to-[#EDE9FE] rounded-2xl p-3 text-center">
+                                <Target className="w-6 h-6 text-[#7C3AED] mx-auto mb-1" />
+                                <p className="text-2xl font-black text-[#7C3AED]">{summaryScorePercent}%</p>
+                                <p className="text-xs font-bold text-[#9094A6]">Resultados</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">{summaryCorrectAnswers}/{summaryTotalQuestions} buenas</p>
                             </div>
                             <div className="bg-gradient-to-br from-[#FFF7ED] to-[#FFEDD5] rounded-2xl p-3 text-center">
                                 <Calendar className="w-6 h-6 text-[#F59E0B] mx-auto mb-1" />
                                 <p className="text-2xl font-black text-[#F59E0B]">{pendingEvents}</p>
-                                <p className="text-xs font-bold text-[#9094A6]">Pendientes</p>
-                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Pruebas por realizar</p>
+                                <p className="text-xs font-bold text-[#9094A6]">Proximas pruebas</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Solo futuras</p>
                             </div>
                             <div className="bg-gradient-to-br from-[#F0F4FF] to-[#E0E7FF] rounded-2xl p-3 text-center col-span-2 md:col-span-4">
                                 <FileText className="w-6 h-6 text-[#6366F1] mx-auto mb-1" />
-                                <p className="text-2xl font-black text-[#6366F1]">{totalAntecedentes}</p>
-                                <p className="text-xs font-bold text-[#9094A6]">Actividades Registradas</p>
-                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">Total de acciones en la plataforma</p>
+                                <p className="text-lg font-black text-[#6366F1]">
+                                    {summaryLastActivity ? `${summaryLastActivity.subject || 'General'}: ${summaryLastActivity.title || summaryLastActivity.topic || summaryLastActivity.type || 'ultima actividad'}` : 'Sin ultima sesion'}
+                                </p>
+                                <p className="text-xs font-bold text-[#9094A6]">Ultima sesion real</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">
+                                    {summaryLastActivityLabel || 'Sin fecha registrada'}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -714,6 +842,133 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 {/* RESUMEN */}
                 {activeTab === 'resumen' && (
                     <div className="space-y-4">
+                        <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
+                            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-widest text-[#7C3AED]">Seguimiento del apoderado</p>
+                                    <h3 className="font-black text-[#2B2E4A] text-xl">Resumen filtrable</h3>
+                                    <p className="text-sm text-[#64748B] font-bold">Estado diario, ultima sesion, resultados y pruebas futuras.</p>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    <select
+                                        value={summaryRangeFilter}
+                                        onChange={(e) => setSummaryRangeFilter(e.target.value)}
+                                        className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold text-[#2B2E4A]"
+                                    >
+                                        <option value="today">Hoy</option>
+                                        <option value="7d">7 dias</option>
+                                        <option value="30d">30 dias</option>
+                                        <option value="custom">Rango</option>
+                                    </select>
+                                    <select
+                                        value={summarySubjectFilter}
+                                        onChange={(e) => setSummarySubjectFilter(e.target.value)}
+                                        className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold text-[#2B2E4A]"
+                                    >
+                                        {summarySubjects.map(subject => (
+                                            <option key={subject} value={subject}>{subject === 'TODAS' ? 'Todas' : subject}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        onClick={() => { fetchStudentHistory(); fetchDailyReport(); fetchStudySessions(); fetchChildEvents(); }}
+                                        className="col-span-2 md:col-span-1 rounded-2xl bg-[#F5F3FF] text-[#7C3AED] px-3 py-2 text-sm font-black hover:bg-[#EDE9FE] transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <RefreshCw className="w-4 h-4" />
+                                        Actualizar
+                                    </button>
+                                </div>
+                            </div>
+                            {summaryRangeFilter === 'custom' && (
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                    <input type="date" value={summaryFromDate} onChange={(e) => setSummaryFromDate(e.target.value)} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold text-[#2B2E4A]" />
+                                    <input type="date" value={summaryToDate} onChange={(e) => setSummaryToDate(e.target.value)} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-2 text-sm font-bold text-[#2B2E4A]" />
+                                </div>
+                            )}
+
+                            <div className={`rounded-2xl p-4 border ${summaryHasTodayActivity ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'} flex flex-col md:flex-row md:items-center md:justify-between gap-3`}>
+                                <div className="flex items-start gap-3">
+                                    {summaryHasTodayActivity ? (
+                                        <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
+                                    ) : (
+                                        <AlertTriangle className="w-6 h-6 text-red-600 mt-0.5" />
+                                    )}
+                                    <div>
+                                        <h4 className={`font-black text-lg ${summaryHasTodayActivity ? 'text-green-800' : 'text-red-800'}`}>
+                                            {summaryHasTodayActivity ? 'Matias realizo actividad hoy' : 'Matias no ha realizado sesion hoy'}
+                                        </h4>
+                                        <p className={`text-sm font-bold ${summaryHasTodayActivity ? 'text-green-700' : 'text-red-700'}`}>
+                                            {summaryLastActivityDate
+                                                ? `Ultima sesion real: ${summaryLastActivityLabel}${summaryDaysWithoutSession > 0 ? `, hace ${summaryDaysWithoutSession} dia(s)` : ''}.`
+                                                : 'No existe una sesion real registrada todavia.'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div className="bg-white/80 rounded-xl px-3 py-2">
+                                        <p className="text-lg font-black text-[#2B2E4A]">{summaryTotalMinutes}</p>
+                                        <p className="text-[10px] font-bold text-[#64748B]">min</p>
+                                    </div>
+                                    <div className="bg-white/80 rounded-xl px-3 py-2">
+                                        <p className="text-lg font-black text-[#10B981]">{summaryCorrectAnswers}</p>
+                                        <p className="text-[10px] font-bold text-[#64748B]">buenas</p>
+                                    </div>
+                                    <div className="bg-white/80 rounded-xl px-3 py-2">
+                                        <p className="text-lg font-black text-[#EF4444]">{summaryWrongAnswers}</p>
+                                        <p className="text-[10px] font-bold text-[#64748B]">malas</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-4">
+                            <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
+                                <p className="text-xs font-black uppercase tracking-widest text-[#3B82F6]">Resultados</p>
+                                <h3 className="font-black text-[#2B2E4A] text-lg mb-3">Pruebas y quizzes</h3>
+                                <div className="flex items-end gap-2 mb-2">
+                                    <p className="text-4xl font-black text-[#7C3AED]">{summaryScorePercent}%</p>
+                                    <p className="text-sm font-bold text-[#64748B] pb-1">{summaryCorrectAnswers}/{summaryTotalQuestions} correctas</p>
+                                </div>
+                                <p className="text-sm font-bold text-[#EF4444]">{summaryWrongAnswers} incorrectas en el filtro</p>
+                                {summaryResultItems.length === 0 && (
+                                    <p className="mt-3 text-xs font-bold text-[#9094A6]">No hay quiz o prueba terminada para este filtro.</p>
+                                )}
+                            </div>
+
+                            <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
+                                <p className="text-xs font-black uppercase tracking-widest text-[#EF4444]">Pendiente</p>
+                                <h3 className="font-black text-[#2B2E4A] text-lg mb-3">Que falta revisar</h3>
+                                <div className="space-y-2 text-sm font-bold">
+                                    <p className={summaryWrongAnswers > 0 ? 'text-red-700' : 'text-[#64748B]'}>
+                                        {summaryWrongAnswers > 0 ? `${summaryWrongAnswers} respuesta(s) malas por corregir.` : 'Sin respuestas malas registradas en el filtro.'}
+                                    </p>
+                                    <p className={summaryIncompleteItems.length > 0 ? 'text-amber-700' : 'text-[#64748B]'}>
+                                        {summaryIncompleteItems.length > 0 ? `${summaryIncompleteItems.length} actividad(es) iniciadas sin resultado final.` : 'Sin quizzes iniciados pendientes.'}
+                                    </p>
+                                    <p className={summaryEvidenceItems.length > 0 ? 'text-green-700' : 'text-amber-700'}>
+                                        {summaryEvidenceItems.length > 0 ? `${summaryEvidenceItems.length} evidencia(s) o cuaderno(s) asociados.` : 'Sin evidencia o cuaderno en el filtro.'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
+                                <p className="text-xs font-black uppercase tracking-widest text-[#F59E0B]">Ultima sesion</p>
+                                <h3 className="font-black text-[#2B2E4A] text-lg mb-3">{summaryLastActivity?.subject || 'Sin materia'}</h3>
+                                {summaryLastActivity ? (
+                                    <>
+                                        <p className="font-black text-[#2B2E4A]">{summaryLastActivity.title || summaryLastActivity.topic || summaryLastActivity.type || 'Actividad registrada'}</p>
+                                        <p className="text-sm font-bold text-[#64748B] mt-1">{summaryLastActivityLabel}</p>
+                                        {getActivityTotal(summaryLastActivity) > 0 && (
+                                            <p className="text-sm font-bold text-[#64748B] mt-2">
+                                                {getActivityCorrect(summaryLastActivity)}/{getActivityTotal(summaryLastActivity)} correctas, {getActivityWrong(summaryLastActivity)} malas.
+                                            </p>
+                                        )}
+                                    </>
+                                ) : (
+                                    <p className="text-sm font-bold text-[#9094A6]">No hay sesion real registrada.</p>
+                                )}
+                            </div>
+                        </div>
+
                         {/* STUDY TIME CARD - Hora de Estudio */}
                         <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100 relative overflow-hidden">
                             {/* Background accent */}
@@ -851,21 +1106,21 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                     <Plus className="w-3 h-3" /> Crear
                                 </button>
                             </div>
-                            {events.filter(e => e.status === 'pendiente').length === 0 ? (
+                            {futurePendingEvents.length === 0 ? (
                                 <div className="text-center py-6 text-gray-300">
                                     <Calendar className="w-10 h-10 mx-auto mb-2" />
-                                    <p className="font-bold text-sm">No hay eventos pendientes</p>
+                                    <p className="font-bold text-sm">No hay pruebas futuras pendientes</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {events
-                                        .filter(e => e.status === 'pendiente')
-                                        .sort((a, b) => a.event_date.localeCompare(b.event_date))
+                                    {futurePendingEvents
                                         .slice(0, 5)
                                         .map(event => {
                                             const typeConf = EVENT_TYPE_CONFIG[event.event_type] || EVENT_TYPE_CONFIG.otro;
+                                            const daysToEvent = daysBetween(today, getDateKey(event.event_date));
+                                            const isPriority = daysToEvent === 2;
                                             return (
-                                                <div key={event.event_id} className="flex items-center gap-3 p-3 rounded-2xl" style={{ backgroundColor: typeConf.bg }}>
+                                                <div key={event.event_id} className={`flex items-center gap-3 p-3 rounded-2xl border ${isPriority ? 'border-red-200' : 'border-transparent'}`} style={{ backgroundColor: typeConf.bg }}>
                                                     <span className="text-xl">{typeConf.emoji}</span>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="font-black text-[#2B2E4A] text-sm truncate">{event.title}</p>
@@ -874,6 +1129,9 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                             {event.start_time ? ` · ${formatTime(event.start_time)}` : ''}
                                                             {event.subject ? ` · ${event.subject}` : ''}
                                                         </p>
+                                                        {isPriority && (
+                                                            <p className="text-xs font-black text-red-600 mt-1">Faltan 2 dias: preparar estudio hoy</p>
+                                                        )}
                                                     </div>
                                                     <span className="text-xs font-black px-2 py-0.5 rounded-lg text-white" style={{ backgroundColor: typeConf.color }}>
                                                         {typeConf.label}
@@ -887,15 +1145,15 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
                         {/* Recent activity */}
                         <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
-                            <h3 className="font-black text-[#2B2E4A] mb-4">Actividad reciente</h3>
-                            {recentProgress.length === 0 ? (
+                            <h3 className="font-black text-[#2B2E4A] mb-4">Actividad del filtro</h3>
+                            {summaryRecentActivities.length === 0 ? (
                                 <div className="text-center py-6 text-gray-300">
                                     <BarChart3 className="w-10 h-10 mx-auto mb-2" />
-                                    <p className="font-bold text-sm">Sin actividad reciente</p>
+                                    <p className="font-bold text-sm">Sin actividad real para este filtro</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {recentProgress.slice(0, 5).map((p, i) => (
+                                    {summaryRecentActivities.map((p, i) => (
                                         <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl">
                                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                 (p.score || 0) >= 70 ? 'bg-green-100' : (p.score || 0) >= 40 ? 'bg-yellow-100' : 'bg-red-100'
@@ -906,10 +1164,10 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-bold text-sm text-[#2B2E4A] truncate">
-                                                    {p.topic || p.subject || p.event_type || 'Actividad'}
+                                                    {p.title || p.topic || p.subject || p.type || 'Actividad'}
                                                 </p>
                                                 <p className="text-xs text-gray-400 font-bold">
-                                                    {p.subject} · {p.created_at ? new Date(p.created_at).toLocaleDateString('es-CL') : ''}
+                                                    {p.subject || 'General'} - {p.date ? new Date(p.date).toLocaleDateString('es-CL') : ''}
                                                 </p>
                                             </div>
                                             {p.score != null && (
