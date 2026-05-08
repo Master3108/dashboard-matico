@@ -7086,6 +7086,58 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
             const refreshedRows = refreshedResponse.data.values || [];
             const userRowsRefreshed = refreshedRows.filter(row => row[1] === user_id);
 
+            const { data: latestAdminRoute } = await supabase
+                .from('progress_log')
+                .select('created_at, subject, session, phase, source_mode, topic, improvement_plan')
+                .eq('user_id', user_id)
+                .eq('event_type', 'admin_route_set')
+                .eq('subject', subjectFilter)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (latestAdminRoute) {
+                const { data: laterStudentRows } = await supabase
+                    .from('progress_log')
+                    .select('id')
+                    .eq('user_id', user_id)
+                    .eq('subject', subjectFilter)
+                    .gt('created_at', latestAdminRoute.created_at)
+                    .neq('event_type', 'admin_route_set')
+                    .limit(1);
+
+                if (!laterStudentRows?.length) {
+                    const forcedSession = Math.max(1, Number(latestAdminRoute.session || 1) || 1);
+                    const forcedPhase = Math.max(0, Number(latestAdminRoute.phase || 0) || 0);
+                    const forcedStage = String(latestAdminRoute.source_mode || 'teoria');
+                    const isCompletedStage = forcedStage === 'completada';
+                    const isTheoryDone = ['cuaderno', 'quiz_fase_1', 'quiz_fase_2', 'quiz_fase_3', 'completada'].includes(forcedStage);
+
+                    console.log(`[PROGRESS_ADMIN_ROUTE] User: ${user_id} | Subject: ${subjectFilter} | Forced S${forcedSession} stage ${forcedStage}`);
+
+                    return res.json({
+                        success: true,
+                        next_session: isCompletedStage ? forcedSession + 1 : forcedSession,
+                        last_completed_session: isCompletedStage ? forcedSession : Math.max(0, forcedSession - 1),
+                        current_session_in_progress: isCompletedStage ? 0 : forcedSession,
+                        current_phase: isCompletedStage ? 0 : forcedPhase,
+                        current_theory_started: isTheoryDone || forcedStage === 'teoria',
+                        current_theory_completed: isTheoryDone,
+                        sessions_completed: isCompletedStage ? forcedSession : Math.max(0, forcedSession - 1),
+                        xp: 0,
+                        puntos: 0,
+                        level: 1,
+                        subject: subjectFilter,
+                        admin_route_override: {
+                            session: forcedSession,
+                            stage: forcedStage,
+                            set_at: latestAdminRoute.created_at,
+                            topic: latestAdminRoute.topic || ''
+                        }
+                    });
+                }
+            }
+
             // Filtrar sesiones completadas de esta materia
             // Columnas: A=timestamp, B=user_id, C=subject, D=session, E=event_type
             const completedSessions = userRowsRefreshed.filter(row =>
@@ -7211,6 +7263,70 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
 
             await deleteNotebookFile(body.file_name);
             return res.json({ success: true, deleted: body.file_name });
+        }
+
+        if (currentAction === 'admin_set_student_stage') {
+            if (!isAdminEmail(body.email)) {
+                return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
+            }
+
+            const targetUserId = String(body.target_user_id || body.student_user_id || '').trim();
+            const subject = normalizeSubjectCode(body.subject || data.subject || '');
+            const sessionNumber = Math.max(1, Number(body.session || data.session || 1) || 1);
+            const stage = String(body.stage || data.stage || 'teoria').trim().toLowerCase();
+            const reason = String(body.reason || data.reason || '').trim();
+            const stageLabels = {
+                cero: 'Volver a cero',
+                teoria: 'Teoria ludica',
+                cuaderno: 'Cuaderno',
+                quiz_fase_1: 'Quiz fase 1',
+                quiz_fase_2: 'Quiz fase 2',
+                quiz_fase_3: 'Quiz fase 3',
+                completada: 'Sesion completada'
+            };
+
+            if (!targetUserId) {
+                return res.status(400).json({ success: false, error: 'Debes indicar target_user_id' });
+            }
+            if (!subject || subject === 'GENERAL') {
+                return res.status(400).json({ success: false, error: 'Debes indicar subject' });
+            }
+
+            const phaseByStage = {
+                cero: 0,
+                teoria: 0,
+                cuaderno: 0,
+                quiz_fase_1: 0,
+                quiz_fase_2: 1,
+                quiz_fase_3: 2,
+                completada: 3
+            };
+
+            await appendProgressToSheetOrThrow(sheets, {
+                user_id: targetUserId,
+                subject,
+                session: sessionNumber,
+                event_type: 'admin_route_set',
+                phase: phaseByStage[stage] ?? 0,
+                grade: body.grade || data.grade || '1medio',
+                topic: `${stageLabels[stage] || stage} - Sesion ${sessionNumber}`,
+                sourceMode: stage,
+                improvementPlan: JSON.stringify({
+                    admin_email: body.email,
+                    stage,
+                    reason,
+                    reset_client_progress: true
+                })
+            });
+
+            return res.json({
+                success: true,
+                message: `Alumno posicionado en ${subject} sesion ${sessionNumber} (${stageLabels[stage] || stage}).`,
+                target_user_id: targetUserId,
+                subject,
+                session: sessionNumber,
+                stage
+            });
         }
 
         if (currentAction === 'list_generated_questions') {

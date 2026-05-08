@@ -3394,6 +3394,14 @@ const App = () => {
     });
     const ADMIN_EMAILS = ['joseantonio.olguinr@gmail.com'];
     const isAdminUser = ADMIN_EMAILS.includes((currentUser?.email || '').toLowerCase());
+    const [adminStageForm, setAdminStageForm] = useState({
+        target_user_id: '',
+        subject: 'MATEMATICA',
+        session: '1',
+        stage: 'teoria',
+        reason: ''
+    });
+    const [isSavingAdminStage, setIsSavingAdminStage] = useState(false);
 
     // 1. Fetch Profile on Load
     const fetchProfile = async () => {
@@ -4564,6 +4572,54 @@ const App = () => {
         } catch (error) {
             console.error('[ADMIN_FILES] Error eliminando PDF:', error);
             alert(`No pudimos eliminar el PDF. ${error.message || ''}`);
+        }
+    };
+
+    const saveAdminStudentStage = async () => {
+        if (!isAdminUser) return;
+        const targetUserId = adminStageForm.target_user_id.trim();
+        if (!targetUserId) {
+            alert('Ingresa el user_id del alumno.');
+            return;
+        }
+        if (!confirm(`¿Posicionar al alumno ${targetUserId} en ${adminStageForm.subject}, sesión ${adminStageForm.session}, etapa ${adminStageForm.stage}?`)) {
+            return;
+        }
+
+        setIsSavingAdminStage(true);
+        try {
+            const response = await fetch(activeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'admin_set_student_stage',
+                    email: currentUser?.email,
+                    target_user_id: targetUserId,
+                    subject: adminStageForm.subject,
+                    session: adminStageForm.session,
+                    stage: adminStageForm.stage,
+                    reason: adminStageForm.reason,
+                    grade: ACTIVE_GRADE
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No se pudo cambiar la etapa del alumno');
+            }
+
+            if (targetUserId === USER_ID) {
+                localStorage.removeItem(completedSessionsStorageKey);
+                localStorage.removeItem(quizProgressStorageKey);
+                await fetchProfile();
+            }
+
+            alert(data.message || 'Posición del alumno actualizada.');
+        } catch (error) {
+            console.error('[ADMIN_STAGE] Error:', error);
+            alert(`No se pudo actualizar la posición. ${error.message || ''}`);
+        } finally {
+            setIsSavingAdminStage(false);
         }
     };
 
@@ -7157,6 +7213,71 @@ ${finalData.capsule}`;
                                                 className={`${clayBtnAction} !bg-[#2BB673] !border-[#23965F] hover:!bg-[#23965F]`}
                                             >
                                                 ABRIR BIBLIOTECA VISUAL <ImageIcon className="w-5 h-5" />
+                                            </button>
+
+                                            <div className="h-px bg-gray-100" />
+
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center border border-purple-100">
+                                                    <Flag className="w-4 h-4 text-purple-600" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">Posición pedagógica del alumno</span>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Solo admin: materia, sesión y etapa</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 gap-2">
+                                                <input
+                                                    value={adminStageForm.target_user_id}
+                                                    onChange={(e) => setAdminStageForm(prev => ({ ...prev, target_user_id: e.target.value }))}
+                                                    placeholder="user_id del alumno"
+                                                    className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2 text-xs font-bold text-gray-700 outline-none focus:border-purple-300"
+                                                />
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <select
+                                                        value={adminStageForm.subject}
+                                                        onChange={(e) => setAdminStageForm(prev => ({ ...prev, subject: e.target.value }))}
+                                                        className="rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2 text-xs font-black text-gray-700 outline-none focus:border-purple-300"
+                                                    >
+                                                        {['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 'HISTORIA', 'LENGUAJE'].map(subject => (
+                                                            <option key={subject} value={subject}>{subject}</option>
+                                                        ))}
+                                                    </select>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={adminStageForm.session}
+                                                        onChange={(e) => setAdminStageForm(prev => ({ ...prev, session: e.target.value }))}
+                                                        placeholder="Sesión"
+                                                        className="rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2 text-xs font-black text-gray-700 outline-none focus:border-purple-300"
+                                                    />
+                                                </div>
+                                                <select
+                                                    value={adminStageForm.stage}
+                                                    onChange={(e) => setAdminStageForm(prev => ({ ...prev, stage: e.target.value }))}
+                                                    className="rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2 text-xs font-black text-gray-700 outline-none focus:border-purple-300"
+                                                >
+                                                    <option value="teoria">Volver a teoría lúdica</option>
+                                                    <option value="cuaderno">Quedar en cuaderno</option>
+                                                    <option value="quiz_fase_1">Quedar en quiz fase 1</option>
+                                                    <option value="quiz_fase_2">Quedar en quiz fase 2</option>
+                                                    <option value="quiz_fase_3">Quedar en quiz fase 3</option>
+                                                    <option value="completada">Marcar sesión completada</option>
+                                                </select>
+                                                <input
+                                                    value={adminStageForm.reason}
+                                                    onChange={(e) => setAdminStageForm(prev => ({ ...prev, reason: e.target.value }))}
+                                                    placeholder="Motivo opcional"
+                                                    className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2 text-xs font-bold text-gray-700 outline-none focus:border-purple-300"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={saveAdminStudentStage}
+                                                disabled={isSavingAdminStage}
+                                                className={`${clayBtnAction} !bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9] disabled:opacity-60`}
+                                            >
+                                                {isSavingAdminStage ? 'GUARDANDO...' : 'APLICAR POSICION'} <Flag className="w-5 h-5" />
                                             </button>
                                         </div>
                                     </div>
