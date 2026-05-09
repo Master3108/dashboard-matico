@@ -322,7 +322,12 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
             // Prioridad 1: campos directos total_questions y correct_answers
             if (item.total_questions > 0 && item.correct_answers != null) {
-                pctValues.push(Math.round((Number(item.correct_answers) / Number(item.total_questions)) * 100));
+                const total = Number(item.total_questions);
+                const wrongDetails = parseHistoryList(item.wrong_question_details);
+                const wrong = item.wrong_answers != null ? Number(item.wrong_answers || 0) : wrongDetails.length;
+                const rawCorrect = Number(item.correct_answers || 0);
+                const correct = wrong > 0 ? Math.min(rawCorrect, Math.max(0, total - wrong)) : rawCorrect;
+                pctValues.push(Math.round((correct / total) * 100));
                 continue;
             }
             // Prioridad 2: detail con formato "X/Y correctas"
@@ -1868,12 +1873,12 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                         )}
                                                         {item.total_questions > 0 && (
                                                             <span className="text-xs font-bold text-gray-600 bg-white px-2 py-1 rounded-lg">
-                                                                {item.correct_answers || 0}/{item.total_questions} correctas
+                                                                {getActivityCorrect(item)}/{getActivityTotal(item)} correctas
                                                             </span>
                                                         )}
                                                         {item.wrong_answers != null && (
                                                             <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg">
-                                                                {item.wrong_answers} malas
+                                                                {getActivityWrong(item)} malas
                                                             </span>
                                                         )}
                                                         {item.duration_minutes > 0 && (
@@ -2047,7 +2052,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                     {p.topic || p.event_type || 'Quiz'}
                                                 </p>
                                                 <p className="text-xs text-gray-400">
-                                                    {p.subject} · {p.total_questions ? `${p.correct_answers || 0}/${p.total_questions} correctas` : ''}
+                                                    {p.subject} · {p.total_questions ? `${Math.max(0, Math.min(Number(p.correct_answers || 0), Number(p.total_questions || 0) - Number(p.wrong_answers || 0)))}/${p.total_questions} correctas` : ''}
                                                     {p.created_at ? ` · ${new Date(p.created_at).toLocaleDateString('es-CL')}` : ''}
                                                 </p>
                                             </div>
