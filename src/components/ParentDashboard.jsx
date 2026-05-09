@@ -304,6 +304,20 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
     // --- Compute stats ---
     const historyItems = studentHistory.items || [];
+    const parseHistoryList = (value) => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'object') return [value];
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+            } catch {
+                return value.trim() ? [value] : [];
+            }
+        }
+        return [];
+    };
 
     // Quizzes: solo contar evaluaciones realmente completadas
     const completedQuizTypes = new Set(['session_completed', 'prep_exam_completed', 'prep_exam_reviewed']);
@@ -362,20 +376,6 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const totalXP = totalXPFromHistory || progress.reduce((sum, p) => sum + (p.xp || 0), 0);
     const completedEvents = events.filter(e => e.status === 'completado').length;
     const totalAntecedentes = studentHistory.summary?.total || studentHistory.items.length || 0;
-    const parseHistoryList = (value) => {
-        if (!value) return [];
-        if (Array.isArray(value)) return value;
-        if (typeof value === 'object') return [value];
-        if (typeof value === 'string') {
-            try {
-                const parsed = JSON.parse(value);
-                return Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
-            } catch {
-                return value.trim() ? [value] : [];
-            }
-        }
-        return [];
-    };
     const stringifyHistoryText = (value) => {
         if (!value) return '';
         if (typeof value === 'string') return value;
