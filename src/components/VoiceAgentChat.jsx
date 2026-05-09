@@ -43,31 +43,41 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             const recognition = new SpeechRecognition();
             recognition.lang = 'es-CL';
-            recognition.continuous = false;
+            recognition.continuous = true;
             recognition.interimResults = true;
 
             recognition.onresult = (event) => {
                 let transcript = '';
-                for (let i = 0; i < event.results.length; i++) {
+                let isFinal = false;
+                for (let i = event.resultIndex; i < event.results.length; i++) {
                     transcript += event.results[i][0].transcript;
+                    if (event.results[i].isFinal) isFinal = true;
                 }
                 setCurrentTranscript(transcript);
-                if (event.results[event.results.length - 1].isFinal) {
+                if (isFinal && transcript.trim()) {
                     setCurrentTranscript('');
-                    if (transcript.trim()) {
-                        sendMessage(transcript.trim());
-                    }
+                    sendMessage(transcript.trim());
                 }
             };
 
             recognition.onerror = (e) => {
                 console.error('[STT] Error:', e.error);
+                // Auto-restart on non-fatal errors
+                if (e.error === 'no-speech' || e.error === 'aborted') {
+                    try { recognition.start(); } catch {}
+                    return;
+                }
                 setIsListening(false);
                 setSphereState('idle');
                 setCurrentTranscript('');
             };
 
             recognition.onend = () => {
+                // Auto-restart if still supposed to be listening
+                if (recognitionRef.current === recognition) {
+                    try { recognition.start(); } catch {}
+                    return;
+                }
                 setIsListening(false);
                 if (sphereState === 'listening') setSphereState('idle');
                 setCurrentTranscript('');
