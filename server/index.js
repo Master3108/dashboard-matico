@@ -275,6 +275,17 @@ const openaiVisionClient = OPENAI_DIRECT_API_KEY
         apiKey: OPENAI_DIRECT_API_KEY
     })
     : null;
+const agentTextClient = openaiVisionClient || openai;
+const AGENT_CONVERSATION_MODEL = String(
+    process.env.AGENT_CONVERSATION_MODEL ||
+    process.env.OPENAI_AGENT_MODEL ||
+    (OPENAI_DIRECT_API_KEY ? 'gpt-4.1-nano' : AI_MODELS.fast)
+).trim();
+const AGENT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 600);
+const AGENT_MAX_TOOL_ITERATIONS = Number(process.env.AGENT_MAX_TOOL_ITERATIONS || 3);
+const AGENT_HISTORY_MESSAGES = Number(process.env.AGENT_HISTORY_MESSAGES || 6);
+const AGENT_TTS_MODEL = String(process.env.AGENT_TTS_MODEL || 'gpt-4o-mini-tts').trim();
+const AGENT_STT_MODEL = String(process.env.AGENT_STT_MODEL || 'gpt-4o-mini-transcribe').trim();
 
 let imageGenerationRuntimeConfigCache = null;
 
@@ -9898,4 +9909,393 @@ const AGENT_TOOLS = [
         type: 'function',
         function: {
             name: 'get_student_profile',
-            description: 'Obtener perfil del estudiante: nombre, email, materias regi
+            description: 'Obtener perfil del estudiante: nombre, email, materias registradas',
+            parameters: { type: 'object', properties: { student_id: { type: 'string' } }, required: ['student_id'] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'get_recent_activity',
+            description: 'Obtener actividad reciente del estudiante: quizzes, sesiones, evidencias. Usar para preguntas como "¿estudió hoy?", "¿qué hizo esta semana?"',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    days: { type: 'number', description: 'Cuántos días hacia atrás buscar (default 7)' }
+                },
+                required: ['student_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'get_quiz_results',
+            description: 'Obtener resultados de quizzes/pruebas del estudiante. Incluye correctas, incorrectas, materia, tema, fecha.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    subject: { type: 'string', description: 'Materia (MATEMATICA, LENGUAJE, QUIMICA, etc). Opcional.' },
+                    days: { type: 'number', description: 'Últimos N días (default 30)' }
+                },
+                required: ['student_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'get_study_time',
+            description: 'Obtener tiempo de estudio del estudiante: minutos por día, por materia, total.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    days: { type: 'number', description: 'Últimos N días (default 7)' }
+                },
+                required: ['student_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'get_upcoming_exams',
+            description: 'Obtener próximas pruebas/eventos del calendario del estudiante.',
+            parameters: {
+                type: 'object',
+                properties: { student_id: { type: 'string' } },
+                required: ['student_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'get_inactive_subjects',
+            description: 'Obtener materias que el estudiante no ha tocado en varios días. Útil para detectar materias abandonadas.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    threshold_days: { type: 'number', description: 'Días sin actividad para considerarse inactiva (default 5)' }
+                },
+                required: ['student_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'get_notebook_evidence',
+            description: 'Obtener evidencias de cuaderno/fotos subidas por el estudiante.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    days: { type: 'number', description: 'Últimos N días (default 7)' }
+                },
+                required: ['student_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'get_wrong_questions_detail',
+            description: 'Obtener detalle de preguntas incorrectas: qué pregunta, qué respondió, cuál era la correcta.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    subject: { type: 'string', description: 'Materia opcional' },
+                    days: { type: 'number', description: 'Últimos N días (default 7)' }
+                },
+                required: ['student_id']
+            }
+        }
+    }
+];
+
+const dateOnlyChile = () => {
+    const d = new Date();
+    d.setHours(d.getHours() - 4);
+    return d.toISOString().substring(0, 10);
+};
+
+async function executeAgentTool(name, args) {
+    const sid = args.student_id;
+    const days = Number(args.days) || 7;
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const todayChile = dateOnlyChile();
+
+    switch (name) {
+        case 'get_student_profile': {
+            const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', sid).maybeSingle();
+            const { data: legacy } = await supabase.from('users').select('*').eq('token', sid).maybeSingle();
+            const p = profile || legacy || {};
+            return { name: p.display_name || p.nombre || p.name || 'Sin nombre', email: p.email || p.mail || '', user_id: sid };
+        }
+        case 'get_recent_activity': {
+            const { data: progress } = await supabase.from('progress_log').select('event_type, subject, topic, score, total_questions, correct_answers, wrong_answers, created_at')
+                .eq('user_id', sid).gte('created_at', since).order('created_at', { ascending: false }).limit(50);
+            const { data: notebooks } = await supabase.from('notebook_submissions').select('subject, status, created_at, metadata')
+                .eq('user_id', sid).gte('created_at', since).order('created_at', { ascending: false }).limit(20);
+            const todayItems = (progress || []).filter(r => {
+                const d = new Date(r.created_at); d.setHours(d.getHours() - 4);
+                return d.toISOString().substring(0, 10) === todayChile;
+            });
+            return {
+                total_activities: (progress || []).length,
+                today_activities: todayItems.length,
+                studied_today: todayItems.length > 0,
+                recent_progress: (progress || []).slice(0, 15).map(r => ({
+                    type: r.event_type, subject: r.subject, topic: r.topic,
+                    score: r.score, total: r.total_questions, correct: r.correct_answers, wrong: r.wrong_answers,
+                    date: r.created_at
+                })),
+                notebooks: (notebooks || []).slice(0, 10).map(n => ({
+                    subject: n.subject || n.metadata?.subject, status: n.status, date: n.created_at
+                }))
+            };
+        }
+        case 'get_quiz_results': {
+            let query = supabase.from('progress_log')
+                .select('event_type, subject, topic, score, total_questions, correct_answers, wrong_answers, wrong_question_details, created_at')
+                .eq('user_id', sid).gte('created_at', since)
+                .in('event_type', ['prep_exam_activity', 'prep_exam_completed', 'session_completed', 'quiz_completed'])
+                .order('created_at', { ascending: false }).limit(50);
+            if (args.subject) query = query.ilike('subject', `%${args.subject}%`);
+            const { data } = await query;
+            return (data || []).map(r => ({
+                type: r.event_type, subject: r.subject, topic: r.topic,
+                total: r.total_questions, correct: r.correct_answers, wrong: r.wrong_answers,
+                score_percent: r.total_questions > 0 ? Math.round(((r.correct_answers || 0) / r.total_questions) * 100) : r.score,
+                date: r.created_at
+            }));
+        }
+        case 'get_study_time': {
+            const { data: sessions } = await supabase.from('study_sessions').select('subject, total_minutes, start_time, status')
+                .eq('student_user_id', sid).gte('start_time', since).order('start_time', { ascending: false });
+            const derived = await deriveStudySessionsFromProgress(sid, since);
+            const all = [...(sessions || []), ...derived];
+            const byDay = {};
+            for (const s of all) {
+                const d = new Date(s.start_time); d.setHours(d.getHours() - 4);
+                const day = d.toISOString().substring(0, 10);
+                if (!byDay[day]) byDay[day] = { date: day, minutes: 0, subjects: new Set() };
+                byDay[day].minutes += Number(s.total_minutes) || 0;
+                byDay[day].subjects.add(s.subject || 'GENERAL');
+            }
+            const dailyData = Object.values(byDay).map(d => ({ date: d.date, minutes: d.minutes, subjects: [...d.subjects] }))
+                .sort((a, b) => b.date.localeCompare(a.date));
+            const totalMin = dailyData.reduce((s, d) => s + d.minutes, 0);
+            return { total_minutes: totalMin, total_hours: Math.round(totalMin / 60 * 10) / 10, days_active: dailyData.length, daily: dailyData };
+        }
+        case 'get_upcoming_exams': {
+            const { data } = await supabase.from('calendar_events').select('subject, title, event_date, event_type, description')
+                .eq('student_user_id', sid).gte('event_date', todayChile).order('event_date', { ascending: true }).limit(20);
+            return (data || []).map(e => ({ subject: e.subject, title: e.title, date: e.event_date, type: e.event_type, description: e.description }));
+        }
+        case 'get_inactive_subjects': {
+            const threshold = Number(args.threshold_days) || 5;
+            const allSubjects = ['MATEMATICA', 'LENGUAJE', 'QUIMICA', 'FISICA', 'BIOLOGIA', 'HISTORIA'];
+            const inactive = [];
+            for (const subj of allSubjects) {
+                const { data } = await supabase.from('progress_log').select('created_at')
+                    .eq('user_id', sid).eq('subject', subj).order('created_at', { ascending: false }).limit(1);
+                const lastDate = data?.[0]?.created_at;
+                if (!lastDate) { inactive.push({ subject: subj, last_activity: null, days_inactive: 'nunca' }); continue; }
+                const daysDiff = Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000);
+                if (daysDiff >= threshold) inactive.push({ subject: subj, last_activity: lastDate, days_inactive: daysDiff });
+            }
+            return inactive;
+        }
+        case 'get_notebook_evidence': {
+            const { data: submissions } = await supabase.from('notebook_submissions').select('subject, status, image_url, created_at, metadata')
+                .eq('user_id', sid).gte('created_at', since).order('created_at', { ascending: false }).limit(20);
+            const { data: ocr } = await supabase.from('notebook_ocr_records').select('subject, interpretation_score, created_at')
+                .eq('user_id', sid).gte('created_at', since).order('created_at', { ascending: false }).limit(20);
+            return {
+                submissions: (submissions || []).map(s => ({ subject: s.subject || s.metadata?.subject, status: s.status, date: s.created_at, has_image: !!s.image_url })),
+                ocr_records: (ocr || []).map(o => ({ subject: o.subject, score: o.interpretation_score, date: o.created_at }))
+            };
+        }
+        case 'get_wrong_questions_detail': {
+            let query = supabase.from('progress_log')
+                .select('subject, topic, wrong_question_details, wrong_answers, total_questions, created_at')
+                .eq('user_id', sid).gte('created_at', since)
+                .not('wrong_question_details', 'is', null)
+                .order('created_at', { ascending: false }).limit(20);
+            if (args.subject) query = query.ilike('subject', `%${args.subject}%`);
+            const { data } = await query;
+            return (data || []).map(r => {
+                let details = r.wrong_question_details;
+                if (typeof details === 'string') try { details = JSON.parse(details); } catch { details = []; }
+                return {
+                    subject: r.subject, topic: r.topic, date: r.created_at,
+                    wrong_count: r.wrong_answers, total: r.total_questions,
+                    questions: (Array.isArray(details) ? details : []).slice(0, 5).map(q => ({
+                        question: q.question || q.prompt || q.text,
+                        student_answer: q.user_answer || q.selected_answer,
+                        correct_answer: q.correct_answer || q.answer
+                    }))
+                };
+            });
+        }
+        default:
+            return { error: `Tool ${name} no existe` };
+    }
+}
+
+app.post('/api/agent/chat', async (req, res) => {
+    try {
+        const { message, student_id, user_type = 'parent', conversation_history = [] } = req.body;
+        if (!message || !student_id) return res.status(400).json({ success: false, error: 'Falta message o student_id' });
+
+        const todayChileStr = dateOnlyChile();
+        const todayDate = new Date(todayChileStr + 'T12:00:00');
+        const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        const todayDayName = dayNames[todayDate.getDay()];
+        const todayHumanDate = todayDate.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+        const systemPrompt = user_type === 'parent'
+            ? `Eres Matico, un asistente educativo para apoderados. Respondes preguntas sobre el progreso académico de su hijo/a.
+
+REGLAS ESTRICTAS:
+- Solo responde con datos reales de la base de datos. NUNCA inventes datos.
+- Si no hay datos, di "No encontré registros de eso".
+- Usa lenguaje claro y directo. No uses markdown ni asteriscos ni formato especial.
+- Las fechas y horas son zona Chile (UTC-4).
+- SIEMPRE di las fechas con el día de la semana: "el martes 13 de mayo", "este jueves", "el próximo lunes". NUNCA digas solo la fecha numérica.
+- Si es esta semana, di "este lunes", "este miércoles". Si es la próxima, di "el próximo martes".
+- Sé conciso pero informativo. Responde como si hablaras en voz alta, frases cortas y naturales.
+- Si te preguntan algo que no puedes consultar, dilo.
+- Usa el student_id: ${student_id} para todas las consultas.
+- Hoy es ${todayDayName} ${todayHumanDate}.
+- Cuando hables del niño, usa su nombre (consultalo con get_student_profile si no lo sabes).`
+            : `Eres Matico, un compañero de estudio para el estudiante. Eres motivador, amigable y hablas de forma simple.
+
+REGLAS:
+- Solo datos reales de la base de datos. NUNCA inventes.
+- No uses markdown ni asteriscos ni formato especial.
+- SIEMPRE di las fechas con día de la semana: "este martes", "el próximo lunes". Nunca solo números.
+- Motiva al estudiante cuando tenga buenos resultados.
+- Sugiere qué estudiar basándote en materias inactivas o próximas pruebas.
+- Sé breve y usa un tono juvenil. Habla como si fuera en voz alta.
+- Tu student_id es: ${student_id}. Hoy es ${todayDayName} ${todayHumanDate}.`;
+
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...conversation_history.slice(-AGENT_HISTORY_MESSAGES),
+            { role: 'user', content: message }
+        ];
+
+        let response = await agentTextClient.chat.completions.create({
+            model: AGENT_CONVERSATION_MODEL,
+            messages,
+            tools: AGENT_TOOLS,
+            tool_choice: 'auto',
+            temperature: 0.3,
+            max_tokens: AGENT_MAX_TOKENS
+        });
+
+        let assistantMessage = response.choices[0].message;
+        let iterations = 0;
+        const maxIterations = AGENT_MAX_TOOL_ITERATIONS;
+
+        // Tool calling loop
+        while (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0 && iterations < maxIterations) {
+            iterations++;
+            messages.push(assistantMessage);
+
+            for (const tc of assistantMessage.tool_calls) {
+                const args = JSON.parse(tc.function.arguments);
+                if (!args.student_id) args.student_id = student_id;
+                console.log(`[AGENT] Tool: ${tc.function.name}`, JSON.stringify(args).substring(0, 200));
+                const result = await executeAgentTool(tc.function.name, args);
+                messages.push({
+                    role: 'tool',
+                    tool_call_id: tc.id,
+                    content: JSON.stringify(result).substring(0, 8000)
+                });
+            }
+
+            response = await agentTextClient.chat.completions.create({
+                model: AGENT_CONVERSATION_MODEL,
+                messages,
+                tools: AGENT_TOOLS,
+                tool_choice: 'auto',
+                temperature: 0.3,
+                max_tokens: AGENT_MAX_TOKENS
+            });
+            assistantMessage = response.choices[0].message;
+        }
+
+        res.json({
+            success: true,
+            reply: assistantMessage.content || 'No pude generar una respuesta.',
+            tools_used: iterations,
+            model: AGENT_CONVERSATION_MODEL
+        });
+    } catch (err) {
+        console.error('[AGENT] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// TTS endpoint — convierte texto a audio
+app.post('/api/agent/tts', async (req, res) => {
+    try {
+        const { text, voice = 'nova' } = req.body;
+        if (!text) return res.status(400).json({ success: false, error: 'Falta text' });
+
+        const ttsClient = openaiVisionClient || openai;
+        const mp3 = await ttsClient.audio.speech.create({
+            model: AGENT_TTS_MODEL,
+            voice: voice, // nova, alloy, echo, fable, onyx, shimmer
+            input: text.substring(0, 4000),
+            speed: 1.05
+        });
+
+        const buffer = Buffer.from(await mp3.arrayBuffer());
+        res.set({ 'Content-Type': 'audio/mpeg', 'Content-Length': buffer.length });
+        res.send(buffer);
+    } catch (err) {
+        console.error('[TTS] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// STT endpoint — convierte audio a texto
+app.post('/api/agent/stt', upload.single('audio'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, error: 'Falta audio file' });
+
+        const ttsClient = openaiVisionClient || openai;
+        const transcription = await ttsClient.audio.transcriptions.create({
+            file: new (await import('openai')).toFile(req.file.buffer, 'audio.webm', { type: req.file.mimetype }),
+            model: AGENT_STT_MODEL,
+            language: 'es'
+        });
+
+        res.json({ success: true, text: transcription.text });
+    } catch (err) {
+        console.error('[STT] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.listen(PORT, () => {
+    const emailStatus = getEmailStatus();
+
+    console.log(`Servidor Matico Kaizen en puerto ${PORT}`);
+    if (emailStatus.enabled) {
+        console.log(`[EMAIL] Habilitado con la cuenta ${EMAIL_CONFIG.user}`);
+    } else {
+        console.log(`[EMAIL] Deshabilitado. Faltan variables: ${emailStatus.missing.join(', ')}`);
+    }
+    console.log(`[AGENT] Conversacion: ${AGENT_CONVERSATION_MODEL} | STT: ${AGENT_STT_MODEL} | TTS: ${AGENT_TTS_MODEL}`);
+});
