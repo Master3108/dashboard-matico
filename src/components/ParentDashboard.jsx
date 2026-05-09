@@ -562,6 +562,8 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 const inferredWrong = Math.max(0, getActivityTotal(item) - getActivityCorrect(item));
                 return sum + Math.max(wrong, inferredWrong);
             }, 0);
+            const wrongDetails = phaseItems.flatMap(item => parseHistoryList(item.wrong_question_details));
+            const evidenceItems = relatedItems.filter(item => item.has_evidence || item.image_url || item.ocr_text || item.evidence_summary);
 
             aggregated.push({
                 ...phaseItems[phaseItems.length - 1],
@@ -574,9 +576,14 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 total_questions: totalQuestions,
                 correct_answers: correctAnswers,
                 wrong_answers: wrongAnswers,
+                wrong_question_details: wrongDetails,
                 detail: `${correctAnswers}/${totalQuestions} correctas, ${wrongAnswers} incorrectas`,
                 score_percent: totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0,
-                phases_completed: phaseItems.length
+                phases_completed: phaseItems.length,
+                evidence_count: evidenceItems.length,
+                evidence_summary: evidenceItems.map(item => item.evidence_summary).filter(Boolean).slice(0, 3).join(', ') || phaseItems[phaseItems.length - 1].evidence_summary,
+                ocr_text: evidenceItems.find(item => item.ocr_text)?.ocr_text || phaseItems[phaseItems.length - 1].ocr_text,
+                image_url: evidenceItems.find(item => item.image_url)?.image_url || phaseItems[phaseItems.length - 1].image_url
             });
         });
 
@@ -595,6 +602,29 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const summaryTotalQuestions = summaryResultItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
     const summaryScorePercent = summaryTotalQuestions > 0 ? Math.round((summaryCorrectAnswers / summaryTotalQuestions) * 100) : 0;
     const summaryLatestResult = [...summaryResultItems].sort((a, b) => getActivityTimestamp(b) - getActivityTimestamp(a))[0] || null;
+    const getActivityLabel = (item) => {
+        const kind = getHistoryKind(item);
+        if (item?.type === 'session_completed') return 'Sesion completa';
+        if (kind === 'cuaderno') return 'Cuaderno / evidencia';
+        if (kind === 'quiz' || kind === 'ensayo') return 'Quiz / prueba';
+        if (kind === 'estudio') return 'Estudio';
+        return 'Actividad';
+    };
+    const buildActivityInsight = (item) => {
+        const total = getActivityTotal(item);
+        const correct = getActivityCorrect(item);
+        const wrong = getActivityWrong(item);
+        if (total > 0) return `${correct}/${total} correctas, ${wrong} malas.`;
+        if (item?.ocr_text) return `Cuaderno revisado por OCR${item.score_percent != null ? ` con ${item.score_percent}% de interpretacion` : ''}.`;
+        if (item?.evidence_summary) return item.evidence_summary;
+        if (item?.duration_minutes || item?.total_minutes) return `${item.duration_minutes || item.total_minutes} min registrados.`;
+        return item?.detail || 'Actividad registrada.';
+    };
+    const getFirstWrongDetail = (item) => parseHistoryList(item?.wrong_question_details)[0] || null;
+    const trimText = (value, max = 240) => {
+        const text = stringifyHistoryText(value).replace(/\s+/g, ' ').trim();
+        return text.length > max ? `${text.slice(0, max)}...` : text;
+    };
     const summaryAllRealActivities = [
         ...(realActiveStudy && matchesSummarySubject(realActiveStudy.subject) ? [{
             ...realActiveStudy,
@@ -1340,38 +1370,86 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                     <p className="font-bold text-sm">Sin actividad real para este filtro</p>
                                 </div>
                             ) : (
-                                <div className="space-y-2">
-                                    {summaryRecentActivities.map((p, i) => (
-                                        <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl">
-                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                (p.score || 0) >= 70 ? 'bg-green-100' : (p.score || 0) >= 40 ? 'bg-yellow-100' : 'bg-red-100'
-                                            }`}>
-                                                {(p.score || 0) >= 70 ? <CheckCircle className="w-4 h-4 text-green-500" /> :
-                                                 (p.score || 0) >= 40 ? <Clock className="w-4 h-4 text-yellow-500" /> :
-                                                 <AlertTriangle className="w-4 h-4 text-red-500" />}
+                                <div className="space-y-3">
+                                    {summaryRecentActivities.map((p, i) => {
+                                        const score = getHistoryScore(p);
+                                        const firstWrong = getFirstWrongDetail(p);
+                                        const wrongCount = getActivityWrong(p);
+                                        const total = getActivityTotal(p);
+                                        const hasEvidence = p.has_evidence || p.evidence_count > 0 || p.image_url || p.ocr_text || p.evidence_summary;
+                                        return (
+                                            <div key={i} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                                <div className="flex items-start gap-3">
+                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                                                        total > 0 && wrongCount > 0 ? 'bg-red-100' : score == null || score >= 70 ? 'bg-green-100' : score >= 40 ? 'bg-yellow-100' : 'bg-red-100'
+                                                    }`}>
+                                                        {total > 0 && wrongCount > 0 ? <AlertTriangle className="w-4 h-4 text-red-500" /> :
+                                                         score == null || score >= 70 ? <CheckCircle className="w-4 h-4 text-green-500" /> :
+                                                         score >= 40 ? <Clock className="w-4 h-4 text-yellow-500" /> :
+                                                         <AlertTriangle className="w-4 h-4 text-red-500" />}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                            <p className="font-black text-sm text-[#2B2E4A]">
+                                                                {p.title || p.topic || p.subject || p.type || 'Actividad'}
+                                                            </p>
+                                                            <span className="text-[10px] font-black uppercase bg-white text-[#64748B] px-2 py-0.5 rounded-full border border-gray-100">{getActivityLabel(p)}</span>
+                                                            {p.phases_completed > 1 && (
+                                                                <span className="text-[10px] font-black uppercase bg-purple-50 text-[#7C3AED] px-2 py-0.5 rounded-full">{p.phases_completed} fases</span>
+                                                            )}
+                                                            {hasEvidence && (
+                                                                <span className="text-[10px] font-black uppercase bg-green-50 text-green-700 px-2 py-0.5 rounded-full">con evidencia</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-gray-400 font-bold mb-2">
+                                                            {p.subject || 'General'} - {p.date ? new Date(p.date).toLocaleDateString('es-CL') : ''}
+                                                            {(p.started_at || p.start_time) ? ` - inicio ${formatActivityTime(p.started_at || p.start_time)}` : ''}
+                                                        </p>
+                                                        <p className="text-sm font-bold text-[#2B2E4A]">{buildActivityInsight(p)}</p>
+
+                                                        {firstWrong && (
+                                                            <div className="mt-3 rounded-2xl bg-red-50 border border-red-100 p-3">
+                                                                <p className="text-xs font-black uppercase tracking-widest text-red-600">Error detectado</p>
+                                                                <p className="text-xs font-bold text-[#2B2E4A] mt-1">Pregunta: {trimText(firstWrong.question || firstWrong.prompt || firstWrong.text, 220)}</p>
+                                                                <p className="text-xs text-red-700 font-bold mt-1">Respuesta de Matias: {trimText(firstWrong.user_answer || firstWrong.selected_answer || 'sin registro', 120)}</p>
+                                                                <p className="text-xs text-green-700 font-bold mt-1">Correcta: {trimText(firstWrong.correct_answer || firstWrong.answer || 'sin registro', 120)}</p>
+                                                                {(firstWrong.explanation || p.improvement_plan || p.weakness) && (
+                                                                    <p className="text-xs text-[#64748B] font-bold mt-1">Por que revisar: {trimText(firstWrong.explanation || p.weakness || p.improvement_plan, 180)}</p>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {hasEvidence && (
+                                                            <div className="mt-3 rounded-2xl bg-green-50 border border-green-100 p-3">
+                                                                <p className="text-xs font-black uppercase tracking-widest text-green-700">Evidencia / cuaderno</p>
+                                                                <p className="text-xs font-bold text-[#2B2E4A] mt-1">
+                                                                    {p.evidence_count ? `${p.evidence_count} evidencia(s) asociada(s). ` : ''}
+                                                                    {p.evidence_summary || (p.ocr_text ? 'OCR del cuaderno disponible.' : 'Imagen o evidencia asociada.')}
+                                                                </p>
+                                                                {p.ocr_text && (
+                                                                    <p className="text-xs text-[#64748B] font-bold mt-1">OCR: {trimText(p.ocr_text, 220)}</p>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-right shrink-0 space-y-1">
+                                                        {score != null && (
+                                                            <p className={`text-sm font-black ${
+                                                                score >= 70 ? 'text-green-500' : score >= 40 ? 'text-yellow-500' : 'text-red-500'
+                                                            }`}>
+                                                                {score}%
+                                                            </p>
+                                                        )}
+                                                        {p.xp > 0 && (
+                                                            <span className="text-xs font-bold text-[#7C3AED] bg-purple-50 px-2 py-0.5 rounded-lg inline-block">
+                                                                +{p.xp} XP
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-bold text-sm text-[#2B2E4A] truncate">
-                                                    {p.title || p.topic || p.subject || p.type || 'Actividad'}
-                                                </p>
-                                                <p className="text-xs text-gray-400 font-bold">
-                                                    {p.subject || 'General'} - {p.date ? new Date(p.date).toLocaleDateString('es-CL') : ''}
-                                                </p>
-                                            </div>
-                                            {p.score != null && (
-                                                <span className={`text-sm font-black ${
-                                                    p.score >= 70 ? 'text-green-500' : p.score >= 40 ? 'text-yellow-500' : 'text-red-500'
-                                                }`}>
-                                                    {p.score}%
-                                                </span>
-                                            )}
-                                            {p.xp > 0 && (
-                                                <span className="text-xs font-bold text-[#7C3AED] bg-purple-50 px-2 py-0.5 rounded-lg">
-                                                    +{p.xp} XP
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
