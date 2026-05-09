@@ -630,9 +630,10 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const kind = getHistoryKind(item);
         return ['quiz', 'ensayo'].includes(kind) && getActivityTotal(item) > 0;
     });
-    const summaryCorrectAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
-    const summaryWrongAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityWrong(item), 0);
-    const summaryTotalQuestions = summaryResultItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
+    const summaryTodayResultItems = summaryResultItems.filter(item => getDateKey(item.date) === today);
+    const summaryCorrectAnswers = summaryTodayResultItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
+    const summaryWrongAnswers = summaryTodayResultItems.reduce((sum, item) => sum + getActivityWrong(item), 0);
+    const summaryTotalQuestions = summaryTodayResultItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
     const summaryScorePercent = summaryTotalQuestions > 0 ? Math.round((summaryCorrectAnswers / summaryTotalQuestions) * 100) : 0;
     const summaryLatestResult = [...summaryResultItems].sort((a, b) => getActivityTimestamp(b) - getActivityTimestamp(a))[0] || null;
     const getActivityLabel = (item) => {
