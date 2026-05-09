@@ -959,19 +959,19 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
                         {/* Stats grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className={`rounded-2xl p-3 text-center border-2 ${summaryHasTodayActivity ? 'bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] border-green-200' : 'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-red-400 shadow-[0_10px_25px_rgba(239,68,68,0.22)]'}`}>
+                            <div className={`rounded-2xl px-3 py-2 text-center border-2 ${summaryHasTodayActivity ? 'bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] border-green-200' : 'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-red-400 shadow-[0_8px_18px_rgba(239,68,68,0.18)]'}`}>
                                 {summaryHasTodayActivity ? (
-                                    <CheckCircle className="w-6 h-6 text-[#10B981] mx-auto mb-1" />
+                                    <CheckCircle className="w-5 h-5 text-[#10B981] mx-auto mb-0.5" />
                                 ) : (
-                                    <AlertTriangle className="w-8 h-8 text-[#DC2626] mx-auto mb-1 animate-pulse" />
+                                    <AlertTriangle className="w-6 h-6 text-[#DC2626] mx-auto mb-0.5 animate-pulse" />
                                 )}
-                                <p className={`font-black leading-tight ${summaryHasTodayActivity ? 'text-xl text-[#10B981]' : 'text-2xl text-[#B91C1C]'}`}>
+                                <p className={`font-black leading-tight ${summaryHasTodayActivity ? 'text-lg text-[#10B981]' : 'text-xl text-[#B91C1C]'}`}>
                                     {summaryHasTodayActivity ? 'Estudio hoy' : 'NO ESTUDIO HOY'}
                                 </p>
-                                <p className={`mt-1 rounded-xl px-2 py-1 font-black ${summaryHasTodayActivity ? 'text-xs text-[#047857]' : 'text-sm text-white bg-[#DC2626]'}`}>
+                                <p className={`mt-1 rounded-lg px-2 py-0.5 font-black leading-tight ${summaryHasTodayActivity ? 'text-[11px] text-[#047857]' : 'text-xs text-white bg-[#DC2626]'}`}>
                                     {selectedChild?.display_name || 'Tu hijo'} {summaryHasTodayActivity ? 'estudio hoy' : 'no ha estudiado hoy'}
                                 </p>
-                                <p className={`text-[11px] mt-1 font-bold ${summaryHasTodayActivity ? 'text-[#9094A6]/70' : 'text-[#991B1B]'}`}>
+                                <p className={`text-[10px] mt-0.5 font-bold ${summaryHasTodayActivity ? 'text-[#9094A6]/70' : 'text-[#991B1B]'}`}>
                                     {summaryDaysWithoutSession === 0 ? 'Actividad registrada hoy' : summaryDaysWithoutSession != null ? `Hace ${summaryDaysWithoutSession} dia(s)` : 'Sin registro real'}
                                 </p>
                             </div>
