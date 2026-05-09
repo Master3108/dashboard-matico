@@ -959,17 +959,19 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
                         {/* Stats grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className={`rounded-2xl p-3 text-center ${summaryHasTodayActivity ? 'bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5]' : 'bg-gradient-to-br from-[#FEF2F2] to-[#FEE2E2]'}`}>
+                            <div className={`rounded-2xl p-3 text-center border-2 ${summaryHasTodayActivity ? 'bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] border-green-200' : 'bg-gradient-to-br from-[#FEE2E2] to-[#FECACA] border-red-400 shadow-[0_10px_25px_rgba(239,68,68,0.22)]'}`}>
                                 {summaryHasTodayActivity ? (
                                     <CheckCircle className="w-6 h-6 text-[#10B981] mx-auto mb-1" />
                                 ) : (
-                                    <AlertTriangle className="w-6 h-6 text-[#EF4444] mx-auto mb-1" />
+                                    <AlertTriangle className="w-8 h-8 text-[#DC2626] mx-auto mb-1 animate-pulse" />
                                 )}
-                                <p className={`text-xl font-black ${summaryHasTodayActivity ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                                    {summaryHasTodayActivity ? 'Estudio hoy' : 'Sin sesion hoy'}
+                                <p className={`font-black leading-tight ${summaryHasTodayActivity ? 'text-xl text-[#10B981]' : 'text-2xl text-[#B91C1C]'}`}>
+                                    {summaryHasTodayActivity ? 'Estudio hoy' : 'NO ESTUDIO HOY'}
                                 </p>
-                                <p className="text-xs font-bold text-[#9094A6]">{selectedChild?.display_name || 'Tu hijo'} {summaryHasTodayActivity ? 'estudio hoy' : 'no ha estudiado hoy'}</p>
-                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">
+                                <p className={`mt-1 rounded-xl px-2 py-1 font-black ${summaryHasTodayActivity ? 'text-xs text-[#047857]' : 'text-sm text-white bg-[#DC2626]'}`}>
+                                    {selectedChild?.display_name || 'Tu hijo'} {summaryHasTodayActivity ? 'estudio hoy' : 'no ha estudiado hoy'}
+                                </p>
+                                <p className={`text-[11px] mt-1 font-bold ${summaryHasTodayActivity ? 'text-[#9094A6]/70' : 'text-[#991B1B]'}`}>
                                     {summaryDaysWithoutSession === 0 ? 'Actividad registrada hoy' : summaryDaysWithoutSession != null ? `Hace ${summaryDaysWithoutSession} dia(s)` : 'Sin registro real'}
                                 </p>
                             </div>
