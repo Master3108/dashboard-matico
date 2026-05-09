@@ -713,6 +713,19 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         )
         .sort((a, b) => getDateKey(a.event_date).localeCompare(getDateKey(b.event_date)));
     const pendingEvents = futurePendingEvents.length;
+    const staleSubjectAlerts = historyItems.filter(item =>
+        (String(item.source || '') === 'study_alert' || String(item.type || '') === 'stale_subject') &&
+        matchesSummarySubject(item.subject)
+    );
+    const staleSubjects = Array.from(new Set([
+        ...(dailyReport?.stale_subjects || []),
+        ...staleSubjectAlerts.map(item => item.subject).filter(Boolean)
+    ].map(normalizeSubject).filter(Boolean)));
+    const twoDayReminderEvents = futurePendingEvents.filter(event =>
+        daysBetween(today, getDateKey(event.event_date)) === 2
+    );
+    const todayWeekday = new Date(`${today}T12:00:00`).getDay();
+    const studyReminderEnabledToday = todayWeekday !== 0 && todayWeekday !== 6;
     const filteredHistoryItems = historyItems.filter(item => {
         if (historySubjectFilter !== 'TODAS' && item.subject !== historySubjectFilter) return false;
         if (historyTypeFilter !== 'todos' && getHistoryKind(item) !== historyTypeFilter) return false;
@@ -1164,18 +1177,48 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                             </div>
 
                             <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#EF4444]">Pendiente</p>
-                                <h3 className="font-black text-[#2B2E4A] text-lg mb-3">Que falta revisar</h3>
-                                <div className="space-y-2 text-sm font-bold">
-                                    <p className={summaryWrongAnswers > 0 ? 'text-red-700' : 'text-[#64748B]'}>
-                                        {summaryWrongAnswers > 0 ? `${summaryWrongAnswers} respuesta(s) malas por corregir.` : 'Sin respuestas malas registradas en el filtro.'}
-                                    </p>
-                                    <p className={summaryIncompleteItems.length > 0 ? 'text-amber-700' : 'text-[#64748B]'}>
-                                        {summaryIncompleteItems.length > 0 ? `${summaryIncompleteItems.length} actividad(es) iniciadas sin resultado final.` : 'Sin quizzes iniciados pendientes.'}
-                                    </p>
-                                    <p className={summaryEvidenceItems.length > 0 ? 'text-green-700' : 'text-amber-700'}>
-                                        {summaryEvidenceItems.length > 0 ? `${summaryEvidenceItems.length} evidencia(s) o cuaderno(s) asociados.` : 'Sin evidencia o cuaderno en el filtro.'}
-                                    </p>
+                                <p className="text-xs font-black uppercase tracking-widest text-[#EF4444]">Senales y alertas</p>
+                                <h3 className="font-black text-[#2B2E4A] text-lg mb-3">Avisos proactivos</h3>
+                                <div className="space-y-3 text-sm font-bold">
+                                    <div className={`rounded-2xl border p-3 ${staleSubjects.length > 0 ? 'bg-red-50 border-red-100 text-red-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
+                                        <div className="flex items-start gap-2">
+                                            <AlertTriangle className={`w-4 h-4 mt-0.5 ${staleSubjects.length > 0 ? 'text-red-600' : 'text-gray-400'}`} />
+                                            <div>
+                                                <p className="font-black">Materia sin estudiar</p>
+                                                <p className="text-xs mt-0.5">
+                                                    {staleSubjects.length > 0
+                                                        ? `${staleSubjects.slice(0, 3).join(', ')} sin sesion reciente. Avisar al apoderado.`
+                                                        : 'Sin materias atrasadas en este filtro.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={`rounded-2xl border p-3 ${twoDayReminderEvents.length > 0 ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
+                                        <div className="flex items-start gap-2">
+                                            <Calendar className={`w-4 h-4 mt-0.5 ${twoDayReminderEvents.length > 0 ? 'text-amber-600' : 'text-gray-400'}`} />
+                                            <div>
+                                                <p className="font-black">Prueba o evento a 2 dias</p>
+                                                <p className="text-xs mt-0.5">
+                                                    {twoDayReminderEvents.length > 0
+                                                        ? `${twoDayReminderEvents.length} recordatorio(s) para las 13:30 hrs.`
+                                                        : 'Sin pruebas/eventos a 2 dias.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={`rounded-2xl border p-3 ${studyReminderEnabledToday ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
+                                        <div className="flex items-start gap-2">
+                                            <Bell className={`w-4 h-4 mt-0.5 ${studyReminderEnabledToday ? 'text-blue-600' : 'text-gray-400'}`} />
+                                            <div>
+                                                <p className="font-black">Sesion diaria de estudio</p>
+                                                <p className="text-xs mt-0.5">
+                                                    {studyReminderEnabledToday
+                                                        ? 'Recordar a menor y apoderado a las 17:00 hrs.'
+                                                        : 'Fin de semana exceptuado, salvo que elijan estudiar.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
