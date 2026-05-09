@@ -391,6 +391,9 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const today = getSantiagoDateKey();
     const getDateKey = (value) => {
         if (!value) return '';
+        const raw = String(value);
+        const dateOnly = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (dateOnly && !raw.includes('T')) return dateOnly[1];
         try { return getSantiagoDateKey(new Date(value)); } catch { return ''; }
     };
     const getStudyDate = (session) => session?.start_time || session?.completed_at || session?.created_at || '';
