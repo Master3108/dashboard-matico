@@ -420,10 +420,15 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         return true;
     };
     const getHistoryScore = (item) => {
-        if (item?.score_percent != null) return Number(item.score_percent);
         if (item?.total_questions > 0 && item?.correct_answers != null) {
-            return Math.round((Number(item.correct_answers || 0) / Number(item.total_questions)) * 100);
+            const total = Number(item.total_questions || 0);
+            const wrongDetails = parseHistoryList(item?.wrong_question_details);
+            const wrong = item?.wrong_answers != null ? Number(item.wrong_answers || 0) : wrongDetails.length;
+            const rawCorrect = Number(item.correct_answers || 0);
+            const correct = wrong > 0 ? Math.min(rawCorrect, Math.max(0, total - wrong)) : rawCorrect;
+            return Math.round((correct / total) * 100);
         }
+        if (item?.score_percent != null) return Number(item.score_percent);
         if (['calendar', 'reminder', 'study'].includes(String(item?.source || ''))) return null;
         return item?.score != null ? Number(item.score) : null;
     };
@@ -444,16 +449,36 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const match = String(item?.detail || '').match(/(\d+)\/(\d+)/);
         return match ? Number(match[2]) : 0;
     };
+    const getActivityExplicitWrong = (item) => {
+        if (item?.wrong_answers != null) return Number(item.wrong_answers || 0);
+        const wrongDetails = parseHistoryList(item?.wrong_question_details);
+        return wrongDetails.length > 0 ? wrongDetails.length : null;
+    };
     const getActivityCorrect = (item) => {
-        if (item?.correct_answers != null) return Number(item.correct_answers || 0);
+        const total = getActivityTotal(item);
+        const explicitWrong = getActivityExplicitWrong(item);
+        const explicitCorrect = item?.correct_answers != null ? Number(item.correct_answers || 0) : null;
+        if (total > 0 && explicitWrong != null && explicitWrong > 0) {
+            const correctFromWrong = Math.max(0, total - explicitWrong);
+            if (explicitCorrect == null || explicitCorrect + explicitWrong > total || explicitCorrect > correctFromWrong) {
+                return correctFromWrong;
+            }
+        }
+        if (explicitCorrect != null) return explicitCorrect;
         const match = String(item?.detail || '').match(/(\d+)\/(\d+)/);
         return match ? Number(match[1]) : 0;
     };
     const getActivityWrong = (item) => {
-        if (item?.wrong_answers != null) return Number(item.wrong_answers || 0);
+        const explicitWrong = getActivityExplicitWrong(item);
         const total = getActivityTotal(item);
         const correct = getActivityCorrect(item);
-        return total > 0 ? Math.max(0, total - correct) : 0;
+        const inferredWrong = total > 0 ? Math.max(0, total - correct) : 0;
+        return explicitWrong != null ? Math.max(explicitWrong, inferredWrong) : inferredWrong;
+    };
+    const getActivityScorePercent = (item) => {
+        const total = getActivityTotal(item);
+        if (total <= 0) return 0;
+        return Math.round((getActivityCorrect(item) / total) * 100);
     };
     const isRealStudySession = (session = {}) => {
         const type = String(session.type || '').toLowerCase();
@@ -556,12 +581,15 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 .reduce((sum, s) => sum + (Number(s.total_minutes) || 0), 0);
             const durationFromDates = startTs && endTs ? Math.max(1, Math.round((endTs - startTs) / 60000)) : 0;
             const totalQuestions = phaseItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
-            const correctAnswers = phaseItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
             const wrongAnswers = phaseItems.reduce((sum, item) => {
                 const wrong = getActivityWrong(item);
                 const inferredWrong = Math.max(0, getActivityTotal(item) - getActivityCorrect(item));
                 return sum + Math.max(wrong, inferredWrong);
             }, 0);
+            const rawCorrectAnswers = phaseItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
+            const correctAnswers = totalQuestions > 0 && wrongAnswers > 0
+                ? Math.max(0, Math.min(rawCorrectAnswers, totalQuestions - wrongAnswers))
+                : rawCorrectAnswers;
             const wrongDetails = phaseItems.flatMap(item => parseHistoryList(item.wrong_question_details));
             const evidenceItems = relatedItems.filter(item => item.has_evidence || item.image_url || item.ocr_text || item.evidence_summary);
 
@@ -975,7 +1003,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                 <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{getActivityWrong(summaryLastActivity)} malas</span>
                                             )}
                                             {getActivityTotal(summaryLastActivity) > 0 && (
-                                                <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{Math.round((getActivityCorrect(summaryLastActivity) / getActivityTotal(summaryLastActivity)) * 100)}%</span>
+                                                <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-base font-black">{getActivityScorePercent(summaryLastActivity)}%</span>
                                             )}
                                         </div>
                                     </div>
@@ -1175,7 +1203,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                             )}
                                             {getActivityTotal(summaryLastActivity) > 0 && (
                                                 <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
-                                                    <p className="text-2xl font-black">{Math.round((getActivityCorrect(summaryLastActivity) / getActivityTotal(summaryLastActivity)) * 100)}%</p>
+                                                    <p className="text-2xl font-black">{getActivityScorePercent(summaryLastActivity)}%</p>
                                                     <p className="text-[10px] font-bold text-white/70 uppercase">Rendimiento</p>
                                                 </div>
                                             )}
