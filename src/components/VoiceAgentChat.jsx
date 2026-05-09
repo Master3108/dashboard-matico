@@ -19,6 +19,9 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     const ttsRunRef = useRef(0);
     const greetedRef = useRef(false);
     const fileInputRef = useRef(null);
+    const listeningDesiredRef = useRef(false);
+    const processingRef = useRef(false);
+    const speakingRef = useRef(false);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -26,6 +29,14 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    useEffect(() => {
+        processingRef.current = isProcessing;
+    }, [isProcessing]);
+
+    useEffect(() => {
+        speakingRef.current = isSpeaking;
+    }, [isSpeaking]);
 
     const stopAllAudio = useCallback(() => {
         ttsRunRef.current += 1;
@@ -54,6 +65,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
     useEffect(() => {
         return () => {
+            listeningDesiredRef.current = false;
             stopAllAudio();
             if (recognitionRef.current) {
                 const recognition = recognitionRef.current;
@@ -64,10 +76,20 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         };
     }, [stopAllAudio]);
 
+    const restartListeningSoon = useCallback(() => {
+        if (!listeningDesiredRef.current || processingRef.current || speakingRef.current || recognitionRef.current) return;
+        window.setTimeout(() => {
+            if (!listeningDesiredRef.current || processingRef.current || speakingRef.current || recognitionRef.current) return;
+            startListening({ preserveAudio: true });
+        }, 260);
+    }, []);
+
     // Speech-to-Text via Web Speech API (fallback) or Whisper
-    const startListening = useCallback(() => {
+    const startListening = useCallback(({ preserveAudio = false } = {}) => {
+        listeningDesiredRef.current = true;
+        if (recognitionRef.current || isSpeaking || isProcessing) return;
         // Stop any playing audio
-        stopAllAudio();
+        if (!preserveAudio) stopAllAudio();
 
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -86,7 +108,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 setCurrentTranscript(transcript);
                 if (isFinal && transcript.trim()) {
                     setCurrentTranscript('');
-                    stopListening();
+                    stopListening({ preserveDesired: true });
                     sendMessage(transcript.trim());
                 }
             };
@@ -95,7 +117,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 console.error('[STT] Error:', e.error);
                 // Auto-restart on non-fatal errors
                 if (e.error === 'no-speech' || e.error === 'aborted') {
-                    try { recognition.start(); } catch {}
+                    if (listeningDesiredRef.current) try { recognition.start(); } catch {}
                     return;
                 }
                 setIsListening(false);
@@ -105,7 +127,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
             recognition.onend = () => {
                 // Auto-restart if still supposed to be listening
-                if (recognitionRef.current === recognition) {
+                if (recognitionRef.current === recognition && listeningDesiredRef.current && !processingRef.current && !speakingRef.current) {
                     try { recognition.start(); } catch {}
                     return;
                 }
@@ -121,9 +143,10 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         } else {
             alert('Tu navegador no soporta reconocimiento de voz');
         }
-    }, [sphereState, stopAllAudio]);
+    }, [sphereState, stopAllAudio, isSpeaking, isProcessing]);
 
-    const stopListening = useCallback(() => {
+    const stopListening = useCallback(({ preserveDesired = false } = {}) => {
+        if (!preserveDesired) listeningDesiredRef.current = false;
         if (recognitionRef.current) {
             const recognition = recognitionRef.current;
             recognitionRef.current = null;
@@ -136,16 +159,18 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     }, [sphereState]);
 
     const toggleListening = () => {
-        if (isListening) stopListening();
+        if (isListening || listeningDesiredRef.current) stopListening();
         else startListening();
     };
 
     // TTS via OpenAI
     const speakText = async (text) => {
         if (!ttsEnabled || !text) return;
-        stopListening();
+        const shouldResumeListening = listeningDesiredRef.current;
+        stopListening({ preserveDesired: shouldResumeListening });
         stopAllAudio();
         const runId = ttsRunRef.current;
+        speakingRef.current = true;
         setIsSpeaking(true);
         setSphereState('speaking');
 
@@ -167,27 +192,33 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
             audio.onended = () => {
                 if (runId !== ttsRunRef.current) return;
+                speakingRef.current = false;
                 setIsSpeaking(false);
                 setSphereState('idle');
                 URL.revokeObjectURL(url);
                 audioRef.current = null;
                 audioUrlRef.current = null;
+                restartListeningSoon();
             };
 
             audio.onerror = () => {
                 if (runId !== ttsRunRef.current) return;
+                speakingRef.current = false;
                 setIsSpeaking(false);
                 setSphereState('idle');
                 URL.revokeObjectURL(url);
                 audioRef.current = null;
                 audioUrlRef.current = null;
+                restartListeningSoon();
             };
 
             await audio.play();
         } catch (err) {
             console.error('[TTS] Error:', err);
+            speakingRef.current = false;
             setIsSpeaking(false);
             setSphereState('idle');
+            restartListeningSoon();
         }
     };
 
@@ -196,7 +227,10 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         setMessages(prev => [...prev, botMsg]);
         conversationRef.current.push({ role: 'assistant', content: text });
         if (speak && ttsEnabled) await speakText(text);
-        else setSphereState('idle');
+        else {
+            setSphereState('idle');
+            restartListeningSoon();
+        }
     };
 
     const isCloseIntent = (text = '') => /\b(cierra|cerrar|salir|terminar|finaliza|finalizar)\b.*\b(conversacion|chat|matico|ventana)?\b/i.test(text);
@@ -244,6 +278,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         stopAllAudio();
         const label = files.length === 1 ? 'Subí una imagen para revisar.' : `Subí ${files.length} imágenes para revisar.`;
         setMessages(prev => [...prev, { role: 'user', content: label, timestamp: new Date() }]);
+        processingRef.current = true;
         setIsProcessing(true);
         setSphereState('thinking');
 
@@ -254,25 +289,30 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             console.error('[VOICE-AGENT] Upload error:', err);
             await addAssistantMessage('No pude procesar las imágenes. Intenta de nuevo con fotos más claras.');
         } finally {
+            processingRef.current = false;
             setIsProcessing(false);
+            restartListeningSoon();
         }
     };
 
     // Send message to agent
     const sendMessage = async (text) => {
         if (!text || isProcessing) return;
-        stopListening();
+        const shouldResumeListening = listeningDesiredRef.current;
+        stopListening({ preserveDesired: shouldResumeListening });
         stopAllAudio();
 
         const userMsg = { role: 'user', content: text, timestamp: new Date() };
         setMessages(prev => [...prev, userMsg]);
         conversationRef.current.push({ role: 'user', content: text });
         setInputText('');
+        processingRef.current = true;
         setIsProcessing(true);
         setSphereState('thinking');
 
         try {
             if (isCloseIntent(text)) {
+                listeningDesiredRef.current = false;
                 await addAssistantMessage('Listo, cierro la conversación.');
                 setTimeout(() => onClose?.(), 450);
                 return;
@@ -302,8 +342,11 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             console.error('[AGENT] Error:', err);
             setMessages(prev => [...prev, { role: 'assistant', content: 'Error de conexion. Intenta de nuevo.', timestamp: new Date() }]);
             setSphereState('idle');
+            restartListeningSoon();
         } finally {
             setIsProcessing(false);
+            processingRef.current = false;
+            restartListeningSoon();
         }
     };
 
@@ -536,7 +579,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     </button>
 
                     {/* Mic button (main, larger) */}
-                    <button onClick={toggleListening} disabled={isProcessing}
+                    <button onClick={toggleListening}
                         className={`w-18 h-18 p-5 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
                             isListening
                                 ? 'bg-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)] scale-110 border-4 border-red-300'
@@ -552,14 +595,19 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     </button>
 
                     {/* Close */}
-                    <button onClick={onClose}
+                    <button onClick={() => {
+                        listeningDesiredRef.current = false;
+                        stopListening();
+                        stopAllAudio();
+                        onClose?.();
+                    }}
                         className="w-14 h-14 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition shadow-sm border border-gray-200">
                         <X className="w-6 h-6 text-gray-600" />
                     </button>
                 </div>
 
                 <p className="text-center text-gray-400 text-xs mt-3">
-                    {isListening ? 'Escuchando... toca para detener' : 'Toca el microfono para hablar'}
+                    {isListening ? 'Modo manos libres activo: habla cuando quieras' : 'Toca una vez el microfono para dejar a Matico escuchando'}
                 </p>
             </div>
 
