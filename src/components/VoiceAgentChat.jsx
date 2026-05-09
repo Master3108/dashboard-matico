@@ -153,7 +153,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             const res = await fetch('/api/agent/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, voice: 'nova' })
+                body: JSON.stringify({ text, voice: 'onyx' })
             });
 
             if (!res.ok) throw new Error('TTS failed');
@@ -410,6 +410,12 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                             <div className="listening-ray listening-ray-left" />
                             <div className="listening-ray listening-ray-right" />
                             <div className="listening-scan" />
+                            <div className="bottom-energy bottom-energy-one" />
+                            <div className="bottom-energy bottom-energy-two" />
+                            <div className="bottom-energy bottom-energy-three" />
+                            <div className="bottom-energy bottom-energy-four" />
+                            <div className="bottom-wave bottom-wave-one" />
+                            <div className="bottom-wave bottom-wave-two" />
                         </div>
                     )}
 
@@ -595,11 +601,11 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 }
                 .voice-orb[data-state="speaking"] .energy-field {
                     opacity: 1;
-                    filter: drop-shadow(0 0 18px rgba(34,211,238,0.6));
+                    filter: drop-shadow(0 0 24px rgba(34,211,238,0.88)) drop-shadow(0 0 48px rgba(59,130,246,0.45));
                 }
                 .voice-orb[data-state="listening"] .energy-field {
-                    opacity: 0.82;
-                    filter: drop-shadow(0 0 14px rgba(59,130,246,0.55));
+                    opacity: 1;
+                    filter: drop-shadow(0 0 22px rgba(59,130,246,0.82)) drop-shadow(0 0 42px rgba(14,165,233,0.45));
                 }
                 .orb-halo {
                     z-index: 1;
@@ -686,13 +692,14 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     opacity: calc(var(--vein-opacity) * 0.45);
                 }
                 .voice-orb[data-state="speaking"] .energy-vein {
-                    height: 4px;
-                    filter: blur(0.2px) drop-shadow(0 0 12px rgba(255,255,255,0.95)) drop-shadow(0 0 18px rgba(34,211,238,0.85));
-                    animation-duration: 1.25s;
+                    height: 5px;
+                    filter: blur(0.1px) drop-shadow(0 0 16px rgba(255,255,255,1)) drop-shadow(0 0 28px rgba(34,211,238,0.95));
+                    animation-duration: 0.85s;
                 }
                 .voice-orb[data-state="listening"] .energy-vein {
-                    filter: blur(0.3px) drop-shadow(0 0 10px rgba(96,165,250,0.85));
-                    animation-duration: 1.6s;
+                    height: 4px;
+                    filter: blur(0.2px) drop-shadow(0 0 14px rgba(96,165,250,0.95)) drop-shadow(0 0 26px rgba(37,99,235,0.7));
+                    animation-duration: 1.05s;
                 }
                 .lightning-knot {
                     position: absolute;
@@ -739,11 +746,11 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     position: absolute;
                     top: 50%;
                     width: 54%;
-                    height: 5px;
-                    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.1), rgba(255,255,255,0.95), rgba(59,130,246,0.78), transparent);
+                    height: 8px;
+                    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.12), rgba(255,255,255,1), rgba(125,211,252,0.98), rgba(37,99,235,0.78), transparent);
                     border-radius: 9999px;
-                    filter: drop-shadow(0 0 12px rgba(59,130,246,0.85));
-                    animation: listening-ray 0.9s ease-in-out infinite;
+                    filter: drop-shadow(0 0 16px rgba(59,130,246,0.98)) drop-shadow(0 0 28px rgba(34,211,238,0.72));
+                    animation: listening-ray 0.62s ease-in-out infinite;
                 }
                 .listening-ray-left {
                     left: -34%;
@@ -766,9 +773,64 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     filter: blur(0.2px);
                     animation: listening-scan 1.4s ease-in-out infinite;
                 }
+                .bottom-energy {
+                    position: absolute;
+                    left: 50%;
+                    top: 86%;
+                    width: 8px;
+                    height: 76px;
+                    border-radius: 9999px;
+                    background: linear-gradient(180deg, rgba(255,255,255,1), rgba(125,211,252,0.95), rgba(59,130,246,0.15), transparent);
+                    transform-origin: top center;
+                    filter: drop-shadow(0 0 14px rgba(255,255,255,0.95)) drop-shadow(0 0 30px rgba(14,165,233,0.88));
+                    opacity: 0;
+                    z-index: 8;
+                    animation: bottom-lightning 0.9s ease-in-out infinite;
+                }
+                .bottom-energy-one {
+                    --bolt-rotate: 0deg;
+                    transform: translateX(-50%) rotate(0deg);
+                    animation-delay: 0s;
+                }
+                .bottom-energy-two {
+                    --bolt-rotate: -24deg;
+                    height: 66px;
+                    transform: translateX(-50%) rotate(-24deg);
+                    animation-delay: 0.14s;
+                }
+                .bottom-energy-three {
+                    --bolt-rotate: 25deg;
+                    height: 70px;
+                    transform: translateX(-50%) rotate(25deg);
+                    animation-delay: 0.28s;
+                }
+                .bottom-energy-four {
+                    --bolt-rotate: 10deg;
+                    height: 54px;
+                    transform: translateX(-50%) rotate(10deg);
+                    animation-delay: 0.42s;
+                }
+                .bottom-wave {
+                    position: absolute;
+                    left: 50%;
+                    top: 91%;
+                    width: 150px;
+                    height: 26px;
+                    border-radius: 50%;
+                    border: 2px solid rgba(125,211,252,0.58);
+                    transform: translateX(-50%) scale(0.7);
+                    filter: drop-shadow(0 0 12px rgba(14,165,233,0.7));
+                    opacity: 0;
+                    animation: bottom-wave-pulse 1.1s ease-out infinite;
+                    z-index: 7;
+                }
+                .bottom-wave-two {
+                    animation-delay: 0.38s;
+                    border-color: rgba(255,255,255,0.55);
+                }
                 .sphere-breathe { animation: sphere-breathe 4.5s ease-in-out infinite; }
                 .sphere-listening { animation: sphere-listening 1.15s ease-in-out infinite; }
-                .sphere-speaking { animation: speaking-rays 1.35s ease-in-out infinite; }
+                .sphere-speaking { animation: speaking-rays 0.95s ease-in-out infinite; }
                 .sphere-thinking { animation: sphere-thinking 3.2s ease-in-out infinite; }
                 @keyframes energy-wave-flow {
                     0% { transform: translateX(-24px) translateY(0) scaleX(0.98); opacity: 0.55; }
@@ -787,6 +849,16 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 @keyframes listening-scan {
                     0%, 100% { transform: scaleX(0.82) translateY(-7px); opacity: 0.22; }
                     50% { transform: scaleX(1.08) translateY(8px); opacity: 0.62; }
+                }
+                @keyframes bottom-lightning {
+                    0%, 100% { opacity: 0.18; clip-path: polygon(40% 0, 62% 0, 52% 28%, 72% 30%, 45% 100%, 51% 48%, 31% 46%); }
+                    35% { opacity: 1; filter: drop-shadow(0 0 18px rgba(255,255,255,1)) drop-shadow(0 0 38px rgba(14,165,233,1)); }
+                    65% { opacity: 0.62; transform: translateX(-50%) rotate(var(--bolt-rotate, 0deg)) scaleY(1.16); }
+                }
+                @keyframes bottom-wave-pulse {
+                    0% { opacity: 0.75; transform: translateX(-50%) scale(0.55); }
+                    80% { opacity: 0.12; transform: translateX(-50%) scale(1.55); }
+                    100% { opacity: 0; transform: translateX(-50%) scale(1.7); }
                 }
                 @keyframes speaking-rays {
                     0%, 100% { transform: scale(1.03); filter: saturate(1.08); }
