@@ -9296,11 +9296,18 @@ app.get('/api/parent/student-history', async (req, res) => {
             const directCorrect = row.correct_answers !== null && row.correct_answers !== undefined
                 ? toNumberOrNull(row.correct_answers)
                 : null;
-            const score = toNumberOrNull(row.score);
-            const correct = total && directCorrect === null && score !== null && score <= total ? score : directCorrect;
-            const computedWrong = total !== null && correct !== null ? Math.max(0, total - correct) : null;
             const wrongDirect = toNumberOrNull(row.wrong_answers);
-            const wrong = computedWrong !== null ? Math.max(computedWrong, wrongDirect || 0) : wrongDirect;
+            const score = toNumberOrNull(row.score);
+            // Si hay wrong_answers explícito y total, derivar correct desde wrong (más confiable)
+            let correct;
+            if (total !== null && wrongDirect !== null && wrongDirect >= 0) {
+                correct = Math.max(0, total - wrongDirect);
+            } else if (total && directCorrect === null && score !== null && score <= total) {
+                correct = score;
+            } else {
+                correct = directCorrect;
+            }
+            const wrong = total !== null && correct !== null ? Math.max(0, total - correct) : wrongDirect;
             const percent = total && correct !== null ? Math.round((correct / total) * 100) : (score !== null && !total ? score : null);
             return { total, correct, wrong, percent };
         };

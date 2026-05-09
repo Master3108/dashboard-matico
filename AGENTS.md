@@ -1,13 +1,13 @@
 <claude-mem-context>
 # Memory Context
 
-# [dashboard-matico] recent context, 2026-05-08 7:06pm GMT-4
+# [dashboard-matico] recent context, 2026-05-08 8:11pm GMT-4
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 37 obs (20,612t read) | 792,402t work | 97% savings
+Stats: 44 obs (23,279t read) | 893,864t work | 97% savings
 
 ### May 7, 2026
 1 5:21p 🔵 User Request: Load Matías Olguín's Full History into Apoderado Platform
@@ -22,17 +22,13 @@ Stats: 37 obs (20,612t read) | 792,402t work | 97% savings
 10 " 🔵 Supabase Schema — 12 Tables Covering Full Educational Platform Including notebook_submissions with expires_at
 11 " 🔵 Full Component Inventory of src/ — All Major Feature Modules Confirmed Present
 12 9:25a 🟣 Matico Platform — Comprehensive Educational Monitoring Feature Roadmap
-S2 Fix subject card enrichment to apply to ALL subjects, not just química — dashboard-matico antecedentes display (May 8, 9:25 AM)
 13 1:02p 🔵 Subject Card UI Changes Only Applied to Chemistry, Not All Subjects
 14 " 🔴 Calendar Rows Now Enriched with Source Labels and Normalized Subjects Across All Subjects
 15 " 🔴 Calendar/Reminder/Study Items No Longer Incorrectly Return a Score
-S3 Simplify calendar event description logic in dashboard-matico: remove "from event" source tracking, focus on future-date reminder purpose (May 8, 1:03 PM)
 16 1:11p ⚖️ Calendar Reminder Logic Refined: Remove Event-Source Flag, Focus on 2-Day Advance Notice
-S4 Matico ParentDashboard.jsx – Code exploration to redesign the summary/overview section, elevating daily report status to the top of the parent dashboard view. (May 8, 1:11 PM)
 17 1:24p ⚖️ Parent Dashboard Redesign Requirements Defined
 18 " 🔵 ParentDashboard Architecture and Daily Report System Mapped
 19 1:28p 🟣 Matico Platform – Comprehensive Student Monitoring Feature Set Specification
-S5 Matico ParentDashboard — Implement filterable parent summary with today-status indicator, days-since-session tracking, quiz result metrics, and 2-day test warning (May 8, 1:29 PM)
 20 1:29p 🟣 ParentDashboard – Summary Tab Filter Engine with Santiago Timezone Support
 21 3:03p 🟣 Matico Platform — Comprehensive Child Study Monitoring Feature Specification
 22 3:04p 🔵 ParentDashboard.jsx — Core Computation Logic for Matico Dashboard
@@ -42,7 +38,6 @@ S5 Matico ParentDashboard — Implement filterable parent summary with today-sta
 26 " 🟣 New "Resumen Filtrable" Section Added to Resumen Tab
 27 " 🟣 2-Day Test Warning Highlight Added to Upcoming Events List
 28 3:15p 🟣 Matico Platform — Comprehensive Feature Roadmap for Child Study Monitoring
-S6 UI cleanup in CuadernoMission: remove redundant "Subir otra página" button and rename gallery upload button to "Subir imagenes" (May 8, 3:16 PM)
 29 5:01p 🔵 Screenshot/Gallery Upload UI Strings Located in CuadernoMission and EvidenceIntake
 30 " 🔵 CuadernoMission Uses Native Screen Capture Bridge with Full Permission/Error Handling
 31 " 🔵 Screenshot Capture Button Gated by isNativePlatform — Web vs Native Split Logic
@@ -50,22 +45,34 @@ S6 UI cleanup in CuadernoMission: remove redundant "Subir otra página" button a
 33 5:02p 🟣 Added "Capturar otra pantalla" Button in PDF Preview State
 34 " 🔵 apply_patch Failed Due to Indentation Mismatch in CuadernoMission.jsx
 35 6:00p ✅ UI Cleanup: Rename "Subir Varias Páginas" and Remove Redundant Button
-S7 CuadernoMission.jsx – Move PDF download button from bottom action bar into individual page thumbnail cards (May 8, 6:00 PM)
 36 6:02p 🟣 PDF Download Button Moved Inline Per-Page in CuadernoMission
 37 6:13p 🟣 Matico Platform – Comprehensive Educational Monitoring Feature Roadmap
-S8 Fix missing close (X) button on MiniLesson component in dashboard-matico (May 8, 6:13 PM)
-S9 Fix quiz phase auto-continuation: after finishing Básico, automatically load Avanzado; after Avanzado, load Crítico — without closing the quiz component in between. (May 8, 6:30 PM)
 38 6:33p 🔵 Quiz Phase System Architecture in dashboard-matico
-S10 SSH deployment security — user shared a server password in chat; advised to use SSH key authentication instead. (May 8, 6:33 PM)
-S11 Reminder to rotate the exposed server password and set up SSH key auth for passwordless deploys. (May 8, 6:34 PM)
-**Investigated**: No new code investigation — this exchange was a follow-up security reminder about the password exposed in chat.
+S12 Fix: Biología sesión completada (nivel crítico experto PAES) sigue mostrando "Sesión 6 en progreso" / "Siguiente Nivel: Crítico | 30/45" (May 8, 6:34 PM)
+39 7:06p 🔵 Completed PAES Biology Course Still Shows Session 6 as Pending
+S13 Diagnóstico y corrección del bug: el dashboard del apoderado mostraba MATEMÁTICA como "última sesión real" aunque el estudiante hubiera completado Biología (May 8, 7:07 PM)
+S14 Probar el sitio https://srv1048418.hstgr.cloud/ como joseantonio.olguinr@gmail.com y diagnosticar por qué el Panel Apoderado muestra MATEMATICA como última sesión real en lugar de BIOLOGIA (May 8, 7:20 PM)
+S15 Diagnóstico y fix del Panel Apoderado mostrando MATEMATICA como última sesión real — deploy pendiente en Hostinger y orientación sobre curl en PowerShell (May 8, 7:39 PM)
+S16 Fix del Panel Apoderado (última sesión real mostraba MATEMATICA en lugar de BIOLOGIA) — orientación sobre puertos del servidor local y acceso a la API (May 8, 7:39 PM)
+S17 Fix duplicate study sessions bug in ParentDashboard summary — MATEMATICA showing instead of BIOLOGIA as "última sesión real" (May 8, 7:40 PM)
+S18 Consolidate multi-phase quiz sessions in ParentDashboard and show session start time + wrong answer count for Matias's completed 45-question session (May 8, 7:48 PM)
+40 7:53p 🟣 Study Session Data Entry: Matias Full Completion with Incorrect Answers + Start Timestamp
+41 7:54p 🟣 ParentDashboard: Phase Aggregation + Session Start Time + Wrong Answer Display
+S19 Fix all ParentDashboard summary cards to use consolidated phase-aggregated results instead of raw per-phase history items, and add "Último resultado" detail card to "Pruebas y quizzes" section (May 8, 7:54 PM)
+42 7:57p 🔴 Summary Stats Now Use Aggregated Phase Items Instead of Raw History Items
+S20 Fix: study alerts (stale_subject) were replacing the real last study session in the ParentDashboard activity summary (May 8, 7:59 PM)
+43 8:05p 🔵 API /parent/student-history Returns study_alert Items Mixed With Activity Feed
+44 " 🔴 ParentDashboard Filtered Out study_alert Items From Activity Summary
+45 8:08p 🔵 Historical Progress Items Contain migrated_from_sheets and autofix_phases Source Modes
+S21 User asked "¿qué pasó?" — investigated whether student TK-XSN7QNOJ4 had started Competencia Lectora; confirmed it was a stale-subject alert, not real activity (May 8, 8:08 PM)
+**Investigated**: Queried /api/study-sessions (from 2026-02-01) and /api/parent/student-history (limit=120) for student TK-XSN7QNOJ4. Examined the full session list including both native app_entry sessions and derived sessions going back to March 2026. Confirmed that "COMPETENCIA_LECTORA: sin estudio reciente" was a study_alert (source: study_alert, type: stale_subject), NOT a real study session. Also confirmed the study sessions endpoint returns both raw app_entry sessions and derived aggregated sessions synthesized from progress events.
 
-**Learned**: No new technical findings. Deployment to production (72.60.245.87) is still pending SSH authentication setup.
+**Learned**: The /api/study-sessions endpoint returns two types of sessions: (1) native app_entry sessions with session_id (e.g. SS-E2EA8B5F5AC2) tracking actual Mático app usage with minute-by-minute milestones, and (2) derived sessions with id format "derived-{date}|{SUBJECT}-s{n}" that are synthesized from progress events (phase completions, etc.) for subjects without native session tracking. Derived sessions cover BIOLOGIA, LENGUAJE, HISTORIA, QUIMICA, FISICA going back to March 2026. The stale_subject alerts appear in the history API with today's timestamp, making them look like real recent activity — this was the root bug.
 
-**Completed**: All local code changes are built and validated (build exit 0). Nothing has been deployed to production yet. Changes pending deployment: MiniLesson X close button, quiz phase auto-continuation (continueQuiz pattern), and any related CuadernoMission/ParentDashboard fixes.
+**Completed**: Fixed ParentDashboard.jsx to exclude study_alert source and stale_subject/alert/study_alert types from both summaryHistoryActivityItems and summaryHasTodayActivity logic. Built and verified. Committed as a037052 ("fix: no usar alertas como ultima sesion real") and pushed to GitHub Master3108/dashboard-matico main branch. Confirmed with user that the real last session remains BIOLOGIA Embriología y Biogeografía (44/45 correctas, 35 min), not any alert.
 
-**Next Steps**: Complete SSH key setup for root@72.60.245.87, then deploy via git push + SSH docker compose rebuild. Rotate the VPS password in the Hostinger panel as a security follow-up.
+**Next Steps**: Deploy the fix to production: ssh root@72.60.245.87 "cd /var/www/dashboard-matico && git pull origin main && docker compose down && docker compose up --build -d" — then hard refresh to verify the dashboard shows BIOLOGIA as the last real session.
 
 
-Access 792k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 894k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
