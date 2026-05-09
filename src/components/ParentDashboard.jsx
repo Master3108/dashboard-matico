@@ -965,7 +965,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 <p className={`text-xl font-black ${summaryHasTodayActivity ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
                                     {summaryHasTodayActivity ? 'Estudio hoy' : 'Sin sesion hoy'}
                                 </p>
-                                <p className="text-xs font-bold text-[#9094A6]">Estado de sesion</p>
+                                <p className="text-xs font-bold text-[#9094A6]">{selectedChild?.display_name || 'Tu hijo'} {summaryHasTodayActivity ? 'estudio hoy' : 'no ha estudiado hoy'}</p>
                                 <p className="text-[10px] text-[#9094A6]/70 mt-0.5">
                                     {summaryDaysWithoutSession === 0 ? 'Actividad registrada hoy' : summaryDaysWithoutSession != null ? `Hace ${summaryDaysWithoutSession} dia(s)` : 'Sin registro real'}
                                 </p>
