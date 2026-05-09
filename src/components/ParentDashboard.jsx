@@ -1201,11 +1201,26 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                             <Calendar className={`w-4 h-4 mt-0.5 ${twoDayReminderEvents.length > 0 ? 'text-amber-600' : 'text-gray-400'}`} />
                                             <div>
                                                 <p className="font-black">Prueba o evento a 2 dias</p>
-                                                <p className="text-xs mt-0.5">
-                                                    {twoDayReminderEvents.length > 0
-                                                        ? `${twoDayReminderEvents.length} recordatorio(s) para las 13:30 hrs.`
-                                                        : 'Sin pruebas/eventos a 2 dias.'}
-                                                </p>
+                                                {twoDayReminderEvents.length > 0 ? (
+                                                    <div className="mt-1 space-y-1">
+                                                        {twoDayReminderEvents.slice(0, 2).map(event => (
+                                                            <div key={event.event_id || `${event.title}-${event.event_date}`} className="text-xs">
+                                                                <p className="font-black text-[#2B2E4A]">{event.title || 'Evento'}</p>
+                                                                <p className="font-bold text-gray-500">
+                                                                    {formatDate(event.event_date)}
+                                                                    {event.start_time ? ` · ${formatTime(event.start_time)}` : ''}
+                                                                    {event.subject ? ` · ${event.subject}` : ''}
+                                                                </p>
+                                                                <p className="font-black text-red-600">Faltan 2 dias: preparar estudio hoy</p>
+                                                            </div>
+                                                        ))}
+                                                        {twoDayReminderEvents.length > 2 && (
+                                                            <p className="text-xs font-black text-amber-700">+{twoDayReminderEvents.length - 2} evento(s) mas con recordatorio 13:30 hrs.</p>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs mt-0.5">Sin pruebas/eventos a 2 dias.</p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
