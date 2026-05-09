@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown } from 'lucide-react';
+import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown, Camera } from 'lucide-react';
 
 const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', studentName = '', onClose }) => {
     const [messages, setMessages] = useState([]);
