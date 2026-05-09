@@ -201,12 +201,36 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         'Que materias tiene abandonadas?'
     ];
 
+    const energyVeins = [
+        { top: '18%', left: '-12%', rotate: -10, width: '126%', delay: '0s', duration: '2.8s', opacity: 0.52 },
+        { top: '28%', left: '-8%', rotate: 18, width: '116%', delay: '0.25s', duration: '3.1s', opacity: 0.45 },
+        { top: '38%', left: '-14%', rotate: -30, width: '132%', delay: '0.5s', duration: '2.6s', opacity: 0.62 },
+        { top: '48%', left: '-10%', rotate: 8, width: '128%', delay: '0.1s', duration: '2.4s', opacity: 0.7 },
+        { top: '58%', left: '-15%', rotate: 35, width: '135%', delay: '0.7s', duration: '3.2s', opacity: 0.5 },
+        { top: '68%', left: '-9%', rotate: -18, width: '118%', delay: '0.45s', duration: '2.9s', opacity: 0.58 },
+        { top: '78%', left: '-12%', rotate: 24, width: '124%', delay: '0.9s', duration: '3.4s', opacity: 0.42 }
+    ];
+    const particles = [
+        { top: '8%', left: '44%', size: 5, delay: '0s' },
+        { top: '15%', left: '73%', size: 4, delay: '0.25s' },
+        { top: '34%', left: '94%', size: 3, delay: '0.5s' },
+        { top: '62%', left: '91%', size: 5, delay: '0.75s' },
+        { top: '84%', left: '67%', size: 4, delay: '1s' },
+        { top: '89%', left: '36%', size: 3, delay: '1.25s' },
+        { top: '72%', left: '9%', size: 5, delay: '1.5s' },
+        { top: '42%', left: '3%', size: 4, delay: '1.75s' },
+        { top: '20%', left: '20%', size: 3, delay: '2s' },
+        { top: '50%', left: '102%', size: 3, delay: '2.25s' },
+        { top: '96%', left: '50%', size: 4, delay: '2.5s' },
+        { top: '2%', left: '60%', size: 3, delay: '2.75s' }
+    ];
+
     // Sphere animation classes
     const sphereClasses = {
-        idle: 'animate-pulse-slow',
-        listening: 'animate-pulse-fast scale-110',
-        thinking: 'animate-spin-slow',
-        speaking: 'animate-pulse-medium scale-105'
+        idle: 'sphere-breathe',
+        listening: 'sphere-listening scale-105',
+        thinking: 'sphere-thinking',
+        speaking: 'sphere-speaking scale-105'
     };
 
     return (
@@ -256,64 +280,64 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             {/* Sphere Area */}
             <div className="flex-1 flex flex-col items-center justify-center relative px-4">
                 {/* Animated Sphere */}
-                <div className={`relative w-72 h-72 md:w-96 md:h-96 transition-all duration-500 ${sphereClasses[sphereState] || ''}`}>
-                    {/* Wave background */}
-                    <div className="absolute -inset-16 opacity-40">
-                        <div className="absolute inset-0" style={{
-                            background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.15) 0%, transparent 70%)',
-                        }} />
-                        {[...Array(3)].map((_, i) => (
-                            <div key={i} className="absolute inset-0" style={{
-                                background: `radial-gradient(ellipse at ${50 + (i-1)*20}% 50%, rgba(6,182,212,0.1) 0%, transparent 60%)`,
-                                animation: `wave-drift ${4 + i}s ease-in-out infinite alternate`,
-                                animationDelay: `${i * 0.7}s`
-                            }} />
-                        ))}
+                <div className={`voice-orb relative w-72 h-72 md:w-96 md:h-96 transition-all duration-500 ${sphereClasses[sphereState] || ''}`} data-state={sphereState}>
+                    <div className="energy-field absolute left-1/2 top-1/2 h-40 w-[150vw] max-w-[760px] -translate-x-1/2 -translate-y-1/2 overflow-hidden opacity-70">
+                        <div className="energy-wave energy-wave-one" />
+                        <div className="energy-wave energy-wave-two" />
+                        <div className="energy-wave energy-wave-three" />
                     </div>
 
-                    {/* Outer glow ring */}
-                    <div className={`absolute -inset-4 rounded-full transition-all duration-700 ${
-                        sphereState === 'listening' ? 'shadow-[0_0_100px_50px_rgba(59,130,246,0.25)]' :
-                        sphereState === 'thinking' ? 'shadow-[0_0_80px_40px_rgba(147,51,234,0.2)]' :
-                        sphereState === 'speaking' ? 'shadow-[0_0_100px_50px_rgba(6,182,212,0.25)]' :
-                        'shadow-[0_0_60px_30px_rgba(59,130,246,0.1)]'
-                    }`} />
+                    {sphereState === 'listening' && (
+                        <div className="listening-ray-wrap absolute inset-0 pointer-events-none">
+                            <div className="listening-ray listening-ray-left" />
+                            <div className="listening-ray listening-ray-right" />
+                            <div className="listening-scan" />
+                        </div>
+                    )}
 
-                    {/* Main sphere */}
-                    <div className="absolute inset-0 rounded-full overflow-hidden" style={{
-                        background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.8) 0%, rgba(147,197,253,0.6) 20%, rgba(59,130,246,0.7) 40%, rgba(30,64,175,0.8) 60%, rgba(15,23,42,0.6) 80%)',
-                        boxShadow: 'inset 0 0 60px rgba(6,182,212,0.4), inset -20px -20px 60px rgba(30,64,175,0.3), 0 0 40px rgba(59,130,246,0.2)'
-                    }}>
-                        {/* Energy veins */}
-                        {[...Array(8)].map((_, i) => (
-                            <div key={i} className="absolute" style={{
-                                width: '120%', height: '2px',
-                                background: `linear-gradient(90deg, transparent, rgba(6,182,212,${0.3 + Math.random()*0.3}), transparent)`,
-                                top: `${20 + i * 8}%`, left: '-10%',
-                                transform: `rotate(${i * 22}deg)`,
-                                animation: `vein-pulse ${2 + i * 0.4}s ease-in-out infinite alternate`,
-                                animationDelay: `${i * 0.2}s`,
-                                filter: 'blur(1px)'
-                            }} />
+                    <div className="orb-halo absolute -inset-8 rounded-full" />
+                    <div className="orb-ring absolute -inset-3 rounded-full" />
+
+                    <div className="orb-core absolute inset-0 rounded-full overflow-hidden">
+                        <div className="orb-depth absolute inset-0 rounded-full" />
+                        <div className="orb-cloud orb-cloud-one" />
+                        <div className="orb-cloud orb-cloud-two" />
+                        <div className="orb-cloud orb-cloud-three" />
+
+                        {energyVeins.map((vein, i) => (
+                            <div
+                                key={i}
+                                className="energy-vein"
+                                style={{
+                                    '--vein-top': vein.top,
+                                    '--vein-left': vein.left,
+                                    '--vein-rotate': `${vein.rotate}deg`,
+                                    '--vein-width': vein.width,
+                                    '--vein-delay': vein.delay,
+                                    '--vein-duration': vein.duration,
+                                    '--vein-opacity': vein.opacity
+                                }}
+                            />
                         ))}
 
-                        {/* Inner light spots */}
-                        <div className="absolute w-1/3 h-1/3 top-[15%] left-[20%] rounded-full bg-white/40 blur-xl" style={{
-                            animation: 'light-drift 5s ease-in-out infinite alternate'
-                        }} />
-                        <div className="absolute w-1/4 h-1/4 bottom-[25%] right-[20%] rounded-full bg-cyan-300/30 blur-lg" style={{
-                            animation: 'light-drift 4s ease-in-out infinite alternate-reverse'
-                        }} />
+                        <div className="lightning-knot lightning-knot-one" />
+                        <div className="lightning-knot lightning-knot-two" />
+                        <div className="lightning-knot lightning-knot-three" />
+                        <div className="orb-highlight" />
                     </div>
 
-                    {/* Floating particles around sphere */}
-                    {[...Array(12)].map((_, i) => (
-                        <div key={i} className="absolute w-1.5 h-1.5 bg-blue-400/50 rounded-full" style={{
-                            top: `${10 + Math.sin(i * 0.52) * 40 + 40}%`,
-                            left: `${10 + Math.cos(i * 0.52) * 40 + 40}%`,
-                            animation: `float-particle ${3 + i * 0.3}s ease-in-out infinite alternate`,
-                            animationDelay: `${i * 0.25}s`
-                        }} />
+                    {particles.map((particle, i) => (
+                        <div
+                            key={i}
+                            className="orb-particle"
+                            style={{
+                                top: particle.top,
+                                left: particle.left,
+                                width: `${particle.size}px`,
+                                height: `${particle.size}px`,
+                                animationDelay: particle.delay
+                            }}
+                        />
                     ))}
                 </div>
 
@@ -405,30 +429,271 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
             {/* CSS Animations */}
             <style>{`
-                @keyframes float-particle {
-                    0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.5; }
-                    100% { transform: translateY(-15px) translateX(8px) scale(1.3); opacity: 0.15; }
+                .voice-orb {
+                    isolation: isolate;
+                    transform-origin: center;
                 }
-                @keyframes vein-pulse {
-                    0% { opacity: 0.3; transform: rotate(var(--r, 0deg)) scaleX(0.8); }
-                    100% { opacity: 0.7; transform: rotate(var(--r, 0deg)) scaleX(1.1); }
+                .energy-field {
+                    filter: blur(0.1px);
+                    transform-style: preserve-3d;
+                    z-index: 0;
                 }
-                @keyframes wave-drift {
-                    0% { transform: translateX(-10px) translateY(5px); }
-                    100% { transform: translateX(10px) translateY(-5px); }
+                .energy-wave {
+                    position: absolute;
+                    inset: 0;
+                    background:
+                        repeating-radial-gradient(ellipse at center, transparent 0 10px, rgba(14,165,233,0.24) 11px 12px, transparent 13px 22px),
+                        linear-gradient(90deg, transparent 0%, rgba(125,211,252,0.12) 12%, rgba(6,182,212,0.56) 50%, rgba(125,211,252,0.12) 88%, transparent 100%);
+                    clip-path: polygon(0 45%, 8% 38%, 18% 47%, 30% 36%, 43% 46%, 56% 35%, 70% 45%, 84% 37%, 100% 46%, 100% 62%, 84% 55%, 70% 66%, 56% 55%, 43% 65%, 30% 54%, 18% 66%, 8% 55%, 0 63%);
+                    mask-image: linear-gradient(90deg, transparent, black 15%, black 85%, transparent);
+                    animation: energy-wave-flow 4.5s ease-in-out infinite alternate;
                 }
-                @keyframes light-drift {
-                    0% { transform: translate(0, 0) scale(1); }
-                    100% { transform: translate(10px, -10px) scale(1.2); }
+                .energy-wave-two {
+                    opacity: 0.65;
+                    transform: translateY(18px) scaleY(0.72);
+                    animation-duration: 5.6s;
+                    animation-direction: alternate-reverse;
                 }
-                .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
-                .animate-pulse-medium { animation: pulse-medium 2s ease-in-out infinite; }
-                .animate-pulse-fast { animation: pulse-fast 1s ease-in-out infinite; }
-                .animate-spin-slow { animation: spin-slow 3s linear infinite; }
-                @keyframes pulse-slow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-                @keyframes pulse-medium { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-                @keyframes pulse-fast { 0%, 100% { transform: scale(1.05); } 50% { transform: scale(1.12); } }
-                @keyframes spin-slow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                .energy-wave-three {
+                    opacity: 0.42;
+                    transform: translateY(-16px) scaleY(0.58);
+                    animation-duration: 6.2s;
+                }
+                .voice-orb[data-state="idle"] .energy-field,
+                .voice-orb[data-state="thinking"] .energy-field {
+                    opacity: 0.34;
+                }
+                .voice-orb[data-state="speaking"] .energy-field {
+                    opacity: 1;
+                    filter: drop-shadow(0 0 18px rgba(34,211,238,0.6));
+                }
+                .voice-orb[data-state="listening"] .energy-field {
+                    opacity: 0.82;
+                    filter: drop-shadow(0 0 14px rgba(59,130,246,0.55));
+                }
+                .orb-halo {
+                    z-index: 1;
+                    background: radial-gradient(circle, rgba(186,230,253,0.42) 0%, rgba(59,130,246,0.18) 43%, transparent 72%);
+                    filter: blur(8px);
+                    animation: sphere-breathe 4s ease-in-out infinite;
+                }
+                .orb-ring {
+                    z-index: 2;
+                    border: 1px solid rgba(186,230,253,0.5);
+                    box-shadow: 0 0 45px rgba(14,165,233,0.28), inset 0 0 28px rgba(255,255,255,0.2);
+                }
+                .voice-orb[data-state="speaking"] .orb-ring {
+                    box-shadow: 0 0 90px rgba(34,211,238,0.58), inset 0 0 42px rgba(255,255,255,0.34);
+                }
+                .voice-orb[data-state="listening"] .orb-ring {
+                    box-shadow: 0 0 78px rgba(59,130,246,0.5), inset 0 0 36px rgba(191,219,254,0.32);
+                }
+                .orb-core {
+                    z-index: 3;
+                    background:
+                        radial-gradient(circle at 31% 28%, rgba(255,255,255,0.92) 0%, rgba(186,230,253,0.72) 12%, transparent 28%),
+                        radial-gradient(circle at 65% 64%, rgba(34,211,238,0.48) 0%, transparent 30%),
+                        radial-gradient(circle at 42% 55%, rgba(15,23,42,0.86) 0%, rgba(29,78,216,0.76) 38%, rgba(8,47,73,0.82) 72%, rgba(15,23,42,0.7) 100%);
+                    box-shadow:
+                        inset 0 0 55px rgba(255,255,255,0.36),
+                        inset -28px -30px 70px rgba(15,23,42,0.48),
+                        0 0 46px rgba(6,182,212,0.34);
+                }
+                .orb-depth {
+                    background:
+                        radial-gradient(circle at 50% 50%, transparent 0 38%, rgba(34,211,238,0.22) 44%, transparent 52%),
+                        conic-gradient(from 30deg, rgba(255,255,255,0.18), transparent, rgba(34,211,238,0.22), transparent, rgba(255,255,255,0.24));
+                    mix-blend-mode: screen;
+                    animation: orb-depth-rotate 14s linear infinite;
+                }
+                .orb-cloud {
+                    position: absolute;
+                    border-radius: 9999px;
+                    filter: blur(16px);
+                    mix-blend-mode: screen;
+                }
+                .orb-cloud-one {
+                    width: 48%;
+                    height: 34%;
+                    left: 12%;
+                    top: 22%;
+                    background: rgba(255,255,255,0.36);
+                    animation: cloud-drift 6s ease-in-out infinite alternate;
+                }
+                .orb-cloud-two {
+                    width: 40%;
+                    height: 30%;
+                    right: 12%;
+                    bottom: 24%;
+                    background: rgba(103,232,249,0.28);
+                    animation: cloud-drift 5.2s ease-in-out infinite alternate-reverse;
+                }
+                .orb-cloud-three {
+                    width: 34%;
+                    height: 26%;
+                    left: 34%;
+                    bottom: 10%;
+                    background: rgba(147,197,253,0.24);
+                    animation: cloud-drift 7s ease-in-out infinite alternate;
+                }
+                .energy-vein {
+                    position: absolute;
+                    top: var(--vein-top);
+                    left: var(--vein-left);
+                    width: var(--vein-width);
+                    height: 3px;
+                    opacity: var(--vein-opacity);
+                    transform: rotate(var(--vein-rotate));
+                    transform-origin: center;
+                    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.9) 18%, rgba(125,211,252,0.95) 42%, rgba(255,255,255,0.98) 58%, rgba(34,211,238,0.7) 78%, transparent 100%);
+                    border-radius: 9999px;
+                    filter: blur(0.6px) drop-shadow(0 0 8px rgba(125,211,252,0.9));
+                    animation: lightning-flow var(--vein-duration) ease-in-out infinite alternate;
+                    animation-delay: var(--vein-delay);
+                    z-index: 4;
+                }
+                .voice-orb[data-state="idle"] .energy-vein {
+                    opacity: calc(var(--vein-opacity) * 0.45);
+                }
+                .voice-orb[data-state="speaking"] .energy-vein {
+                    height: 4px;
+                    filter: blur(0.2px) drop-shadow(0 0 12px rgba(255,255,255,0.95)) drop-shadow(0 0 18px rgba(34,211,238,0.85));
+                    animation-duration: 1.25s;
+                }
+                .voice-orb[data-state="listening"] .energy-vein {
+                    filter: blur(0.3px) drop-shadow(0 0 10px rgba(96,165,250,0.85));
+                    animation-duration: 1.6s;
+                }
+                .lightning-knot {
+                    position: absolute;
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 9999px;
+                    background: white;
+                    box-shadow: 0 0 16px rgba(255,255,255,0.95), 0 0 28px rgba(34,211,238,0.9);
+                    z-index: 5;
+                    animation: lightning-knot 2.2s ease-in-out infinite alternate;
+                }
+                .lightning-knot-one { left: 30%; top: 28%; animation-delay: 0s; }
+                .lightning-knot-two { right: 25%; top: 43%; animation-delay: 0.35s; }
+                .lightning-knot-three { left: 47%; bottom: 26%; animation-delay: 0.75s; }
+                .orb-highlight {
+                    position: absolute;
+                    left: 16%;
+                    top: 12%;
+                    width: 30%;
+                    height: 22%;
+                    border-radius: 9999px;
+                    background: radial-gradient(circle, rgba(255,255,255,0.78), transparent 72%);
+                    filter: blur(8px);
+                    z-index: 6;
+                    animation: highlight-glide 5s ease-in-out infinite alternate;
+                }
+                .orb-particle {
+                    position: absolute;
+                    border-radius: 9999px;
+                    background: rgba(125,211,252,0.8);
+                    box-shadow: 0 0 10px rgba(14,165,233,0.8);
+                    z-index: 6;
+                    animation: particle-orbit 4s ease-in-out infinite alternate;
+                }
+                .voice-orb[data-state="speaking"] .orb-particle,
+                .voice-orb[data-state="listening"] .orb-particle {
+                    background: rgba(255,255,255,0.92);
+                    box-shadow: 0 0 14px rgba(34,211,238,0.95);
+                }
+                .listening-ray-wrap {
+                    z-index: 7;
+                }
+                .listening-ray {
+                    position: absolute;
+                    top: 50%;
+                    width: 54%;
+                    height: 5px;
+                    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.1), rgba(255,255,255,0.95), rgba(59,130,246,0.78), transparent);
+                    border-radius: 9999px;
+                    filter: drop-shadow(0 0 12px rgba(59,130,246,0.85));
+                    animation: listening-ray 0.9s ease-in-out infinite;
+                }
+                .listening-ray-left {
+                    left: -34%;
+                    transform: translateY(-50%) rotate(4deg);
+                }
+                .listening-ray-right {
+                    right: -34%;
+                    transform: translateY(-50%) rotate(-4deg);
+                    animation-delay: 0.18s;
+                }
+                .listening-scan {
+                    position: absolute;
+                    left: -18%;
+                    right: -18%;
+                    top: 46%;
+                    height: 34px;
+                    border-radius: 9999px;
+                    border-top: 1px solid rgba(59,130,246,0.4);
+                    border-bottom: 1px solid rgba(59,130,246,0.25);
+                    filter: blur(0.2px);
+                    animation: listening-scan 1.4s ease-in-out infinite;
+                }
+                .sphere-breathe { animation: sphere-breathe 4.5s ease-in-out infinite; }
+                .sphere-listening { animation: sphere-listening 1.15s ease-in-out infinite; }
+                .sphere-speaking { animation: speaking-rays 1.35s ease-in-out infinite; }
+                .sphere-thinking { animation: sphere-thinking 3.2s ease-in-out infinite; }
+                @keyframes energy-wave-flow {
+                    0% { transform: translateX(-24px) translateY(0) scaleX(0.98); opacity: 0.55; }
+                    100% { transform: translateX(24px) translateY(-4px) scaleX(1.04); opacity: 1; }
+                }
+                @keyframes lightning-flow {
+                    0% { transform: rotate(var(--vein-rotate)) translateX(-5px) scaleX(0.72); opacity: calc(var(--vein-opacity) * 0.6); }
+                    48% { transform: rotate(var(--vein-rotate)) translateX(3px) scaleX(1.08); opacity: var(--vein-opacity); }
+                    100% { transform: rotate(var(--vein-rotate)) translateX(7px) scaleX(0.9); opacity: calc(var(--vein-opacity) * 1.25); }
+                }
+                @keyframes listening-ray {
+                    0% { opacity: 0; clip-path: inset(0 100% 0 0); }
+                    35% { opacity: 1; clip-path: inset(0 18% 0 0); }
+                    100% { opacity: 0.25; clip-path: inset(0 0 0 70%); }
+                }
+                @keyframes listening-scan {
+                    0%, 100% { transform: scaleX(0.82) translateY(-7px); opacity: 0.22; }
+                    50% { transform: scaleX(1.08) translateY(8px); opacity: 0.62; }
+                }
+                @keyframes speaking-rays {
+                    0%, 100% { transform: scale(1.03); filter: saturate(1.08); }
+                    50% { transform: scale(1.08); filter: saturate(1.35) brightness(1.08); }
+                }
+                @keyframes sphere-breathe {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.025); }
+                }
+                @keyframes sphere-listening {
+                    0%, 100% { transform: scale(1.04); }
+                    50% { transform: scale(1.1); }
+                }
+                @keyframes sphere-thinking {
+                    0%, 100% { transform: rotate(-2deg) scale(1.01); filter: hue-rotate(0deg); }
+                    50% { transform: rotate(2deg) scale(1.04); filter: hue-rotate(28deg); }
+                }
+                @keyframes particle-orbit {
+                    0% { transform: translate3d(0, 0, 0) scale(0.8); opacity: 0.35; }
+                    100% { transform: translate3d(10px, -16px, 0) scale(1.35); opacity: 0.88; }
+                }
+                @keyframes cloud-drift {
+                    0% { transform: translate(0, 0) scale(0.95); opacity: 0.4; }
+                    100% { transform: translate(12px, -10px) scale(1.12); opacity: 0.78; }
+                }
+                @keyframes orb-depth-rotate {
+                    0% { transform: rotate(0deg) scale(1); }
+                    100% { transform: rotate(360deg) scale(1.03); }
+                }
+                @keyframes lightning-knot {
+                    0% { transform: scale(0.6); opacity: 0.25; }
+                    100% { transform: scale(1.15); opacity: 0.9; }
+                }
+                @keyframes highlight-glide {
+                    0% { transform: translate(0, 0) scale(1); opacity: 0.72; }
+                    100% { transform: translate(16px, 8px) scale(1.1); opacity: 0.95; }
+                }
             `}</style>
         </div>
     );
