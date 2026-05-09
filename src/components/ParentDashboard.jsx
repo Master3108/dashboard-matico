@@ -8,6 +8,7 @@ import {
 import ChatEventCreator from './ChatEventCreator';
 import CalendarView from './CalendarView';
 import MaticoAgent from './MaticoAgent';
+import VoiceAgentChat from './VoiceAgentChat';
 
 const EVENT_TYPE_CONFIG = {
     prueba: { label: 'Prueba', color: '#EF4444', bg: '#FEF2F2', emoji: '📝' },
@@ -65,6 +66,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const [maticoMood, setMaticoMood] = useState('happy');
     const [studySessions, setStudySessions] = useState([]);
     const [activeStudy, setActiveStudy] = useState(null);
+    const [showVoiceChat, setShowVoiceChat] = useState(false);
     const [studentHistory, setStudentHistory] = useState({ summary: {}, items: [] });
     const [dailyReport, setDailyReport] = useState(null);
     const [timelineRange, setTimelineRange] = useState('7d');
@@ -2194,6 +2196,26 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                     Calendario
                 </button>
             </div>
+
+            {/* Voice Agent Button */}
+            <button
+                onClick={() => setShowVoiceChat(true)}
+                className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3.5 rounded-full font-black text-sm shadow-[0_10px_30px_rgba(99,102,241,0.5)] hover:scale-105 transition-all flex items-center gap-2"
+            >
+                <Mic className="w-5 h-5" />
+                Hablar con Matico
+            </button>
+
+            {/* Voice Agent Chat */}
+            {showVoiceChat && (
+                <VoiceAgentChat
+                    studentUserId={selectedChild?.user_id}
+                    userId={currentUser?.user_id}
+                    userRole="apoderado"
+                    studentName={selectedChild?.display_name || 'tu hijo'}
+                    onClose={() => setShowVoiceChat(false)}
+                />
+            )}
 
             {/* Calendar View Modal */}
             <CalendarView

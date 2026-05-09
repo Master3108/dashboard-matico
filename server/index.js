@@ -10224,6 +10224,48 @@ REGLAS:
     }
 });
 
+// TTS endpoint — convierte texto a audio
+app.post('/api/agent/tts', async (req, res) => {
+    try {
+        const { text, voice = 'nova' } = req.body;
+        if (!text) return res.status(400).json({ success: false, error: 'Falta text' });
+
+        const ttsClient = openaiVisionClient || openai;
+        const mp3 = await ttsClient.audio.speech.create({
+            model: 'tts-1',
+            voice: voice, // nova, alloy, echo, fable, onyx, shimmer
+            input: text.substring(0, 4000),
+            speed: 1.05
+        });
+
+        const buffer = Buffer.from(await mp3.arrayBuffer());
+        res.set({ 'Content-Type': 'audio/mpeg', 'Content-Length': buffer.length });
+        res.send(buffer);
+    } catch (err) {
+        console.error('[TTS] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// STT endpoint — convierte audio a texto
+app.post('/api/agent/stt', upload.single('audio'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, error: 'Falta audio file' });
+
+        const ttsClient = openaiVisionClient || openai;
+        const transcription = await ttsClient.audio.transcriptions.create({
+            file: new (await import('openai')).toFile(req.file.buffer, 'audio.webm', { type: req.file.mimetype }),
+            model: 'whisper-1',
+            language: 'es'
+        });
+
+        res.json({ success: true, text: transcription.text });
+    } catch (err) {
+        console.error('[STT] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     const emailStatus = getEmailStatus();
 
