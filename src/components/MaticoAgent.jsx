@@ -17,16 +17,17 @@ import {
 } from '../mobile/screenCaptureBridge';
 
 const GREETING_MESSAGES = [
-    'Hola! Soy Matico, tu asistente escolar. Estoy aqui para ayudarte a organizar las tareas y pruebas de tu hijo.',
-    'Puedes enviarme una foto de cualquier comunicacion del colegio y yo extraigo todo automaticamente: fecha, materia, tipo de evaluacion...',
-    'Tambien puedes hablarme por voz o escribir. Por ejemplo: "Matias tiene prueba de matematicas el jueves"',
-    'Te gustaria agendar algo ahora?'
+    'Hola! Soy Matico, tu asistente escolar inteligente.',
+    'Puedes preguntarme sobre el progreso de tu hijo: "Estudio hoy?", "Como le fue en quimica?", "Que materias tiene abandonadas?"',
+    'Tambien puedo agendar pruebas y tareas: envia una foto del comunicado o escribe "prueba de matematicas el jueves".',
+    'En que te puedo ayudar?'
 ];
 
 const QUICK_ACTIONS = [
-    { label: 'Subir foto o captura de pantalla', icon: Camera, action: 'foto', highlight: true },
-    { label: 'Agendar una prueba', icon: BookOpen, action: 'prueba' },
-    { label: 'Agendar una tarea', icon: Calendar, action: 'tarea' },
+    { label: 'Estudio hoy?', icon: Sparkles, action: 'query', query: 'Estudio hoy mi hijo?' },
+    { label: 'Como le fue esta semana?', icon: BookOpen, action: 'query', query: 'Como le fue esta semana en sus quizzes?' },
+    { label: 'Proximas pruebas', icon: Calendar, action: 'query', query: 'Cuales son las proximas pruebas?' },
+    { label: 'Subir foto del colegio', icon: Camera, action: 'foto', highlight: true },
 ];
 
 const EVENT_TYPE_CONFIG = {
@@ -275,25 +276,28 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         }
     };
 
-    const handleQuickAction = (action) => {
+    const handleQuickAction = (actionOrObj, quickItem) => {
         // Remove quick actions message
         setMessages(prev => prev.filter(m => m.id !== 'quick-actions'));
 
-        if (action === 'foto') {
+        if (actionOrObj === 'foto') {
             if (isNativePlatform) {
                 captureFromNativeApp();
             } else {
                 fileInputRef.current?.click();
             }
-        } else if (action === 'prueba') {
+        } else if (actionOrObj === 'query' && quickItem?.query) {
+            // Enviar query directamente sin pasar por inputText
+            sendAgentQuery(quickItem.query);
+        } else if (actionOrObj === 'prueba') {
             addUserMessage('Quiero agendar una prueba');
             setTimeout(() => {
-                addBotMessage('Dale! La forma mas rapida: sacale una foto o captura de pantalla al aviso del colegio (WhatsApp, agenda, cuaderno) y mandamela aqui. Yo extraigo la fecha, materia y todo lo demas. Si prefieres, tambien puedes escribir o dictar los detalles.');
+                addBotMessage('Dale! Sacale una foto al aviso del colegio y mandamela aqui, o escribe los detalles.');
             }, 600);
-        } else if (action === 'tarea') {
+        } else if (actionOrObj === 'tarea') {
             addUserMessage('Quiero agendar una tarea');
             setTimeout(() => {
-                addBotMessage('Perfecto! Mandame una foto de la tarea o del mensaje donde la asignaron y yo saco toda la info. Tambien puedes decirme: "Tarea de lenguaje para el viernes, hacer resumen del capitulo 3".');
+                addBotMessage('Mandame una foto de la tarea o escribe los detalles.');
             }, 600);
         }
     };
@@ -485,6 +489,48 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         }
     };
 
+    const conversationHistoryRef = useRef([]);
+
+    const sendAgentQuery = async (queryText) => {
+        if (isProcessing || !queryText) return;
+        addUserMessage(queryText);
+        setIsProcessing(true);
+        setMessages(prev => [...prev, { id: 'processing', type: 'processing', timestamp: new Date() }]);
+        try {
+            conversationHistoryRef.current.push({ role: 'user', content: queryText });
+            const res = await fetch('/api/agent/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: queryText,
+                    student_id: studentUserId || userId,
+                    user_type: userRole === 'apoderado' ? 'parent' : 'student',
+                    conversation_history: conversationHistoryRef.current.slice(-10)
+                })
+            });
+            const data = await res.json();
+            setMessages(prev => prev.filter(m => m.id !== 'processing'));
+            if (data.success && data.reply) {
+                addBotMessage(data.reply);
+                conversationHistoryRef.current.push({ role: 'assistant', content: data.reply });
+            } else {
+                addBotMessage('No pude obtener una respuesta. Intenta de nuevo.');
+            }
+        } catch (err) {
+            setMessages(prev => prev.filter(m => m.id !== 'processing'));
+            addBotMessage('Ups, hubo un error. Intenta de nuevo.');
+            console.error('[AGENT] Error:', err);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const isCalendarIntent = (text) => {
+        if (!text) return false;
+        const keywords = /\b(agendar|prueba el|tarea el|tarea para|evento|recordar que|anotar|registrar|tiene prueba|tiene tarea|examen el)\b/i;
+        return keywords.test(text);
+    };
+
     const handleSend = async () => {
         if (isProcessing) return;
         if (!inputText.trim() && !selectedImage) return;
@@ -508,32 +554,58 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         }]);
 
         try {
-            const formData = new FormData();
-            formData.append('user_id', userId);
-            formData.append('role', userRole || 'estudiante');
-            if (studentUserId) formData.append('student_user_id', studentUserId);
-            if (userText) formData.append('text_input', userText);
-            if (userImage) formData.append('image', userImage);
-            formData.append('dry_run', 'true');
+            // Si tiene imagen o es intención de calendario → flujo calendar
+            if (userImage || isCalendarIntent(userText)) {
+                const formData = new FormData();
+                formData.append('user_id', userId);
+                formData.append('role', userRole || 'estudiante');
+                if (studentUserId) formData.append('student_user_id', studentUserId);
+                if (userText) formData.append('text_input', userText);
+                if (userImage) formData.append('image', userImage);
+                formData.append('dry_run', 'true');
 
-            const res = await fetch('/api/calendar/smart-create', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
+                const res = await fetch('/api/calendar/smart-create', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
 
-            setMessages(prev => prev.filter(m => m.id !== 'processing'));
+                setMessages(prev => prev.filter(m => m.id !== 'processing'));
 
-            if (data.success && data.events?.length > 0) {
-                addBotMessage(`Encontré **${data.events.length} evento(s)**. Los dejé marcados en verde; desmarca lo que no quieras agendar y confirma.`);
-                addEventReviewMessage(data.events);
+                if (data.success && data.events?.length > 0) {
+                    addBotMessage(`Encontre ${data.events.length} evento(s). Los deje marcados en verde; desmarca lo que no quieras agendar y confirma.`);
+                    addEventReviewMessage(data.events);
+                } else {
+                    addBotMessage(
+                        'Mmm, no pude interpretar bien eso. ' +
+                        (data.error || '') +
+                        '\n\nIntenta con mas detalle o envia una foto mas clara.'
+                    );
+                }
             } else {
-                addBotMessage(
-                    'Mmm, no pude interpretar bien eso. ' +
-                    (data.error || '') +
-                    '\n\nIntenta con mas detalle o envía una foto mas clara. Por ejemplo:\n' +
-                    '"Prueba de matematicas el lunes 12 de mayo sobre fracciones"'
-                );
+                // Flujo agente inteligente → consulta Supabase
+                conversationHistoryRef.current.push({ role: 'user', content: userText });
+
+                const res = await fetch('/api/agent/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: userText,
+                        student_id: studentUserId || userId,
+                        user_type: userRole === 'apoderado' ? 'parent' : 'student',
+                        conversation_history: conversationHistoryRef.current.slice(-10)
+                    })
+                });
+                const data = await res.json();
+
+                setMessages(prev => prev.filter(m => m.id !== 'processing'));
+
+                if (data.success && data.reply) {
+                    addBotMessage(data.reply);
+                    conversationHistoryRef.current.push({ role: 'assistant', content: data.reply });
+                } else {
+                    addBotMessage('No pude obtener una respuesta. Intenta de nuevo.');
+                }
             }
         } catch (err) {
             setMessages(prev => prev.filter(m => m.id !== 'processing'));
@@ -669,7 +741,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                                         return (
                                             <button
                                                 key={i}
-                                                onClick={() => handleQuickAction(qa.action)}
+                                                onClick={() => handleQuickAction(qa.action, qa)}
                                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl shadow-sm border transition-all text-left ${
                                                     isHighlight
                                                         ? 'bg-[#7C3AED] border-[#7C3AED] hover:bg-[#6D28D9] shadow-[0_4px_15px_rgba(124,58,237,0.3)]'
