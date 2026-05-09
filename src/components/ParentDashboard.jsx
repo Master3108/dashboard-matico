@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import ChatEventCreator from './ChatEventCreator';
 import CalendarView from './CalendarView';
-import MaticoAgent from './MaticoAgent';
 import VoiceAgentChat from './VoiceAgentChat';
 
 const EVENT_TYPE_CONFIG = {
@@ -2160,18 +2159,6 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 )}
             </div>
 
-            {/* Matico Agent - Agente conversacional con perrito */}
-            <MaticoAgent
-                userId={currentUser?.user_id}
-                userRole="apoderado"
-                studentUserId={selectedChild?.user_id}
-                studentName={selectedChild?.display_name || 'tu hijo'}
-                onEventCreated={(event) => {
-                    console.log('[PARENT] Evento creado via Matico:', event);
-                    fetchChildEvents();
-                }}
-            />
-
             {/* Floating buttons (right side) */}
             <div className="fixed bottom-6 right-4 z-[200] flex flex-col gap-3">
                 <button
@@ -2213,6 +2200,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                     userId={currentUser?.user_id}
                     userRole="apoderado"
                     studentName={selectedChild?.display_name || 'tu hijo'}
+                    onCalendarChanged={() => fetchChildEvents()}
                     onClose={() => setShowVoiceChat(false)}
                 />
             )}

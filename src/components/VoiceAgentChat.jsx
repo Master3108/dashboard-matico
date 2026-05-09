@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown, Camera } from 'lucide-react';
+import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown, UploadCloud } from 'lucide-react';
 
-const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', studentName = '', onClose }) => {
+const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', studentName = '', onClose, onCalendarChanged }) => {
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -15,6 +15,10 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     const conversationRef = useRef([]);
     const recognitionRef = useRef(null);
     const audioRef = useRef(null);
+    const audioUrlRef = useRef(null);
+    const ttsRunRef = useRef(0);
+    const greetedRef = useRef(false);
+    const fileInputRef = useRef(null);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -23,21 +27,47 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    const stopAllAudio = useCallback(() => {
+        ttsRunRef.current += 1;
+        if (audioRef.current) {
+            try {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            } catch {}
+            audioRef.current = null;
+        }
+        if (audioUrlRef.current) {
+            try { URL.revokeObjectURL(audioUrlRef.current); } catch {}
+            audioUrlRef.current = null;
+        }
+        setIsSpeaking(false);
+    }, []);
+
     // Greeting on mount
     useEffect(() => {
+        if (greetedRef.current) return;
+        greetedRef.current = true;
         const greeting = `Hola${studentName ? `, soy Matico. Preguntame lo que quieras sobre ${studentName}` : '! Soy Matico, tu asistente escolar'}. Puedes hablarme o escribirme.`;
         setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
         if (ttsEnabled) speakText(greeting);
     }, []);
 
+    useEffect(() => {
+        return () => {
+            stopAllAudio();
+            if (recognitionRef.current) {
+                const recognition = recognitionRef.current;
+                recognitionRef.current = null;
+                try { recognition.onend = null; } catch {}
+                try { recognition.stop(); } catch {}
+            }
+        };
+    }, [stopAllAudio]);
+
     // Speech-to-Text via Web Speech API (fallback) or Whisper
     const startListening = useCallback(() => {
         // Stop any playing audio
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-            setIsSpeaking(false);
-        }
+        stopAllAudio();
 
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -56,6 +86,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 setCurrentTranscript(transcript);
                 if (isFinal && transcript.trim()) {
                     setCurrentTranscript('');
+                    stopListening();
                     sendMessage(transcript.trim());
                 }
             };
@@ -90,12 +121,14 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         } else {
             alert('Tu navegador no soporta reconocimiento de voz');
         }
-    }, [sphereState]);
+    }, [sphereState, stopAllAudio]);
 
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
-            recognitionRef.current.stop();
+            const recognition = recognitionRef.current;
             recognitionRef.current = null;
+            try { recognition.onend = null; } catch {}
+            try { recognition.stop(); } catch {}
         }
         setIsListening(false);
         setCurrentTranscript('');
@@ -110,6 +143,9 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     // TTS via OpenAI
     const speakText = async (text) => {
         if (!ttsEnabled || !text) return;
+        stopListening();
+        stopAllAudio();
+        const runId = ttsRunRef.current;
         setIsSpeaking(true);
         setSphereState('speaking');
 
@@ -123,22 +159,28 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             if (!res.ok) throw new Error('TTS failed');
 
             const blob = await res.blob();
+            if (runId !== ttsRunRef.current) return;
             const url = URL.createObjectURL(blob);
             const audio = new Audio(url);
             audioRef.current = audio;
+            audioUrlRef.current = url;
 
             audio.onended = () => {
+                if (runId !== ttsRunRef.current) return;
                 setIsSpeaking(false);
                 setSphereState('idle');
                 URL.revokeObjectURL(url);
                 audioRef.current = null;
+                audioUrlRef.current = null;
             };
 
             audio.onerror = () => {
+                if (runId !== ttsRunRef.current) return;
                 setIsSpeaking(false);
                 setSphereState('idle');
                 URL.revokeObjectURL(url);
                 audioRef.current = null;
+                audioUrlRef.current = null;
             };
 
             await audio.play();
@@ -149,9 +191,78 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         }
     };
 
+    const addAssistantMessage = async (text, { speak = true } = {}) => {
+        const botMsg = { role: 'assistant', content: text, timestamp: new Date() };
+        setMessages(prev => [...prev, botMsg]);
+        conversationRef.current.push({ role: 'assistant', content: text });
+        if (speak && ttsEnabled) await speakText(text);
+        else setSphereState('idle');
+    };
+
+    const isCloseIntent = (text = '') => /\b(cierra|cerrar|salir|terminar|finaliza|finalizar)\b.*\b(conversacion|chat|matico|ventana)?\b/i.test(text);
+
+    const isCalendarIntent = (text = '') => /\b(agenda|agendar|crear evento|crea un evento|registrar|anotar|recordar|recordatorio|tiene prueba|tiene evaluacion|tiene evaluación|prueba el|prueba para|evaluacion el|evaluación el|examen el|tarea el|tarea para|disertacion el|disertación el|evento el|materiales el)\b/i.test(text);
+
+    const createEventsFromTextOrImages = async ({ text = '', files = [] } = {}) => {
+        const limitedFiles = Array.from(files || []).slice(0, 10);
+        const formData = new FormData();
+        formData.append('user_id', userId || studentUserId || '');
+        formData.append('role', userRole || 'apoderado');
+        if (studentUserId) formData.append('student_user_id', studentUserId);
+        if (text) formData.append('text_input', text);
+        limitedFiles.forEach(file => formData.append('images', file));
+
+        const res = await fetch('/api/calendar/smart-create', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (!data.success) {
+            return data.error || 'No pude interpretar eso para crear un evento.';
+        }
+        const created = data.events || [];
+        const skipped = data.total_skipped_duplicates || 0;
+        if (created.length === 0 && skipped > 0) {
+            return `No dupliqué nada: ${skipped} evento(s) ya estaban registrados.`;
+        }
+        if (created.length === 0) {
+            return 'No encontré eventos claros para agendar.';
+        }
+        onCalendarChanged?.(created);
+        const summary = created.slice(0, 5).map(ev =>
+            `${ev.title || 'Evento'}: ${ev.event_date || 'sin fecha'}${ev.subject ? `, ${ev.subject}` : ''}`
+        ).join('. ');
+        return `Listo, agendé ${created.length} evento(s). ${summary}${created.length > 5 ? '. Hay más eventos guardados en calendario.' : ''}`;
+    };
+
+    const handleFilesSelected = async (event) => {
+        const files = Array.from(event.target.files || []).slice(0, 10);
+        event.target.value = '';
+        if (!files.length || isProcessing) return;
+
+        stopListening();
+        stopAllAudio();
+        const label = files.length === 1 ? 'Subí una imagen para revisar.' : `Subí ${files.length} imágenes para revisar.`;
+        setMessages(prev => [...prev, { role: 'user', content: label, timestamp: new Date() }]);
+        setIsProcessing(true);
+        setSphereState('thinking');
+
+        try {
+            const reply = await createEventsFromTextOrImages({ files });
+            await addAssistantMessage(reply);
+        } catch (err) {
+            console.error('[VOICE-AGENT] Upload error:', err);
+            await addAssistantMessage('No pude procesar las imágenes. Intenta de nuevo con fotos más claras.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     // Send message to agent
     const sendMessage = async (text) => {
         if (!text || isProcessing) return;
+        stopListening();
+        stopAllAudio();
 
         const userMsg = { role: 'user', content: text, timestamp: new Date() };
         setMessages(prev => [...prev, userMsg]);
@@ -161,6 +272,18 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         setSphereState('thinking');
 
         try {
+            if (isCloseIntent(text)) {
+                await addAssistantMessage('Listo, cierro la conversación.');
+                setTimeout(() => onClose?.(), 450);
+                return;
+            }
+
+            if (isCalendarIntent(text)) {
+                const reply = await createEventsFromTextOrImages({ text });
+                await addAssistantMessage(reply);
+                return;
+            }
+
             const res = await fetch('/api/agent/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -174,12 +297,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             const data = await res.json();
 
             const reply = data.success && data.reply ? data.reply : 'No pude obtener una respuesta.';
-            const botMsg = { role: 'assistant', content: reply, timestamp: new Date() };
-            setMessages(prev => [...prev, botMsg]);
-            conversationRef.current.push({ role: 'assistant', content: reply });
-
-            if (ttsEnabled) await speakText(reply);
-            else setSphereState('idle');
+            await addAssistantMessage(reply);
         } catch (err) {
             console.error('[AGENT] Error:', err);
             setMessages(prev => [...prev, { role: 'assistant', content: 'Error de conexion. Intenta de nuevo.', timestamp: new Date() }]);
@@ -394,9 +512,21 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
                 {/* Action buttons row — like the image */}
                 <div className="flex items-center justify-center gap-4">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,.pdf"
+                        multiple
+                        className="hidden"
+                        onChange={handleFilesSelected}
+                    />
                     {/* Camera button */}
-                    <button className="w-14 h-14 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition shadow-sm border border-gray-200">
-                        <Camera className="w-6 h-6 text-gray-600" />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-14 h-14 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition shadow-sm border border-gray-200"
+                        title="Subir fotos, archivos o capturas"
+                    >
+                        <UploadCloud className="w-6 h-6 text-gray-600" />
                     </button>
 
                     {/* Mic button (main, larger) */}
