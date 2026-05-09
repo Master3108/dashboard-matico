@@ -502,7 +502,8 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             duration_minutes: Number(session.total_minutes || 0)
         }));
     const summaryHistoryActivityItems = historyItems.filter(item =>
-        !['calendar', 'reminder', 'daily_report', 'study'].includes(String(item.source || '')) &&
+        !['calendar', 'reminder', 'daily_report', 'study', 'study_alert'].includes(String(item.source || '')) &&
+        !['stale_subject', 'alert', 'study_alert'].includes(String(item.type || '')) &&
         String(item.type || '') !== 'reporte_diario' &&
         matchesSummarySubject(item.subject)
     );
@@ -629,7 +630,8 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         : 0;
     const summaryHasTodayActivity = historyItems.some(item =>
         getDateKey(item.date) === today &&
-        !['calendar', 'reminder', 'daily_report'].includes(String(item.source || '')) &&
+        !['calendar', 'reminder', 'daily_report', 'study_alert'].includes(String(item.source || '')) &&
+        !['stale_subject', 'alert', 'study_alert'].includes(String(item.type || '')) &&
         String(item.type || '') !== 'reporte_diario' &&
         matchesSummarySubject(item.subject)
     ) || realStudySessions.some(session =>
