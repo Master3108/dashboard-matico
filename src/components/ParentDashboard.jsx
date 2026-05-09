@@ -630,11 +630,14 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         const kind = getHistoryKind(item);
         return ['quiz', 'ensayo'].includes(kind) && getActivityTotal(item) > 0;
     });
-    const summaryTodayResultItems = summaryResultItems.filter(item => getDateKey(item.date) === today);
-    const summaryCorrectAnswers = summaryTodayResultItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
-    const summaryWrongAnswers = summaryTodayResultItems.reduce((sum, item) => sum + getActivityWrong(item), 0);
-    const summaryTotalQuestions = summaryTodayResultItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
+    const summaryCorrectAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
+    const summaryWrongAnswers = summaryResultItems.reduce((sum, item) => sum + getActivityWrong(item), 0);
+    const summaryTotalQuestions = summaryResultItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
     const summaryScorePercent = summaryTotalQuestions > 0 ? Math.round((summaryCorrectAnswers / summaryTotalQuestions) * 100) : 0;
+    const todayResultItems = summaryResultItems.filter(item => getDateKey(item.date) === today);
+    const todayCorrectAnswers = todayResultItems.reduce((sum, item) => sum + getActivityCorrect(item), 0);
+    const todayTotalQuestions = todayResultItems.reduce((sum, item) => sum + getActivityTotal(item), 0);
+    const todayScorePercent = todayTotalQuestions > 0 ? Math.round((todayCorrectAnswers / todayTotalQuestions) * 100) : 0;
     const summaryLatestResult = [...summaryResultItems].sort((a, b) => getActivityTimestamp(b) - getActivityTimestamp(a))[0] || null;
     const getActivityLabel = (item) => {
         const kind = getHistoryKind(item);
@@ -978,9 +981,9 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                             </div>
                             <div className="bg-gradient-to-br from-[#F5F3FF] to-[#EDE9FE] rounded-2xl p-3 text-center">
                                 <Target className="w-6 h-6 text-[#7C3AED] mx-auto mb-1" />
-                                <p className="text-2xl font-black text-[#7C3AED]">{summaryScorePercent}%</p>
-                                <p className="text-xs font-bold text-[#9094A6]">Resultados</p>
-                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">{summaryCorrectAnswers}/{summaryTotalQuestions} buenas</p>
+                                <p className="text-2xl font-black text-[#7C3AED]">{todayScorePercent}%</p>
+                                <p className="text-xs font-bold text-[#9094A6]">Resultados hoy</p>
+                                <p className="text-[10px] text-[#9094A6]/70 mt-0.5">{todayCorrectAnswers}/{todayTotalQuestions} buenas</p>
                             </div>
                             <div className="bg-gradient-to-br from-[#FFF7ED] to-[#FFEDD5] rounded-2xl p-3 text-center">
                                 <Calendar className="w-6 h-6 text-[#F59E0B] mx-auto mb-1" />
