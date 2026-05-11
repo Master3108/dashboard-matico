@@ -279,10 +279,10 @@ const agentTextClient = openaiVisionClient || openai;
 const AGENT_CONVERSATION_MODEL = String(
     process.env.AGENT_CONVERSATION_MODEL ||
     process.env.OPENAI_AGENT_MODEL ||
-    (OPENAI_DIRECT_API_KEY ? 'gpt-4.1-nano' : AI_MODELS.fast)
+    (OPENAI_DIRECT_API_KEY ? 'gpt-5-mini' : AI_MODELS.fast)
 ).trim();
-const AGENT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 600);
-const AGENT_MAX_TOOL_ITERATIONS = Number(process.env.AGENT_MAX_TOOL_ITERATIONS || 3);
+const AGENT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 350);
+const AGENT_MAX_TOOL_ITERATIONS = Number(process.env.AGENT_MAX_TOOL_ITERATIONS || 2);
 const AGENT_HISTORY_MESSAGES = Number(process.env.AGENT_HISTORY_MESSAGES || 6);
 const AGENT_TTS_MODEL = String(process.env.AGENT_TTS_MODEL || 'gpt-4o-mini-tts').trim();
 const AGENT_STT_MODEL = String(process.env.AGENT_STT_MODEL || 'gpt-4o-mini-transcribe').trim();
@@ -10162,30 +10162,10 @@ app.post('/api/agent/chat', async (req, res) => {
         const todayHumanDate = todayDate.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
         const systemPrompt = user_type === 'parent'
-            ? `Eres Matico, un asistente educativo para apoderados. Respondes preguntas sobre el progreso académico de su hijo/a.
-
-REGLAS ESTRICTAS:
-- Solo responde con datos reales de la base de datos. NUNCA inventes datos.
-- Si no hay datos, di "No encontré registros de eso".
-- Usa lenguaje claro y directo. No uses markdown ni asteriscos ni formato especial.
-- Las fechas y horas son zona Chile (UTC-4).
-- SIEMPRE di las fechas con el día de la semana: "el martes 13 de mayo", "este jueves", "el próximo lunes". NUNCA digas solo la fecha numérica.
-- Si es esta semana, di "este lunes", "este miércoles". Si es la próxima, di "el próximo martes".
-- Sé conciso pero informativo. Responde como si hablaras en voz alta, frases cortas y naturales.
-- Si te preguntan algo que no puedes consultar, dilo.
-- Usa el student_id: ${student_id} para todas las consultas.
-- Hoy es ${todayDayName} ${todayHumanDate}.
-- Cuando hables del niño, usa su nombre (consultalo con get_student_profile si no lo sabes).`
-            : `Eres Matico, un compañero de estudio para el estudiante. Eres motivador, amigable y hablas de forma simple.
-
-REGLAS:
-- Solo datos reales de la base de datos. NUNCA inventes.
-- No uses markdown ni asteriscos ni formato especial.
-- SIEMPRE di las fechas con día de la semana: "este martes", "el próximo lunes". Nunca solo números.
-- Motiva al estudiante cuando tenga buenos resultados.
-- Sugiere qué estudiar basándote en materias inactivas o próximas pruebas.
-- Sé breve y usa un tono juvenil. Habla como si fuera en voz alta.
-- Tu student_id es: ${student_id}. Hoy es ${todayDayName} ${todayHumanDate}.`;
+            ? `Eres Matico, asistente educativo. Hablas con el apoderado sobre su hijo/a.
+REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana ("este martes", "el proximo lunes"). Respuestas CORTAS, 2-3 frases max, como si hablaras en voz alta. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}. Usa get_student_profile para saber el nombre del niño.`
+            : `Eres Matico, compañero de estudio. Motivador, amigable, hablas simple.
+REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana. Respuestas CORTAS, 2-3 frases max, tono juvenil. Motiva con buenos resultados. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.`;
 
         const messages = [
             { role: 'system', content: systemPrompt },
@@ -10256,8 +10236,8 @@ app.post('/api/agent/tts', async (req, res) => {
         const mp3 = await ttsClient.audio.speech.create({
             model: AGENT_TTS_MODEL,
             voice: voice, // nova, alloy, echo, fable, onyx, shimmer
-            input: text.substring(0, 4000),
-            speed: 1.05
+            input: text.substring(0, 2000),
+            speed: 1.12
         });
 
         const buffer = Buffer.from(await mp3.arrayBuffer());

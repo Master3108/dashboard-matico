@@ -226,8 +226,10 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         const botMsg = { role: 'assistant', content: text, timestamp: new Date() };
         setMessages(prev => [...prev, botMsg]);
         conversationRef.current.push({ role: 'assistant', content: text });
-        if (speak && ttsEnabled) await speakText(text);
-        else {
+        if (speak && ttsEnabled) {
+            // Fire TTS without blocking — sphere already shows 'speaking'
+            speakText(text);
+        } else {
             setSphereState('idle');
             restartListeningSoon();
         }
@@ -331,7 +333,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     message: text,
                     student_id: studentUserId || userId,
                     user_type: userRole === 'apoderado' ? 'parent' : 'student',
-                    conversation_history: conversationRef.current.slice(-10)
+                    conversation_history: conversationRef.current.slice(-6)
                 })
             });
             const data = await res.json();
