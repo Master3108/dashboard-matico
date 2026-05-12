@@ -1340,49 +1340,90 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-[#6366F1] to-[#7C3AED] rounded-3xl p-6 shadow-lg text-white relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-bl-full"></div>
-                                <p className="text-xs font-black uppercase tracking-widest text-white/70 mb-2">Ultima sesion</p>
-                                {summaryLastActivity ? (
-                                    <>
-                                        <h2 className="font-black text-3xl leading-tight mb-1">{summaryLastActivity.subject || 'General'}</h2>
-                                        <p className="font-bold text-xl text-white/90 mb-3">{summaryLastActivity.title || summaryLastActivity.topic || summaryLastActivity.type || 'Actividad registrada'}</p>
-                                        <p className="font-bold text-base text-white/80 capitalize mb-4">{summaryLastActivityLabel}{summaryDaysWithoutSession > 0 ? ` · hace ${summaryDaysWithoutSession} dia(s)` : ''}</p>
-                                        <div className="flex flex-wrap gap-3">
-                                            {summaryLastActivityMinutes > 0 && (
-                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
-                                                    <p className="text-2xl font-black">{summaryLastActivityMinutes} min</p>
-                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Tiempo estudio</p>
+                            {/* Proximos eventos / pruebas */}
+                            <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-widest text-[#7C3AED]">Proximos dias</p>
+                                        <h3 className="font-black text-[#2B2E4A] text-lg">Eventos y pruebas</h3>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowCalendarView(true)}
+                                        className="text-xs font-bold text-[#7C3AED] hover:underline"
+                                    >
+                                        Ver todo
+                                    </button>
+                                </div>
+                                {futurePendingEvents.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {futurePendingEvents.slice(0, 5).map(event => {
+                                            const daysUntil = daysBetween(today, getDateKey(event.event_date));
+                                            const eventDate = new Date(`${getDateKey(event.event_date)}T12:00:00`);
+                                            const dayName = eventDate.toLocaleDateString('es-CL', { weekday: 'long' });
+                                            const typeConf = {
+                                                prueba: { label: 'Prueba', color: '#EF4444', bg: '#FEF2F2' },
+                                                tarea: { label: 'Tarea', color: '#F59E0B', bg: '#FFFBEB' },
+                                                estudio: { label: 'Estudio', color: '#3B82F6', bg: '#EFF6FF' },
+                                                repaso: { label: 'Repaso', color: '#8B5CF6', bg: '#F5F3FF' },
+                                                otro: { label: 'Evento', color: '#6B7280', bg: '#F9FAFB' }
+                                            }[event.event_type] || { label: 'Evento', color: '#6B7280', bg: '#F9FAFB' };
+                                            const subj = normalizeSubject(event.subject);
+                                            const hasStudied = subj && subj !== 'OTRO' ? recentActivitySubjects.has(subj) : false;
+
+                                            return (
+                                                <div
+                                                    key={event.event_id || `${event.title}-${event.event_date}`}
+                                                    className="rounded-2xl border-2 p-3 transition-all"
+                                                    style={{ borderColor: typeConf.color + '30', backgroundColor: typeConf.bg }}
+                                                >
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg text-white" style={{ backgroundColor: typeConf.color }}>
+                                                                    {typeConf.label}
+                                                                </span>
+                                                                {subj && subj !== 'OTRO' && (
+                                                                    <span className="text-[10px] font-black text-gray-500">{subj}</span>
+                                                                )}
+                                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${daysUntil === 0 ? 'bg-red-100 text-red-700' : daysUntil === 1 ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                    {daysUntil === 0 ? 'HOY' : daysUntil === 1 ? 'MANANA' : `${daysUntil} dias`}
+                                                                </span>
+                                                            </div>
+                                                            <p className="font-black text-[#2B2E4A] text-sm">{event.title || 'Evento'}</p>
+                                                            <p className="text-xs font-bold text-gray-400 mt-0.5">
+                                                                {dayName} {formatDate(event.event_date)}
+                                                                {event.start_time ? ` · ${formatTime(event.start_time)}` : ''}
+                                                                {event.end_time ? ` - ${formatTime(event.end_time)}` : ''}
+                                                            </p>
+                                                            {event.description && event.description !== event.title && (
+                                                                <p className="text-xs text-gray-600 mt-1.5 bg-white/60 rounded-xl px-2 py-1.5 border border-gray-100">
+                                                                    {event.description}
+                                                                </p>
+                                                            )}
+                                                            {event.event_type === 'prueba' && (
+                                                                <p className={`text-[10px] font-black mt-1.5 ${hasStudied ? 'text-green-600' : 'text-red-500'}`}>
+                                                                    {hasStudied ? 'Ya esta estudiando para esto' : 'No ha estudiado para esta prueba'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            )}
-                                            {summaryLastActivityStartLabel && (
-                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
-                                                    <p className="text-2xl font-black">{summaryLastActivityStartLabel}</p>
-                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Inicio</p>
-                                                </div>
-                                            )}
-                                            {getActivityTotal(summaryLastActivity) > 0 && (
-                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
-                                                    <p className="text-2xl font-black">{getActivityCorrect(summaryLastActivity)}/{getActivityTotal(summaryLastActivity)}</p>
-                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Correctas</p>
-                                                </div>
-                                            )}
-                                            {getActivityWrong(summaryLastActivity) > 0 && (
-                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
-                                                    <p className="text-2xl font-black">{getActivityWrong(summaryLastActivity)}</p>
-                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Malas</p>
-                                                </div>
-                                            )}
-                                            {getActivityTotal(summaryLastActivity) > 0 && (
-                                                <div className="bg-white/20 backdrop-blur rounded-2xl px-4 py-2">
-                                                    <p className="text-2xl font-black">{getActivityScorePercent(summaryLastActivity)}%</p>
-                                                    <p className="text-[10px] font-bold text-white/70 uppercase">Rendimiento</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
+                                            );
+                                        })}
+                                        {futurePendingEvents.length > 5 && (
+                                            <button
+                                                onClick={() => setShowCalendarView(true)}
+                                                className="w-full text-center text-xs font-black text-[#7C3AED] hover:underline py-2"
+                                            >
+                                                +{futurePendingEvents.length - 5} evento(s) mas →
+                                            </button>
+                                        )}
+                                    </div>
                                 ) : (
-                                    <h2 className="font-black text-2xl text-white/60">No hay sesion registrada</h2>
+                                    <div className="text-center py-6">
+                                        <Calendar className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+                                        <p className="text-sm font-bold text-gray-400">Sin eventos proximos</p>
+                                    </div>
                                 )}
                             </div>
                         </div>
