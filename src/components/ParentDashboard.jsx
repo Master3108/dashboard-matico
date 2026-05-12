@@ -1244,21 +1244,22 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 <p className="text-xs font-black uppercase tracking-widest text-[#EF4444]">Senales y alertas</p>
                                 <h3 className="font-black text-[#2B2E4A] text-lg mb-3">Avisos proactivos</h3>
                                 <div className="space-y-3 text-sm font-bold">
-
-                                    {/* Urgent: upcoming event + NO recent study */}
-                                    {urgentPrepAlerts.length > 0 && urgentPrepAlerts.map((alert, i) => (
-                                        <div key={`urgent-${i}`} className="rounded-2xl border p-3 bg-red-50 border-red-100 text-red-800">
-                                            <div className="flex items-start gap-2">
-                                                <AlertTriangle className="w-4 h-4 mt-0.5 text-red-600" />
-                                                <div>
-                                                    <p className="font-black">Preparar urgente</p>
-                                                    <p className="text-xs mt-0.5">{alert.message}</p>
-                                                </div>
+                                    {/* Materia sin estudiar — uses smart filtered staleSubjects */}
+                                    <div className={`rounded-2xl border p-3 ${staleSubjects.length > 0 ? 'bg-red-50 border-red-100 text-red-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
+                                        <div className="flex items-start gap-2">
+                                            <AlertTriangle className={`w-4 h-4 mt-0.5 ${staleSubjects.length > 0 ? 'text-red-600' : 'text-gray-400'}`} />
+                                            <div>
+                                                <p className="font-black">Materia sin estudiar</p>
+                                                <p className="text-xs mt-0.5">
+                                                    {staleSubjects.length > 0
+                                                        ? `${staleSubjects.slice(0, 3).join(', ')} sin sesion reciente. Avisar al apoderado.`
+                                                        : 'Todas las materias tienen actividad reciente.'}
+                                                </p>
                                             </div>
                                         </div>
-                                    ))}
+                                    </div>
 
-                                    {/* Positive: upcoming event + DID study recently */}
+                                    {/* Preparando prueba — subjects with upcoming event + recent study */}
                                     {prepAlerts.length > 0 && prepAlerts.map((alert, i) => (
                                         <div key={`prep-${i}`} className="rounded-2xl border p-3 bg-green-50 border-green-100 text-green-800">
                                             <div className="flex items-start gap-2">
@@ -1271,41 +1272,26 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                         </div>
                                     ))}
 
-                                    {/* Stale subjects (no upcoming event, just inactive) */}
-                                    {staleSubjects.length > 0 && (
-                                        <div className="rounded-2xl border p-3 bg-amber-50 border-amber-100 text-amber-800">
+                                    {/* Urgente — subjects with upcoming event + NO recent study */}
+                                    {urgentPrepAlerts.length > 0 && urgentPrepAlerts.map((alert, i) => (
+                                        <div key={`urgent-${i}`} className="rounded-2xl border p-3 bg-red-50 border-red-200 text-red-800">
                                             <div className="flex items-start gap-2">
-                                                <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-600" />
+                                                <AlertTriangle className="w-4 h-4 mt-0.5 text-red-600 animate-pulse" />
                                                 <div>
-                                                    <p className="font-black">Materias inactivas</p>
-                                                    <p className="text-xs mt-0.5">
-                                                        {staleSubjects.slice(0, 3).join(', ')} sin actividad en los ultimos dias.
-                                                    </p>
+                                                    <p className="font-black">Preparar urgente</p>
+                                                    <p className="text-xs mt-0.5">{alert.message}</p>
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
+                                    ))}
 
-                                    {/* No issues at all */}
-                                    {urgentPrepAlerts.length === 0 && prepAlerts.length === 0 && staleSubjects.length === 0 && (
-                                        <div className="rounded-2xl border p-3 bg-green-50 border-green-100 text-green-800">
-                                            <div className="flex items-start gap-2">
-                                                <CheckCircle className="w-4 h-4 mt-0.5 text-green-600" />
-                                                <div>
-                                                    <p className="font-black">Todo al dia</p>
-                                                    <p className="text-xs mt-0.5">Sin alertas pendientes. Buen trabajo!</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Upcoming events (2-day reminder) */}
-                                    {twoDayReminderEvents.length > 0 && (
-                                        <div className="rounded-2xl border p-3 bg-amber-50 border-amber-100 text-amber-800">
-                                            <div className="flex items-start gap-2">
-                                                <Calendar className="w-4 h-4 mt-0.5 text-amber-600" />
-                                                <div>
-                                                    <p className="font-black">Prueba o evento a 2 dias</p>
+                                    {/* Prueba o evento a 2 dias */}
+                                    <div className={`rounded-2xl border p-3 ${twoDayReminderEvents.length > 0 ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
+                                        <div className="flex items-start gap-2">
+                                            <Calendar className={`w-4 h-4 mt-0.5 ${twoDayReminderEvents.length > 0 ? 'text-amber-600' : 'text-gray-400'}`} />
+                                            <div>
+                                                <p className="font-black">Prueba o evento a 2 dias</p>
+                                                {twoDayReminderEvents.length > 0 ? (
                                                     <div className="mt-1 space-y-1">
                                                         {twoDayReminderEvents.slice(0, 2).map(event => (
                                                             <div key={event.event_id || `${event.title}-${event.event_date}`} className="text-xs">
@@ -1315,13 +1301,16 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                                     {event.start_time ? ` · ${formatTime(event.start_time)}` : ''}
                                                                     {event.subject ? ` · ${event.subject}` : ''}
                                                                 </p>
+                                                                <p className="font-black text-red-600">Faltan 2 dias: preparar estudio hoy</p>
                                                             </div>
                                                         ))}
                                                     </div>
-                                                </div>
+                                                ) : (
+                                                    <p className="text-xs mt-0.5">Sin pruebas/eventos a 2 dias.</p>
+                                                )}
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
 
                                     <div className={`rounded-2xl border p-3 ${studyReminderEnabledToday ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
                                         <div className="flex items-start gap-2">
