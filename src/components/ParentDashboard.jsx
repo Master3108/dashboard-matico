@@ -717,12 +717,17 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         )
         .sort((a, b) => getDateKey(a.event_date).localeCompare(getDateKey(b.event_date)));
     const pendingEvents = futurePendingEvents.length;
-    // Smart stale subjects: cross-reference with actual recent activity from historyItems
+    // Smart stale subjects: cross-reference with REAL study activity only (not alerts, calendars, reports)
     const recentActivitySubjects = new Set();
     const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0];
+    const NON_STUDY_SOURCES = new Set(['calendar', 'reminder', 'daily_report', 'study_alert']);
+    const NON_STUDY_TYPES = new Set(['stale_subject', 'calendar_event']);
     historyItems.forEach(item => {
         const dateKey = getDateKey(item.date);
-        if (dateKey >= threeDaysAgo && item.subject) {
+        const source = String(item.source || '');
+        const type = String(item.type || '');
+        // Only count REAL study: quizzes, study sessions, notebook, prep exams, progress
+        if (dateKey >= threeDaysAgo && item.subject && !NON_STUDY_SOURCES.has(source) && !NON_STUDY_TYPES.has(type) && !type.includes('alert')) {
             recentActivitySubjects.add(normalizeSubject(item.subject));
         }
     });
