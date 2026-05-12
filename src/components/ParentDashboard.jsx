@@ -1258,14 +1258,14 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                     <p className="text-xs font-bold text-gray-500">
                                                         {alert.dateLabel}
                                                         {alert.timeLabel ? ` · ${alert.timeLabel}` : ''}
-                                                        {alert.displaySubject ? ` · ${alert.displaySubject}` : ''}
+                                                        {alert.displaySubject ? ` · ${alert.displaySubject}` : ' · Sin materia asignada'}
                                                     </p>
                                                     <p className="text-xs font-black text-red-600 mt-1">
                                                         {alert.daysUntil === 0
-                                                            ? 'Es HOY y no ha estudiado para esto!'
+                                                            ? `Es HOY${alert.displaySubject ? ` de ${alert.displaySubject}` : ''} y no ha estudiado para esto!`
                                                             : alert.daysUntil === 1
-                                                                ? `Es manana ${alert.dayName}. No ha estudiado, debe prepararse hoy.`
-                                                                : `Es este ${alert.dayName} (faltan ${alert.daysUntil} dias). Necesita prepararse.`}
+                                                                ? `Es manana ${alert.dayName}${alert.displaySubject ? ` de ${alert.displaySubject}` : ''}. No ha estudiado, debe prepararse hoy.`
+                                                                : `Es este ${alert.dayName} (faltan ${alert.daysUntil} dias)${alert.displaySubject ? ` de ${alert.displaySubject}` : ''}. Necesita prepararse.`}
                                                     </p>
                                                 </div>
                                             </div>
@@ -1283,7 +1283,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                     <p className="text-xs font-bold text-gray-500">
                                                         {alert.dateLabel}
                                                         {alert.timeLabel ? ` · ${alert.timeLabel}` : ''}
-                                                        {alert.displaySubject ? ` · ${alert.displaySubject}` : ''}
+                                                        {alert.displaySubject ? ` · ${alert.displaySubject}` : ' · Sin materia asignada'}
                                                     </p>
                                                     <p className="text-xs font-black text-green-600 mt-1">
                                                         {alert.daysUntil === 0
