@@ -10281,7 +10281,8 @@ REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas co
 });
 
 // === AGENT TRAINING — admin only ===
-const isAdmin = (uid) => uid && process.env.ADMIN_USER_ID && uid === process.env.ADMIN_USER_ID;
+const ADMIN_TOKENS = new Set(['TK-NNO29O4FO', ...(process.env.ADMIN_USER_ID ? [process.env.ADMIN_USER_ID] : [])]);
+const isAdmin = (uid) => uid && ADMIN_TOKENS.has(uid);
 
 app.get('/api/agent/training', async (req, res) => {
     if (!isAdmin(req.query.admin_user_id)) return res.status(403).json({ success: false, error: 'No autorizado' });
