@@ -749,49 +749,32 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
     const staleSubjects = Array.from(new Set(rawStale)).filter(s => !recentActivitySubjects.has(s));
 
-    // Build smart alerts: subjects with upcoming events that need prep
-    const upcomingEventSubjects = {};
+    // Build smart alerts: upcoming events (0-3 days) grouped per event
+    const upcomingAlerts = [];
+    const upcomingAlertEventIds = new Set();
     futurePendingEvents.forEach(event => {
-        const subj = normalizeSubject(event.subject);
         const daysUntil = daysBetween(today, getDateKey(event.event_date));
-        if (subj && daysUntil >= 0 && daysUntil <= 3) {
-            if (!upcomingEventSubjects[subj] || daysUntil < upcomingEventSubjects[subj].daysUntil) {
-                const eventDate = new Date(`${getDateKey(event.event_date)}T12:00:00`);
-                const dayName = eventDate.toLocaleDateString('es-CL', { weekday: 'long' });
-                upcomingEventSubjects[subj] = { event, daysUntil, dayName };
-            }
+        if (daysUntil >= 0 && daysUntil <= 3) {
+            const subj = normalizeSubject(event.subject);
+            const eventDate = new Date(`${getDateKey(event.event_date)}T12:00:00`);
+            const dayName = eventDate.toLocaleDateString('es-CL', { weekday: 'long' });
+            const dateLabel = formatDate(event.event_date);
+            const timeLabel = event.start_time ? formatTime(event.start_time) : '';
+            const hasRecentStudy = subj ? recentActivitySubjects.has(subj) : false;
+            const displaySubject = (!subj || subj === 'OTRO') ? '' : subj;
+            upcomingAlerts.push({
+                event, daysUntil, dayName, dateLabel, timeLabel, displaySubject, hasRecentStudy,
+            });
+            upcomingAlertEventIds.add(event.event_id);
         }
     });
-    // Subjects that have an upcoming event AND recent study = positive prep alert
-    const prepAlerts = Object.entries(upcomingEventSubjects)
-        .filter(([subj]) => recentActivitySubjects.has(subj))
-        .map(([subj, { event, daysUntil, dayName }]) => ({
-            subject: subj,
-            event,
-            daysUntil,
-            dayName,
-            message: daysUntil === 0
-                ? `${subj}: tiene ${event.title || 'prueba'} HOY. Ya estuvo estudiando.`
-                : daysUntil === 1
-                    ? `${subj}: tiene ${event.title || 'prueba'} manana ${dayName}. Estudió recientemente.`
-                    : `${subj}: tiene ${event.title || 'prueba'} este ${dayName}. Estudió recientemente.`
-        }));
-    // Subjects with upcoming event but NO recent study = urgent alert
-    const urgentPrepAlerts = Object.entries(upcomingEventSubjects)
-        .filter(([subj]) => !recentActivitySubjects.has(subj))
-        .map(([subj, { event, daysUntil, dayName }]) => ({
-            subject: subj,
-            event,
-            daysUntil,
-            dayName,
-            message: daysUntil === 0
-                ? `${subj}: tiene ${event.title || 'prueba'} HOY y no ha estudiado!`
-                : daysUntil === 1
-                    ? `${subj}: tiene ${event.title || 'prueba'} manana ${dayName} y NO ha estudiado!`
-                    : `${subj}: tiene ${event.title || 'prueba'} este ${dayName}. Necesita prepararse.`
-        }));
+    // Sort: most urgent first
+    upcomingAlerts.sort((a, b) => a.daysUntil - b.daysUntil);
+    const prepAlerts = upcomingAlerts.filter(a => a.hasRecentStudy);
+    const urgentPrepAlerts = upcomingAlerts.filter(a => !a.hasRecentStudy);
+    // 2-day reminders: exclude events already shown in urgent/prep alerts
     const twoDayReminderEvents = futurePendingEvents.filter(event =>
-        daysBetween(today, getDateKey(event.event_date)) === 2
+        daysBetween(today, getDateKey(event.event_date)) === 2 && !upcomingAlertEventIds.has(event.event_id)
     );
     const todayWeekday = new Date(`${today}T12:00:00`).getDay();
     const studyReminderEnabledToday = todayWeekday !== 0 && todayWeekday !== 6;
@@ -1264,27 +1247,51 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                         </div>
                                     </div>
 
-                                    {/* Preparando prueba — subjects with upcoming event + recent study */}
-                                    {prepAlerts.length > 0 && prepAlerts.map((alert, i) => (
-                                        <div key={`prep-${i}`} className="rounded-2xl border p-3 bg-green-50 border-green-100 text-green-800">
+                                    {/* Urgente — upcoming event + NO recent study */}
+                                    {urgentPrepAlerts.map((alert, i) => (
+                                        <div key={`urgent-${i}`} className="rounded-2xl border-2 p-3 bg-red-50 border-red-200 text-red-800">
                                             <div className="flex items-start gap-2">
-                                                <CheckCircle className="w-4 h-4 mt-0.5 text-green-600" />
-                                                <div>
-                                                    <p className="font-black">Preparando prueba</p>
-                                                    <p className="text-xs mt-0.5">{alert.message}</p>
+                                                <AlertTriangle className="w-4 h-4 mt-0.5 text-red-600 animate-pulse" />
+                                                <div className="flex-1">
+                                                    <p className="font-black">Preparar urgente</p>
+                                                    <p className="text-sm font-black text-[#2B2E4A] mt-1">{alert.event.title || 'Evento'}</p>
+                                                    <p className="text-xs font-bold text-gray-500">
+                                                        {alert.dateLabel}
+                                                        {alert.timeLabel ? ` · ${alert.timeLabel}` : ''}
+                                                        {alert.displaySubject ? ` · ${alert.displaySubject}` : ''}
+                                                    </p>
+                                                    <p className="text-xs font-black text-red-600 mt-1">
+                                                        {alert.daysUntil === 0
+                                                            ? 'Es HOY y no ha estudiado para esto!'
+                                                            : alert.daysUntil === 1
+                                                                ? `Es manana ${alert.dayName}. No ha estudiado, debe prepararse hoy.`
+                                                                : `Es este ${alert.dayName} (faltan ${alert.daysUntil} dias). Necesita prepararse.`}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
 
-                                    {/* Urgente — subjects with upcoming event + NO recent study */}
-                                    {urgentPrepAlerts.length > 0 && urgentPrepAlerts.map((alert, i) => (
-                                        <div key={`urgent-${i}`} className="rounded-2xl border p-3 bg-red-50 border-red-200 text-red-800">
+                                    {/* Preparando prueba — upcoming event + DID study recently */}
+                                    {prepAlerts.map((alert, i) => (
+                                        <div key={`prep-${i}`} className="rounded-2xl border p-3 bg-green-50 border-green-100 text-green-800">
                                             <div className="flex items-start gap-2">
-                                                <AlertTriangle className="w-4 h-4 mt-0.5 text-red-600 animate-pulse" />
-                                                <div>
-                                                    <p className="font-black">Preparar urgente</p>
-                                                    <p className="text-xs mt-0.5">{alert.message}</p>
+                                                <CheckCircle className="w-4 h-4 mt-0.5 text-green-600" />
+                                                <div className="flex-1">
+                                                    <p className="font-black">Preparando prueba</p>
+                                                    <p className="text-sm font-black text-[#2B2E4A] mt-1">{alert.event.title || 'Evento'}</p>
+                                                    <p className="text-xs font-bold text-gray-500">
+                                                        {alert.dateLabel}
+                                                        {alert.timeLabel ? ` · ${alert.timeLabel}` : ''}
+                                                        {alert.displaySubject ? ` · ${alert.displaySubject}` : ''}
+                                                    </p>
+                                                    <p className="text-xs font-black text-green-600 mt-1">
+                                                        {alert.daysUntil === 0
+                                                            ? 'Es HOY. Ya estuvo estudiando!'
+                                                            : alert.daysUntil === 1
+                                                                ? `Es manana ${alert.dayName}. Estudió recientemente.`
+                                                                : `Es este ${alert.dayName}. Ya se esta preparando.`}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
