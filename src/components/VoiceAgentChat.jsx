@@ -58,7 +58,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     useEffect(() => {
         if (greetedRef.current) return;
         greetedRef.current = true;
-        const greeting = `Hola${studentName ? `, soy Matico. Preguntame lo que quieras sobre ${studentName}` : '! Soy Matico, tu asistente escolar'}. Puedes hablarme o escribirme.`;
+        const greeting = `Hola jefe, soy la tutora virtual de ${studentName || 'tu hijo'}. Pregúntame lo que quieras, estoy aquí pa' ayudarte.`;
         setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
         if (ttsEnabled) speakText(greeting);
     }, []);
@@ -192,7 +192,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             const res = await fetch('/api/agent/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, voice: 'onyx' }),
+                body: JSON.stringify({ text, voice: 'nova' }),
                 signal: controller.signal
             });
             clearTimeout(fetchTimer);
@@ -220,8 +220,19 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
             audio.onended = cleanup;
             audio.onerror = cleanup;
+            audio.volume = 1.0;
 
-            await audio.play();
+            // Try play — on mobile may need user gesture
+            try {
+                await audio.play();
+            } catch (playErr) {
+                console.warn('[TTS] play() blocked, retrying:', playErr.name);
+                // Fallback: set src directly and try again
+                audio.src = url;
+                audio.load();
+                await new Promise(r => setTimeout(r, 200));
+                await audio.play();
+            }
         } catch (err) {
             clearTimeout(safetyTimer);
             console.error('[TTS] Error:', err);
@@ -380,13 +391,12 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     const stateRef = useRef(sphereState);
     useEffect(() => { stateRef.current = sphereState; }, [sphereState]);
 
-    // Canvas lightning animation
+    // Canvas energy animation — smooth flowing arcs instead of jagged lightning
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        let lastTime = 0;
-        const FPS_INTERVAL = 80; // regenerate bolts every 80ms
+        let t = 0; // continuous time counter
 
         const resize = () => {
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -400,45 +410,52 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         resize();
         window.addEventListener('resize', resize);
 
-        // Draw a jagged lightning bolt with branches
-        const drawBolt = (x1, y1, x2, y2, width, branchChance, depth) => {
-            const segments = 6 + Math.floor(Math.random() * 4);
+        // Persistent arcs — each has a seed so they evolve smoothly
+        const arcs = [];
+        for (let i = 0; i < 12; i++) {
+            arcs.push({
+                seed: Math.random() * 1000,
+                side: i % 2 === 0 ? -1 : 1, // left or right
+                yOff: (Math.random() - 0.5) * 0.8, // vertical offset from center
+                speed: 0.6 + Math.random() * 0.8,
+                length: 0.5 + Math.random() * 0.6, // how far the arc extends
+                width: 1 + Math.random() * 1.5,
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+
+        // Smooth noise-like function
+        const smoothNoise = (x) => Math.sin(x * 1.3) * 0.5 + Math.sin(x * 2.7 + 1.4) * 0.3 + Math.sin(x * 4.1 + 2.8) * 0.2;
+
+        // Draw a smooth flowing energy arc using quadratic curves
+        const drawEnergyArc = (x1, y1, x2, y2, width, seed, time, intensity) => {
+            const segments = 10;
             const dx = (x2 - x1) / segments;
             const dy = (y2 - y1) / segments;
-            const jitter = Math.sqrt(dx * dx + dy * dy) * 0.4;
+            const dist = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+            const perpX = -(y2-y1) / dist;
+            const perpY = (x2-x1) / dist;
+            const waveAmp = dist * 0.08 * intensity;
 
             ctx.beginPath();
             ctx.moveTo(x1, y1);
-            let px = x1, py = y1;
             for (let i = 1; i <= segments; i++) {
-                const nx = i === segments ? x2 : x1 + dx * i + (Math.random() - 0.5) * jitter;
-                const ny = i === segments ? y2 : y1 + dy * i + (Math.random() - 0.5) * jitter;
+                const frac = i / segments;
+                const baseX = x1 + dx * i;
+                const baseY = y1 + dy * i;
+                // Smooth wave displacement — fades at endpoints
+                const envelope = Math.sin(frac * Math.PI);
+                const wave = smoothNoise(seed + frac * 4 + time) * waveAmp * envelope;
+                const nx = baseX + perpX * wave;
+                const ny = baseY + perpY * wave;
                 ctx.lineTo(nx, ny);
-                // Branch
-                if (depth > 0 && i > 1 && i < segments - 1 && Math.random() < branchChance) {
-                    const bLen = 0.3 + Math.random() * 0.4;
-                    const bx = nx + (dx * bLen) + (Math.random() - 0.5) * jitter * 1.5;
-                    const by = ny + (dy * bLen) + (Math.random() - 0.5) * jitter * 1.5;
-                    const oldWidth = ctx.lineWidth;
-                    const oldAlpha = ctx.globalAlpha;
-                    ctx.stroke();
-                    ctx.lineWidth = width * 0.5;
-                    ctx.globalAlpha = oldAlpha * 0.6;
-                    drawBolt(nx, ny, bx, by, width * 0.4, branchChance * 0.4, depth - 1);
-                    ctx.lineWidth = oldWidth;
-                    ctx.globalAlpha = oldAlpha;
-                    ctx.beginPath();
-                    ctx.moveTo(nx, ny);
-                }
-                px = nx; py = ny;
             }
             ctx.stroke();
         };
 
         const animate = (ts) => {
             animRef.current = requestAnimationFrame(animate);
-            if (ts - lastTime < FPS_INTERVAL) return;
-            lastTime = ts;
+            t = ts * 0.001; // seconds
 
             const W = canvas.style.width ? parseFloat(canvas.style.width) : 400;
             const H = canvas.style.height ? parseFloat(canvas.style.height) : 300;
@@ -446,116 +463,117 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
             const st = stateRef.current;
             const cx = W / 2;
-            const cy = H * 0.42; // toroid center
-            const rx = W * 0.26; // toroid horizontal radius
+            const cy = H * 0.42;
+            const rx = W * 0.26;
             const ry = H * 0.18;
 
-            // Speaking: intense side lightning
+            // Speaking: flowing energy arcs extending from sides
             if (st === 'speaking') {
-                const count = 5 + Math.floor(Math.random() * 4);
-                for (let i = 0; i < count; i++) {
-                    const isLeft = i % 2 === 0;
-                    const startX = isLeft ? cx - rx - 5 : cx + rx + 5;
-                    const startY = cy + (Math.random() - 0.5) * ry * 1.2;
-                    const endX = isLeft ? -10 - Math.random() * W * 0.15 : W + 10 + Math.random() * W * 0.15;
-                    const endY = startY + (Math.random() - 0.5) * H * 0.2;
-                    const w = 1.5 + Math.random() * 2.5;
+                for (let i = 0; i < 8; i++) {
+                    const arc = arcs[i];
+                    const startX = cx + arc.side * (rx + 5);
+                    const startY = cy + arc.yOff * ry;
+                    const reach = W * 0.2 * arc.length;
+                    const endX = startX + arc.side * reach;
+                    const timeWave = Math.sin(t * arc.speed + arc.phase);
+                    const endY = startY + timeWave * 25;
+                    const alpha = 0.25 + 0.25 * Math.sin(t * arc.speed * 1.5 + arc.seed);
+                    const w = arc.width * (0.8 + 0.4 * Math.sin(t * 2 + arc.seed));
 
                     // Glow layer
                     ctx.save();
-                    ctx.strokeStyle = 'rgba(59,130,246,0.5)';
-                    ctx.lineWidth = w + 6;
+                    ctx.strokeStyle = `rgba(59,130,246,${alpha * 0.6})`;
+                    ctx.lineWidth = w + 5;
                     ctx.lineCap = 'round';
                     ctx.lineJoin = 'round';
-                    ctx.globalAlpha = 0.4 + Math.random() * 0.3;
-                    ctx.shadowColor = 'rgba(59,130,246,0.8)';
-                    ctx.shadowBlur = 20;
-                    drawBolt(startX, startY, endX, endY, w + 6, 0.35, 2);
+                    ctx.shadowColor = 'rgba(59,130,246,0.6)';
+                    ctx.shadowBlur = 18;
+                    drawEnergyArc(startX, startY, endX, endY, w + 5, arc.seed, t * arc.speed, 1.2);
                     ctx.restore();
 
-                    // Core white layer
+                    // Core bright layer
                     ctx.save();
-                    ctx.strokeStyle = 'rgba(200,230,255,0.9)';
+                    ctx.strokeStyle = `rgba(186,230,253,${alpha + 0.2})`;
                     ctx.lineWidth = w;
                     ctx.lineCap = 'round';
                     ctx.lineJoin = 'round';
-                    ctx.globalAlpha = 0.6 + Math.random() * 0.4;
-                    ctx.shadowColor = 'rgba(125,211,252,0.9)';
-                    ctx.shadowBlur = 12;
-                    drawBolt(startX, startY, endX, endY, w, 0.3, 1);
+                    ctx.shadowColor = 'rgba(125,211,252,0.7)';
+                    ctx.shadowBlur = 10;
+                    drawEnergyArc(startX, startY, endX, endY, w, arc.seed, t * arc.speed, 1.0);
                     ctx.restore();
                 }
             }
 
-            // Idle / thinking: very subtle side wisps
+            // Idle / thinking: gentle breathing wisps
             if (st === 'idle' || st === 'thinking') {
-                const count = st === 'thinking' ? 2 : 1;
+                const count = st === 'thinking' ? 4 : 2;
                 for (let i = 0; i < count; i++) {
-                    if (Math.random() > 0.6) continue;
-                    const isLeft = Math.random() > 0.5;
-                    const startX = isLeft ? cx - rx : cx + rx;
-                    const startY = cy + (Math.random() - 0.5) * ry * 0.6;
-                    const endX = isLeft ? startX - 30 - Math.random() * 60 : startX + 30 + Math.random() * 60;
-                    const endY = startY + (Math.random() - 0.5) * 30;
+                    const arc = arcs[i];
+                    const startX = cx + arc.side * rx;
+                    const startY = cy + arc.yOff * ry * 0.5;
+                    const reach = 25 + 15 * Math.sin(t * 0.5 + arc.seed);
+                    const endX = startX + arc.side * reach;
+                    const endY = startY + Math.sin(t * 0.7 + arc.seed) * 8;
+                    const alpha = 0.08 + 0.08 * Math.sin(t * 0.6 + arc.seed);
+
                     ctx.save();
-                    ctx.strokeStyle = 'rgba(125,211,252,0.4)';
-                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = `rgba(125,211,252,${alpha})`;
+                    ctx.lineWidth = 1.2;
                     ctx.lineCap = 'round';
-                    ctx.globalAlpha = 0.15 + Math.random() * 0.15;
-                    ctx.shadowColor = 'rgba(59,130,246,0.5)';
+                    ctx.shadowColor = 'rgba(59,130,246,0.3)';
                     ctx.shadowBlur = 8;
-                    drawBolt(startX, startY, endX, endY, 1, 0.1, 0);
+                    drawEnergyArc(startX, startY, endX, endY, 1.2, arc.seed, t * 0.4, 0.4);
                     ctx.restore();
                 }
             }
 
-            // Listening: bolts below + subtle side
+            // Listening: energy pulses below + gentle side arcs
             if (st === 'listening') {
-                // Bottom bolts
-                const bCount = 4 + Math.floor(Math.random() * 3);
-                for (let i = 0; i < bCount; i++) {
-                    const startX = cx + (Math.random() - 0.5) * rx * 1.2;
-                    const startY = cy + ry * 0.6 + Math.random() * 10;
-                    const endX = startX + (Math.random() - 0.5) * 60;
-                    const endY = startY + 40 + Math.random() * H * 0.2;
-                    const w = 1 + Math.random() * 1.5;
+                // Bottom energy streams
+                for (let i = 0; i < 5; i++) {
+                    const arc = arcs[i + 4];
+                    const spread = (i - 2) / 2; // -1 to 1
+                    const startX = cx + spread * rx * 0.8;
+                    const startY = cy + ry * 0.5;
+                    const endX = startX + Math.sin(t * 0.8 + arc.seed) * 20;
+                    const endY = startY + 40 + 30 * arc.length;
+                    const alpha = 0.2 + 0.15 * Math.sin(t * arc.speed + arc.seed);
+                    const w = 1 + Math.sin(t * 1.2 + arc.seed) * 0.5;
 
                     ctx.save();
-                    ctx.strokeStyle = 'rgba(59,130,246,0.5)';
-                    ctx.lineWidth = w + 4;
+                    ctx.strokeStyle = `rgba(59,130,246,${alpha * 0.7})`;
+                    ctx.lineWidth = w + 3;
                     ctx.lineCap = 'round';
-                    ctx.globalAlpha = 0.3 + Math.random() * 0.3;
-                    ctx.shadowColor = 'rgba(59,130,246,0.7)';
-                    ctx.shadowBlur = 14;
-                    drawBolt(startX, startY, endX, endY, w + 4, 0.2, 1);
+                    ctx.shadowColor = 'rgba(59,130,246,0.5)';
+                    ctx.shadowBlur = 12;
+                    drawEnergyArc(startX, startY, endX, endY, w + 3, arc.seed, t * arc.speed, 0.7);
                     ctx.restore();
 
                     ctx.save();
-                    ctx.strokeStyle = 'rgba(186,230,253,0.8)';
+                    ctx.strokeStyle = `rgba(186,230,253,${alpha + 0.1})`;
                     ctx.lineWidth = w;
                     ctx.lineCap = 'round';
-                    ctx.globalAlpha = 0.5 + Math.random() * 0.4;
-                    ctx.shadowColor = 'rgba(125,211,252,0.8)';
-                    ctx.shadowBlur = 8;
-                    drawBolt(startX, startY, endX, endY, w, 0.15, 0);
+                    ctx.shadowColor = 'rgba(125,211,252,0.5)';
+                    ctx.shadowBlur = 6;
+                    drawEnergyArc(startX, startY, endX, endY, w, arc.seed, t * arc.speed, 0.5);
                     ctx.restore();
                 }
 
                 // Subtle side wisps
                 for (let i = 0; i < 2; i++) {
-                    const isLeft = i === 0;
-                    const startX = isLeft ? cx - rx : cx + rx;
-                    const startY = cy + (Math.random() - 0.5) * ry;
-                    const endX = isLeft ? startX - 40 - Math.random() * 40 : startX + 40 + Math.random() * 40;
-                    const endY = startY + (Math.random() - 0.5) * 20;
+                    const arc = arcs[i + 9];
+                    const startX = cx + arc.side * rx;
+                    const startY = cy + arc.yOff * ry * 0.4;
+                    const endX = startX + arc.side * (30 + 15 * Math.sin(t + arc.seed));
+                    const endY = startY + Math.sin(t * 0.9 + arc.seed) * 10;
+
                     ctx.save();
-                    ctx.strokeStyle = 'rgba(125,211,252,0.5)';
-                    ctx.lineWidth = 1.2;
+                    ctx.strokeStyle = `rgba(125,211,252,0.15)`;
+                    ctx.lineWidth = 1;
                     ctx.lineCap = 'round';
-                    ctx.globalAlpha = 0.2 + Math.random() * 0.2;
-                    ctx.shadowColor = 'rgba(59,130,246,0.6)';
-                    ctx.shadowBlur = 10;
-                    drawBolt(startX, startY, endX, endY, 1.2, 0.15, 0);
+                    ctx.shadowColor = 'rgba(59,130,246,0.4)';
+                    ctx.shadowBlur = 8;
+                    drawEnergyArc(startX, startY, endX, endY, 1, arc.seed, t * 0.6, 0.3);
                     ctx.restore();
                 }
             }
