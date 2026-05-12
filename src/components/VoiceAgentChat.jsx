@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown, UploadCloud } from 'lucide-react';
 
-// WebGL lightning shader — hue-controllable vertical beam
-const Lightning = ({ hue = 220, xOffset = 0, speed = 1.6, intensity = 0.5, size = 2 }) => {
+// WebGL lightning shader — reads hueRef + analyserRef each frame (no WebGL context recreation)
+const Lightning = ({ hueRef, analyserRef = null, speed = 1.6, baseIntensity = 0.5, size = 2 }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -28,7 +28,6 @@ const Lightning = ({ hue = 220, xOffset = 0, speed = 1.6, intensity = 0.5, size 
       uniform vec2 iResolution;
       uniform float iTime;
       uniform float uHue;
-      uniform float uXOffset;
       uniform float uSpeed;
       uniform float uIntensity;
       uniform float uSize;
@@ -61,7 +60,6 @@ const Lightning = ({ hue = 220, xOffset = 0, speed = 1.6, intensity = 0.5, size 
         vec2 uv = gl_FragCoord.xy / iResolution.xy;
         uv = 2.0*uv - 1.0;
         uv.x *= iResolution.x / iResolution.y;
-        uv.x += uXOffset;
         uv += 2.0*fbm(uv*uSize + 0.8*iTime*uSpeed) - 1.0;
         float dist = abs(uv.x);
         vec3 base = hsv2rgb(vec3(uHue/360.0, 0.7, 0.8));
@@ -94,10 +92,12 @@ const Lightning = ({ hue = 220, xOffset = 0, speed = 1.6, intensity = 0.5, size 
     const uRes = gl.getUniformLocation(prog, 'iResolution');
     const uTime = gl.getUniformLocation(prog, 'iTime');
     const uHueLoc = gl.getUniformLocation(prog, 'uHue');
-    const uXOff = gl.getUniformLocation(prog, 'uXOffset');
     const uSpd = gl.getUniformLocation(prog, 'uSpeed');
     const uInt = gl.getUniformLocation(prog, 'uIntensity');
     const uSz = gl.getUniformLocation(prog, 'uSize');
+
+    // Buffer for analyser time-domain data
+    const timeDomain = new Uint8Array(256);
 
     const t0 = performance.now();
     let raf;
@@ -106,18 +106,33 @@ const Lightning = ({ hue = 220, xOffset = 0, speed = 1.6, intensity = 0.5, size 
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.uniform2f(uRes, canvas.width, canvas.height);
       gl.uniform1f(uTime, (performance.now() - t0) / 1000);
-      gl.uniform1f(uHueLoc, hue);
-      gl.uniform1f(uXOff, xOffset);
+      gl.uniform1f(uHueLoc, hueRef?.current ?? 220);
       gl.uniform1f(uSpd, speed);
-      gl.uniform1f(uInt, intensity);
       gl.uniform1f(uSz, size);
+
+      // Read audio RMS from analyser → modulate intensity
+      let dynIntensity = baseIntensity;
+      const analyser = analyserRef?.current;
+      if (analyser) {
+        analyser.getByteTimeDomainData(timeDomain);
+        let sum = 0;
+        for (let i = 0; i < timeDomain.length; i++) {
+          const v = (timeDomain[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / timeDomain.length);
+        // rms ~ 0 when silent, ~0.3-0.6 when speaking; map to visible intensity boost
+        dynIntensity = baseIntensity + rms * 2.5;
+      }
+
+      gl.uniform1f(uInt, dynIntensity);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       raf = requestAnimationFrame(render);
     };
     raf = requestAnimationFrame(render);
 
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resizeCanvas); };
-  }, [hue, xOffset, speed, intensity, size]);
+  }, []); // runs once — reads from refs each frame
 
   return <canvas ref={canvasRef} className="w-full h-full" />;
 };
@@ -146,6 +161,11 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
+    // Lightning audio sync refs
+    const lightningHueRef = useRef(220);
+    const audioCtxRef = useRef(null);
+    const lightningAnalyserRef = useRef(null);
+
     // Auto-scroll messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -158,6 +178,14 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     useEffect(() => {
         speakingRef.current = isSpeaking;
     }, [isSpeaking]);
+
+    // Sync lightning hue with agent state
+    useEffect(() => {
+        lightningHueRef.current =
+            sphereState === 'listening' ? 190 :
+            sphereState === 'thinking'  ? 270 :
+            sphereState === 'speaking'  ? 175 : 220;
+    }, [sphereState]);
 
     const stopAllAudio = useCallback(() => {
         ttsRunRef.current += 1;
@@ -284,6 +312,20 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         else startListening();
     };
 
+    // Lazy AudioContext + AnalyserNode for lightning sync
+    const getOrCreateAudioCtx = () => {
+        if (!audioCtxRef.current) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 512;
+            analyser.smoothingTimeConstant = 0.8;
+            analyser.connect(ctx.destination);
+            audioCtxRef.current = ctx;
+            lightningAnalyserRef.current = analyser;
+        }
+        return audioCtxRef.current;
+    };
+
     // TTS via OpenAI — with timeout fallback
     const speakText = async (text) => {
         if (!ttsEnabled || !text) return;
@@ -326,6 +368,14 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             const audio = new Audio(url);
             audioRef.current = audio;
             audioUrlRef.current = url;
+
+            // Connect to analyser so lightning reacts to voice
+            try {
+                const ctx = getOrCreateAudioCtx();
+                await ctx.resume();
+                const src = ctx.createMediaElementSource(audio);
+                src.connect(lightningAnalyserRef.current);
+            } catch (_) { /* non-critical */ }
 
             const cleanup = () => {
                 clearTimeout(safetyTimer);
@@ -707,14 +757,11 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         };
     }, []);
 
-    // Hue según estado: idle=220 azul, listening=190 cian, thinking=270 morado, speaking=180 teal
-    const lightningHue = sphereState === 'listening' ? 190 : sphereState === 'thinking' ? 270 : sphereState === 'speaking' ? 175 : 220;
-
     return (
         <div className="fixed inset-0 z-[9999] flex flex-col" style={{background:'radial-gradient(ellipse 130% 90% at 50% 38%, #0a1628 0%, #050a15 55%, #020408 100%)'}}>
             {/* WebGL lightning shader background */}
             <div className="absolute inset-0 z-0 pointer-events-none opacity-80">
-                <Lightning hue={lightningHue} xOffset={0} speed={1.6} intensity={0.55} size={2} />
+                <Lightning hueRef={lightningHueRef} analyserRef={lightningAnalyserRef} speed={1.6} baseIntensity={0.5} size={2} />
             </div>
 
             {/* Stormy atmosphere overlay */}
