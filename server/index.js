@@ -10196,11 +10196,30 @@ app.post('/api/agent/chat', async (req, res) => {
         const todayDayName = dayNames[todayDate.getDay()];
         const todayHumanDate = todayDate.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-        const systemPrompt = user_type === 'parent'
+        // Fetch active training entries and build training section
+        let trainingSection = '';
+        try {
+            const { data: trainingEntries } = await supabase
+                .from('agent_training')
+                .select('type, content')
+                .eq('active', true)
+                .order('created_at', { ascending: true });
+            if (trainingEntries && trainingEntries.length > 0) {
+                const grouped = { instruccion: [], conocimiento: [], qa: [] };
+                for (const e of trainingEntries) if (grouped[e.type]) grouped[e.type].push(e.content);
+                const parts = [];
+                if (grouped.instruccion.length) parts.push('INSTRUCCIONES ADICIONALES:\n' + grouped.instruccion.join('\n'));
+                if (grouped.conocimiento.length) parts.push('CONOCIMIENTO BASE:\n' + grouped.conocimiento.join('\n'));
+                if (grouped.qa.length) parts.push('RESPUESTAS ESPECÍFICAS:\n' + grouped.qa.join('\n'));
+                if (parts.length) trainingSection = '\n\n' + parts.join('\n\n');
+            }
+        } catch (_) { /* non-critical */ }
+
+        const systemPrompt = (user_type === 'parent'
             ? `Eres Matico, asistente educativo. Hablas con el apoderado sobre su hijo/a.
 REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana ("este martes", "el proximo lunes"). Respuestas CORTAS, 2-3 frases max, como si hablaras en voz alta. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}. Usa get_student_profile para saber el nombre del niño.`
             : `Eres Matico, compañero de estudio. Motivador, amigable, hablas simple.
-REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana. Respuestas CORTAS, 2-3 frases max, tono juvenil. Motiva con buenos resultados. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.`;
+REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana. Respuestas CORTAS, 2-3 frases max, tono juvenil. Motiva con buenos resultados. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.`) + trainingSection;
 
         const messages = [
             { role: 'system', content: systemPrompt },
@@ -10259,6 +10278,52 @@ REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas co
         console.error('[AGENT] Error:', err.message);
         res.status(500).json({ success: false, error: err.message });
     }
+});
+
+// === AGENT TRAINING — admin only ===
+const isAdmin = (uid) => uid && process.env.ADMIN_USER_ID && uid === process.env.ADMIN_USER_ID;
+
+app.get('/api/agent/training', async (req, res) => {
+    if (!isAdmin(req.query.admin_user_id)) return res.status(403).json({ success: false, error: 'No autorizado' });
+    try {
+        const { data, error } = await supabase.from('agent_training').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        res.json({ success: true, entries: data });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+app.post('/api/agent/training', async (req, res) => {
+    const { admin_user_id, content, type = 'instruccion' } = req.body;
+    if (!isAdmin(admin_user_id)) return res.status(403).json({ success: false, error: 'No autorizado' });
+    if (!content?.trim()) return res.status(400).json({ success: false, error: 'Falta content' });
+    try {
+        const { data, error } = await supabase.from('agent_training')
+            .insert({ content: content.trim(), type, active: true, created_by: admin_user_id })
+            .select().single();
+        if (error) throw error;
+        res.json({ success: true, entry: data });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+app.patch('/api/agent/training/:id', async (req, res) => {
+    const { admin_user_id, active } = req.body;
+    if (!isAdmin(admin_user_id)) return res.status(403).json({ success: false, error: 'No autorizado' });
+    try {
+        const { data, error } = await supabase.from('agent_training')
+            .update({ active }).eq('id', req.params.id).select().single();
+        if (error) throw error;
+        res.json({ success: true, entry: data });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+app.delete('/api/agent/training/:id', async (req, res) => {
+    const { admin_user_id } = req.body;
+    if (!isAdmin(admin_user_id)) return res.status(403).json({ success: false, error: 'No autorizado' });
+    try {
+        const { error } = await supabase.from('agent_training').delete().eq('id', req.params.id);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
 // TTS endpoint — convierte texto a audio

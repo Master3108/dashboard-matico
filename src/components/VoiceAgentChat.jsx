@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown, UploadCloud } from 'lucide-react';
+import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown, UploadCloud, BookOpen, Trash2, ToggleLeft, ToggleRight, Plus } from 'lucide-react';
 
 // WebGL LightningField — 4 rayos idle/listening/thinking, 8 rayos naranja cuando habla (overloaded).
 // Usa refs: contexto WebGL creado una sola vez, sin recreación por cambio de estado.
@@ -141,6 +141,14 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     const [sphereState, setSphereState] = useState('idle'); // idle, listening, thinking, speaking
     const [currentTranscript, setCurrentTranscript] = useState('');
     const [audioLevel, setAudioLevel] = useState(0);
+
+    // Training mode state
+    const [showTraining, setShowTraining] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [trainingEntries, setTrainingEntries] = useState([]);
+    const [trainingInput, setTrainingInput] = useState('');
+    const [trainingType, setTrainingType] = useState('instruccion');
+    const [trainingSaving, setTrainingSaving] = useState(false);
 
     const conversationRef = useRef([]);
     const recognitionRef = useRef(null);
@@ -766,6 +774,53 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         };
     }, []);
 
+    // Training helpers
+    const fetchTraining = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/agent/training?admin_user_id=${userId || studentUserId}`);
+            if (res.status === 403) { setIsAdmin(false); return; }
+            const data = await res.json();
+            if (data.success) { setIsAdmin(true); setTrainingEntries(data.entries || []); }
+        } catch (_) {}
+    }, [userId, studentUserId]);
+
+    const saveTrainingEntry = async () => {
+        if (!trainingInput.trim() || trainingSaving) return;
+        setTrainingSaving(true);
+        try {
+            const res = await fetch('/api/agent/training', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_user_id: userId || studentUserId, content: trainingInput.trim(), type: trainingType })
+            });
+            const data = await res.json();
+            if (data.success) { setTrainingEntries(prev => [data.entry, ...prev]); setTrainingInput(''); }
+        } catch (_) {} finally { setTrainingSaving(false); }
+    };
+
+    const toggleTrainingEntry = async (id, active) => {
+        try {
+            const res = await fetch(`/api/agent/training/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_user_id: userId || studentUserId, active: !active })
+            });
+            const data = await res.json();
+            if (data.success) setTrainingEntries(prev => prev.map(e => e.id === id ? data.entry : e));
+        } catch (_) {}
+    };
+
+    const deleteTrainingEntry = async (id) => {
+        try {
+            await fetch(`/api/agent/training/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_user_id: userId || studentUserId })
+            });
+            setTrainingEntries(prev => prev.filter(e => e.id !== id));
+        } catch (_) {}
+    };
+
     const isOverloaded = sphereState === 'speaking';
 
     return (
@@ -799,7 +854,90 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition backdrop-blur-sm border border-white/10">
                     <MessageCircle className="w-5 h-5 text-blue-300" />
                 </button>
+                {/* Training mode — el server decide si eres admin */}
+                <button onClick={() => { if (!showTraining) fetchTraining(); setShowTraining(v => !v); }}
+                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition backdrop-blur-sm border border-white/10"
+                    title="Modo entrenamiento">
+                    <BookOpen className="w-5 h-5 text-blue-300" />
+                </button>
             </div>
+
+            {/* Panel de entrenamiento */}
+            {showTraining && (
+                <div className="absolute inset-x-0 bottom-0 top-16 bg-[#060c1a]/97 backdrop-blur-xl z-40 flex flex-col shadow-2xl border-t border-blue-900/40">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-blue-900/30">
+                        <div className="flex items-center gap-3">
+                            <BookOpen className="w-5 h-5 text-blue-400" />
+                            <p className="text-blue-300 font-bold text-sm tracking-wide">Modo Entrenamiento</p>
+                            {isAdmin && <span className="text-[10px] bg-blue-900/60 text-blue-300 px-2 py-0.5 rounded-full border border-blue-700/40">ADMIN</span>}
+                        </div>
+                        <button onClick={() => setShowTraining(false)} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20">
+                            <X className="w-4 h-4 text-blue-400" />
+                        </button>
+                    </div>
+
+                    {!isAdmin ? (
+                        <div className="flex-1 flex items-center justify-center">
+                            <p className="text-red-400/70 text-sm">No tienes permisos de administrador.</p>
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col overflow-hidden">
+                            {/* Form agregar entrada */}
+                            <div className="px-5 py-4 border-b border-blue-900/20 space-y-3">
+                                <div className="flex gap-2">
+                                    {['instruccion', 'conocimiento', 'qa'].map(t => (
+                                        <button key={t} onClick={() => setTrainingType(t)}
+                                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${trainingType === t ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white/5 border-white/10 text-blue-400 hover:bg-white/10'}`}>
+                                            {t === 'instruccion' ? 'Instrucción' : t === 'conocimiento' ? 'Conocimiento' : 'Q&A'}
+                                        </button>
+                                    ))}
+                                </div>
+                                <textarea value={trainingInput} onChange={e => setTrainingInput(e.target.value)}
+                                    placeholder={trainingType === 'instruccion' ? 'Ej: Cuando alguien pregunte por notas, explica primero el porcentaje...' : trainingType === 'conocimiento' ? 'Ej: La plataforma usa Supabase como base de datos...' : 'Ej: ¿Cómo contactar soporte? → Escribe a soporte@matico.cl'}
+                                    rows={3}
+                                    className="w-full bg-white/5 border border-blue-800/40 rounded-xl px-4 py-3 text-blue-100 placeholder-blue-700/50 text-sm focus:outline-none focus:border-blue-500 resize-none" />
+                                <button onClick={saveTrainingEntry} disabled={!trainingInput.trim() || trainingSaving}
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm rounded-xl transition font-semibold">
+                                    <Plus className="w-4 h-4" />
+                                    {trainingSaving ? 'Guardando...' : 'Agregar entrada'}
+                                </button>
+                            </div>
+
+                            {/* Lista de entradas */}
+                            <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
+                                {trainingEntries.length === 0 && (
+                                    <p className="text-blue-600/50 text-sm text-center mt-6">Sin entradas todavía. Agrega instrucciones arriba.</p>
+                                )}
+                                {trainingEntries.map(entry => (
+                                    <div key={entry.id} className={`rounded-xl border px-4 py-3 transition ${entry.active ? 'bg-blue-900/20 border-blue-800/40' : 'bg-white/3 border-white/8 opacity-50'}`}>
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-1.5 ${
+                                                    entry.type === 'instruccion' ? 'bg-blue-900 text-blue-300' :
+                                                    entry.type === 'conocimiento' ? 'bg-purple-900 text-purple-300' :
+                                                    'bg-green-900 text-green-300'}`}>
+                                                    {entry.type}
+                                                </span>
+                                                <p className="text-blue-100 text-sm leading-relaxed">{entry.content}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0 mt-1">
+                                                <button onClick={() => toggleTrainingEntry(entry.id, entry.active)} title={entry.active ? 'Desactivar' : 'Activar'}>
+                                                    {entry.active
+                                                        ? <ToggleRight className="w-5 h-5 text-blue-400 hover:text-blue-300" />
+                                                        : <ToggleLeft className="w-5 h-5 text-gray-600 hover:text-gray-400" />}
+                                                </button>
+                                                <button onClick={() => deleteTrainingEntry(entry.id)} title="Eliminar">
+                                                    <Trash2 className="w-4 h-4 text-red-500/60 hover:text-red-400" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Messages panel */}
             {showMessages && (
