@@ -1,13 +1,13 @@
 <claude-mem-context>
 # Memory Context
 
-# [dashboard-matico] recent context, 2026-05-08 8:11pm GMT-4
+# [dashboard-matico] recent context, 2026-05-12 11:58am GMT-4
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 44 obs (23,279t read) | 893,864t work | 97% savings
+Stats: 45 obs (23,657t read) | 895,726t work | 97% savings
 
 ### May 7, 2026
 1 5:21p 🔵 User Request: Load Matías Olguín's Full History into Apoderado Platform
@@ -48,7 +48,6 @@ Stats: 44 obs (23,279t read) | 893,864t work | 97% savings
 36 6:02p 🟣 PDF Download Button Moved Inline Per-Page in CuadernoMission
 37 6:13p 🟣 Matico Platform – Comprehensive Educational Monitoring Feature Roadmap
 38 6:33p 🔵 Quiz Phase System Architecture in dashboard-matico
-S12 Fix: Biología sesión completada (nivel crítico experto PAES) sigue mostrando "Sesión 6 en progreso" / "Siguiente Nivel: Crítico | 30/45" (May 8, 6:34 PM)
 39 7:06p 🔵 Completed PAES Biology Course Still Shows Session 6 as Pending
 S13 Diagnóstico y corrección del bug: el dashboard del apoderado mostraba MATEMÁTICA como "última sesión real" aunque el estudiante hubiera completado Biología (May 8, 7:07 PM)
 S14 Probar el sitio https://srv1048418.hstgr.cloud/ como joseantonio.olguinr@gmail.com y diagnosticar por qué el Panel Apoderado muestra MATEMATICA como última sesión real en lugar de BIOLOGIA (May 8, 7:20 PM)
@@ -63,16 +62,18 @@ S19 Fix all ParentDashboard summary cards to use consolidated phase-aggregated r
 S20 Fix: study alerts (stale_subject) were replacing the real last study session in the ParentDashboard activity summary (May 8, 7:59 PM)
 43 8:05p 🔵 API /parent/student-history Returns study_alert Items Mixed With Activity Feed
 44 " 🔴 ParentDashboard Filtered Out study_alert Items From Activity Summary
+S21 User asked "¿qué pasó?" — investigated whether student TK-XSN7QNOJ4 had started Competencia Lectora; confirmed it was a stale-subject alert, not real activity (May 8, 8:05 PM)
 45 8:08p 🔵 Historical Progress Items Contain migrated_from_sheets and autofix_phases Source Modes
-S21 User asked "¿qué pasó?" — investigated whether student TK-XSN7QNOJ4 had started Competencia Lectora; confirmed it was a stale-subject alert, not real activity (May 8, 8:08 PM)
-**Investigated**: Queried /api/study-sessions (from 2026-02-01) and /api/parent/student-history (limit=120) for student TK-XSN7QNOJ4. Examined the full session list including both native app_entry sessions and derived sessions going back to March 2026. Confirmed that "COMPETENCIA_LECTORA: sin estudio reciente" was a study_alert (source: study_alert, type: stale_subject), NOT a real study session. Also confirmed the study sessions endpoint returns both raw app_entry sessions and derived aggregated sessions synthesized from progress events.
+46 8:12p 🔵 ParentDashboard Key Code Locations: summaryRecentActivities, Evidence Fields, Wrong-Answer Filters
+S22 Improve "Actividad del filtro" activity cards in ParentDashboard to show rich detail (errors, evidence, phases, insights) instead of a minimal flat list (May 8, 8:12 PM)
+**Investigated**: Examined ParentDashboard.jsx structure at multiple line ranges (360–430, 500–545, 1100–1185, 1328–1375) to understand: date/timezone helpers (getSantiagoDateKey using America/Santiago), activity aggregation logic for phase groups, evidence detection fields (has_evidence, image_url, ocr_text, evidence_summary), wrong-answer filter checks, and the existing flat activity card renderer in the "Actividad del filtro" section.
 
-**Learned**: The /api/study-sessions endpoint returns two types of sessions: (1) native app_entry sessions with session_id (e.g. SS-E2EA8B5F5AC2) tracking actual Mático app usage with minute-by-minute milestones, and (2) derived sessions with id format "derived-{date}|{SUBJECT}-s{n}" that are synthesized from progress events (phase completions, etc.) for subjects without native session tracking. Derived sessions cover BIOLOGIA, LENGUAJE, HISTORIA, QUIMICA, FISICA going back to March 2026. The stale_subject alerts appear in the history API with today's timestamp, making them look like real recent activity — this was the root bug.
+**Learned**: The aggregated activity objects built from phase groups did not carry forward wrong_question_details, evidence fields, or evidence counts — they only tracked score totals. This meant the parent-facing activity list had no visibility into specific errors or associated notebook evidence. New helper functions getActivityLabel, buildActivityInsight, getFirstWrongDetail, and trimText were needed to produce human-readable summaries per activity type without repeating display logic.
 
-**Completed**: Fixed ParentDashboard.jsx to exclude study_alert source and stale_subject/alert/study_alert types from both summaryHistoryActivityItems and summaryHasTodayActivity logic. Built and verified. Committed as a037052 ("fix: no usar alertas como ultima sesion real") and pushed to GitHub Master3108/dashboard-matico main branch. Confirmed with user that the real last session remains BIOLOGIA Embriología y Biogeografía (44/45 correctas, 35 min), not any alert.
+**Completed**: Two patches applied to ParentDashboard.jsx: (1) Aggregation enhancement — aggregated phase objects now include wrong_question_details (flattened from all phases), evidence_count, evidence_summary, ocr_text, and image_url pulled from related evidence items. Plus new helper functions: getActivityLabel, buildActivityInsight, getFirstWrongDetail, trimText. (2) Activity card redesign — "Actividad del filtro" cards now show: activity type chip, multi-phase count badge, evidence badge, activity insight summary, first wrong question details (question + student answer + correct answer + plan), and evidence/OCR panel. Build OK (npm run build, node --check). Committed as 5a483aa ("feat: detallar actividad del filtro para apoderado"), pushed to GitHub main (110 insertions, 32 deletions). Two commits total this session: a037052 (alert filter fix) + 5a483aa (card detail enhancement).
 
-**Next Steps**: Deploy the fix to production: ssh root@72.60.245.87 "cd /var/www/dashboard-matico && git pull origin main && docker compose down && docker compose up --build -d" — then hard refresh to verify the dashboard shows BIOLOGIA as the last real session.
+**Next Steps**: Deploy both commits to production: ssh root@72.60.245.87 "cd /var/www/dashboard-matico && git pull origin main && docker compose down && docker compose up --build -d" — then hard refresh to verify both the alert filter fix and the enriched activity cards are working correctly.
 
 
-Access 894k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 896k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

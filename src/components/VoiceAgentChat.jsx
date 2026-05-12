@@ -633,65 +633,10 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     {/* Canvas for animated lightning — sits on top */}
                     <canvas ref={canvasRef} className="absolute inset-0 z-10 pointer-events-none" />
 
-                    {/* SVG Toroid — 3D glossy donut */}
-                    <svg viewBox="0 0 540 380" className="absolute inset-0 w-full h-full z-5" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <filter id="tg" x="-40%" y="-40%" width="180%" height="180%">
-                                <feGaussianBlur stdDeviation="12" result="b"/>
-                                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-                            </filter>
-                            <filter id="tg2" x="-30%" y="-30%" width="160%" height="160%">
-                                <feGaussianBlur stdDeviation="6" result="b"/>
-                                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-                            </filter>
-                            {/* Tube cross-section gradient: light on top, dark bottom */}
-                            <linearGradient id="tube3d" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.95"/>
-                                <stop offset="15%" stopColor="#7dd3fc" stopOpacity="0.9"/>
-                                <stop offset="30%" stopColor="#38bdf8" stopOpacity="0.85"/>
-                                <stop offset="50%" stopColor="#0284c7" stopOpacity="0.8"/>
-                                <stop offset="70%" stopColor="#1e40af" stopOpacity="0.75"/>
-                                <stop offset="85%" stopColor="#1e3a8a" stopOpacity="0.6"/>
-                                <stop offset="100%" stopColor="#0c1a3a" stopOpacity="0.4"/>
-                            </linearGradient>
-                            <linearGradient id="tube-inner" x1="0" y1="1" x2="0" y2="0">
-                                <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.5"/>
-                                <stop offset="30%" stopColor="#0ea5e9" stopOpacity="0.3"/>
-                                <stop offset="100%" stopColor="#0c1a3a" stopOpacity="0.1"/>
-                            </linearGradient>
-                        </defs>
-
-                        <g transform="translate(270,160)">
-                            {/* Outer ambient glow */}
-                            <ellipse cx="0" cy="0" rx="180" ry="95" fill="none" stroke="rgba(59,130,246,0.2)" strokeWidth="60" filter="url(#tg)" className="vt-glow-ring"/>
-
-                            {/* Main torus tube — outer edge */}
-                            <ellipse cx="0" cy="0" rx="155" ry="80" fill="none" stroke="url(#tube3d)" strokeWidth="52" filter="url(#tg2)"/>
-
-                            {/* Bright rim highlight on top */}
-                            <ellipse cx="0" cy="0" rx="155" ry="80" fill="none" stroke="rgba(186,230,253,0.5)" strokeWidth="2" strokeDasharray="180 400"/>
-                            <path d="M-130,-68 Q-70,-88 0,-92 Q70,-88 130,-68" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="4" strokeLinecap="round" filter="url(#tg2)"/>
-                            <path d="M-100,-62 Q-50,-78 0,-80 Q50,-78 100,-62" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="8" strokeLinecap="round" filter="url(#tg)"/>
-
-                            {/* Inner hole — very dark */}
-                            <ellipse cx="0" cy="0" rx="105" ry="38" fill="#020408"/>
-                            <ellipse cx="0" cy="0" rx="108" ry="40" fill="none" stroke="rgba(30,64,175,0.3)" strokeWidth="3" filter="url(#tg2)"/>
-
-                            {/* Inner bottom rim light (reflected light on inner bottom) */}
-                            <path d="M-90,20 Q-45,38 0,40 Q45,38 90,20" fill="none" stroke="url(#tube-inner)" strokeWidth="6" strokeLinecap="round" filter="url(#tg2)"/>
-
-                            {/* Specular hotspot — top center */}
-                            <ellipse cx="-20" cy="-72" rx="50" ry="12" fill="rgba(255,255,255,0.2)" filter="url(#tg)"/>
-                        </g>
-
-                        {/* Small bright particles */}
-                        {[{x:110,y:95},{x:430,y:100},{x:90,y:190},{x:455,y:180},{x:200,y:60},{x:350,y:55},{x:160,y:250},{x:380,y:245}].map((p,i) => (
-                            <circle key={i} cx={p.x} cy={p.y} r={2.5} fill="rgba(186,230,253,0.8)" filter="url(#tg2)">
-                                <animate attributeName="opacity" values="0.3;0.9;0.3" dur={`${2+i*0.4}s`} repeatCount="indefinite"/>
-                                <animate attributeName="cy" values={`${p.y};${p.y-8};${p.y}`} dur={`${3+i*0.3}s`} repeatCount="indefinite"/>
-                            </circle>
-                        ))}
-                    </svg>
+                    {/* Toroid PNG image — exact reference */}
+                    <div className="absolute inset-0 z-5 flex items-center justify-center">
+                        <img src="/toroid.png" alt="" className="w-[75%] h-auto object-contain drop-shadow-[0_0_40px_rgba(59,130,246,0.4)]" draggable={false} />
+                    </div>
                 </div>
 
                 {/* Status text */}
@@ -773,7 +718,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             </div>
 
             <style>{`
-                .vt-glow-ring { transition: all 0.4s; }
+                .toroid-glow { filter: drop-shadow(0 0 30px rgba(59,130,246,0.35)); transition: filter 0.4s; }
             `}</style>
         </div>
     );
