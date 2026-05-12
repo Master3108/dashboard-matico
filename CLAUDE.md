@@ -136,6 +136,45 @@ exit
 - Configurado como HTTPS: https://github.com/Master3108/dashboard-matico.git
 - Requiere Personal Access Token de GitHub como contraseña (no SSH key)
 
+## Preferencias del usuario (Jose)
+- No gastar tokens explicando. Solo entregar resultado + comando de deploy.
+- Resumen breve cuando sea necesario, sin detalle excesivo.
+
+## Cambios recientes (mayo 2026)
+
+### Agente Conversacional Matico
+- Endpoint: POST `/api/agent/chat` con OpenAI tool calling (8 tools Supabase)
+- Modelo agente: `gpt-5-mini` (solo para chat conversacional, el resto usa gpt-4.1-mini/gpt-4.1)
+- TTS: `gpt-4o-mini-tts` voz "onyx", speed 1.12x, max 2000 chars
+- STT: Web Speech API (browser), continuous mode con auto-restart
+- Componente: `VoiceAgentChat.jsx` — UI esfera azul animada, fondo claro, botones cámara/mic/chat/cerrar
+- Max tokens: 350, max tool iterations: 2, history: 6 mensajes
+
+### ParentDashboard — Avisos proactivos inteligentes
+- `staleSubjects` se filtra contra actividad REAL reciente (últimos 3 días) del frontend
+- Solo cuenta como actividad: quizzes, study sessions, cuaderno, ensayos (NO alertas, calendarios, reportes)
+- Alerta "Materia sin estudiar": mantiene formato original pero datos corregidos
+- Alerta "Preparar urgente" (rojo): evento próximo (0-3 días) + NO estudió
+- Alerta "Preparando prueba" (verde): evento próximo + SÍ estudió
+- Server: búsqueda stale_subjects con variantes case/accent (FISICA/FÍSICA/Fisica/fisica)
+
+### ParentDashboard — Tarjeta "Próximos eventos"
+- Reemplaza la tarjeta "Última sesión" duplicada (la segunda morada)
+- Muestra hasta 5 eventos futuros con: badge tipo, materia, urgencia (HOY/MAÑANA/X días)
+- Muestra descripción/contenido del evento si existe
+- Indica si estudió o no para pruebas próximas
+
+### Calendario (CalendarView.jsx)
+- Por defecto solo muestra eventos desde hoy en adelante
+- Pasados ocultos con botón "Pasados (N)" en barra de filtros
+- Pasados se muestran en opacidad reducida, orden cronológico inverso
+- Componente EventCard extraído para reutilización
+
+### Scores y tiempos
+- `buildScoreFields`: prioriza `wrong_answers` sobre `correct_answers`
+- `deriveStudySessionsFromProgress`: gap 30min = nueva sesión, cap 90min
+- Variables today-only separadas para no romper acumulados
+
 ## Variables de Entorno (server/.env)
 - OpenAI API keys (modelos fast/thinking/vision)
 - Gemini, DeepSeek (proveedores alternativos IA)
