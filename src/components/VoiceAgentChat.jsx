@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown, UploadCloud, BookOpen, Trash2, ToggleLeft, ToggleRight, Plus } from 'lucide-react';
 
-// WebGL LightningField — 4 rayos idle/listening/thinking, 8 rayos naranja cuando habla (overloaded).
-// Usa refs: contexto WebGL creado una sola vez, sin recreación por cambio de estado.
-const LightningField = ({ hueRef, analyserRef = null, overloadedRef = null }) => {
+// WebGL LightningField — 4 rayos radiales, hue por estado, intensidad sincronizada con voz.
+// Contexto WebGL creado una sola vez, lee de refs cada frame.
+const LightningField = ({ hueRef, analyserRef = null }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -26,7 +26,6 @@ const LightningField = ({ hueRef, analyserRef = null, overloadedRef = null }) =>
       uniform float uHue;
       uniform float uIntensity;
       uniform float uAudioLevel;
-      uniform int uOverloaded;
 
       float hash12(vec2 p) {
         vec3 p3 = fract(vec3(p.xyx) * .1031);
@@ -51,25 +50,21 @@ const LightningField = ({ hueRef, analyserRef = null, overloadedRef = null }) =>
       void main() {
         vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / min(iResolution.y, iResolution.x);
         float r = length(uv);
-        bool ovr = uOverloaded == 1;
-        float power = uAudioLevel * (ovr ? 8.0 : 4.5);
+        float power = uAudioLevel * 4.5;
         float finalRays = 0.0; float coreRays = 0.0;
-        for (int i = 0; i < 8; i++) {
-          if (i >= 4 && !ovr) break;
-          float angle = float(i) * (ovr ? 0.785 : 1.57) + iTime * (ovr ? 0.5 : 0.1);
-          float dist = fbm(vec2(r * 2.0 - iTime * (ovr ? 5.0 : 2.0), angle)) * (0.15 + power * 0.1);
+        for (int i = 0; i < 4; i++) {
+          float angle = float(i) * 1.57 + iTime * 0.1;
+          float dist = fbm(vec2(r * 2.0 - iTime * 2.0, angle)) * (0.15 + power * 0.1);
           float line = abs(uv.x * cos(angle) + uv.y * sin(angle) + dist);
-          float glow = (ovr ? 0.04 : 0.02) / (line + 0.02);
+          float glow = 0.02 / (line + 0.02);
           float core = 0.003 / (line + 0.005);
           float mask = smoothstep(0.18, 0.25, r);
           finalRays += glow * mask;
           coreRays  += core * mask * (0.5 + power);
         }
-        float sat = ovr ? 0.2 : 0.7;
-        vec3 baseColor = hsv2rgb(vec3(uHue/360.0, sat, 1.0));
-        if (ovr) baseColor = mix(baseColor, vec3(1.0, 0.9, 0.5), 0.5);
+        vec3 baseColor = hsv2rgb(vec3(uHue/360.0, 0.7, 1.0));
         vec3 col = (baseColor * finalRays * uIntensity) + (vec3(1.0) * coreRays * uIntensity);
-        col += baseColor * power * 0.2;
+        col += baseColor * power * 0.15;
         gl_FragColor = vec4(col, 1.0);
       }
     `;
@@ -95,7 +90,6 @@ const LightningField = ({ hueRef, analyserRef = null, overloadedRef = null }) =>
     const uHueLoc = gl.getUniformLocation(prog, 'uHue');
     const uInt = gl.getUniformLocation(prog, 'uIntensity');
     const uAud = gl.getUniformLocation(prog, 'uAudioLevel');
-    const uOvr = gl.getUniformLocation(prog, 'uOverloaded');
 
     const freqData = new Uint8Array(128);
     let raf;
@@ -104,9 +98,7 @@ const LightningField = ({ hueRef, analyserRef = null, overloadedRef = null }) =>
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.uniform2f(uRes, canvas.width, canvas.height);
       gl.uniform1f(uTime, time * 0.001);
-      const ovr = overloadedRef?.current ? 1 : 0;
-      gl.uniform1f(uHueLoc, ovr ? 30 : (hueRef?.current ?? 220));
-      gl.uniform1i(uOvr, ovr);
+      gl.uniform1f(uHueLoc, hueRef?.current ?? 220);
 
       let level = 0;
       const analyser = analyserRef?.current;
@@ -117,7 +109,7 @@ const LightningField = ({ hueRef, analyserRef = null, overloadedRef = null }) =>
         level = (sum / freqData.length) / 255.0;
       }
 
-      gl.uniform1f(uInt, ovr ? 2.5 : 1.2);
+      gl.uniform1f(uInt, 1.2);
       gl.uniform1f(uAud, level);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       raf = requestAnimationFrame(render);
@@ -165,7 +157,6 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
     // Lightning audio sync refs
     const lightningHueRef = useRef(220);
-    const lightningOverloadedRef = useRef(false);
     const audioCtxRef = useRef(null);
     const lightningAnalyserRef = useRef(null);
 
@@ -182,13 +173,12 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         speakingRef.current = isSpeaking;
     }, [isSpeaking]);
 
-    // Sync lightning hue + overloaded mode with agent state
+    // Sync lightning hue with agent state
     useEffect(() => {
-        lightningOverloadedRef.current = sphereState === 'speaking';
         lightningHueRef.current =
             sphereState === 'listening' ? 190 :
             sphereState === 'thinking'  ? 270 :
-            sphereState === 'speaking'  ? 30  : 220; // speaking → naranja (hue 30), overloaded shader toma el control
+            sphereState === 'speaking'  ? 175 : 220;
     }, [sphereState]);
 
     // Track audio level for toroid glow (RAF loop)
@@ -821,28 +811,20 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         } catch (_) {}
     };
 
-    const isOverloaded = sphereState === 'speaking';
-
     return (
-        <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden"
-            style={{ background: isOverloaded ? '#0a0000' : '#020406', transition: 'background 0.5s' }}>
-            {/* LightningField WebGL — ocupa todo el fondo */}
+        <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden bg-[#020406]">
+            {/* LightningField WebGL — fondo completo */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <LightningField hueRef={lightningHueRef} analyserRef={lightningAnalyserRef} overloadedRef={lightningOverloadedRef} />
+                <LightningField hueRef={lightningHueRef} analyserRef={lightningAnalyserRef} />
             </div>
 
-            {/* Flash sincronizado con voz — blanco normal, naranja/ámbar en overloaded */}
+            {/* Flash blanco sutil sincronizado con voz */}
             <div className="absolute inset-0 z-0 pointer-events-none transition-opacity duration-75"
-                style={{
-                    backgroundColor: isOverloaded ? '#ffaa00' : 'white',
-                    opacity: isSpeaking ? audioLevel * (isOverloaded ? 0.35 : 0.08) : 0
-                }} />
+                style={{ backgroundColor: 'white', opacity: isSpeaking ? audioLevel * 0.08 : 0 }} />
 
-            {/* Degradado atmosférico */}
+            {/* Degradado atmosférico radial */}
             <div className="absolute inset-0 z-0 pointer-events-none"
-                style={{ background: isOverloaded
-                    ? 'radial-gradient(circle at center, rgba(255,50,0,0.08) 0%, black 100%)'
-                    : 'radial-gradient(circle at center, transparent 0%, black 100%)' }} />
+                style={{ background: 'radial-gradient(circle at center, transparent 0%, black 100%)' }} />
 
             {/* Top controls */}
             <div className="relative z-20 flex items-center justify-end px-4 pt-4 pb-2 gap-2">
@@ -966,23 +948,20 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             {/* === TOROID CENTRAL === */}
             <div className="flex-1 flex flex-col items-center justify-center relative px-4 z-10">
                 <div className="relative flex items-center justify-center" style={{width:'min(94vw,400px)', aspectRatio:'1/1'}}>
-                    {/* Glow exterior — azul idle/listening/thinking, naranja-rojo cuando habla */}
+                    {/* Glow exterior reactivo a la voz */}
                     <div className="absolute inset-0 rounded-full blur-[80px] pointer-events-none"
                         style={{
-                            backgroundColor: isOverloaded ? '#ff4400' : `hsl(${lightningHueRef.current}, 100%, 50%)`,
-                            opacity: 0.15 + audioLevel * (isOverloaded ? 1.0 : 0.7),
-                            transform: `scale(${1 + audioLevel * (isOverloaded ? 2.5 : 1.2)})`,
-                            transition: 'background-color 0.4s'
+                            backgroundColor: `hsl(${lightningHueRef.current}, 100%, 50%)`,
+                            opacity: 0.15 + audioLevel * 0.7,
+                            transform: `scale(${1 + audioLevel * 1.2})`
                         }} />
-                    {/* Toroid PNG con glow y escala reactiva */}
+                    {/* Toroid PNG con glow reactivo */}
                     <img
                         src="/toroid.png" alt="" draggable={false}
                         className="relative w-[80%] h-auto object-contain pointer-events-none"
                         style={{
-                            filter: isOverloaded
-                                ? `drop-shadow(0 0 ${50 + audioLevel * 120}px #ffaa00)`
-                                : `drop-shadow(0 0 ${30 + audioLevel * 60}px hsl(${lightningHueRef.current}, 100%, 65%))`,
-                            transform: `scale(${1 + audioLevel * (isOverloaded ? 0.2 : 0.08)}) rotate(${isOverloaded ? audioLevel * 15 : 0}deg)`,
+                            filter: `drop-shadow(0 0 ${30 + audioLevel * 60}px hsl(${lightningHueRef.current}, 100%, 65%))`,
+                            transform: `scale(${1 + audioLevel * 0.08})`,
                             transition: 'transform 75ms, filter 75ms'
                         }}
                     />
