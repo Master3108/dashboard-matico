@@ -374,41 +374,204 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         'Que materias tiene abandonadas?'
     ];
 
-    // === Lightning bolt generation (stable, not in render body) ===
-    const boltsRef = useRef(null);
-    if (!boltsRef.current) {
-        const makeBolt = (x1, y1, x2, y2, segments = 6) => {
+    // === Canvas lightning refs ===
+    const canvasRef = useRef(null);
+    const animRef = useRef(null);
+    const stateRef = useRef(sphereState);
+    useEffect(() => { stateRef.current = sphereState; }, [sphereState]);
+
+    // Canvas lightning animation
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let lastTime = 0;
+        const FPS_INTERVAL = 80; // regenerate bolts every 80ms
+
+        const resize = () => {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Draw a jagged lightning bolt with branches
+        const drawBolt = (x1, y1, x2, y2, width, branchChance, depth) => {
+            const segments = 6 + Math.floor(Math.random() * 4);
             const dx = (x2 - x1) / segments;
             const dy = (y2 - y1) / segments;
-            let path = `M${x1},${y1}`;
-            for (let i = 1; i < segments; i++) {
-                path += ` L${x1 + dx * i + (Math.random() - 0.5) * 18},${y1 + dy * i + (Math.random() - 0.5) * 22}`;
+            const jitter = Math.sqrt(dx * dx + dy * dy) * 0.4;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            let px = x1, py = y1;
+            for (let i = 1; i <= segments; i++) {
+                const nx = i === segments ? x2 : x1 + dx * i + (Math.random() - 0.5) * jitter;
+                const ny = i === segments ? y2 : y1 + dy * i + (Math.random() - 0.5) * jitter;
+                ctx.lineTo(nx, ny);
+                // Branch
+                if (depth > 0 && i > 1 && i < segments - 1 && Math.random() < branchChance) {
+                    const bLen = 0.3 + Math.random() * 0.4;
+                    const bx = nx + (dx * bLen) + (Math.random() - 0.5) * jitter * 1.5;
+                    const by = ny + (dy * bLen) + (Math.random() - 0.5) * jitter * 1.5;
+                    const oldWidth = ctx.lineWidth;
+                    const oldAlpha = ctx.globalAlpha;
+                    ctx.stroke();
+                    ctx.lineWidth = width * 0.5;
+                    ctx.globalAlpha = oldAlpha * 0.6;
+                    drawBolt(nx, ny, bx, by, width * 0.4, branchChance * 0.4, depth - 1);
+                    ctx.lineWidth = oldWidth;
+                    ctx.globalAlpha = oldAlpha;
+                    ctx.beginPath();
+                    ctx.moveTo(nx, ny);
+                }
+                px = nx; py = ny;
             }
-            return path + ` L${x2},${y2}`;
+            ctx.stroke();
         };
-        boltsRef.current = {
-            left: Array.from({ length: 8 }, (_, i) => ({
-                d: makeBolt(280, 150 + (i - 3.5) * 8, -20 - i * 30, 140 + (Math.random() - 0.5) * 60, 5 + Math.floor(Math.random() * 3)),
-                w: 1.5 + Math.random() * 2, op: 0.5 + Math.random() * 0.5, delay: i * 0.12, dur: 0.4 + Math.random() * 0.4
-            })),
-            right: Array.from({ length: 8 }, (_, i) => ({
-                d: makeBolt(420, 150 + (i - 3.5) * 8, 720 + i * 30, 140 + (Math.random() - 0.5) * 60, 5 + Math.floor(Math.random() * 3)),
-                w: 1.5 + Math.random() * 2, op: 0.5 + Math.random() * 0.5, delay: i * 0.12 + 0.06, dur: 0.4 + Math.random() * 0.4
-            })),
-            bottom: Array.from({ length: 6 }, (_, i) => ({
-                d: makeBolt(340 + (i - 2.5) * 16, 190, 320 + (i - 2.5) * 35, 320 + Math.random() * 40, 4 + Math.floor(Math.random() * 2)),
-                w: 1 + Math.random() * 1.5, op: 0.4 + Math.random() * 0.5, delay: i * 0.1, dur: 0.5 + Math.random() * 0.3
-            }))
+
+        const animate = (ts) => {
+            animRef.current = requestAnimationFrame(animate);
+            if (ts - lastTime < FPS_INTERVAL) return;
+            lastTime = ts;
+
+            const W = canvas.style.width ? parseFloat(canvas.style.width) : 400;
+            const H = canvas.style.height ? parseFloat(canvas.style.height) : 300;
+            ctx.clearRect(0, 0, W, H);
+
+            const st = stateRef.current;
+            const cx = W / 2;
+            const cy = H * 0.42; // toroid center
+            const rx = W * 0.26; // toroid horizontal radius
+            const ry = H * 0.18;
+
+            // Speaking: intense side lightning
+            if (st === 'speaking') {
+                const count = 5 + Math.floor(Math.random() * 4);
+                for (let i = 0; i < count; i++) {
+                    const isLeft = i % 2 === 0;
+                    const startX = isLeft ? cx - rx - 5 : cx + rx + 5;
+                    const startY = cy + (Math.random() - 0.5) * ry * 1.2;
+                    const endX = isLeft ? -10 - Math.random() * W * 0.15 : W + 10 + Math.random() * W * 0.15;
+                    const endY = startY + (Math.random() - 0.5) * H * 0.2;
+                    const w = 1.5 + Math.random() * 2.5;
+
+                    // Glow layer
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(59,130,246,0.5)';
+                    ctx.lineWidth = w + 6;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.globalAlpha = 0.4 + Math.random() * 0.3;
+                    ctx.shadowColor = 'rgba(59,130,246,0.8)';
+                    ctx.shadowBlur = 20;
+                    drawBolt(startX, startY, endX, endY, w + 6, 0.35, 2);
+                    ctx.restore();
+
+                    // Core white layer
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(200,230,255,0.9)';
+                    ctx.lineWidth = w;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+                    ctx.shadowColor = 'rgba(125,211,252,0.9)';
+                    ctx.shadowBlur = 12;
+                    drawBolt(startX, startY, endX, endY, w, 0.3, 1);
+                    ctx.restore();
+                }
+            }
+
+            // Idle / thinking: very subtle side wisps
+            if (st === 'idle' || st === 'thinking') {
+                const count = st === 'thinking' ? 2 : 1;
+                for (let i = 0; i < count; i++) {
+                    if (Math.random() > 0.6) continue;
+                    const isLeft = Math.random() > 0.5;
+                    const startX = isLeft ? cx - rx : cx + rx;
+                    const startY = cy + (Math.random() - 0.5) * ry * 0.6;
+                    const endX = isLeft ? startX - 30 - Math.random() * 60 : startX + 30 + Math.random() * 60;
+                    const endY = startY + (Math.random() - 0.5) * 30;
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(125,211,252,0.4)';
+                    ctx.lineWidth = 1;
+                    ctx.lineCap = 'round';
+                    ctx.globalAlpha = 0.15 + Math.random() * 0.15;
+                    ctx.shadowColor = 'rgba(59,130,246,0.5)';
+                    ctx.shadowBlur = 8;
+                    drawBolt(startX, startY, endX, endY, 1, 0.1, 0);
+                    ctx.restore();
+                }
+            }
+
+            // Listening: bolts below + subtle side
+            if (st === 'listening') {
+                // Bottom bolts
+                const bCount = 4 + Math.floor(Math.random() * 3);
+                for (let i = 0; i < bCount; i++) {
+                    const startX = cx + (Math.random() - 0.5) * rx * 1.2;
+                    const startY = cy + ry * 0.6 + Math.random() * 10;
+                    const endX = startX + (Math.random() - 0.5) * 60;
+                    const endY = startY + 40 + Math.random() * H * 0.2;
+                    const w = 1 + Math.random() * 1.5;
+
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(59,130,246,0.5)';
+                    ctx.lineWidth = w + 4;
+                    ctx.lineCap = 'round';
+                    ctx.globalAlpha = 0.3 + Math.random() * 0.3;
+                    ctx.shadowColor = 'rgba(59,130,246,0.7)';
+                    ctx.shadowBlur = 14;
+                    drawBolt(startX, startY, endX, endY, w + 4, 0.2, 1);
+                    ctx.restore();
+
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(186,230,253,0.8)';
+                    ctx.lineWidth = w;
+                    ctx.lineCap = 'round';
+                    ctx.globalAlpha = 0.5 + Math.random() * 0.4;
+                    ctx.shadowColor = 'rgba(125,211,252,0.8)';
+                    ctx.shadowBlur = 8;
+                    drawBolt(startX, startY, endX, endY, w, 0.15, 0);
+                    ctx.restore();
+                }
+
+                // Subtle side wisps
+                for (let i = 0; i < 2; i++) {
+                    const isLeft = i === 0;
+                    const startX = isLeft ? cx - rx : cx + rx;
+                    const startY = cy + (Math.random() - 0.5) * ry;
+                    const endX = isLeft ? startX - 40 - Math.random() * 40 : startX + 40 + Math.random() * 40;
+                    const endY = startY + (Math.random() - 0.5) * 20;
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(125,211,252,0.5)';
+                    ctx.lineWidth = 1.2;
+                    ctx.lineCap = 'round';
+                    ctx.globalAlpha = 0.2 + Math.random() * 0.2;
+                    ctx.shadowColor = 'rgba(59,130,246,0.6)';
+                    ctx.shadowBlur = 10;
+                    drawBolt(startX, startY, endX, endY, 1.2, 0.15, 0);
+                    ctx.restore();
+                }
+            }
         };
-    }
-    const { left: leftBolts, right: rightBolts, bottom: bottomBolts } = boltsRef.current;
+
+        animRef.current = requestAnimationFrame(animate);
+        return () => {
+            cancelAnimationFrame(animRef.current);
+            window.removeEventListener('resize', resize);
+        };
+    }, []);
 
     return (
-        <div className="fixed inset-0 z-[9999] flex flex-col vt-scene" data-state={sphereState}>
-            {/* Dark background */}
-            <div className="absolute inset-0" style={{background:'radial-gradient(ellipse 130% 90% at 50% 38%, #0a1628 0%, #050a15 55%, #020408 100%)'}} />
-            {/* Atmospheric haze */}
-            <div className="absolute inset-0 pointer-events-none" style={{background:'radial-gradient(ellipse 80% 50% at 50% 42%, rgba(30,64,175,0.12) 0%, transparent 70%)'}} />
+        <div className="fixed inset-0 z-[9999] flex flex-col" style={{background:'radial-gradient(ellipse 130% 90% at 50% 38%, #0a1628 0%, #050a15 55%, #020408 100%)'}}>
+            {/* Stormy atmosphere */}
+            <div className="absolute inset-0 pointer-events-none" style={{background:'radial-gradient(ellipse 70% 45% at 50% 40%, rgba(30,58,138,0.1) 0%, transparent 70%)'}} />
 
             {/* Top controls */}
             <div className="relative z-20 flex items-center justify-end px-4 pt-4 pb-2 gap-2">
@@ -446,132 +609,75 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 </div>
             )}
 
-            {/* === TOROID + LIGHTNING SVG === */}
+            {/* === TOROID + CANVAS LIGHTNING === */}
             <div className="flex-1 flex flex-col items-center justify-center relative px-4 z-10">
-                <div className="vt-wrap relative" style={{width:'min(92vw, 520px)', aspectRatio:'700/420'}} data-state={sphereState}>
-                    <svg viewBox="0 0 700 420" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                <div className="relative" style={{width:'min(94vw, 540px)', aspectRatio:'5/3.5'}}>
+                    {/* Canvas for animated lightning — sits on top */}
+                    <canvas ref={canvasRef} className="absolute inset-0 z-10 pointer-events-none" />
+
+                    {/* SVG Toroid — 3D glossy donut */}
+                    <svg viewBox="0 0 540 380" className="absolute inset-0 w-full h-full z-5" xmlns="http://www.w3.org/2000/svg">
                         <defs>
-                            {/* Glow filters */}
-                            <filter id="glow-soft" x="-50%" y="-50%" width="200%" height="200%">
-                                <feGaussianBlur stdDeviation="8" result="b"/>
+                            <filter id="tg" x="-40%" y="-40%" width="180%" height="180%">
+                                <feGaussianBlur stdDeviation="12" result="b"/>
                                 <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
                             </filter>
-                            <filter id="glow-strong" x="-50%" y="-50%" width="200%" height="200%">
-                                <feGaussianBlur stdDeviation="14" result="b"/>
-                                <feGaussianBlur stdDeviation="4" in="SourceGraphic" result="s"/>
-                                <feMerge><feMergeNode in="b"/><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
-                            </filter>
-                            <filter id="glow-bolt" x="-80%" y="-80%" width="260%" height="260%">
+                            <filter id="tg2" x="-30%" y="-30%" width="160%" height="160%">
                                 <feGaussianBlur stdDeviation="6" result="b"/>
-                                <feGaussianBlur stdDeviation="2" in="SourceGraphic" result="s"/>
-                                <feMerge><feMergeNode in="b"/><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
-                            </filter>
-                            <filter id="glow-listen" x="-60%" y="-60%" width="220%" height="220%">
-                                <feGaussianBlur stdDeviation="5" result="b"/>
                                 <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
                             </filter>
-
-                            {/* Toroid gradient */}
-                            <radialGradient id="toroid-fill" cx="50%" cy="50%" r="50%">
-                                <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0"/>
-                                <stop offset="55%" stopColor="#0ea5e9" stopOpacity="0"/>
-                                <stop offset="62%" stopColor="#1e40af" stopOpacity="0.4"/>
-                                <stop offset="70%" stopColor="#3b82f6" stopOpacity="0.85"/>
-                                <stop offset="78%" stopColor="#22d3ee" stopOpacity="0.7"/>
-                                <stop offset="84%" stopColor="#3b82f6" stopOpacity="0.6"/>
-                                <stop offset="90%" stopColor="#1e3a8a" stopOpacity="0.3"/>
-                                <stop offset="100%" stopColor="#0c1a3a" stopOpacity="0"/>
-                            </radialGradient>
-
-                            {/* Toroid 3D shading */}
-                            <radialGradient id="toroid-shade" cx="42%" cy="35%" r="55%">
-                                <stop offset="0%" stopColor="#fff" stopOpacity="0.25"/>
-                                <stop offset="40%" stopColor="#7dd3fc" stopOpacity="0.1"/>
-                                <stop offset="100%" stopColor="#000" stopOpacity="0"/>
-                            </radialGradient>
-
-                            {/* Inner hole darkness */}
-                            <radialGradient id="hole-dark" cx="50%" cy="50%" r="50%">
-                                <stop offset="0%" stopColor="#020408" stopOpacity="0.98"/>
-                                <stop offset="70%" stopColor="#040810" stopOpacity="0.9"/>
-                                <stop offset="100%" stopColor="#0a1628" stopOpacity="0"/>
-                            </radialGradient>
+                            {/* Tube cross-section gradient: light on top, dark bottom */}
+                            <linearGradient id="tube3d" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.95"/>
+                                <stop offset="15%" stopColor="#7dd3fc" stopOpacity="0.9"/>
+                                <stop offset="30%" stopColor="#38bdf8" stopOpacity="0.85"/>
+                                <stop offset="50%" stopColor="#0284c7" stopOpacity="0.8"/>
+                                <stop offset="70%" stopColor="#1e40af" stopOpacity="0.75"/>
+                                <stop offset="85%" stopColor="#1e3a8a" stopOpacity="0.6"/>
+                                <stop offset="100%" stopColor="#0c1a3a" stopOpacity="0.4"/>
+                            </linearGradient>
+                            <linearGradient id="tube-inner" x1="0" y1="1" x2="0" y2="0">
+                                <stop offset="0%" stopColor="#bae6fd" stopOpacity="0.5"/>
+                                <stop offset="30%" stopColor="#0ea5e9" stopOpacity="0.3"/>
+                                <stop offset="100%" stopColor="#0c1a3a" stopOpacity="0.1"/>
+                            </linearGradient>
                         </defs>
 
-                        {/* Ambient glow */}
-                        <ellipse cx="350" cy="155" rx="260" ry="120" fill="rgba(59,130,246,0.12)" filter="url(#glow-soft)" className="vt-ambient"/>
+                        <g transform="translate(270,160)">
+                            {/* Outer ambient glow */}
+                            <ellipse cx="0" cy="0" rx="180" ry="95" fill="none" stroke="rgba(59,130,246,0.2)" strokeWidth="60" filter="url(#tg)" className="vt-glow-ring"/>
 
-                        {/* Main toroid — outer ring */}
-                        <g transform="translate(350,155)" className="vt-toroid-g">
-                            {/* Outer glow ring */}
-                            <ellipse cx="0" cy="0" rx="195" ry="105" fill="none" stroke="rgba(59,130,246,0.3)" strokeWidth="48" filter="url(#glow-soft)" className="vt-outer-glow"/>
-                            {/* Main ring body */}
-                            <ellipse cx="0" cy="0" rx="185" ry="95" fill="url(#toroid-fill)" filter="url(#glow-soft)"/>
-                            {/* Ring tube stroke — the bright visible tube */}
-                            <ellipse cx="0" cy="0" rx="175" ry="88" fill="none" stroke="url(#toroid-fill)" strokeWidth="38"/>
-                            {/* Highlight stroke */}
-                            <ellipse cx="0" cy="0" rx="172" ry="86" fill="none" stroke="rgba(125,211,252,0.35)" strokeWidth="2"/>
-                            <ellipse cx="0" cy="0" rx="178" ry="90" fill="none" stroke="rgba(59,130,246,0.2)" strokeWidth="1.5"/>
-                            {/* 3D shading overlay */}
-                            <ellipse cx="0" cy="0" rx="185" ry="95" fill="url(#toroid-shade)"/>
-                            {/* Top highlight arc */}
-                            <path d="M-120,-72 Q-60,-95 0,-98 Q60,-95 120,-72" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3" strokeLinecap="round" filter="url(#glow-soft)"/>
-                            {/* Inner hole */}
-                            <ellipse cx="0" cy="0" rx="138" ry="52" fill="url(#hole-dark)"/>
-                            {/* Inner edge glow */}
-                            <ellipse cx="0" cy="0" rx="140" ry="54" fill="none" stroke="rgba(59,130,246,0.25)" strokeWidth="2" filter="url(#glow-soft)"/>
-                            {/* Rotating energy band */}
-                            <ellipse cx="0" cy="0" rx="176" ry="89" fill="none" stroke="rgba(34,211,238,0.4)" strokeWidth="3" strokeDasharray="40 80 20 120" className="vt-band-1"/>
-                            <ellipse cx="0" cy="0" rx="174" ry="87" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeDasharray="30 100 50 80" className="vt-band-2"/>
+                            {/* Main torus tube — outer edge */}
+                            <ellipse cx="0" cy="0" rx="155" ry="80" fill="none" stroke="url(#tube3d)" strokeWidth="52" filter="url(#tg2)"/>
+
+                            {/* Bright rim highlight on top */}
+                            <ellipse cx="0" cy="0" rx="155" ry="80" fill="none" stroke="rgba(186,230,253,0.5)" strokeWidth="2" strokeDasharray="180 400"/>
+                            <path d="M-130,-68 Q-70,-88 0,-92 Q70,-88 130,-68" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="4" strokeLinecap="round" filter="url(#tg2)"/>
+                            <path d="M-100,-62 Q-50,-78 0,-80 Q50,-78 100,-62" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="8" strokeLinecap="round" filter="url(#tg)"/>
+
+                            {/* Inner hole — very dark */}
+                            <ellipse cx="0" cy="0" rx="105" ry="38" fill="#020408"/>
+                            <ellipse cx="0" cy="0" rx="108" ry="40" fill="none" stroke="rgba(30,64,175,0.3)" strokeWidth="3" filter="url(#tg2)"/>
+
+                            {/* Inner bottom rim light (reflected light on inner bottom) */}
+                            <path d="M-90,20 Q-45,38 0,40 Q45,38 90,20" fill="none" stroke="url(#tube-inner)" strokeWidth="6" strokeLinecap="round" filter="url(#tg2)"/>
+
+                            {/* Specular hotspot — top center */}
+                            <ellipse cx="-20" cy="-72" rx="50" ry="12" fill="rgba(255,255,255,0.2)" filter="url(#tg)"/>
                         </g>
 
-                        {/* === LIGHTNING BOLTS — LEFT === */}
-                        <g className="vt-bolts-left" filter="url(#glow-bolt)">
-                            {leftBolts.map((b, i) => (
-                                <path key={`lb${i}`} d={b.d} fill="none" stroke="rgba(125,211,252,0.9)" strokeWidth={b.w} strokeLinecap="round" opacity={b.op}
-                                    style={{animation: `vt-bolt-flash ${b.dur}s ease-in-out infinite`, animationDelay: `${b.delay}s`}} />
-                            ))}
-                            {/* Core bright line through center */}
-                            <line x1="280" y1="150" x2="20" y2="148" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round"
-                                style={{animation:'vt-core-ray 0.6s ease-in-out infinite'}} />
-                        </g>
-
-                        {/* === LIGHTNING BOLTS — RIGHT === */}
-                        <g className="vt-bolts-right" filter="url(#glow-bolt)">
-                            {rightBolts.map((b, i) => (
-                                <path key={`rb${i}`} d={b.d} fill="none" stroke="rgba(125,211,252,0.9)" strokeWidth={b.w} strokeLinecap="round" opacity={b.op}
-                                    style={{animation: `vt-bolt-flash ${b.dur}s ease-in-out infinite`, animationDelay: `${b.delay}s`}} />
-                            ))}
-                            <line x1="420" y1="150" x2="680" y2="148" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round"
-                                style={{animation:'vt-core-ray 0.6s ease-in-out infinite', animationDelay:'0.15s'}} />
-                        </g>
-
-                        {/* === LISTENING — bolts below === */}
-                        <g className="vt-listen-bolts" filter="url(#glow-listen)">
-                            {bottomBolts.map((b, i) => (
-                                <path key={`bb${i}`} d={b.d} fill="none" stroke="rgba(96,165,250,0.85)" strokeWidth={b.w} strokeLinecap="round" opacity={b.op}
-                                    style={{animation: `vt-bolt-flash ${b.dur}s ease-in-out infinite`, animationDelay: `${b.delay}s`}} />
-                            ))}
-                            {/* Ripple ellipses below */}
-                            <ellipse cx="350" cy="240" rx="80" ry="12" fill="none" stroke="rgba(59,130,246,0.4)" strokeWidth="1.5" className="vt-listen-ripple-1"/>
-                            <ellipse cx="350" cy="260" rx="100" ry="14" fill="none" stroke="rgba(125,211,252,0.3)" strokeWidth="1" className="vt-listen-ripple-2"/>
-                            <ellipse cx="350" cy="280" rx="120" ry="16" fill="none" stroke="rgba(59,130,246,0.2)" strokeWidth="1" className="vt-listen-ripple-3"/>
-                        </g>
-
-                        {/* Floating particles */}
-                        {[
-                            {cx:180,cy:90,r:3},{cx:520,cy:100,r:2.5},{cx:140,cy:180,r:2},{cx:560,cy:170,r:3},
-                            {cx:250,cy:60,r:2},{cx:460,cy:55,r:2.5},{cx:300,cy:220,r:2},{cx:400,cy:230,r:2.5},
-                            {cx:100,cy:140,r:2},{cx:600,cy:135,r:2}
-                        ].map((p, i) => (
-                            <circle key={`p${i}`} cx={p.cx} cy={p.cy} r={p.r} fill="rgba(186,230,253,0.7)" className="vt-particle"
-                                style={{animationDelay:`${i*0.3}s`}} />
+                        {/* Small bright particles */}
+                        {[{x:110,y:95},{x:430,y:100},{x:90,y:190},{x:455,y:180},{x:200,y:60},{x:350,y:55},{x:160,y:250},{x:380,y:245}].map((p,i) => (
+                            <circle key={i} cx={p.x} cy={p.y} r={2.5} fill="rgba(186,230,253,0.8)" filter="url(#tg2)">
+                                <animate attributeName="opacity" values="0.3;0.9;0.3" dur={`${2+i*0.4}s`} repeatCount="indefinite"/>
+                                <animate attributeName="cy" values={`${p.y};${p.y-8};${p.y}`} dur={`${3+i*0.3}s`} repeatCount="indefinite"/>
+                            </circle>
                         ))}
                     </svg>
                 </div>
 
                 {/* Status text */}
-                <div className="mt-2 text-center relative z-10">
+                <div className="mt-2 text-center relative z-20">
                     <p className={`text-base font-semibold transition-colors duration-300 ${
                         sphereState === 'listening' ? 'text-blue-400' :
                         sphereState === 'thinking' ? 'text-purple-400' :
@@ -590,9 +696,8 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     )}
                 </div>
 
-                {/* Quick questions */}
                 {messages.length <= 1 && !isProcessing && (
-                    <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-md relative z-10">
+                    <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-md relative z-20">
                         {quickQuestions.map((q, i) => (
                             <button key={i} onClick={() => sendMessage(q)}
                                 className="px-4 py-2 rounded-full bg-blue-900/40 hover:bg-blue-800/50 text-blue-300 text-sm font-medium transition border border-blue-700/40 backdrop-blur-sm">
@@ -650,105 +755,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             </div>
 
             <style>{`
-                /* ===== State-based visibility ===== */
-                .vt-scene { overflow: hidden; }
-
-                /* --- Toroid pulse per state --- */
-                .vt-toroid-g { transition: filter 0.4s, transform 0.4s; }
-                .vt-scene[data-state="idle"] .vt-toroid-g { animation: vt-breathe 5s ease-in-out infinite; }
-                .vt-scene[data-state="speaking"] .vt-toroid-g { animation: vt-speak-pulse 0.7s ease-in-out infinite; filter: drop-shadow(0 0 30px rgba(34,211,238,0.6)); }
-                .vt-scene[data-state="listening"] .vt-toroid-g { animation: vt-listen-pulse 1.3s ease-in-out infinite; filter: drop-shadow(0 0 20px rgba(59,130,246,0.5)); }
-                .vt-scene[data-state="thinking"] .vt-toroid-g { animation: vt-think-rotate 3s ease-in-out infinite; }
-
-                .vt-scene[data-state="idle"] .vt-outer-glow { stroke-opacity: 0.15; }
-                .vt-scene[data-state="speaking"] .vt-outer-glow { stroke: rgba(34,211,238,0.5); stroke-opacity: 1; }
-                .vt-scene[data-state="listening"] .vt-outer-glow { stroke: rgba(59,130,246,0.4); stroke-opacity: 0.8; }
-
-                /* --- Ambient glow --- */
-                .vt-ambient { transition: all 0.5s; }
-                .vt-scene[data-state="speaking"] .vt-ambient { rx: 320; ry: 160; fill: rgba(34,211,238,0.18); }
-                .vt-scene[data-state="listening"] .vt-ambient { fill: rgba(59,130,246,0.15); }
-
-                /* --- Lightning bolts visibility --- */
-                .vt-bolts-left, .vt-bolts-right { transition: opacity 0.35s; }
-                .vt-scene[data-state="idle"] .vt-bolts-left,
-                .vt-scene[data-state="idle"] .vt-bolts-right { opacity: 0.08; }
-                .vt-scene[data-state="thinking"] .vt-bolts-left,
-                .vt-scene[data-state="thinking"] .vt-bolts-right { opacity: 0.12; }
-                .vt-scene[data-state="speaking"] .vt-bolts-left,
-                .vt-scene[data-state="speaking"] .vt-bolts-right { opacity: 1; }
-                .vt-scene[data-state="listening"] .vt-bolts-left,
-                .vt-scene[data-state="listening"] .vt-bolts-right { opacity: 0.25; }
-
-                /* --- Listening zone below toroid --- */
-                .vt-listen-bolts { transition: opacity 0.4s; }
-                .vt-scene[data-state="idle"] .vt-listen-bolts,
-                .vt-scene[data-state="speaking"] .vt-listen-bolts,
-                .vt-scene[data-state="thinking"] .vt-listen-bolts { opacity: 0; }
-                .vt-scene[data-state="listening"] .vt-listen-bolts { opacity: 1; }
-
-                /* Listening ripples */
-                .vt-listen-ripple-1, .vt-listen-ripple-2, .vt-listen-ripple-3 { opacity: 0; }
-                .vt-scene[data-state="listening"] .vt-listen-ripple-1 { animation: vt-ripple 1.5s ease-out infinite; }
-                .vt-scene[data-state="listening"] .vt-listen-ripple-2 { animation: vt-ripple 1.5s ease-out infinite 0.3s; }
-                .vt-scene[data-state="listening"] .vt-listen-ripple-3 { animation: vt-ripple 1.5s ease-out infinite 0.6s; }
-
-                /* --- Energy bands rotation --- */
-                .vt-band-1 { animation: vt-band-spin 8s linear infinite; transform-origin: center; }
-                .vt-band-2 { animation: vt-band-spin 12s linear infinite reverse; transform-origin: center; }
-                .vt-scene[data-state="speaking"] .vt-band-1 { animation-duration: 2s; stroke: rgba(34,211,238,0.7); }
-                .vt-scene[data-state="speaking"] .vt-band-2 { animation-duration: 3s; stroke: rgba(255,255,255,0.35); }
-
-                /* --- Particles --- */
-                .vt-particle { animation: vt-particle-float 3.5s ease-in-out infinite alternate; }
-                .vt-scene[data-state="speaking"] .vt-particle { fill: rgba(255,255,255,0.9); animation-duration: 1.2s; }
-                .vt-scene[data-state="listening"] .vt-particle { fill: rgba(147,197,253,0.8); }
-
-                /* ===== KEYFRAMES ===== */
-                @keyframes vt-breathe {
-                    0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.015); }
-                }
-                @keyframes vt-speak-pulse {
-                    0%, 100% { transform: scale(1.01); }
-                    50% { transform: scale(1.05); }
-                }
-                @keyframes vt-listen-pulse {
-                    0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.025); }
-                }
-                @keyframes vt-think-rotate {
-                    0%, 100% { transform: scale(1) rotate(-1deg); filter: hue-rotate(0deg); }
-                    50% { transform: scale(1.02) rotate(1deg); filter: hue-rotate(15deg); }
-                }
-                @keyframes vt-bolt-flash {
-                    0%, 100% { opacity: 0; }
-                    10% { opacity: 1; }
-                    25% { opacity: 0.15; }
-                    40% { opacity: 0.9; }
-                    55% { opacity: 0.05; }
-                    70% { opacity: 0.7; }
-                    85% { opacity: 0; }
-                }
-                @keyframes vt-core-ray {
-                    0%, 100% { opacity: 0.1; }
-                    20% { opacity: 0.85; }
-                    40% { opacity: 0.15; }
-                    60% { opacity: 0.7; }
-                    80% { opacity: 0.05; }
-                }
-                @keyframes vt-ripple {
-                    0% { opacity: 0.7; transform: scale(0.8); }
-                    100% { opacity: 0; transform: scale(1.6); }
-                }
-                @keyframes vt-band-spin {
-                    0% { stroke-dashoffset: 0; }
-                    100% { stroke-dashoffset: 600; }
-                }
-                @keyframes vt-particle-float {
-                    0% { transform: translate(0,0) scale(0.7); opacity: 0.3; }
-                    100% { transform: translate(6px,-10px) scale(1.4); opacity: 0.85; }
-                }
+                .vt-glow-ring { transition: all 0.4s; }
             `}</style>
         </div>
     );
