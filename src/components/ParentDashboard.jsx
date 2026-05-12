@@ -1236,13 +1236,27 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                     <div className={`rounded-2xl border p-3 ${staleSubjects.length > 0 ? 'bg-red-50 border-red-100 text-red-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
                                         <div className="flex items-start gap-2">
                                             <AlertTriangle className={`w-4 h-4 mt-0.5 ${staleSubjects.length > 0 ? 'text-red-600' : 'text-gray-400'}`} />
-                                            <div>
+                                            <div className="flex-1">
                                                 <p className="font-black">Materia sin estudiar</p>
-                                                <p className="text-xs mt-0.5">
-                                                    {staleSubjects.length > 0
-                                                        ? `${staleSubjects.slice(0, 3).join(', ')} sin sesion reciente. Avisar al apoderado.`
-                                                        : 'Todas las materias tienen actividad reciente.'}
-                                                </p>
+                                                {staleSubjects.length > 0 ? (
+                                                    <div className="mt-1 space-y-1">
+                                                        {staleSubjects.slice(0, 5).map(subj => {
+                                                            const detail = dailyReport?.stale_details?.[subj];
+                                                            return (
+                                                                <p key={subj} className="text-xs">
+                                                                    <span className="font-black">{subj}</span>
+                                                                    {detail ? (
+                                                                        detail.has_activity
+                                                                            ? ` — ultima actividad hace ${detail.days_ago} dia(s)`
+                                                                            : ' — sin registro de estudio'
+                                                                    ) : ' — sin sesion reciente'}
+                                                                </p>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs mt-0.5">Todas las materias tienen actividad reciente.</p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

@@ -3793,15 +3793,37 @@ const buildDailyReportForStudent = async ({ student_user_id, report_date = dateO
         return [...new Set([base, withAccent, lower, titled])];
     };
 
+    const staleDetails = {};
     for (const subject of PRIORITY_STUDY_SUBJECTS) {
         const variants = subjectVariants(subject);
         const orFilter = variants.map(v => `subject.eq.${v}`).join(',');
         const [recentStudy, recentProgress, recentOcr] = await Promise.all([
-            supabase.from('study_sessions').select('session_id').eq('student_user_id', student_user_id).or(orFilter).gte('start_time', sinceIso).limit(1),
-            supabase.from('progress_log').select('id').eq('user_id', student_user_id).or(orFilter).gte('created_at', sinceIso).limit(1),
-            supabase.from('notebook_ocr_records').select('id').eq('user_id', student_user_id).or(orFilter).gte('created_at', sinceIso).limit(1)
+            supabase.from('study_sessions').select('session_id,start_time,subject').eq('student_user_id', student_user_id).or(orFilter).order('start_time', { ascending: false }).limit(1),
+            supabase.from('progress_log').select('id,created_at,subject').eq('user_id', student_user_id).or(orFilter).order('created_at', { ascending: false }).limit(1),
+            supabase.from('notebook_ocr_records').select('id,created_at,subject').eq('user_id', student_user_id).or(orFilter).order('created_at', { ascending: false }).limit(1)
         ]);
-        if (!(recentStudy.data?.length || recentProgress.data?.length || recentOcr.data?.length)) {
+        // Find the most recent activity date across all 3 tables
+        const dates = [
+            recentStudy.data?.[0]?.start_time,
+            recentProgress.data?.[0]?.created_at,
+            recentOcr.data?.[0]?.created_at
+        ].filter(Boolean).map(d => new Date(d)).sort((a, b) => b - a);
+        const lastDate = dates[0] || null;
+        const isStale = !lastDate || lastDate < new Date(sinceIso);
+        const daysAgo = lastDate ? Math.floor((Date.now() - lastDate.getTime()) / 86400000) : null;
+
+        staleDetails[subject] = {
+            has_activity: !!lastDate,
+            last_activity: lastDate ? lastDate.toISOString() : null,
+            days_ago: daysAgo,
+            is_stale: isStale,
+            found_in: [
+                recentStudy.data?.length ? 'study_sessions' : null,
+                recentProgress.data?.length ? 'progress_log' : null,
+                recentOcr.data?.length ? 'notebook_ocr' : null
+            ].filter(Boolean)
+        };
+        if (isStale) {
             staleAlerts.push(subject);
         }
     }
@@ -3823,6 +3845,7 @@ const buildDailyReportForStudent = async ({ student_user_id, report_date = dateO
         notebook_count: ocrRows.length,
         subjects,
         stale_subjects: staleAlerts,
+        stale_details: staleDetails,
         summary_text: summaryText,
         generated_at: new Date().toISOString()
     };
