@@ -717,14 +717,74 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         )
         .sort((a, b) => getDateKey(a.event_date).localeCompare(getDateKey(b.event_date)));
     const pendingEvents = futurePendingEvents.length;
-    const staleSubjectAlerts = historyItems.filter(item =>
-        (String(item.source || '') === 'study_alert' || String(item.type || '') === 'stale_subject') &&
-        matchesSummarySubject(item.subject)
-    );
-    const staleSubjects = Array.from(new Set([
+    // Smart stale subjects: cross-reference with actual recent activity from historyItems
+    const recentActivitySubjects = new Set();
+    const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0];
+    historyItems.forEach(item => {
+        const dateKey = getDateKey(item.date);
+        if (dateKey >= threeDaysAgo && item.subject) {
+            recentActivitySubjects.add(normalizeSubject(item.subject));
+        }
+    });
+    realStudySessions.forEach(s => {
+        const dateKey = getDateKey(s.start_time || s.created_at);
+        if (dateKey >= threeDaysAgo && s.subject) {
+            recentActivitySubjects.add(normalizeSubject(s.subject));
+        }
+    });
+
+    // Get raw stale from server but filter out subjects with real recent activity
+    const rawStale = [
         ...(dailyReport?.stale_subjects || []),
-        ...staleSubjectAlerts.map(item => item.subject).filter(Boolean)
-    ].map(normalizeSubject).filter(Boolean)));
+        ...historyItems.filter(item =>
+            (String(item.source || '') === 'study_alert' || String(item.type || '') === 'stale_subject') &&
+            matchesSummarySubject(item.subject)
+        ).map(item => item.subject).filter(Boolean)
+    ].map(normalizeSubject).filter(Boolean);
+
+    const staleSubjects = Array.from(new Set(rawStale)).filter(s => !recentActivitySubjects.has(s));
+
+    // Build smart alerts: subjects with upcoming events that need prep
+    const upcomingEventSubjects = {};
+    futurePendingEvents.forEach(event => {
+        const subj = normalizeSubject(event.subject);
+        const daysUntil = daysBetween(today, getDateKey(event.event_date));
+        if (subj && daysUntil >= 0 && daysUntil <= 3) {
+            if (!upcomingEventSubjects[subj] || daysUntil < upcomingEventSubjects[subj].daysUntil) {
+                const eventDate = new Date(`${getDateKey(event.event_date)}T12:00:00`);
+                const dayName = eventDate.toLocaleDateString('es-CL', { weekday: 'long' });
+                upcomingEventSubjects[subj] = { event, daysUntil, dayName };
+            }
+        }
+    });
+    // Subjects that have an upcoming event AND recent study = positive prep alert
+    const prepAlerts = Object.entries(upcomingEventSubjects)
+        .filter(([subj]) => recentActivitySubjects.has(subj))
+        .map(([subj, { event, daysUntil, dayName }]) => ({
+            subject: subj,
+            event,
+            daysUntil,
+            dayName,
+            message: daysUntil === 0
+                ? `${subj}: tiene ${event.title || 'prueba'} HOY. Ya estuvo estudiando.`
+                : daysUntil === 1
+                    ? `${subj}: tiene ${event.title || 'prueba'} manana ${dayName}. Estudió recientemente.`
+                    : `${subj}: tiene ${event.title || 'prueba'} este ${dayName}. Estudió recientemente.`
+        }));
+    // Subjects with upcoming event but NO recent study = urgent alert
+    const urgentPrepAlerts = Object.entries(upcomingEventSubjects)
+        .filter(([subj]) => !recentActivitySubjects.has(subj))
+        .map(([subj, { event, daysUntil, dayName }]) => ({
+            subject: subj,
+            event,
+            daysUntil,
+            dayName,
+            message: daysUntil === 0
+                ? `${subj}: tiene ${event.title || 'prueba'} HOY y no ha estudiado!`
+                : daysUntil === 1
+                    ? `${subj}: tiene ${event.title || 'prueba'} manana ${dayName} y NO ha estudiado!`
+                    : `${subj}: tiene ${event.title || 'prueba'} este ${dayName}. Necesita prepararse.`
+        }));
     const twoDayReminderEvents = futurePendingEvents.filter(event =>
         daysBetween(today, getDateKey(event.event_date)) === 2
     );
@@ -1184,25 +1244,68 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                 <p className="text-xs font-black uppercase tracking-widest text-[#EF4444]">Senales y alertas</p>
                                 <h3 className="font-black text-[#2B2E4A] text-lg mb-3">Avisos proactivos</h3>
                                 <div className="space-y-3 text-sm font-bold">
-                                    <div className={`rounded-2xl border p-3 ${staleSubjects.length > 0 ? 'bg-red-50 border-red-100 text-red-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
-                                        <div className="flex items-start gap-2">
-                                            <AlertTriangle className={`w-4 h-4 mt-0.5 ${staleSubjects.length > 0 ? 'text-red-600' : 'text-gray-400'}`} />
-                                            <div>
-                                                <p className="font-black">Materia sin estudiar</p>
-                                                <p className="text-xs mt-0.5">
-                                                    {staleSubjects.length > 0
-                                                        ? `${staleSubjects.slice(0, 3).join(', ')} sin sesion reciente. Avisar al apoderado.`
-                                                        : 'Sin materias atrasadas en este filtro.'}
-                                                </p>
+
+                                    {/* Urgent: upcoming event + NO recent study */}
+                                    {urgentPrepAlerts.length > 0 && urgentPrepAlerts.map((alert, i) => (
+                                        <div key={`urgent-${i}`} className="rounded-2xl border p-3 bg-red-50 border-red-100 text-red-800">
+                                            <div className="flex items-start gap-2">
+                                                <AlertTriangle className="w-4 h-4 mt-0.5 text-red-600" />
+                                                <div>
+                                                    <p className="font-black">Preparar urgente</p>
+                                                    <p className="text-xs mt-0.5">{alert.message}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className={`rounded-2xl border p-3 ${twoDayReminderEvents.length > 0 ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
-                                        <div className="flex items-start gap-2">
-                                            <Calendar className={`w-4 h-4 mt-0.5 ${twoDayReminderEvents.length > 0 ? 'text-amber-600' : 'text-gray-400'}`} />
-                                            <div>
-                                                <p className="font-black">Prueba o evento a 2 dias</p>
-                                                {twoDayReminderEvents.length > 0 ? (
+                                    ))}
+
+                                    {/* Positive: upcoming event + DID study recently */}
+                                    {prepAlerts.length > 0 && prepAlerts.map((alert, i) => (
+                                        <div key={`prep-${i}`} className="rounded-2xl border p-3 bg-green-50 border-green-100 text-green-800">
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle className="w-4 h-4 mt-0.5 text-green-600" />
+                                                <div>
+                                                    <p className="font-black">Preparando prueba</p>
+                                                    <p className="text-xs mt-0.5">{alert.message}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Stale subjects (no upcoming event, just inactive) */}
+                                    {staleSubjects.length > 0 && (
+                                        <div className="rounded-2xl border p-3 bg-amber-50 border-amber-100 text-amber-800">
+                                            <div className="flex items-start gap-2">
+                                                <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-600" />
+                                                <div>
+                                                    <p className="font-black">Materias inactivas</p>
+                                                    <p className="text-xs mt-0.5">
+                                                        {staleSubjects.slice(0, 3).join(', ')} sin actividad en los ultimos dias.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* No issues at all */}
+                                    {urgentPrepAlerts.length === 0 && prepAlerts.length === 0 && staleSubjects.length === 0 && (
+                                        <div className="rounded-2xl border p-3 bg-green-50 border-green-100 text-green-800">
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle className="w-4 h-4 mt-0.5 text-green-600" />
+                                                <div>
+                                                    <p className="font-black">Todo al dia</p>
+                                                    <p className="text-xs mt-0.5">Sin alertas pendientes. Buen trabajo!</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Upcoming events (2-day reminder) */}
+                                    {twoDayReminderEvents.length > 0 && (
+                                        <div className="rounded-2xl border p-3 bg-amber-50 border-amber-100 text-amber-800">
+                                            <div className="flex items-start gap-2">
+                                                <Calendar className="w-4 h-4 mt-0.5 text-amber-600" />
+                                                <div>
+                                                    <p className="font-black">Prueba o evento a 2 dias</p>
                                                     <div className="mt-1 space-y-1">
                                                         {twoDayReminderEvents.slice(0, 2).map(event => (
                                                             <div key={event.event_id || `${event.title}-${event.event_date}`} className="text-xs">
@@ -1212,19 +1315,14 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                                     {event.start_time ? ` · ${formatTime(event.start_time)}` : ''}
                                                                     {event.subject ? ` · ${event.subject}` : ''}
                                                                 </p>
-                                                                <p className="font-black text-red-600">Faltan 2 dias: preparar estudio hoy</p>
                                                             </div>
                                                         ))}
-                                                        {twoDayReminderEvents.length > 2 && (
-                                                            <p className="text-xs font-black text-amber-700">+{twoDayReminderEvents.length - 2} evento(s) mas con recordatorio 13:30 hrs.</p>
-                                                        )}
                                                     </div>
-                                                ) : (
-                                                    <p className="text-xs mt-0.5">Sin pruebas/eventos a 2 dias.</p>
-                                                )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
+
                                     <div className={`rounded-2xl border p-3 ${studyReminderEnabledToday ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-gray-50 border-gray-100 text-[#64748B]'}`}>
                                         <div className="flex items-start gap-2">
                                             <Bell className={`w-4 h-4 mt-0.5 ${studyReminderEnabledToday ? 'text-blue-600' : 'text-gray-400'}`} />
