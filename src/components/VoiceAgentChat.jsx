@@ -163,7 +163,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         else startListening();
     };
 
-    // TTS via OpenAI
+    // TTS via OpenAI — with timeout fallback
     const speakText = async (text) => {
         if (!ttsEnabled || !text) return;
         const shouldResumeListening = listeningDesiredRef.current;
@@ -174,46 +174,56 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         setIsSpeaking(true);
         setSphereState('speaking');
 
+        // Safety timeout: if TTS hangs for 15s, reset state
+        const safetyTimer = setTimeout(() => {
+            if (runId === ttsRunRef.current && speakingRef.current) {
+                console.warn('[TTS] Safety timeout — resetting from speaking');
+                speakingRef.current = false;
+                setIsSpeaking(false);
+                setSphereState('idle');
+                restartListeningSoon();
+            }
+        }, 15000);
+
         try {
+            const controller = new AbortController();
+            const fetchTimer = setTimeout(() => controller.abort(), 10000);
+
             const res = await fetch('/api/agent/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, voice: 'onyx' })
+                body: JSON.stringify({ text, voice: 'onyx' }),
+                signal: controller.signal
             });
+            clearTimeout(fetchTimer);
 
-            if (!res.ok) throw new Error('TTS failed');
+            if (!res.ok) throw new Error('TTS failed: ' + res.status);
 
             const blob = await res.blob();
-            if (runId !== ttsRunRef.current) return;
+            if (runId !== ttsRunRef.current) { clearTimeout(safetyTimer); return; }
             const url = URL.createObjectURL(blob);
             const audio = new Audio(url);
             audioRef.current = audio;
             audioUrlRef.current = url;
 
-            audio.onended = () => {
+            const cleanup = () => {
+                clearTimeout(safetyTimer);
                 if (runId !== ttsRunRef.current) return;
                 speakingRef.current = false;
                 setIsSpeaking(false);
                 setSphereState('idle');
-                URL.revokeObjectURL(url);
+                try { URL.revokeObjectURL(url); } catch {}
                 audioRef.current = null;
                 audioUrlRef.current = null;
                 restartListeningSoon();
             };
 
-            audio.onerror = () => {
-                if (runId !== ttsRunRef.current) return;
-                speakingRef.current = false;
-                setIsSpeaking(false);
-                setSphereState('idle');
-                URL.revokeObjectURL(url);
-                audioRef.current = null;
-                audioUrlRef.current = null;
-                restartListeningSoon();
-            };
+            audio.onended = cleanup;
+            audio.onerror = cleanup;
 
             await audio.play();
         } catch (err) {
+            clearTimeout(safetyTimer);
             console.error('[TTS] Error:', err);
             speakingRef.current = false;
             setIsSpeaking(false);
@@ -364,65 +374,57 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         'Que materias tiene abandonadas?'
     ];
 
-    const energyVeins = [
-        { top: '18%', left: '-12%', rotate: -10, width: '126%', delay: '0s', duration: '2.8s', opacity: 0.52 },
-        { top: '28%', left: '-8%', rotate: 18, width: '116%', delay: '0.25s', duration: '3.1s', opacity: 0.45 },
-        { top: '38%', left: '-14%', rotate: -30, width: '132%', delay: '0.5s', duration: '2.6s', opacity: 0.62 },
-        { top: '48%', left: '-10%', rotate: 8, width: '128%', delay: '0.1s', duration: '2.4s', opacity: 0.7 },
-        { top: '58%', left: '-15%', rotate: 35, width: '135%', delay: '0.7s', duration: '3.2s', opacity: 0.5 },
-        { top: '68%', left: '-9%', rotate: -18, width: '118%', delay: '0.45s', duration: '2.9s', opacity: 0.58 },
-        { top: '78%', left: '-12%', rotate: 24, width: '124%', delay: '0.9s', duration: '3.4s', opacity: 0.42 }
-    ];
-    const particles = [
-        { top: '8%', left: '44%', size: 5, delay: '0s' },
-        { top: '15%', left: '73%', size: 4, delay: '0.25s' },
-        { top: '34%', left: '94%', size: 3, delay: '0.5s' },
-        { top: '62%', left: '91%', size: 5, delay: '0.75s' },
-        { top: '84%', left: '67%', size: 4, delay: '1s' },
-        { top: '89%', left: '36%', size: 3, delay: '1.25s' },
-        { top: '72%', left: '9%', size: 5, delay: '1.5s' },
-        { top: '42%', left: '3%', size: 4, delay: '1.75s' },
-        { top: '20%', left: '20%', size: 3, delay: '2s' },
-        { top: '50%', left: '102%', size: 3, delay: '2.25s' },
-        { top: '96%', left: '50%', size: 4, delay: '2.5s' },
-        { top: '2%', left: '60%', size: 3, delay: '2.75s' }
-    ];
-
-    // Sphere animation classes
-    const sphereClasses = {
-        idle: 'sphere-breathe',
-        listening: 'sphere-listening scale-105',
-        thinking: 'sphere-thinking',
-        speaking: 'sphere-speaking scale-105'
-    };
+    // === Lightning bolt generation (stable, not in render body) ===
+    const boltsRef = useRef(null);
+    if (!boltsRef.current) {
+        const makeBolt = (x1, y1, x2, y2, segments = 6) => {
+            const dx = (x2 - x1) / segments;
+            const dy = (y2 - y1) / segments;
+            let path = `M${x1},${y1}`;
+            for (let i = 1; i < segments; i++) {
+                path += ` L${x1 + dx * i + (Math.random() - 0.5) * 18},${y1 + dy * i + (Math.random() - 0.5) * 22}`;
+            }
+            return path + ` L${x2},${y2}`;
+        };
+        boltsRef.current = {
+            left: Array.from({ length: 8 }, (_, i) => ({
+                d: makeBolt(280, 150 + (i - 3.5) * 8, -20 - i * 30, 140 + (Math.random() - 0.5) * 60, 5 + Math.floor(Math.random() * 3)),
+                w: 1.5 + Math.random() * 2, op: 0.5 + Math.random() * 0.5, delay: i * 0.12, dur: 0.4 + Math.random() * 0.4
+            })),
+            right: Array.from({ length: 8 }, (_, i) => ({
+                d: makeBolt(420, 150 + (i - 3.5) * 8, 720 + i * 30, 140 + (Math.random() - 0.5) * 60, 5 + Math.floor(Math.random() * 3)),
+                w: 1.5 + Math.random() * 2, op: 0.5 + Math.random() * 0.5, delay: i * 0.12 + 0.06, dur: 0.4 + Math.random() * 0.4
+            })),
+            bottom: Array.from({ length: 6 }, (_, i) => ({
+                d: makeBolt(340 + (i - 2.5) * 16, 190, 320 + (i - 2.5) * 35, 320 + Math.random() * 40, 4 + Math.floor(Math.random() * 2)),
+                w: 1 + Math.random() * 1.5, op: 0.4 + Math.random() * 0.5, delay: i * 0.1, dur: 0.5 + Math.random() * 0.3
+            }))
+        };
+    }
+    const { left: leftBolts, right: rightBolts, bottom: bottomBolts } = boltsRef.current;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex flex-col toroid-scene" data-state={sphereState}>
-            {/* Dark storm background */}
-            <div className="absolute inset-0 toroid-bg" />
-            <div className="storm-cloud storm-cloud-1" />
-            <div className="storm-cloud storm-cloud-2" />
-            <div className="storm-cloud storm-cloud-3" />
+        <div className="fixed inset-0 z-[9999] flex flex-col vt-scene" data-state={sphereState}>
+            {/* Dark background */}
+            <div className="absolute inset-0" style={{background:'radial-gradient(ellipse 130% 90% at 50% 38%, #0a1628 0%, #050a15 55%, #020408 100%)'}} />
+            {/* Atmospheric haze */}
+            <div className="absolute inset-0 pointer-events-none" style={{background:'radial-gradient(ellipse 80% 50% at 50% 42%, rgba(30,64,175,0.12) 0%, transparent 70%)'}} />
 
-            {/* Top right controls */}
+            {/* Top controls */}
             <div className="relative z-20 flex items-center justify-end px-4 pt-4 pb-2 gap-2">
-                <button
-                    onClick={() => setTtsEnabled(!ttsEnabled)}
-                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition backdrop-blur-sm border border-white/10"
-                >
+                <button onClick={() => setTtsEnabled(!ttsEnabled)}
+                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition backdrop-blur-sm border border-white/10">
                     {ttsEnabled ? <Volume2 className="w-5 h-5 text-blue-300" /> : <VolumeX className="w-5 h-5 text-gray-500" />}
                 </button>
-                <button
-                    onClick={() => setShowMessages(!showMessages)}
-                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition backdrop-blur-sm border border-white/10"
-                >
+                <button onClick={() => setShowMessages(!showMessages)}
+                    className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition backdrop-blur-sm border border-white/10">
                     <MessageCircle className="w-5 h-5 text-blue-300" />
                 </button>
             </div>
 
-            {/* Messages panel (collapsible overlay) */}
+            {/* Messages panel */}
             {showMessages && (
-                <div className="absolute inset-x-0 bottom-48 top-16 bg-[#0a0e1a]/95 backdrop-blur-lg rounded-t-3xl p-4 overflow-y-auto z-30 shadow-2xl border border-blue-900/30">
+                <div className="absolute inset-x-0 bottom-48 top-16 bg-[#060c1a]/95 backdrop-blur-lg rounded-t-3xl p-4 overflow-y-auto z-30 shadow-2xl border border-blue-900/30">
                     <div className="flex items-center justify-between mb-3">
                         <p className="text-blue-400 text-sm font-bold">Conversacion</p>
                         <button onClick={() => setShowMessages(false)} className="p-1 rounded-full bg-white/10">
@@ -433,9 +435,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                                    msg.role === 'user'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-white/10 text-blue-100'
+                                    msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white/10 text-blue-100'
                                 }`}>
                                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                                 </div>
@@ -446,56 +446,132 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 </div>
             )}
 
-            {/* Toroid Area */}
+            {/* === TOROID + LIGHTNING SVG === */}
             <div className="flex-1 flex flex-col items-center justify-center relative px-4 z-10">
-                {/* Toroid container */}
-                <div className="voice-toroid relative w-72 h-52 md:w-[420px] md:h-[280px]" data-state={sphereState}>
-                    {/* Ambient glow behind toroid */}
-                    <div className="toroid-glow" />
+                <div className="vt-wrap relative" style={{width:'min(92vw, 520px)', aspectRatio:'700/420'}} data-state={sphereState}>
+                    <svg viewBox="0 0 700 420" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            {/* Glow filters */}
+                            <filter id="glow-soft" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="8" result="b"/>
+                                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                            <filter id="glow-strong" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="14" result="b"/>
+                                <feGaussianBlur stdDeviation="4" in="SourceGraphic" result="s"/>
+                                <feMerge><feMergeNode in="b"/><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                            <filter id="glow-bolt" x="-80%" y="-80%" width="260%" height="260%">
+                                <feGaussianBlur stdDeviation="6" result="b"/>
+                                <feGaussianBlur stdDeviation="2" in="SourceGraphic" result="s"/>
+                                <feMerge><feMergeNode in="b"/><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                            <filter id="glow-listen" x="-60%" y="-60%" width="220%" height="220%">
+                                <feGaussianBlur stdDeviation="5" result="b"/>
+                                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
 
-                    {/* The toroid shape */}
-                    <div className="toroid-body">
-                        <div className="toroid-ring" />
-                        <div className="toroid-inner-shadow" />
-                        <div className="toroid-surface-light" />
-                        <div className="toroid-energy-band toroid-energy-band-1" />
-                        <div className="toroid-energy-band toroid-energy-band-2" />
-                        <div className="toroid-energy-band toroid-energy-band-3" />
-                        <div className="toroid-highlight" />
-                    </div>
+                            {/* Toroid gradient */}
+                            <radialGradient id="toroid-fill" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0"/>
+                                <stop offset="55%" stopColor="#0ea5e9" stopOpacity="0"/>
+                                <stop offset="62%" stopColor="#1e40af" stopOpacity="0.4"/>
+                                <stop offset="70%" stopColor="#3b82f6" stopOpacity="0.85"/>
+                                <stop offset="78%" stopColor="#22d3ee" stopOpacity="0.7"/>
+                                <stop offset="84%" stopColor="#3b82f6" stopOpacity="0.6"/>
+                                <stop offset="90%" stopColor="#1e3a8a" stopOpacity="0.3"/>
+                                <stop offset="100%" stopColor="#0c1a3a" stopOpacity="0"/>
+                            </radialGradient>
 
-                    {/* Lightning rays — extend from sides, animate on speaking */}
-                    <div className="lightning-container">
-                        {[...Array(6)].map((_, i) => (
-                            <div key={`ray-l-${i}`} className={`electric-ray ray-left ray-left-${i + 1}`} />
+                            {/* Toroid 3D shading */}
+                            <radialGradient id="toroid-shade" cx="42%" cy="35%" r="55%">
+                                <stop offset="0%" stopColor="#fff" stopOpacity="0.25"/>
+                                <stop offset="40%" stopColor="#7dd3fc" stopOpacity="0.1"/>
+                                <stop offset="100%" stopColor="#000" stopOpacity="0"/>
+                            </radialGradient>
+
+                            {/* Inner hole darkness */}
+                            <radialGradient id="hole-dark" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stopColor="#020408" stopOpacity="0.98"/>
+                                <stop offset="70%" stopColor="#040810" stopOpacity="0.9"/>
+                                <stop offset="100%" stopColor="#0a1628" stopOpacity="0"/>
+                            </radialGradient>
+                        </defs>
+
+                        {/* Ambient glow */}
+                        <ellipse cx="350" cy="155" rx="260" ry="120" fill="rgba(59,130,246,0.12)" filter="url(#glow-soft)" className="vt-ambient"/>
+
+                        {/* Main toroid — outer ring */}
+                        <g transform="translate(350,155)" className="vt-toroid-g">
+                            {/* Outer glow ring */}
+                            <ellipse cx="0" cy="0" rx="195" ry="105" fill="none" stroke="rgba(59,130,246,0.3)" strokeWidth="48" filter="url(#glow-soft)" className="vt-outer-glow"/>
+                            {/* Main ring body */}
+                            <ellipse cx="0" cy="0" rx="185" ry="95" fill="url(#toroid-fill)" filter="url(#glow-soft)"/>
+                            {/* Ring tube stroke — the bright visible tube */}
+                            <ellipse cx="0" cy="0" rx="175" ry="88" fill="none" stroke="url(#toroid-fill)" strokeWidth="38"/>
+                            {/* Highlight stroke */}
+                            <ellipse cx="0" cy="0" rx="172" ry="86" fill="none" stroke="rgba(125,211,252,0.35)" strokeWidth="2"/>
+                            <ellipse cx="0" cy="0" rx="178" ry="90" fill="none" stroke="rgba(59,130,246,0.2)" strokeWidth="1.5"/>
+                            {/* 3D shading overlay */}
+                            <ellipse cx="0" cy="0" rx="185" ry="95" fill="url(#toroid-shade)"/>
+                            {/* Top highlight arc */}
+                            <path d="M-120,-72 Q-60,-95 0,-98 Q60,-95 120,-72" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3" strokeLinecap="round" filter="url(#glow-soft)"/>
+                            {/* Inner hole */}
+                            <ellipse cx="0" cy="0" rx="138" ry="52" fill="url(#hole-dark)"/>
+                            {/* Inner edge glow */}
+                            <ellipse cx="0" cy="0" rx="140" ry="54" fill="none" stroke="rgba(59,130,246,0.25)" strokeWidth="2" filter="url(#glow-soft)"/>
+                            {/* Rotating energy band */}
+                            <ellipse cx="0" cy="0" rx="176" ry="89" fill="none" stroke="rgba(34,211,238,0.4)" strokeWidth="3" strokeDasharray="40 80 20 120" className="vt-band-1"/>
+                            <ellipse cx="0" cy="0" rx="174" ry="87" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeDasharray="30 100 50 80" className="vt-band-2"/>
+                        </g>
+
+                        {/* === LIGHTNING BOLTS — LEFT === */}
+                        <g className="vt-bolts-left" filter="url(#glow-bolt)">
+                            {leftBolts.map((b, i) => (
+                                <path key={`lb${i}`} d={b.d} fill="none" stroke="rgba(125,211,252,0.9)" strokeWidth={b.w} strokeLinecap="round" opacity={b.op}
+                                    style={{animation: `vt-bolt-flash ${b.dur}s ease-in-out infinite`, animationDelay: `${b.delay}s`}} />
+                            ))}
+                            {/* Core bright line through center */}
+                            <line x1="280" y1="150" x2="20" y2="148" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round"
+                                style={{animation:'vt-core-ray 0.6s ease-in-out infinite'}} />
+                        </g>
+
+                        {/* === LIGHTNING BOLTS — RIGHT === */}
+                        <g className="vt-bolts-right" filter="url(#glow-bolt)">
+                            {rightBolts.map((b, i) => (
+                                <path key={`rb${i}`} d={b.d} fill="none" stroke="rgba(125,211,252,0.9)" strokeWidth={b.w} strokeLinecap="round" opacity={b.op}
+                                    style={{animation: `vt-bolt-flash ${b.dur}s ease-in-out infinite`, animationDelay: `${b.delay}s`}} />
+                            ))}
+                            <line x1="420" y1="150" x2="680" y2="148" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round"
+                                style={{animation:'vt-core-ray 0.6s ease-in-out infinite', animationDelay:'0.15s'}} />
+                        </g>
+
+                        {/* === LISTENING — bolts below === */}
+                        <g className="vt-listen-bolts" filter="url(#glow-listen)">
+                            {bottomBolts.map((b, i) => (
+                                <path key={`bb${i}`} d={b.d} fill="none" stroke="rgba(96,165,250,0.85)" strokeWidth={b.w} strokeLinecap="round" opacity={b.op}
+                                    style={{animation: `vt-bolt-flash ${b.dur}s ease-in-out infinite`, animationDelay: `${b.delay}s`}} />
+                            ))}
+                            {/* Ripple ellipses below */}
+                            <ellipse cx="350" cy="240" rx="80" ry="12" fill="none" stroke="rgba(59,130,246,0.4)" strokeWidth="1.5" className="vt-listen-ripple-1"/>
+                            <ellipse cx="350" cy="260" rx="100" ry="14" fill="none" stroke="rgba(125,211,252,0.3)" strokeWidth="1" className="vt-listen-ripple-2"/>
+                            <ellipse cx="350" cy="280" rx="120" ry="16" fill="none" stroke="rgba(59,130,246,0.2)" strokeWidth="1" className="vt-listen-ripple-3"/>
+                        </g>
+
+                        {/* Floating particles */}
+                        {[
+                            {cx:180,cy:90,r:3},{cx:520,cy:100,r:2.5},{cx:140,cy:180,r:2},{cx:560,cy:170,r:3},
+                            {cx:250,cy:60,r:2},{cx:460,cy:55,r:2.5},{cx:300,cy:220,r:2},{cx:400,cy:230,r:2.5},
+                            {cx:100,cy:140,r:2},{cx:600,cy:135,r:2}
+                        ].map((p, i) => (
+                            <circle key={`p${i}`} cx={p.cx} cy={p.cy} r={p.r} fill="rgba(186,230,253,0.7)" className="vt-particle"
+                                style={{animationDelay:`${i*0.3}s`}} />
                         ))}
-                        {[...Array(6)].map((_, i) => (
-                            <div key={`ray-r-${i}`} className={`electric-ray ray-right ray-right-${i + 1}`} />
-                        ))}
-                    </div>
-
-                    {/* Floating particles around toroid */}
-                    {[...Array(10)].map((_, i) => (
-                        <div key={`tp-${i}`} className={`toroid-particle tp-${i + 1}`} />
-                    ))}
-
-                    {/* Listening indicator — energy below toroid */}
-                    <div className="listen-zone">
-                        <div className="listen-wave listen-wave-1" />
-                        <div className="listen-wave listen-wave-2" />
-                        <div className="listen-wave listen-wave-3" />
-                        <div className="listen-bolt listen-bolt-1" />
-                        <div className="listen-bolt listen-bolt-2" />
-                        <div className="listen-bolt listen-bolt-3" />
-                        <div className="listen-bolt listen-bolt-4" />
-                        <div className="listen-bolt listen-bolt-5" />
-                        <div className="listen-ripple listen-ripple-1" />
-                        <div className="listen-ripple listen-ripple-2" />
-                    </div>
+                    </svg>
                 </div>
 
                 {/* Status text */}
-                <div className="mt-6 text-center relative z-10">
+                <div className="mt-2 text-center relative z-10">
                     <p className={`text-base font-semibold transition-colors duration-300 ${
                         sphereState === 'listening' ? 'text-blue-400' :
                         sphereState === 'thinking' ? 'text-purple-400' :
@@ -529,7 +605,6 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
             {/* Bottom: Input + Buttons */}
             <div className="relative z-20 px-4 pb-6 pt-2">
-                {/* Text input */}
                 <form onSubmit={handleSubmit} className="flex items-center gap-2 mb-4">
                     <div className="flex-1 relative">
                         <input ref={inputRef} type="text" value={inputText}
@@ -545,24 +620,13 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     </div>
                 </form>
 
-                {/* Action buttons row */}
                 <div className="flex items-center justify-center gap-4">
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*,.pdf"
-                        multiple
-                        className="hidden"
-                        onChange={handleFilesSelected}
-                    />
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
+                    <input ref={fileInputRef} type="file" accept="image/*,.pdf" multiple className="hidden" onChange={handleFilesSelected} />
+                    <button onClick={() => fileInputRef.current?.click()}
                         className="w-14 h-14 rounded-full bg-white/8 hover:bg-white/15 flex items-center justify-center transition border border-white/10 backdrop-blur-sm"
-                        title="Subir fotos, archivos o capturas"
-                    >
+                        title="Subir fotos, archivos o capturas">
                         <UploadCloud className="w-6 h-6 text-blue-400" />
                     </button>
-
                     <button onClick={toggleListening}
                         className={`w-18 h-18 p-5 rounded-full flex items-center justify-center transition-all duration-300 ${
                             isListening
@@ -571,423 +635,119 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                         } ${isProcessing ? 'opacity-50' : ''}`}>
                         {isListening ? <MicOff className="w-7 h-7 text-white" /> : <Mic className="w-7 h-7 text-white" />}
                     </button>
-
                     <button onClick={() => setShowMessages(!showMessages)}
                         className="w-14 h-14 rounded-full bg-white/8 hover:bg-white/15 flex items-center justify-center transition border border-white/10 backdrop-blur-sm">
                         <MessageCircle className="w-6 h-6 text-blue-400" />
                     </button>
-
-                    <button onClick={() => {
-                        listeningDesiredRef.current = false;
-                        stopListening();
-                        stopAllAudio();
-                        onClose?.();
-                    }}
+                    <button onClick={() => { listeningDesiredRef.current = false; stopListening(); stopAllAudio(); onClose?.(); }}
                         className="w-14 h-14 rounded-full bg-white/8 hover:bg-white/15 flex items-center justify-center transition border border-white/10 backdrop-blur-sm">
                         <X className="w-6 h-6 text-blue-400" />
                     </button>
                 </div>
-
                 <p className="text-center text-blue-600/50 text-xs mt-3">
                     {isListening ? 'Modo manos libres activo: habla cuando quieras' : 'Toca una vez el microfono para dejar a Matico escuchando'}
                 </p>
             </div>
 
-            {/* CSS — Toroid Design */}
             <style>{`
-                /* ===== Background ===== */
-                .toroid-scene { overflow: hidden; }
-                .toroid-bg {
-                    background: radial-gradient(ellipse 120% 80% at 50% 40%, #0c1a3a 0%, #070d1f 50%, #030508 100%);
-                    z-index: 0;
-                }
-                .storm-cloud {
-                    position: absolute;
-                    border-radius: 50%;
-                    filter: blur(60px);
-                    opacity: 0.15;
-                    z-index: 1;
-                    pointer-events: none;
-                }
-                .storm-cloud-1 {
-                    width: 500px; height: 200px;
-                    top: 5%; left: -10%;
-                    background: radial-gradient(ellipse, rgba(30,58,138,0.5), transparent);
-                    animation: cloud-float 12s ease-in-out infinite alternate;
-                }
-                .storm-cloud-2 {
-                    width: 400px; height: 180px;
-                    top: 15%; right: -8%;
-                    background: radial-gradient(ellipse, rgba(59,130,246,0.3), transparent);
-                    animation: cloud-float 15s ease-in-out infinite alternate-reverse;
-                }
-                .storm-cloud-3 {
-                    width: 600px; height: 160px;
-                    bottom: 25%; left: 10%;
-                    background: radial-gradient(ellipse, rgba(14,165,233,0.2), transparent);
-                    animation: cloud-float 18s ease-in-out infinite alternate;
-                }
+                /* ===== State-based visibility ===== */
+                .vt-scene { overflow: hidden; }
 
-                /* ===== Toroid Container ===== */
-                .voice-toroid {
-                    perspective: 800px;
-                    isolation: isolate;
-                }
+                /* --- Toroid pulse per state --- */
+                .vt-toroid-g { transition: filter 0.4s, transform 0.4s; }
+                .vt-scene[data-state="idle"] .vt-toroid-g { animation: vt-breathe 5s ease-in-out infinite; }
+                .vt-scene[data-state="speaking"] .vt-toroid-g { animation: vt-speak-pulse 0.7s ease-in-out infinite; filter: drop-shadow(0 0 30px rgba(34,211,238,0.6)); }
+                .vt-scene[data-state="listening"] .vt-toroid-g { animation: vt-listen-pulse 1.3s ease-in-out infinite; filter: drop-shadow(0 0 20px rgba(59,130,246,0.5)); }
+                .vt-scene[data-state="thinking"] .vt-toroid-g { animation: vt-think-rotate 3s ease-in-out infinite; }
 
-                /* ===== Ambient Glow ===== */
-                .toroid-glow {
-                    position: absolute;
-                    left: 50%; top: 50%;
-                    width: 140%; height: 120%;
-                    transform: translate(-50%, -50%);
-                    background: radial-gradient(ellipse 60% 40% at center,
-                        rgba(59,130,246,0.25) 0%,
-                        rgba(14,165,233,0.12) 30%,
-                        rgba(6,182,212,0.05) 55%,
-                        transparent 75%);
-                    filter: blur(20px);
-                    animation: glow-pulse 4s ease-in-out infinite;
-                    z-index: 0;
-                }
-                .voice-toroid[data-state="speaking"] .toroid-glow {
-                    width: 180%; height: 150%;
-                    filter: blur(16px);
-                    background: radial-gradient(ellipse 60% 40% at center,
-                        rgba(34,211,238,0.45) 0%,
-                        rgba(59,130,246,0.25) 30%,
-                        rgba(14,165,233,0.1) 55%,
-                        transparent 75%);
-                }
-                .voice-toroid[data-state="listening"] .toroid-glow {
-                    background: radial-gradient(ellipse 60% 40% at center,
-                        rgba(59,130,246,0.35) 0%,
-                        rgba(37,99,235,0.18) 30%,
-                        transparent 65%);
-                }
+                .vt-scene[data-state="idle"] .vt-outer-glow { stroke-opacity: 0.15; }
+                .vt-scene[data-state="speaking"] .vt-outer-glow { stroke: rgba(34,211,238,0.5); stroke-opacity: 1; }
+                .vt-scene[data-state="listening"] .vt-outer-glow { stroke: rgba(59,130,246,0.4); stroke-opacity: 0.8; }
 
-                /* ===== Toroid Body ===== */
-                .toroid-body {
-                    position: absolute;
-                    inset: 0;
-                    transform: rotateX(24deg);
-                    transform-style: preserve-3d;
-                    z-index: 2;
-                }
-                .toroid-ring {
-                    position: absolute;
-                    inset: 8% 4%;
-                    border-radius: 50%;
-                    background: radial-gradient(ellipse 100% 100% at 50% 50%,
-                        transparent 36%,
-                        rgba(8,27,75,0.9) 37%,
-                        rgba(15,45,120,0.95) 42%,
-                        rgba(30,80,180,0.8) 48%,
-                        rgba(59,130,246,0.7) 52%,
-                        rgba(34,211,238,0.5) 56%,
-                        rgba(30,80,180,0.6) 60%,
-                        rgba(15,45,120,0.7) 65%,
-                        rgba(8,20,60,0.85) 72%,
-                        transparent 73%);
-                    box-shadow:
-                        0 0 60px rgba(59,130,246,0.4),
-                        0 0 120px rgba(14,165,233,0.2),
-                        inset 0 0 40px rgba(59,130,246,0.3);
-                    animation: toroid-breathe 4.5s ease-in-out infinite;
-                }
-                .voice-toroid[data-state="speaking"] .toroid-ring {
-                    box-shadow:
-                        0 0 100px rgba(34,211,238,0.6),
-                        0 0 200px rgba(59,130,246,0.35),
-                        inset 0 0 60px rgba(34,211,238,0.4);
-                    animation: toroid-speaking 0.8s ease-in-out infinite;
-                }
-                .voice-toroid[data-state="listening"] .toroid-ring {
-                    box-shadow:
-                        0 0 80px rgba(59,130,246,0.5),
-                        0 0 160px rgba(37,99,235,0.3),
-                        inset 0 0 50px rgba(59,130,246,0.35);
-                    animation: toroid-listening 1.2s ease-in-out infinite;
-                }
-                .voice-toroid[data-state="thinking"] .toroid-ring {
-                    animation: toroid-thinking 3s ease-in-out infinite;
-                }
+                /* --- Ambient glow --- */
+                .vt-ambient { transition: all 0.5s; }
+                .vt-scene[data-state="speaking"] .vt-ambient { rx: 320; ry: 160; fill: rgba(34,211,238,0.18); }
+                .vt-scene[data-state="listening"] .vt-ambient { fill: rgba(59,130,246,0.15); }
 
-                .toroid-inner-shadow {
-                    position: absolute;
-                    inset: 20% 18%;
-                    border-radius: 50%;
-                    background: radial-gradient(ellipse at center,
-                        rgba(3,5,15,0.95) 0%,
-                        rgba(5,10,30,0.9) 55%,
-                        rgba(15,30,80,0.4) 80%,
-                        transparent 100%);
-                    z-index: 2;
-                }
+                /* --- Lightning bolts visibility --- */
+                .vt-bolts-left, .vt-bolts-right { transition: opacity 0.35s; }
+                .vt-scene[data-state="idle"] .vt-bolts-left,
+                .vt-scene[data-state="idle"] .vt-bolts-right { opacity: 0.08; }
+                .vt-scene[data-state="thinking"] .vt-bolts-left,
+                .vt-scene[data-state="thinking"] .vt-bolts-right { opacity: 0.12; }
+                .vt-scene[data-state="speaking"] .vt-bolts-left,
+                .vt-scene[data-state="speaking"] .vt-bolts-right { opacity: 1; }
+                .vt-scene[data-state="listening"] .vt-bolts-left,
+                .vt-scene[data-state="listening"] .vt-bolts-right { opacity: 0.25; }
 
-                .toroid-surface-light {
-                    position: absolute;
-                    inset: 5% 2%;
-                    border-radius: 50%;
-                    background: conic-gradient(from 200deg,
-                        transparent 0deg,
-                        rgba(125,211,252,0.15) 40deg,
-                        rgba(255,255,255,0.2) 80deg,
-                        rgba(125,211,252,0.1) 120deg,
-                        transparent 180deg,
-                        rgba(59,130,246,0.08) 240deg,
-                        transparent 360deg);
-                    mask-image: radial-gradient(ellipse, transparent 34%, black 40%, black 70%, transparent 76%);
-                    animation: surface-rotate 12s linear infinite;
-                    z-index: 3;
-                }
+                /* --- Listening zone below toroid --- */
+                .vt-listen-bolts { transition: opacity 0.4s; }
+                .vt-scene[data-state="idle"] .vt-listen-bolts,
+                .vt-scene[data-state="speaking"] .vt-listen-bolts,
+                .vt-scene[data-state="thinking"] .vt-listen-bolts { opacity: 0; }
+                .vt-scene[data-state="listening"] .vt-listen-bolts { opacity: 1; }
 
-                .toroid-energy-band {
-                    position: absolute;
-                    inset: 6% 3%;
-                    border-radius: 50%;
-                    mask-image: radial-gradient(ellipse, transparent 35%, black 39%, black 69%, transparent 73%);
-                    z-index: 4;
-                    opacity: 0.6;
-                }
-                .toroid-energy-band-1 {
-                    background: conic-gradient(from 0deg, transparent, rgba(34,211,238,0.5) 15%, transparent 30%, transparent 50%, rgba(59,130,246,0.4) 65%, transparent 80%);
-                    animation: band-rotate-1 6s linear infinite;
-                }
-                .toroid-energy-band-2 {
-                    background: conic-gradient(from 120deg, transparent, rgba(255,255,255,0.3) 10%, transparent 20%, transparent 60%, rgba(125,211,252,0.35) 70%, transparent 80%);
-                    animation: band-rotate-2 8s linear infinite reverse;
-                }
-                .toroid-energy-band-3 {
-                    background: conic-gradient(from 240deg, transparent, rgba(14,165,233,0.4) 12%, transparent 24%);
-                    animation: band-rotate-1 10s linear infinite;
-                }
-                .voice-toroid[data-state="speaking"] .toroid-energy-band {
-                    opacity: 1;
-                    animation-duration: 2s !important;
-                }
+                /* Listening ripples */
+                .vt-listen-ripple-1, .vt-listen-ripple-2, .vt-listen-ripple-3 { opacity: 0; }
+                .vt-scene[data-state="listening"] .vt-listen-ripple-1 { animation: vt-ripple 1.5s ease-out infinite; }
+                .vt-scene[data-state="listening"] .vt-listen-ripple-2 { animation: vt-ripple 1.5s ease-out infinite 0.3s; }
+                .vt-scene[data-state="listening"] .vt-listen-ripple-3 { animation: vt-ripple 1.5s ease-out infinite 0.6s; }
 
-                .toroid-highlight {
-                    position: absolute;
-                    top: 12%; left: 20%; width: 40%; height: 20%;
-                    border-radius: 50%;
-                    background: radial-gradient(ellipse, rgba(255,255,255,0.2), transparent 70%);
-                    filter: blur(6px);
-                    z-index: 5;
-                    animation: highlight-drift 5s ease-in-out infinite alternate;
-                }
+                /* --- Energy bands rotation --- */
+                .vt-band-1 { animation: vt-band-spin 8s linear infinite; transform-origin: center; }
+                .vt-band-2 { animation: vt-band-spin 12s linear infinite reverse; transform-origin: center; }
+                .vt-scene[data-state="speaking"] .vt-band-1 { animation-duration: 2s; stroke: rgba(34,211,238,0.7); }
+                .vt-scene[data-state="speaking"] .vt-band-2 { animation-duration: 3s; stroke: rgba(255,255,255,0.35); }
 
-                /* ===== Lightning Rays ===== */
-                .lightning-container {
-                    position: absolute;
-                    inset: 0;
-                    z-index: 6;
-                    pointer-events: none;
-                }
-                .electric-ray {
-                    position: absolute;
-                    top: 50%;
-                    height: 3px;
-                    border-radius: 9999px;
-                    transform-origin: center;
-                    opacity: 0;
-                    transition: opacity 0.3s;
-                }
-                .ray-left { right: 50%; }
-                .ray-right { left: 50%; }
-
-                .ray-left-1 { width: 42%; transform: translateY(-8px) rotate(2deg); background: linear-gradient(270deg, rgba(34,211,238,0.9), rgba(59,130,246,0.5) 40%, transparent); animation: ray-flash 1.8s ease-in-out infinite; animation-delay: 0s; }
-                .ray-left-2 { width: 55%; transform: translateY(-2px) rotate(-5deg); background: linear-gradient(270deg, rgba(255,255,255,0.8), rgba(125,211,252,0.4) 50%, transparent); animation: ray-flash 2.1s ease-in-out infinite; animation-delay: 0.3s; }
-                .ray-left-3 { width: 38%; transform: translateY(6px) rotate(8deg); background: linear-gradient(270deg, rgba(14,165,233,0.85), rgba(37,99,235,0.3) 45%, transparent); animation: ray-flash 1.6s ease-in-out infinite; animation-delay: 0.6s; }
-                .ray-left-4 { width: 48%; transform: translateY(-14px) rotate(-3deg); height: 2px; background: linear-gradient(270deg, rgba(125,211,252,0.7), transparent 55%); animation: ray-flash 2.4s ease-in-out infinite; animation-delay: 0.15s; }
-                .ray-left-5 { width: 35%; transform: translateY(12px) rotate(6deg); height: 4px; background: linear-gradient(270deg, rgba(34,211,238,0.6), transparent 50%); animation: ray-flash 1.9s ease-in-out infinite; animation-delay: 0.45s; }
-                .ray-left-6 { width: 60%; transform: translateY(0) rotate(-1deg); height: 2px; background: linear-gradient(270deg, rgba(255,255,255,0.5), rgba(59,130,246,0.2) 60%, transparent); animation: ray-flash 2.6s ease-in-out infinite; animation-delay: 0.8s; }
-
-                .ray-right-1 { width: 45%; transform: translateY(-6px) rotate(-2deg); background: linear-gradient(90deg, rgba(34,211,238,0.9), rgba(59,130,246,0.5) 40%, transparent); animation: ray-flash 1.7s ease-in-out infinite; animation-delay: 0.1s; }
-                .ray-right-2 { width: 52%; transform: translateY(3px) rotate(4deg); background: linear-gradient(90deg, rgba(255,255,255,0.8), rgba(125,211,252,0.4) 50%, transparent); animation: ray-flash 2.2s ease-in-out infinite; animation-delay: 0.4s; }
-                .ray-right-3 { width: 40%; transform: translateY(-10px) rotate(-7deg); background: linear-gradient(90deg, rgba(14,165,233,0.85), rgba(37,99,235,0.3) 45%, transparent); animation: ray-flash 1.5s ease-in-out infinite; animation-delay: 0.7s; }
-                .ray-right-4 { width: 50%; transform: translateY(10px) rotate(3deg); height: 2px; background: linear-gradient(90deg, rgba(125,211,252,0.7), transparent 55%); animation: ray-flash 2.3s ease-in-out infinite; animation-delay: 0.2s; }
-                .ray-right-5 { width: 33%; transform: translateY(-16px) rotate(-5deg); height: 4px; background: linear-gradient(90deg, rgba(34,211,238,0.6), transparent 50%); animation: ray-flash 2s ease-in-out infinite; animation-delay: 0.55s; }
-                .ray-right-6 { width: 58%; transform: translateY(1px) rotate(1deg); height: 2px; background: linear-gradient(90deg, rgba(255,255,255,0.5), rgba(59,130,246,0.2) 60%, transparent); animation: ray-flash 2.5s ease-in-out infinite; animation-delay: 0.9s; }
-
-                /* Idle: rays barely visible */
-                .voice-toroid[data-state="idle"] .electric-ray {
-                    opacity: 0;
-                    animation-play-state: paused;
-                }
-                /* Speaking: rays fully active and intense */
-                .voice-toroid[data-state="speaking"] .electric-ray {
-                    opacity: 1;
-                    animation-duration: 0.5s !important;
-                    filter: drop-shadow(0 0 8px rgba(34,211,238,0.9)) drop-shadow(0 0 20px rgba(59,130,246,0.6));
-                    height: 5px !important;
-                }
-                /* Listening: rays subtle glow */
-                .voice-toroid[data-state="listening"] .electric-ray {
-                    opacity: 0.3;
-                    filter: drop-shadow(0 0 4px rgba(59,130,246,0.5));
-                }
-                /* Thinking: rays dim pulse */
-                .voice-toroid[data-state="thinking"] .electric-ray {
-                    opacity: 0.15;
-                    animation-duration: 3s !important;
-                }
-
-                /* ===== Particles ===== */
-                .toroid-particle {
-                    position: absolute;
-                    border-radius: 50%;
-                    background: rgba(125,211,252,0.8);
-                    box-shadow: 0 0 8px rgba(34,211,238,0.7);
-                    z-index: 7;
-                    animation: tp-float 4s ease-in-out infinite alternate;
-                }
-                .tp-1 { width: 4px; height: 4px; top: 20%; left: 15%; animation-delay: 0s; }
-                .tp-2 { width: 3px; height: 3px; top: 25%; right: 12%; animation-delay: 0.4s; }
-                .tp-3 { width: 5px; height: 5px; top: 40%; left: 5%; animation-delay: 0.8s; }
-                .tp-4 { width: 3px; height: 3px; top: 55%; right: 8%; animation-delay: 1.2s; }
-                .tp-5 { width: 4px; height: 4px; top: 65%; left: 20%; animation-delay: 1.6s; }
-                .tp-6 { width: 3px; height: 3px; top: 30%; left: 45%; animation-delay: 2s; }
-                .tp-7 { width: 5px; height: 5px; top: 15%; right: 25%; animation-delay: 2.4s; }
-                .tp-8 { width: 4px; height: 4px; top: 70%; right: 18%; animation-delay: 2.8s; }
-                .tp-9 { width: 3px; height: 3px; top: 48%; left: 90%; animation-delay: 3.2s; }
-                .tp-10 { width: 4px; height: 4px; top: 35%; left: 8%; animation-delay: 3.6s; }
-
-                .voice-toroid[data-state="speaking"] .toroid-particle {
-                    background: rgba(255,255,255,0.95);
-                    box-shadow: 0 0 14px rgba(34,211,238,1);
-                    animation-duration: 1.5s;
-                }
-
-                /* ===== Listening Zone (below toroid) ===== */
-                .listen-zone {
-                    position: absolute;
-                    bottom: -30%;
-                    left: 10%;
-                    right: 10%;
-                    height: 60%;
-                    z-index: 1;
-                    pointer-events: none;
-                    opacity: 0;
-                    transition: opacity 0.4s;
-                }
-                .voice-toroid[data-state="listening"] .listen-zone {
-                    opacity: 1;
-                }
-
-                .listen-wave {
-                    position: absolute;
-                    left: 50%;
-                    top: 10%;
-                    width: 70%;
-                    height: 20px;
-                    border-radius: 50%;
-                    border: 2px solid rgba(59,130,246,0.4);
-                    transform: translateX(-50%) scale(0.5);
-                    opacity: 0;
-                    animation: listen-wave-expand 1.4s ease-out infinite;
-                }
-                .listen-wave-2 { animation-delay: 0.35s; border-color: rgba(34,211,238,0.35); }
-                .listen-wave-3 { animation-delay: 0.7s; border-color: rgba(125,211,252,0.3); }
-
-                .listen-bolt {
-                    position: absolute;
-                    left: 50%;
-                    top: 0;
-                    width: 3px;
-                    height: 50px;
-                    border-radius: 9999px;
-                    background: linear-gradient(180deg, rgba(59,130,246,0.8), rgba(125,211,252,0.5), transparent);
-                    transform-origin: top center;
-                    opacity: 0;
-                    filter: drop-shadow(0 0 10px rgba(59,130,246,0.8));
-                    animation: listen-bolt-fire 0.8s ease-in-out infinite;
-                }
-                .listen-bolt-1 { transform: translateX(-50%) rotate(0deg); animation-delay: 0s; }
-                .listen-bolt-2 { transform: translateX(-50%) rotate(-18deg); height: 40px; animation-delay: 0.12s; }
-                .listen-bolt-3 { transform: translateX(-50%) rotate(20deg); height: 45px; animation-delay: 0.24s; }
-                .listen-bolt-4 { transform: translateX(-50%) rotate(-10deg); height: 35px; animation-delay: 0.36s; }
-                .listen-bolt-5 { transform: translateX(-50%) rotate(12deg); height: 42px; animation-delay: 0.48s; }
-
-                .listen-ripple {
-                    position: absolute;
-                    left: 50%;
-                    top: 30%;
-                    width: 100px;
-                    height: 16px;
-                    border-radius: 50%;
-                    border: 1.5px solid rgba(125,211,252,0.5);
-                    transform: translateX(-50%) scale(0.4);
-                    opacity: 0;
-                    animation: listen-ripple-out 1.6s ease-out infinite;
-                    filter: drop-shadow(0 0 6px rgba(59,130,246,0.4));
-                }
-                .listen-ripple-2 { animation-delay: 0.5s; }
+                /* --- Particles --- */
+                .vt-particle { animation: vt-particle-float 3.5s ease-in-out infinite alternate; }
+                .vt-scene[data-state="speaking"] .vt-particle { fill: rgba(255,255,255,0.9); animation-duration: 1.2s; }
+                .vt-scene[data-state="listening"] .vt-particle { fill: rgba(147,197,253,0.8); }
 
                 /* ===== KEYFRAMES ===== */
-                @keyframes cloud-float {
-                    0% { transform: translateX(0) translateY(0); }
-                    100% { transform: translateX(40px) translateY(-15px); }
-                }
-                @keyframes glow-pulse {
-                    0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
-                    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
-                }
-                @keyframes toroid-breathe {
+                @keyframes vt-breathe {
                     0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.02); }
+                    50% { transform: scale(1.015); }
                 }
-                @keyframes toroid-speaking {
-                    0%, 100% { transform: scale(1.02); filter: brightness(1.1); }
-                    50% { transform: scale(1.06); filter: brightness(1.3); }
-                }
-                @keyframes toroid-listening {
+                @keyframes vt-speak-pulse {
                     0%, 100% { transform: scale(1.01); }
-                    50% { transform: scale(1.04); }
+                    50% { transform: scale(1.05); }
                 }
-                @keyframes toroid-thinking {
-                    0%, 100% { transform: scale(1); filter: hue-rotate(0deg); }
-                    50% { transform: scale(1.02); filter: hue-rotate(20deg); }
+                @keyframes vt-listen-pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.025); }
                 }
-                @keyframes surface-rotate {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
+                @keyframes vt-think-rotate {
+                    0%, 100% { transform: scale(1) rotate(-1deg); filter: hue-rotate(0deg); }
+                    50% { transform: scale(1.02) rotate(1deg); filter: hue-rotate(15deg); }
                 }
-                @keyframes band-rotate-1 {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
+                @keyframes vt-bolt-flash {
+                    0%, 100% { opacity: 0; }
+                    10% { opacity: 1; }
+                    25% { opacity: 0.15; }
+                    40% { opacity: 0.9; }
+                    55% { opacity: 0.05; }
+                    70% { opacity: 0.7; }
+                    85% { opacity: 0; }
                 }
-                @keyframes band-rotate-2 {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(-360deg); }
-                }
-                @keyframes highlight-drift {
-                    0% { transform: translate(0, 0); opacity: 0.6; }
-                    100% { transform: translate(10px, 3px); opacity: 0.9; }
-                }
-                @keyframes ray-flash {
-                    0%, 100% { opacity: 0; transform: translateY(var(--ty, 0)) rotate(var(--rot, 0)) scaleX(0.5); }
-                    15% { opacity: 0.9; }
-                    30% { opacity: 0.2; transform: translateY(var(--ty, 0)) rotate(var(--rot, 0)) scaleX(1.1); }
-                    50% { opacity: 0.8; }
-                    70% { opacity: 0.1; }
-                    85% { opacity: 0.6; transform: translateY(var(--ty, 0)) rotate(var(--rot, 0)) scaleX(0.8); }
-                }
-                @keyframes tp-float {
-                    0% { transform: translate(0, 0) scale(0.7); opacity: 0.3; }
-                    100% { transform: translate(8px, -12px) scale(1.3); opacity: 0.85; }
-                }
-                @keyframes listen-wave-expand {
-                    0% { transform: translateX(-50%) scale(0.5); opacity: 0.7; }
-                    100% { transform: translateX(-50%) scale(1.5); opacity: 0; }
-                }
-                @keyframes listen-bolt-fire {
+                @keyframes vt-core-ray {
                     0%, 100% { opacity: 0.1; }
-                    30% { opacity: 1; filter: drop-shadow(0 0 14px rgba(255,255,255,0.9)) drop-shadow(0 0 28px rgba(59,130,246,0.8)); }
-                    60% { opacity: 0.4; }
+                    20% { opacity: 0.85; }
+                    40% { opacity: 0.15; }
+                    60% { opacity: 0.7; }
+                    80% { opacity: 0.05; }
                 }
-                @keyframes listen-ripple-out {
-                    0% { transform: translateX(-50%) scale(0.4); opacity: 0.6; }
-                    100% { transform: translateX(-50%) scale(2); opacity: 0; }
+                @keyframes vt-ripple {
+                    0% { opacity: 0.7; transform: scale(0.8); }
+                    100% { opacity: 0; transform: scale(1.6); }
+                }
+                @keyframes vt-band-spin {
+                    0% { stroke-dashoffset: 0; }
+                    100% { stroke-dashoffset: 600; }
+                }
+                @keyframes vt-particle-float {
+                    0% { transform: translate(0,0) scale(0.7); opacity: 0.3; }
+                    100% { transform: translate(6px,-10px) scale(1.4); opacity: 0.85; }
                 }
             `}</style>
         </div>
