@@ -1,140 +1,124 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown, UploadCloud } from 'lucide-react';
 
-// WebGL lightning shader — reads hueRef + analyserRef each frame (no WebGL context recreation)
-const Lightning = ({ hueRef, analyserRef = null, speed = 1.6, baseIntensity = 0.5, size = 2 }) => {
+// WebGL LightningField — rayos radiales sincronizados con audio. Usa refs: contexto WebGL creado una sola vez.
+const LightningField = ({ hueRef, analyserRef = null }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const resizeCanvas = () => {
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    const resize = () => { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; };
+    resize();
+    window.addEventListener('resize', resize);
 
     const gl = canvas.getContext('webgl');
     if (!gl) return;
 
-    const vert = `
-      attribute vec2 aPosition;
-      void main() { gl_Position = vec4(aPosition, 0.0, 1.0); }
-    `;
+    const vert = `attribute vec2 aPosition; void main() { gl_Position = vec4(aPosition, 0.0, 1.0); }`;
+
     const frag = `
       precision mediump float;
       uniform vec2 iResolution;
       uniform float iTime;
       uniform float uHue;
-      uniform float uSpeed;
       uniform float uIntensity;
-      uniform float uSize;
-      #define OCTAVE_COUNT 10
-      vec3 hsv2rgb(vec3 c) {
-        vec3 rgb = clamp(abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
-        return c.z * mix(vec3(1.0), rgb, c.y);
-      }
+      uniform float uAudioLevel;
+
       float hash12(vec2 p) {
         vec3 p3 = fract(vec3(p.xyx) * .1031);
         p3 += dot(p3, p3.yzx + 33.33);
         return fract((p3.x + p3.y) * p3.z);
       }
-      float hash11(float p) {
-        p = fract(p * .1031); p *= p + 33.33; p *= p + p; return fract(p);
-      }
-      mat2 rotate2d(float a) { float c=cos(a),s=sin(a); return mat2(c,-s,s,c); }
       float noise(vec2 p) {
-        vec2 ip=floor(p), fp=fract(p);
-        float a=hash12(ip), b=hash12(ip+vec2(1,0)), c=hash12(ip+vec2(0,1)), d=hash12(ip+vec2(1,1));
-        vec2 t=smoothstep(0.0,1.0,fp);
-        return mix(mix(a,b,t.x),mix(c,d,t.x),t.y);
+        vec2 i = floor(p); vec2 f = fract(p);
+        vec2 u = f*f*(3.0-2.0*f);
+        return mix(mix(hash12(i), hash12(i+vec2(1.0,0.0)), u.x),
+                   mix(hash12(i+vec2(0.0,1.0)), hash12(i+vec2(1.0,1.0)), u.x), u.y);
       }
       float fbm(vec2 p) {
-        float v=0.0, a=0.5;
-        for(int i=0;i<OCTAVE_COUNT;i++) { v+=a*noise(p); p*=rotate2d(0.45); p*=2.0; a*=0.5; }
+        float v = 0.0; float a = 0.5;
+        for (int i = 0; i < 6; i++) { v += a * noise(p); p *= 2.2; a *= 0.5; }
         return v;
       }
+      vec3 hsv2rgb(vec3 c) {
+        vec3 rgb = clamp(abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0);
+        return c.z * mix(vec3(1.0), rgb, c.y);
+      }
       void main() {
-        vec2 uv = gl_FragCoord.xy / iResolution.xy;
-        uv = 2.0*uv - 1.0;
-        uv.x *= iResolution.x / iResolution.y;
-        uv += 2.0*fbm(uv*uSize + 0.8*iTime*uSpeed) - 1.0;
-        float dist = abs(uv.x);
-        vec3 base = hsv2rgb(vec3(uHue/360.0, 0.7, 0.8));
-        vec3 col = base * pow(mix(0.0,0.07,hash11(iTime*uSpeed))/dist, 1.0) * uIntensity;
+        vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / min(iResolution.y, iResolution.x);
+        float r = length(uv);
+        float power = uAudioLevel * 4.5;
+        float finalRays = 0.0; float coreRays = 0.0;
+        for (int i = 0; i < 4; i++) {
+          float angle = float(i) * 1.57 + iTime * 0.1;
+          float dist = fbm(vec2(r * 2.0 - iTime * 2.0, angle)) * (0.15 + power * 0.1);
+          float line = abs(uv.x * cos(angle) + uv.y * sin(angle) + dist);
+          float glow = 0.02 / (line + 0.02);
+          float core = 0.003 / (line + 0.005);
+          float mask = smoothstep(0.18, 0.25, r);
+          finalRays += glow * mask;
+          coreRays  += core * mask * (0.5 + power);
+        }
+        vec3 baseColor = hsv2rgb(vec3(uHue/360.0, 0.7, 1.0));
+        vec3 col = (baseColor * finalRays * uIntensity) + (vec3(1.0) * coreRays * uIntensity);
+        col += baseColor * power * 0.15;
         gl_FragColor = vec4(col, 1.0);
       }
     `;
 
     const compile = (src, type) => {
       const s = gl.createShader(type);
-      gl.shaderSource(s, src); gl.compileShader(s);
-      return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
+      gl.shaderSource(s, src); gl.compileShader(s); return s;
     };
-    const vs = compile(vert, gl.VERTEX_SHADER);
-    const fs = compile(frag, gl.FRAGMENT_SHADER);
-    if (!vs || !fs) return;
-
     const prog = gl.createProgram();
-    gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
-    gl.useProgram(prog);
+    gl.attachShader(prog, compile(vert, gl.VERTEX_SHADER));
+    gl.attachShader(prog, compile(frag, gl.FRAGMENT_SHADER));
+    gl.linkProgram(prog); gl.useProgram(prog);
 
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
-    const aPos = gl.getAttribLocation(prog, 'aPosition');
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    const pos = gl.getAttribLocation(prog, 'aPosition');
+    gl.enableVertexAttribArray(pos);
+    gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
 
     const uRes = gl.getUniformLocation(prog, 'iResolution');
     const uTime = gl.getUniformLocation(prog, 'iTime');
     const uHueLoc = gl.getUniformLocation(prog, 'uHue');
-    const uSpd = gl.getUniformLocation(prog, 'uSpeed');
     const uInt = gl.getUniformLocation(prog, 'uIntensity');
-    const uSz = gl.getUniformLocation(prog, 'uSize');
+    const uAud = gl.getUniformLocation(prog, 'uAudioLevel');
 
-    // Buffer for analyser time-domain data
-    const timeDomain = new Uint8Array(256);
-
-    const t0 = performance.now();
+    const freqData = new Uint8Array(128);
     let raf;
-    const render = () => {
-      resizeCanvas();
+    const render = (time) => {
+      resize();
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.uniform2f(uRes, canvas.width, canvas.height);
-      gl.uniform1f(uTime, (performance.now() - t0) / 1000);
+      gl.uniform1f(uTime, time * 0.001);
       gl.uniform1f(uHueLoc, hueRef?.current ?? 220);
-      gl.uniform1f(uSpd, speed);
-      gl.uniform1f(uSz, size);
 
-      // Read audio RMS from analyser → modulate intensity
-      let dynIntensity = baseIntensity;
+      let level = 0;
       const analyser = analyserRef?.current;
       if (analyser) {
-        analyser.getByteTimeDomainData(timeDomain);
+        analyser.getByteFrequencyData(freqData);
         let sum = 0;
-        for (let i = 0; i < timeDomain.length; i++) {
-          const v = (timeDomain[i] - 128) / 128;
-          sum += v * v;
-        }
-        const rms = Math.sqrt(sum / timeDomain.length);
-        // rms ~ 0 when silent, ~0.3-0.6 when speaking; map to visible intensity boost
-        dynIntensity = baseIntensity + rms * 2.5;
+        for (let i = 0; i < freqData.length; i++) sum += freqData[i];
+        level = (sum / freqData.length) / 255.0;
       }
 
-      gl.uniform1f(uInt, dynIntensity);
+      gl.uniform1f(uInt, 1.2);
+      gl.uniform1f(uAud, level);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       raf = requestAnimationFrame(render);
     };
     raf = requestAnimationFrame(render);
 
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resizeCanvas); };
-  }, []); // runs once — reads from refs each frame
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []); // contexto WebGL creado una sola vez
 
-  return <canvas ref={canvasRef} className="w-full h-full" />;
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
 };
 
 const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', studentName = '', onClose, onCalendarChanged }) => {
@@ -147,6 +131,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     const [showMessages, setShowMessages] = useState(false);
     const [sphereState, setSphereState] = useState('idle'); // idle, listening, thinking, speaking
     const [currentTranscript, setCurrentTranscript] = useState('');
+    const [audioLevel, setAudioLevel] = useState(0);
 
     const conversationRef = useRef([]);
     const recognitionRef = useRef(null);
@@ -186,6 +171,26 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             sphereState === 'thinking'  ? 270 :
             sphereState === 'speaking'  ? 175 : 220;
     }, [sphereState]);
+
+    // Track audio level for toroid glow (RAF loop)
+    useEffect(() => {
+        const freqData = new Uint8Array(128);
+        let raf;
+        const update = () => {
+            const analyser = lightningAnalyserRef.current;
+            if (analyser && isSpeaking) {
+                analyser.getByteFrequencyData(freqData);
+                let sum = 0;
+                for (let i = 0; i < freqData.length; i++) sum += freqData[i];
+                setAudioLevel(sum / freqData.length / 255);
+            } else {
+                setAudioLevel(0);
+            }
+            raf = requestAnimationFrame(update);
+        };
+        raf = requestAnimationFrame(update);
+        return () => cancelAnimationFrame(raf);
+    }, [isSpeaking]);
 
     const stopAllAudio = useCallback(() => {
         ttsRunRef.current += 1;
@@ -317,7 +322,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         if (!audioCtxRef.current) {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const analyser = ctx.createAnalyser();
-            analyser.fftSize = 512;
+            analyser.fftSize = 256;
             analyser.smoothingTimeConstant = 0.8;
             analyser.connect(ctx.destination);
             audioCtxRef.current = ctx;
@@ -556,18 +561,11 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         'Que materias tiene abandonadas?'
     ];
 
-    // === Canvas lightning refs ===
-    const canvasRef = useRef(null);
-    const animRef = useRef(null);
-    const stateRef = useRef(sphereState);
-    useEffect(() => { stateRef.current = sphereState; }, [sphereState]);
-
-    // Canvas energy animation — smooth flowing arcs instead of jagged lightning
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let t = 0; // continuous time counter
+        const canvas = { current: null }; // stub — canvas 2D removido
+        if (!canvas.current) return;
+        const ctx = null;
+        let t = 0;
 
         const resize = () => {
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -757,15 +755,22 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         };
     }, []);
 
+    const hue = lightningHueRef.current;
+
     return (
-        <div className="fixed inset-0 z-[9999] flex flex-col" style={{background:'radial-gradient(ellipse 130% 90% at 50% 38%, #0a1628 0%, #050a15 55%, #020408 100%)'}}>
-            {/* WebGL lightning shader background */}
-            <div className="absolute inset-0 z-0 pointer-events-none opacity-80">
-                <Lightning hueRef={lightningHueRef} analyserRef={lightningAnalyserRef} speed={1.6} baseIntensity={0.5} size={2} />
+        <div className="fixed inset-0 z-[9999] flex flex-col bg-[#020406] overflow-hidden">
+            {/* LightningField WebGL — ocupa todo el fondo */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <LightningField hueRef={lightningHueRef} analyserRef={lightningAnalyserRef} />
             </div>
 
-            {/* Stormy atmosphere overlay */}
-            <div className="absolute inset-0 pointer-events-none z-1" style={{background:'radial-gradient(ellipse 70% 45% at 50% 40%, rgba(30,58,138,0.1) 0%, transparent 70%)'}} />
+            {/* Flash blanco sincronizado con voz */}
+            <div className="absolute inset-0 z-0 pointer-events-none transition-opacity duration-100"
+                style={{ backgroundColor: 'white', opacity: isSpeaking ? audioLevel * 0.08 : 0 }} />
+
+            {/* Degradado atmosférico radial — oscurece bordes */}
+            <div className="absolute inset-0 z-0 pointer-events-none"
+                style={{ background: 'radial-gradient(circle at center, transparent 0%, black 100%)' }} />
 
             {/* Top controls */}
             <div className="relative z-20 flex items-center justify-end px-4 pt-4 pb-2 gap-2">
@@ -803,16 +808,26 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 </div>
             )}
 
-            {/* === TOROID + CANVAS LIGHTNING === */}
+            {/* === TOROID CENTRAL === */}
             <div className="flex-1 flex flex-col items-center justify-center relative px-4 z-10">
-                <div className="relative" style={{width:'min(94vw, 540px)', aspectRatio:'5/3.5'}}>
-                    {/* Canvas for animated lightning — sits on top */}
-                    <canvas ref={canvasRef} className="absolute inset-0 z-10 pointer-events-none" />
-
-                    {/* Toroid PNG image — exact reference */}
-                    <div className="absolute inset-0 z-5 flex items-center justify-center">
-                        <img src="/toroid.png" alt="" className="w-[75%] h-auto object-contain drop-shadow-[0_0_40px_rgba(59,130,246,0.4)]" draggable={false} />
-                    </div>
+                <div className="relative flex items-center justify-center" style={{width:'min(94vw,400px)', aspectRatio:'1/1'}}>
+                    {/* Glow exterior reactivo a la voz */}
+                    <div className="absolute inset-0 rounded-full blur-[80px] pointer-events-none transition-transform duration-75"
+                        style={{
+                            backgroundColor: `hsl(${hue}, 100%, 50%)`,
+                            opacity: 0.15 + audioLevel * 0.7,
+                            transform: `scale(${1 + audioLevel * 1.2})`
+                        }} />
+                    {/* Toroid PNG con glow y escala reactiva */}
+                    <img
+                        src="/toroid.png" alt="" draggable={false}
+                        className="relative w-[80%] h-auto object-contain pointer-events-none"
+                        style={{
+                            filter: `drop-shadow(0 0 ${30 + audioLevel * 60}px hsl(${hue}, 100%, 65%))`,
+                            transform: `scale(${1 + audioLevel * 0.08})`,
+                            transition: 'transform 75ms, filter 75ms'
+                        }}
+                    />
                 </div>
 
                 {/* Status text */}
