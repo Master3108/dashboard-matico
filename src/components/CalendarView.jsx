@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Clock, BookOpen, CheckCircle, AlertTriangle, Trash2, ChevronLeft, ChevronRight, History, ArrowUp } from 'lucide-react';
+import { Calendar, Clock, BookOpen, CheckCircle, AlertTriangle, Trash2, ChevronLeft, ChevronRight, History } from 'lucide-react';
 
 const EVENT_TYPE_CONFIG = {
     prueba: { label: 'Prueba', color: '#EF4444', bg: '#FEF2F2' },

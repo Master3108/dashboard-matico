@@ -3783,11 +3783,23 @@ const buildDailyReportForStudent = async ({ student_user_id, report_date = dateO
     const staleAlerts = [];
     const sinceIso = `${addDaysToDateOnly(report_date, -STUDY_STALE_DAYS)}T00:00:00-04:00`;
 
+    // Helper: build subject variants for case/accent-insensitive matching
+    const subjectVariants = (s) => {
+        const base = s.toUpperCase();
+        const withAccent = base.replace('FISICA', 'FÍSICA').replace('MATEMATICA', 'MATEMÁTICA')
+            .replace('QUIMICA', 'QUÍMICA').replace('BIOLOGIA', 'BIOLOGÍA');
+        const lower = base.toLowerCase();
+        const titled = lower.charAt(0).toUpperCase() + lower.slice(1);
+        return [...new Set([base, withAccent, lower, titled])];
+    };
+
     for (const subject of PRIORITY_STUDY_SUBJECTS) {
+        const variants = subjectVariants(subject);
+        const orFilter = variants.map(v => `subject.eq.${v}`).join(',');
         const [recentStudy, recentProgress, recentOcr] = await Promise.all([
-            supabase.from('study_sessions').select('session_id').eq('student_user_id', student_user_id).eq('subject', subject).gte('start_time', sinceIso).limit(1),
-            supabase.from('progress_log').select('id').eq('user_id', student_user_id).eq('subject', subject).gte('created_at', sinceIso).limit(1),
-            supabase.from('notebook_ocr_records').select('id').eq('user_id', student_user_id).eq('subject', subject).gte('created_at', sinceIso).limit(1)
+            supabase.from('study_sessions').select('session_id').eq('student_user_id', student_user_id).or(orFilter).gte('start_time', sinceIso).limit(1),
+            supabase.from('progress_log').select('id').eq('user_id', student_user_id).or(orFilter).gte('created_at', sinceIso).limit(1),
+            supabase.from('notebook_ocr_records').select('id').eq('user_id', student_user_id).or(orFilter).gte('created_at', sinceIso).limit(1)
         ]);
         if (!(recentStudy.data?.length || recentProgress.data?.length || recentOcr.data?.length)) {
             staleAlerts.push(subject);
