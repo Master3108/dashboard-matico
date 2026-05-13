@@ -10202,6 +10202,8 @@ const AGENT_TOOLS = [
 ];
 
 const AGENT_PRIVATE_TOOL_NAMES = new Set([
+    'search_students',
+    'search_all_modules',
     'create_calendar_event',
     'update_calendar_event',
     'delete_calendar_event',
