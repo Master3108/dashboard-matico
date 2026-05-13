@@ -9945,8 +9945,22 @@ const AGENT_TOOLS = [
         type: 'function',
         function: {
             name: 'get_student_profile',
-            description: 'Obtener perfil del estudiante: nombre, email, materias registradas',
+            description: 'Obtener perfil del estudiante por user_id: nombre, email, materias registradas',
             parameters: { type: 'object', properties: { student_id: { type: 'string' } }, required: ['student_id'] }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'search_students',
+            description: 'Buscar estudiantes/usuarios por nombre, email o listar todos. Usa cuando el admin pregunte por un alumno especifico ("como le fue a Matias", "busca a Camila", "muestrame los alumnos", "quien es el usuario X"). Retorna user_id, nombre, email de cada resultado.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: { type: 'string', description: 'Nombre o email a buscar. Dejar vacio para listar todos.' },
+                    limit: { type: 'number', description: 'Maximo de resultados (default 20)' }
+                }
+            }
         }
     },
     {
@@ -10215,7 +10229,61 @@ async function executeAgentTool(name, args) {
             const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', sid).maybeSingle();
             const { data: legacy } = await supabase.from('users').select('*').eq('token', sid).maybeSingle();
             const p = profile || legacy || {};
-            return { name: p.display_name || p.nombre || p.name || 'Sin nombre', email: p.email || p.mail || '', user_id: sid };
+            return {
+                user_id: p.user_id || p.token || sid,
+                name: p.display_name || p.nombre || p.name || 'Sin nombre',
+                email: p.email || p.mail || '',
+                role: p.role || p.tipo || '',
+                subjects: p.subjects || p.materias || null,
+                created_at: p.created_at || null,
+                raw: p
+            };
+        }
+        case 'search_students': {
+            const q = (args.query || '').trim();
+            const lim = Number(args.limit) || 20;
+            const results = [];
+
+            // Search in profiles table
+            let profileQuery = supabase.from('profiles').select('user_id, display_name, email, role, created_at');
+            if (q) {
+                profileQuery = profileQuery.or(`display_name.ilike.%${q}%,email.ilike.%${q}%,user_id.ilike.%${q}%`);
+            }
+            const { data: profiles } = await profileQuery.order('created_at', { ascending: false }).limit(lim);
+
+            for (const p of (profiles || [])) {
+                results.push({
+                    user_id: p.user_id,
+                    name: p.display_name || 'Sin nombre',
+                    email: p.email || '',
+                    role: p.role || '',
+                    source: 'profiles',
+                    created_at: p.created_at
+                });
+            }
+
+            // Search in legacy users table too
+            let legacyQuery = supabase.from('users').select('token, nombre, name, mail, email, role, tipo, created_at');
+            if (q) {
+                legacyQuery = legacyQuery.or(`nombre.ilike.%${q}%,name.ilike.%${q}%,mail.ilike.%${q}%,email.ilike.%${q}%,token.ilike.%${q}%`);
+            }
+            const { data: legacyUsers } = await legacyQuery.order('created_at', { ascending: false }).limit(lim);
+
+            const profileIds = new Set(results.map(r => r.user_id));
+            for (const u of (legacyUsers || [])) {
+                const uid = u.token;
+                if (profileIds.has(uid)) continue; // skip duplicates
+                results.push({
+                    user_id: uid,
+                    name: u.nombre || u.name || 'Sin nombre',
+                    email: u.mail || u.email || '',
+                    role: u.role || u.tipo || '',
+                    source: 'users',
+                    created_at: u.created_at
+                });
+            }
+
+            return { total: results.length, students: results.slice(0, lim) };
         }
         case 'get_recent_activity': {
             const { data: progress } = await supabase.from('progress_log').select('event_type, subject, topic, score, total_questions, correct_answers, wrong_answers, created_at')
@@ -10660,7 +10728,7 @@ REGLAS FUNDAMENTALES:
 
             systemPrompt = (user_type === 'parent'
                 ? `Eres Matico, asistente educativo para apoderados. Hablas con el apoderado sobre su hijo/a, con foco en revisar informacion, explicar avance, alertar riesgos y orientar estudio.${AGENT_CORE_RULES}
-Usa get_student_profile para saber el nombre del niño.`
+Usa get_student_profile para saber el nombre del niño actual. Usa search_students para buscar CUALQUIER alumno por nombre ("como le fue a Matias" -> search_students query:"Matias"). Cuando encuentres un alumno, muestra su nombre, user_id y email. Si el admin pregunta por un alumno distinto al actual, primero buscalo con search_students, y luego usa su user_id para consultar sus datos con las demas herramientas.`
                 : `Eres Matico, compañero de estudio del estudiante. Motivador, amigable, hablas simple, tono juvenil. Puedes revisar sus datos educativos, preparar pruebas, crear material de estudio y explicar su progreso, pero no eres admin.${AGENT_CORE_RULES}
 PREPARACION DE PRUEBAS: Si el estudiante pide ayuda para prepararse para una prueba/examen, o si adjunta imagenes de contenido de prueba, USA prepare_exam_study con la materia, tema y resumen del contenido. Esto genera teoria ludica + quiz y le da un link de estudio. Si hay imagenes adjuntas con analisis, usa ese analisis como content_summary.`) + trainingSection;
             activeTools = PUBLIC_AGENT_TOOLS;
