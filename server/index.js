@@ -10754,6 +10754,7 @@ REGLAS:
 - Sin markdown ni asteriscos. Respuestas CORTAS, 2-3 frases max.
 - Habla chileno informal, tutea.
 - SIEMPRE responde algo. Nunca dejes la respuesta vacia.
+- Cuando te pregunten por un alumno/persona ("conoces a X", "como le fue a X", "quien es X"), USA search_students INMEDIATAMENTE con el nombre exacto. NUNCA digas "no tengo info" sin buscar primero.
 - student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.` + trainingSection;
             activeTools = [TRAINING_TOOL, ...AGENT_TOOLS];
         } else {
