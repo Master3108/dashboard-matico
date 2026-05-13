@@ -259,7 +259,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     // Speech-to-Text via Web Speech API (fallback) or Whisper
     const startListening = useCallback(({ preserveAudio = false } = {}) => {
         listeningDesiredRef.current = true;
-        if (recognitionRef.current || isSpeaking || isProcessing) return;
+        if (recognitionRef.current || speakingRef.current || processingRef.current) return;
         // Stop any playing audio
         if (!preserveAudio) stopAllAudio();
 
@@ -269,6 +269,16 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             recognition.lang = 'es-CL';
             recognition.continuous = true;
             recognition.interimResults = true;
+            let restartCount = 0;
+
+            recognition.onstart = () => {
+                console.log('[STT] Recognition started');
+                restartCount = 0;
+            };
+
+            recognition.onaudiostart = () => {
+                console.log('[STT] Audio capture started');
+            };
 
             recognition.onresult = (event) => {
                 let transcript = '';
@@ -277,6 +287,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                     transcript += event.results[i][0].transcript;
                     if (event.results[i].isFinal) isFinal = true;
                 }
+                console.log('[STT] Result:', transcript, 'final:', isFinal);
                 setCurrentTranscript(transcript);
                 if (isFinal && transcript.trim()) {
                     setCurrentTranscript('');
@@ -289,33 +300,64 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 console.error('[STT] Error:', e.error);
                 // Auto-restart on non-fatal errors
                 if (e.error === 'no-speech' || e.error === 'aborted') {
-                    if (listeningDesiredRef.current) try { recognition.start(); } catch {}
+                    restartCount++;
+                    if (listeningDesiredRef.current && restartCount < 50) {
+                        setTimeout(() => {
+                            if (listeningDesiredRef.current && recognitionRef.current === recognition) {
+                                try { recognition.start(); } catch (err) { console.error('[STT] Restart failed:', err); }
+                            }
+                        }, 100);
+                    }
                     return;
                 }
+                console.error('[STT] Fatal error, stopping:', e.error);
+                recognitionRef.current = null;
                 setIsListening(false);
                 setSphereState('idle');
                 setCurrentTranscript('');
             };
 
             recognition.onend = () => {
+                console.log('[STT] Recognition ended, desired:', listeningDesiredRef.current, 'processing:', processingRef.current, 'speaking:', speakingRef.current);
                 // Auto-restart if still supposed to be listening
                 if (recognitionRef.current === recognition && listeningDesiredRef.current && !processingRef.current && !speakingRef.current) {
-                    try { recognition.start(); } catch {}
-                    return;
+                    restartCount++;
+                    if (restartCount < 50) {
+                        setTimeout(() => {
+                            if (listeningDesiredRef.current && recognitionRef.current === recognition && !processingRef.current && !speakingRef.current) {
+                                try { recognition.start(); console.log('[STT] Auto-restarted'); } catch (err) {
+                                    console.error('[STT] Auto-restart failed:', err);
+                                    // Create fresh recognition
+                                    recognitionRef.current = null;
+                                    setIsListening(false);
+                                    setSphereState('idle');
+                                    setTimeout(() => { if (listeningDesiredRef.current) startListening({ preserveAudio: true }); }, 300);
+                                }
+                            }
+                        }, 100);
+                        return;
+                    }
                 }
+                recognitionRef.current = null;
                 setIsListening(false);
                 if (sphereState === 'listening') setSphereState('idle');
                 setCurrentTranscript('');
             };
 
-            recognition.start();
-            recognitionRef.current = recognition;
-            setIsListening(true);
-            setSphereState('listening');
+            try {
+                recognition.start();
+                recognitionRef.current = recognition;
+                setIsListening(true);
+                setSphereState('listening');
+                console.log('[STT] Started listening');
+            } catch (err) {
+                console.error('[STT] Failed to start:', err);
+                recognitionRef.current = null;
+            }
         } else {
             alert('Tu navegador no soporta reconocimiento de voz');
         }
-    }, [sphereState, stopAllAudio, isSpeaking, isProcessing]);
+    }, [sphereState, stopAllAudio]);
 
     const stopListening = useCallback(({ preserveDesired = false } = {}) => {
         if (!preserveDesired) listeningDesiredRef.current = false;
