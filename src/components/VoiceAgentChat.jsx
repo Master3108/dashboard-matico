@@ -141,6 +141,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     const [trainingInput, setTrainingInput] = useState('');
     const [trainingType, setTrainingType] = useState('instruccion');
     const [trainingSaving, setTrainingSaving] = useState(false);
+    const [pendingImages, setPendingImages] = useState([]);
 
     const conversationRef = useRef([]);
     const recognitionRef = useRef(null);
@@ -480,29 +481,25 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     };
 
     const handleFilesSelected = async (event) => {
-        const files = Array.from(event.target.files || []).slice(0, 10);
+        const files = Array.from(event.target.files || []).slice(0, 5);
         event.target.value = '';
         if (!files.length || isProcessing) return;
 
-        stopListening();
-        stopAllAudio();
-        const label = files.length === 1 ? 'Subí una imagen para revisar.' : `Subí ${files.length} imágenes para revisar.`;
-        setMessages(prev => [...prev, { role: 'user', content: label, timestamp: new Date() }]);
-        processingRef.current = true;
-        setIsProcessing(true);
-        setSphereState('thinking');
-
-        try {
-            const reply = await createEventsFromTextOrImages({ files });
-            await addAssistantMessage(reply);
-        } catch (err) {
-            console.error('[VOICE-AGENT] Upload error:', err);
-            await addAssistantMessage('No pude procesar las imágenes. Intenta de nuevo con fotos más claras.');
-        } finally {
-            processingRef.current = false;
-            setIsProcessing(false);
-            restartListeningSoon();
+        // Convert to base64 previews and store as pending
+        const converted = [];
+        for (const file of files) {
+            const b64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(file);
+            });
+            converted.push({ name: file.name, base64: b64, preview: b64 });
         }
+        setPendingImages(prev => [...prev, ...converted].slice(0, 5));
+    };
+
+    const removePendingImage = (idx) => {
+        setPendingImages(prev => prev.filter((_, i) => i !== idx));
     };
 
     // Send message to agent
@@ -512,7 +509,13 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         stopListening({ preserveDesired: shouldResumeListening });
         stopAllAudio();
 
-        const userMsg = { role: 'user', content: text, timestamp: new Date() };
+        // Capture and clear pending images
+        const imagesToSend = [...pendingImages];
+        setPendingImages([]);
+
+        const hasImages = imagesToSend.length > 0;
+        const label = hasImages ? `${text} [+${imagesToSend.length} imagen${imagesToSend.length > 1 ? 'es' : ''}]` : text;
+        const userMsg = { role: 'user', content: label, timestamp: new Date(), images: hasImages ? imagesToSend.map(i => i.preview) : undefined };
         setMessages(prev => [...prev, userMsg]);
         conversationRef.current.push({ role: 'user', content: text });
         setInputText('');
@@ -543,6 +546,9 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             if (trainingMode) {
                 chatBody.training_mode = true;
                 chatBody.admin_user_id = userId;
+            }
+            if (imagesToSend.length > 0) {
+                chatBody.images = imagesToSend.map(i => i.base64);
             }
             const res = await fetch('/api/agent/chat', {
                 method: 'POST',
@@ -943,7 +949,16 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                                 <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                                     msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white/10 text-blue-100'
                                 }`}>
-                                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                    {msg.images && msg.images.length > 0 && (
+                                        <div className="flex gap-1 mb-1.5 flex-wrap">
+                                            {msg.images.map((src, j) => (
+                                                <img key={j} src={src} alt="" className="w-10 h-10 object-cover rounded" />
+                                            ))}
+                                        </div>
+                                    )}
+                                    <p className="text-sm whitespace-pre-wrap"
+                                       dangerouslySetInnerHTML={{ __html: msg.content.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener" class="underline text-blue-300">$1</a>') }}
+                                    />
                                 </div>
                             </div>
                         ))}
@@ -1022,6 +1037,21 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                         </button>
                     </div>
                 </form>
+
+                {pendingImages.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2 items-center justify-center">
+                        {pendingImages.map((img, idx) => (
+                            <div key={idx} className="relative group">
+                                <img src={img.preview} alt="" className="w-14 h-14 object-cover rounded-lg border border-blue-500/50" />
+                                <button onClick={() => removePendingImage(idx)}
+                                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-80 hover:opacity-100">
+                                    ×
+                                </button>
+                            </div>
+                        ))}
+                        <span className="text-blue-400/70 text-xs ml-1">Habla o escribe para enviar con las fotos</span>
+                    </div>
+                )}
 
                 <div className="flex items-center justify-center gap-4">
                     <input ref={fileInputRef} type="file" accept="image/*,.pdf" multiple className="hidden" onChange={handleFilesSelected} />

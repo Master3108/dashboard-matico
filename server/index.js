@@ -10051,6 +10051,23 @@ const AGENT_TOOLS = [
                 required: ['student_id']
             }
         }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'prepare_exam_study',
+            description: 'Generar material de estudio completo (teoria ludica + quiz interactivo) para preparar una prueba. Usa cuando el estudiante pide ayuda para prepararse para un examen o prueba. Retorna un link con el material de estudio.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    subject: { type: 'string', description: 'Materia: MATEMATICA, LENGUAJE, FILOSOFIA, HISTORIA, QUIMICA, FISICA, BIOLOGIA, INGLES, etc' },
+                    topic: { type: 'string', description: 'Tema especifico de la prueba' },
+                    content_summary: { type: 'string', description: 'Resumen detallado del contenido que entra en la prueba, extraido de imagenes o la conversacion. Incluir todos los temas y subtemas mencionados.' }
+                },
+                required: ['student_id', 'subject', 'topic']
+            }
+        }
     }
 ];
 
@@ -10180,6 +10197,88 @@ async function executeAgentTool(name, args) {
                 };
             });
         }
+        case 'prepare_exam_study': {
+            const subject = args.subject || 'GENERAL';
+            const topic = args.topic || 'Contenido general';
+            const contentSummary = args.content_summary || topic;
+            const BASE_URL = process.env.BASE_URL || 'https://srv1048418.hstgr.cloud';
+
+            try {
+                // Generate ludic theory
+                const theoryRes = await agentTextClient.chat.completions.create({
+                    model: AI_MODELS.thinking || AI_MODELS.fast,
+                    messages: [{ role: 'user', content: `Genera una leccion teorica LUDICA y ENTRETENIDA para un estudiante de ensenanza media chileno.
+Materia: ${subject}
+Tema: ${topic}
+Contenido especifico: ${contentSummary}
+
+REGLAS:
+- Escribe como si le hablaras a un adolescente chileno, tutea
+- Usa analogias divertidas, ejemplos de la vida real, datos curiosos
+- Organiza en secciones claras con titulos creativos (usa emojis)
+- Incluye "Dato curioso" o "Sabias que..." en cada seccion
+- Maximo 1000 palabras
+- Debe ser contenido que el estudiante pueda copiar en su cuaderno
+- NO uses formato markdown con # ni **. Usa texto plano con emojis para titulos.
+- Escribe pensando en que el estudiante lo va a LEER y COPIAR en su cuaderno` }],
+                    temperature: 0.7,
+                    max_tokens: 2000
+                });
+                const theoryContent = theoryRes.choices[0]?.message?.content || '';
+
+                // Generate quiz questions
+                const quizRes = await agentTextClient.chat.completions.create({
+                    model: AI_MODELS.fast,
+                    messages: [{ role: 'user', content: `Genera 8 preguntas de seleccion multiple sobre:
+Materia: ${subject} | Tema: ${topic}
+Contenido: ${contentSummary}
+
+Responde SOLO con un JSON array valido, sin texto extra:
+[{"question":"texto","options":["A) op1","B) op2","C) op3","D) op4"],"correct":0,"explanation":"por que es correcta"}]
+
+REGLAS:
+- Preguntas variadas: conceptuales, aplicacion, analisis
+- Opciones plausibles, no obvias
+- Explicaciones breves y claras
+- Dificultad media-alta
+- En espanol chileno` }],
+                    temperature: 0.5,
+                    max_tokens: 2500,
+                    response_format: { type: 'json_object' }
+                });
+                let quizQuestions = [];
+                try {
+                    const raw = quizRes.choices[0]?.message?.content || '[]';
+                    const parsed = JSON.parse(raw);
+                    quizQuestions = Array.isArray(parsed) ? parsed : (parsed.questions || parsed.quiz || []);
+                } catch { quizQuestions = []; }
+
+                // Save to Supabase
+                const { data: saved, error: saveErr } = await supabase.from('exam_prep_sessions').insert({
+                    student_id: sid,
+                    subject,
+                    topic,
+                    theory_content: theoryContent,
+                    quiz_questions: quizQuestions,
+                    content_summary: contentSummary
+                }).select('id').single();
+
+                if (saveErr) throw saveErr;
+                const studyLink = `${BASE_URL}/study/${saved.id}`;
+                console.log(`[AGENT] Study material created: ${studyLink}`);
+                return {
+                    success: true,
+                    link: studyLink,
+                    study_id: saved.id,
+                    theory_words: theoryContent.split(/\s+/).length,
+                    quiz_count: quizQuestions.length,
+                    message: `Material de estudio listo: teoria ludica (${theoryContent.split(/\s+/).length} palabras) + ${quizQuestions.length} preguntas quiz`
+                };
+            } catch (prepErr) {
+                console.error('[AGENT] prepare_exam_study error:', prepErr.message);
+                return { success: false, error: prepErr.message };
+            }
+        }
         default:
             return { error: `Tool ${name} no existe` };
     }
@@ -10187,13 +10286,37 @@ async function executeAgentTool(name, args) {
 
 app.post('/api/agent/chat', async (req, res) => {
     try {
-        const { message, student_id, user_type = 'parent', conversation_history = [], training_mode = false, admin_user_id } = req.body;
+        const { message, student_id, user_type = 'parent', conversation_history = [], training_mode = false, admin_user_id, images = [] } = req.body;
         if (!message || !student_id) return res.status(400).json({ success: false, error: 'Falta message o student_id' });
 
         // Training mode: verify admin
         if (training_mode) {
             const isAdm = await checkAdmin(admin_user_id);
             if (!isAdm) return res.status(403).json({ success: false, error: 'No autorizado para modo entrenamiento' });
+        }
+
+        // Pre-analyze images with vision if present
+        let imageAnalysis = '';
+        if (images.length > 0) {
+            try {
+                const visionContent = [
+                    { type: 'text', text: 'Analiza estas imagenes en detalle. Extrae TODO el texto visible, temas, materias, contenido academico. Si es una prueba o guia de estudio, lista todos los temas y subtemas que aparecen. Responde en espanol.' }
+                ];
+                for (const img of images.slice(0, 5)) {
+                    const b64 = img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`;
+                    visionContent.push({ type: 'image_url', image_url: { url: b64, detail: 'high' } });
+                }
+                const visionRes = await (openaiVisionClient || agentTextClient).chat.completions.create({
+                    model: OPENAI_VISION_MODEL,
+                    messages: [{ role: 'user', content: visionContent }],
+                    max_tokens: 1500
+                });
+                imageAnalysis = visionRes.choices[0]?.message?.content || '';
+                console.log('[AGENT] Image analysis done:', imageAnalysis.substring(0, 200));
+            } catch (visErr) {
+                console.error('[AGENT] Vision analysis error:', visErr.message);
+                imageAnalysis = '(No se pudo analizar las imagenes)';
+            }
         }
 
         const todayChileStr = dateOnlyChile();
@@ -10262,15 +10385,25 @@ REGLAS:
                 ? `Eres Matico, asistente educativo. Hablas con el apoderado sobre su hijo/a.
 REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana ("este martes", "el proximo lunes"). Respuestas CORTAS, 2-3 frases max, como si hablaras en voz alta. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}. Usa get_student_profile para saber el nombre del niño.`
                 : `Eres Matico, compañero de estudio. Motivador, amigable, hablas simple.
-REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana. Respuestas CORTAS, 2-3 frases max, tono juvenil. Motiva con buenos resultados. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.`) + trainingSection;
+REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana. Respuestas CORTAS, 2-3 frases max, tono juvenil. Motiva con buenos resultados. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.
+PREPARACION DE PRUEBAS: Si el estudiante pide ayuda para prepararse para una prueba/examen, o si adjunta imagenes de contenido de prueba, USA prepare_exam_study con la materia, tema y resumen del contenido. Esto genera teoria ludica + quiz y le da un link de estudio. Si hay imagenes adjuntas con analisis, usa ese analisis como content_summary.`) + trainingSection;
             activeTools = AGENT_TOOLS;
         }
+
+        // Build user message with image analysis if available
+        const userContent = imageAnalysis
+            ? `[IMAGENES ADJUNTAS - Analisis automatico]\n${imageAnalysis}\n\n[MENSAJE DEL ESTUDIANTE]\n${message}`
+            : message;
 
         const messages = [
             { role: 'system', content: systemPrompt },
             ...conversation_history.slice(-AGENT_HISTORY_MESSAGES),
-            { role: 'user', content: message }
+            { role: 'user', content: userContent }
         ];
+
+        // Use higher token limit when images are present (likely study prep)
+        const effectiveMaxTokens = images.length > 0 ? 600 : AGENT_MAX_TOKENS;
+        const effectiveMaxIterations = images.length > 0 ? 3 : AGENT_MAX_TOOL_ITERATIONS;
 
         let response = await agentTextClient.chat.completions.create({
             model: AGENT_CONVERSATION_MODEL,
@@ -10278,12 +10411,12 @@ REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas co
             tools: activeTools,
             tool_choice: 'auto',
             temperature: 0.3,
-            max_tokens: AGENT_MAX_TOKENS
+            max_tokens: effectiveMaxTokens
         });
 
         let assistantMessage = response.choices[0].message;
         let iterations = 0;
-        const maxIterations = AGENT_MAX_TOOL_ITERATIONS;
+        const maxIterations = effectiveMaxIterations;
 
         // Tool calling loop
         while (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0 && iterations < maxIterations) {
@@ -10397,6 +10530,102 @@ app.delete('/api/agent/training/:id', async (req, res) => {
         if (error) throw error;
         res.json({ success: true });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+// === STUDY PAGE — serves generated study material ===
+app.get('/study/:id', async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('exam_prep_sessions')
+            .select('*').eq('id', req.params.id).single();
+        if (error || !data) return res.status(404).send('<h1>Material no encontrado</h1>');
+
+        const theory = (data.theory_content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+        const quiz = Array.isArray(data.quiz_questions) ? data.quiz_questions : [];
+        const quizJson = JSON.stringify(quiz).replace(/</g, '\\u003c');
+        const created = new Date(data.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        res.send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${data.subject} - ${data.topic} | Matico Study</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4ff;color:#1e293b;line-height:1.6}
+.container{max-width:700px;margin:0 auto;padding:16px}
+.header{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border-radius:20px;padding:24px;margin-bottom:20px;text-align:center}
+.header h1{font-size:1.4em;margin-bottom:4px}.header .sub{opacity:.8;font-size:.85em}
+.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.card h2{font-size:1.1em;color:#3b82f6;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.theory{font-size:.95em;white-space:pre-line;line-height:1.7}
+.quiz-q{background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:12px;border:2px solid #e2e8f0}
+.quiz-q.correct{border-color:#22c55e;background:#f0fdf4}.quiz-q.wrong{border-color:#ef4444;background:#fef2f2}
+.quiz-q p{font-weight:600;margin-bottom:10px;font-size:.95em}
+.opt{display:block;width:100%;text-align:left;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;background:#fff;font-size:.9em;cursor:pointer;margin-bottom:6px;transition:all .15s}
+.opt:hover:not(:disabled){border-color:#3b82f6;background:#eff6ff}
+.opt.selected{border-color:#3b82f6;background:#dbeafe;font-weight:600}
+.opt.correct-answer{border-color:#22c55e;background:#dcfce7}
+.opt.wrong-answer{border-color:#ef4444;background:#fee2e2}
+.opt:disabled{cursor:default;opacity:.85}
+.explanation{margin-top:10px;padding:10px;border-radius:8px;background:#fefce8;font-size:.85em;display:none}
+.explanation.show{display:block}
+.score-bar{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border-radius:16px;padding:20px;text-align:center;font-size:1.2em;font-weight:700;display:none}
+.score-bar.show{display:block}
+.btn-retry{display:none;margin:12px auto;padding:12px 24px;background:#3b82f6;color:#fff;border:none;border-radius:12px;font-size:1em;font-weight:600;cursor:pointer}
+.btn-retry.show{display:block}
+</style></head><body>
+<div class="container">
+<div class="header">
+<h1>${data.subject} — ${data.topic}</h1>
+<div class="sub">Material de estudio generado por Matico | ${created}</div>
+</div>
+<div class="card"><h2>📚 Teoría para tu cuaderno</h2><div class="theory">${theory}</div></div>
+<div class="card"><h2>🧠 Quiz de práctica</h2><div id="quiz"></div>
+<div class="score-bar" id="score"></div>
+<button class="btn-retry" id="retry" onclick="resetQuiz()">Intentar de nuevo</button>
+</div></div>
+<script>
+const questions=${quizJson};
+let answered=0;
+function renderQuiz(){
+  const c=document.getElementById('quiz');c.innerHTML='';answered=0;
+  document.getElementById('score').className='score-bar';
+  document.getElementById('retry').className='btn-retry';
+  questions.forEach((q,qi)=>{
+    const d=document.createElement('div');d.className='quiz-q';d.id='q'+qi;
+    d.innerHTML='<p>'+(qi+1)+'. '+q.question+'</p>';
+    (q.options||[]).forEach((o,oi)=>{
+      const b=document.createElement('button');b.className='opt';b.textContent=o;
+      b.onclick=()=>checkAnswer(qi,oi);d.appendChild(b);
+    });
+    const ex=document.createElement('div');ex.className='explanation';ex.id='ex'+qi;
+    ex.textContent=q.explanation||'';d.appendChild(ex);c.appendChild(d);
+  });
+}
+function checkAnswer(qi,oi){
+  const qd=document.getElementById('q'+qi);
+  if(qd.classList.contains('correct')||qd.classList.contains('wrong'))return;
+  const btns=qd.querySelectorAll('.opt');
+  const correct=questions[qi].correct;
+  btns.forEach((b,i)=>{b.disabled=true;if(i===correct)b.classList.add('correct-answer');if(i===oi&&i!==correct)b.classList.add('wrong-answer');});
+  qd.classList.add(oi===correct?'correct':'wrong');
+  document.getElementById('ex'+qi).classList.add('show');
+  answered++;
+  if(answered===questions.length)showScore();
+}
+function showScore(){
+  const right=document.querySelectorAll('.quiz-q.correct').length;
+  const pct=Math.round(right/questions.length*100);
+  const el=document.getElementById('score');
+  el.textContent=right+'/'+questions.length+' correctas ('+pct+'%) '+(pct>=70?'🎉':'💪');
+  el.className='score-bar show';
+  document.getElementById('retry').className='btn-retry show';
+}
+function resetQuiz(){renderQuiz();}
+renderQuiz();
+</script></body></html>`);
+    } catch (err) {
+        console.error('[STUDY] Error:', err.message);
+        res.status(500).send('<h1>Error al cargar material</h1>');
+    }
 });
 
 // TTS endpoint — convierte texto a audio
