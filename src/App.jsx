@@ -3410,6 +3410,42 @@ const App = () => {
     const [agentTrainingSaving, setAgentTrainingSaving] = useState(false);
     const [agentTrainingLoaded, setAgentTrainingLoaded] = useState(false);
 
+    // Agent Test Chat states
+    const [agentTestOpen, setAgentTestOpen] = useState(false);
+    const [agentTestMessages, setAgentTestMessages] = useState([]);
+    const [agentTestInput, setAgentTestInput] = useState('');
+    const [agentTestLoading, setAgentTestLoading] = useState(false);
+    const agentTestEndRef = useRef(null);
+
+    const sendAgentTestMessage = async () => {
+        const msg = agentTestInput.trim();
+        if (!msg || agentTestLoading) return;
+        const userMsg = { role: 'user', content: msg };
+        const newMessages = [...agentTestMessages, userMsg];
+        setAgentTestMessages(newMessages);
+        setAgentTestInput('');
+        setAgentTestLoading(true);
+        try {
+            const res = await fetch('/api/agent/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: USER_ID,
+                    message: msg,
+                    history: newMessages.slice(-6),
+                    student_name: currentUser?.student_name || 'Alumno'
+                })
+            });
+            const data = await res.json();
+            if (data.reply) {
+                setAgentTestMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+            }
+        } catch (err) {
+            setAgentTestMessages(prev => [...prev, { role: 'assistant', content: 'Error al conectar con el agente.' }]);
+        } finally { setAgentTestLoading(false); }
+    };
+
+
     const fetchAgentTraining = async () => {
         try {
             const res = await fetch(`/api/agent/training?admin_user_id=${USER_ID}`);
@@ -7402,6 +7438,59 @@ ${finalData.capsule}`;
                                                             </div>
                                                         </div>
                                                     ))}
+                                                </div>
+                                            )}
+
+                                            {/* Test Agent Button */}
+                                            <button
+                                                onClick={() => { setAgentTestOpen(!agentTestOpen); setAgentTestMessages([]); }}
+                                                className={`${clayBtnAction} !bg-[#7C3AED] !border-[#6D28D9] hover:!bg-[#6D28D9]`}
+                                            >
+                                                {agentTestOpen ? 'CERRAR PRUEBA' : 'PROBAR AGENTE'} <MessageCircle className="w-5 h-5" />
+                                            </button>
+
+                                            {/* Agent Test Mini Chat */}
+                                            {agentTestOpen && (
+                                                <div className="rounded-2xl border-2 border-purple-100 bg-purple-50/30 p-3 space-y-2">
+                                                    <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest text-center">Chat de prueba — verifica tono y estilo</p>
+                                                    <div className="bg-white rounded-xl border border-gray-100 p-2 max-h-52 overflow-y-auto space-y-2">
+                                                        {agentTestMessages.length === 0 && (
+                                                            <p className="text-[10px] text-gray-300 text-center py-4">Escribe algo para probar al agente...</p>
+                                                        )}
+                                                        {agentTestMessages.map((m, i) => (
+                                                            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                                <div className={`max-w-[85%] rounded-xl px-3 py-2 text-[11px] leading-relaxed ${
+                                                                    m.role === 'user'
+                                                                        ? 'bg-purple-500 text-white'
+                                                                        : 'bg-gray-100 text-gray-700'
+                                                                }`}>
+                                                                    {m.content}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {agentTestLoading && (
+                                                            <div className="flex justify-start">
+                                                                <div className="bg-gray-100 text-gray-400 rounded-xl px-3 py-2 text-[11px] animate-pulse">Pensando...</div>
+                                                            </div>
+                                                        )}
+                                                        <div ref={agentTestEndRef} />
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            value={agentTestInput}
+                                                            onChange={(e) => setAgentTestInput(e.target.value)}
+                                                            onKeyDown={(e) => e.key === 'Enter' && sendAgentTestMessage()}
+                                                            placeholder="Hola, cómo va mi hijo en mate?"
+                                                            className="flex-1 rounded-xl border-2 border-gray-100 bg-white px-3 py-2 text-xs font-bold text-gray-700 outline-none focus:border-purple-300"
+                                                        />
+                                                        <button
+                                                            onClick={sendAgentTestMessage}
+                                                            disabled={!agentTestInput.trim() || agentTestLoading}
+                                                            className="px-4 py-2 rounded-xl bg-purple-500 text-white text-[10px] font-black uppercase tracking-wider hover:bg-purple-600 disabled:opacity-50 transition-colors"
+                                                        >
+                                                            Enviar
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
 
