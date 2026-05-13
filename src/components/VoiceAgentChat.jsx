@@ -204,17 +204,22 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
     const stopAllAudio = useCallback(() => {
         ttsRunRef.current += 1;
+        // Stop AudioBuffer source
+        if (bufferSourceRef.current) {
+            try { bufferSourceRef.current.stop(); } catch {}
+            try { bufferSourceRef.current.disconnect(); } catch {}
+            bufferSourceRef.current = null;
+        }
+        // Legacy Audio element cleanup (just in case)
         if (audioRef.current) {
-            try {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-            } catch {}
+            try { audioRef.current.pause(); } catch {}
             audioRef.current = null;
         }
         if (audioUrlRef.current) {
             try { URL.revokeObjectURL(audioUrlRef.current); } catch {}
             audioUrlRef.current = null;
         }
+        speakingRef.current = false;
         setIsSpeaking(false);
     }, []);
 
@@ -343,7 +348,8 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         return audioCtxRef.current;
     };
 
-    // TTS via OpenAI — with timeout fallback
+    // TTS via OpenAI — uses AudioBuffer (no createMediaElementSource issues)
+    const bufferSourceRef = useRef(null);
     const speakText = async (text) => {
         if (!ttsEnabled || !text) return;
         const shouldResumeListening = listeningDesiredRef.current;
@@ -354,20 +360,19 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         setIsSpeaking(true);
         setSphereState('speaking');
 
-        // Safety timeout: if TTS hangs for 15s, reset state
         const safetyTimer = setTimeout(() => {
             if (runId === ttsRunRef.current && speakingRef.current) {
-                console.warn('[TTS] Safety timeout — resetting from speaking');
+                console.warn('[TTS] Safety timeout — resetting');
                 speakingRef.current = false;
                 setIsSpeaking(false);
                 setSphereState('idle');
                 restartListeningSoon();
             }
-        }, 15000);
+        }, 20000);
 
         try {
             const controller = new AbortController();
-            const fetchTimer = setTimeout(() => controller.abort(), 10000);
+            const fetchTimer = setTimeout(() => controller.abort(), 12000);
 
             const res = await fetch('/api/agent/tts', {
                 method: 'POST',
@@ -377,53 +382,40 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             });
             clearTimeout(fetchTimer);
 
-            if (!res.ok) throw new Error('TTS failed: ' + res.status);
-
-            const blob = await res.blob();
+            if (!res.ok) throw new Error('TTS status ' + res.status);
             if (runId !== ttsRunRef.current) { clearTimeout(safetyTimer); return; }
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
-            audioRef.current = audio;
-            audioUrlRef.current = url;
 
-            // Connect to analyser so lightning reacts to voice
-            try {
-                const ctx = getOrCreateAudioCtx();
-                await ctx.resume();
-                const src = ctx.createMediaElementSource(audio);
-                src.connect(lightningAnalyserRef.current);
-            } catch (_) { /* non-critical */ }
+            const arrayBuf = await res.arrayBuffer();
+            if (runId !== ttsRunRef.current) { clearTimeout(safetyTimer); return; }
 
-            const cleanup = () => {
+            const ctx = getOrCreateAudioCtx();
+            if (ctx.state === 'suspended') await ctx.resume();
+
+            const audioBuffer = await ctx.decodeAudioData(arrayBuf);
+            if (runId !== ttsRunRef.current) { clearTimeout(safetyTimer); return; }
+
+            // Create source -> analyser -> destination
+            const source = ctx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(lightningAnalyserRef.current); // analyser already -> destination
+            bufferSourceRef.current = source;
+
+            source.onended = () => {
                 clearTimeout(safetyTimer);
                 if (runId !== ttsRunRef.current) return;
+                bufferSourceRef.current = null;
                 speakingRef.current = false;
                 setIsSpeaking(false);
                 setSphereState('idle');
-                try { URL.revokeObjectURL(url); } catch {}
-                audioRef.current = null;
-                audioUrlRef.current = null;
                 restartListeningSoon();
             };
 
-            audio.onended = cleanup;
-            audio.onerror = cleanup;
-            audio.volume = 1.0;
-
-            // Try play — on mobile may need user gesture
-            try {
-                await audio.play();
-            } catch (playErr) {
-                console.warn('[TTS] play() blocked, retrying:', playErr.name);
-                // Fallback: set src directly and try again
-                audio.src = url;
-                audio.load();
-                await new Promise(r => setTimeout(r, 200));
-                await audio.play();
-            }
+            source.start(0);
+            console.log('[TTS] Playing via AudioBuffer, duration:', audioBuffer.duration.toFixed(1) + 's');
         } catch (err) {
             clearTimeout(safetyTimer);
             console.error('[TTS] Error:', err);
+            bufferSourceRef.current = null;
             speakingRef.current = false;
             setIsSpeaking(false);
             setSphereState('idle');
