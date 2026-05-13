@@ -286,6 +286,7 @@ const AGENT_MAX_TOOL_ITERATIONS = Number(process.env.AGENT_MAX_TOOL_ITERATIONS |
 const AGENT_HISTORY_MESSAGES = Number(process.env.AGENT_HISTORY_MESSAGES || 8);
 const AGENT_TTS_MODEL = String(process.env.AGENT_TTS_MODEL || 'gpt-4o-mini-tts').trim();
 const AGENT_STT_MODEL = String(process.env.AGENT_STT_MODEL || 'gpt-4o-mini-transcribe').trim();
+const AGENT_TTS_TIMEOUT_MS = Number(process.env.AGENT_TTS_TIMEOUT_MS || 12000);
 
 let imageGenerationRuntimeConfigCache = null;
 
@@ -10928,20 +10929,32 @@ app.post('/api/agent/tts', async (req, res) => {
     try {
         const { text, voice = 'nova' } = req.body;
         if (!text) return res.status(400).json({ success: false, error: 'Falta text' });
+        if (!openaiVisionClient) {
+            return res.status(503).json({ success: false, error: 'TTS requiere OPENAI_API_KEY configurada' });
+        }
 
-        const ttsClient = openaiVisionClient || openai;
-        const mp3 = await ttsClient.audio.speech.create({
-            model: AGENT_TTS_MODEL,
-            voice: voice, // nova, alloy, echo, fable, onyx, shimmer
-            input: text.substring(0, 2000),
-            speed: 1.12
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('TTS_TIMEOUT')), AGENT_TTS_TIMEOUT_MS);
         });
+
+        const mp3 = await Promise.race([
+            openaiVisionClient.audio.speech.create({
+                model: AGENT_TTS_MODEL,
+                voice: voice, // nova, alloy, echo, fable, onyx, shimmer
+                input: text.substring(0, 2000),
+                speed: 1.12
+            }),
+            timeoutPromise
+        ]);
 
         const buffer = Buffer.from(await mp3.arrayBuffer());
         res.set({ 'Content-Type': 'audio/mpeg', 'Content-Length': buffer.length });
         res.send(buffer);
     } catch (err) {
         console.error('[TTS] Error:', err.message);
+        if (err.message === 'TTS_TIMEOUT') {
+            return res.status(504).json({ success: false, error: 'TTS timeout' });
+        }
         res.status(500).json({ success: false, error: err.message });
     }
 });

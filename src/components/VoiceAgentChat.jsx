@@ -215,6 +215,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             try { audioRef.current.pause(); } catch {}
             audioRef.current = null;
         }
+        try { window.speechSynthesis?.cancel(); } catch {}
         if (audioUrlRef.current) {
             try { URL.revokeObjectURL(audioUrlRef.current); } catch {}
             audioUrlRef.current = null;
@@ -357,6 +358,45 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         }
     };
 
+    const finishSpeaking = (runId, safetyTimer) => {
+        clearTimeout(safetyTimer);
+        if (runId !== ttsRunRef.current) return;
+        bufferSourceRef.current = null;
+        audioRef.current = null;
+        cleanupAudioUrl();
+        speakingRef.current = false;
+        setIsSpeaking(false);
+        setSphereState('idle');
+        restartListeningSoon();
+    };
+
+    const speakWithBrowserVoice = (text, runId, safetyTimer) => {
+        const synth = window.speechSynthesis;
+        if (!synth || !window.SpeechSynthesisUtterance) return false;
+
+        try {
+            synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'es-CL';
+            utterance.rate = 1.05;
+            utterance.pitch = 1;
+            utterance.onend = () => finishSpeaking(runId, safetyTimer);
+            utterance.onerror = () => finishSpeaking(runId, safetyTimer);
+            window.setTimeout(() => {
+                if (runId === ttsRunRef.current && speakingRef.current) {
+                    try { synth.cancel(); } catch {}
+                    finishSpeaking(runId, safetyTimer);
+                }
+            }, 30000);
+            synth.speak(utterance);
+            console.warn('[TTS] Using browser speech fallback');
+            return true;
+        } catch (err) {
+            console.warn('[TTS] Browser speech fallback failed:', err);
+            return false;
+        }
+    };
+
     const playWithAudioElement = async (arrayBuf, runId, safetyTimer) => {
         cleanupAudioUrl();
         const blob = new Blob([arrayBuf], { type: 'audio/mpeg' });
@@ -366,24 +406,11 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         audioRef.current = audio;
 
         audio.onended = () => {
-            clearTimeout(safetyTimer);
-            if (runId !== ttsRunRef.current) return;
-            audioRef.current = null;
-            cleanupAudioUrl();
-            speakingRef.current = false;
-            setIsSpeaking(false);
-            setSphereState('idle');
-            restartListeningSoon();
+            finishSpeaking(runId, safetyTimer);
         };
 
         audio.onerror = () => {
-            clearTimeout(safetyTimer);
-            audioRef.current = null;
-            cleanupAudioUrl();
-            speakingRef.current = false;
-            setIsSpeaking(false);
-            setSphereState('idle');
-            restartListeningSoon();
+            finishSpeaking(runId, safetyTimer);
         };
 
         await audio.play();
@@ -402,16 +429,13 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         const safetyTimer = setTimeout(() => {
             if (runId === ttsRunRef.current && speakingRef.current) {
                 console.warn('[TTS] Safety timeout — resetting');
-                speakingRef.current = false;
-                setIsSpeaking(false);
-                setSphereState('idle');
-                restartListeningSoon();
+                finishSpeaking(runId, safetyTimer);
             }
-        }, 20000);
+        }, 45000);
 
         try {
             const controller = new AbortController();
-            const fetchTimer = setTimeout(() => controller.abort(), 12000);
+            const fetchTimer = setTimeout(() => controller.abort(), 10000);
 
             const res = await fetch('/api/agent/tts', {
                 method: 'POST',
@@ -441,13 +465,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 bufferSourceRef.current = source;
 
                 source.onended = () => {
-                    clearTimeout(safetyTimer);
-                    if (runId !== ttsRunRef.current) return;
-                    bufferSourceRef.current = null;
-                    speakingRef.current = false;
-                    setIsSpeaking(false);
-                    setSphereState('idle');
-                    restartListeningSoon();
+                    finishSpeaking(runId, safetyTimer);
                 };
 
                 source.start(0);
@@ -460,6 +478,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         } catch (err) {
             clearTimeout(safetyTimer);
             console.error('[TTS] Error:', err);
+            if (speakWithBrowserVoice(text, runId, safetyTimer)) return;
             bufferSourceRef.current = null;
             audioRef.current = null;
             cleanupAudioUrl();
