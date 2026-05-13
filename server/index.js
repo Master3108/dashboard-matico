@@ -281,9 +281,9 @@ const AGENT_CONVERSATION_MODEL = String(
     process.env.OPENAI_AGENT_MODEL ||
     (OPENAI_DIRECT_API_KEY ? 'gpt-5-mini' : AI_MODELS.fast)
 ).trim();
-const AGENT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 350);
-const AGENT_MAX_TOOL_ITERATIONS = Number(process.env.AGENT_MAX_TOOL_ITERATIONS || 2);
-const AGENT_HISTORY_MESSAGES = Number(process.env.AGENT_HISTORY_MESSAGES || 6);
+const AGENT_MAX_TOKENS = Number(process.env.AGENT_MAX_TOKENS || 500);
+const AGENT_MAX_TOOL_ITERATIONS = Number(process.env.AGENT_MAX_TOOL_ITERATIONS || 4);
+const AGENT_HISTORY_MESSAGES = Number(process.env.AGENT_HISTORY_MESSAGES || 8);
 const AGENT_TTS_MODEL = String(process.env.AGENT_TTS_MODEL || 'gpt-4o-mini-tts').trim();
 const AGENT_STT_MODEL = String(process.env.AGENT_STT_MODEL || 'gpt-4o-mini-transcribe').trim();
 
@@ -10068,6 +10068,121 @@ const AGENT_TOOLS = [
                 required: ['student_id', 'subject', 'topic']
             }
         }
+    },
+    // === CRUD TOOLS — full agent autonomy ===
+    {
+        type: 'function',
+        function: {
+            name: 'create_calendar_event',
+            description: 'Crear un evento en el calendario del estudiante. Pruebas, tareas, disertaciones, etc.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    title: { type: 'string', description: 'Titulo del evento' },
+                    event_date: { type: 'string', description: 'Fecha YYYY-MM-DD' },
+                    event_type: { type: 'string', enum: ['prueba', 'tarea', 'disertacion', 'trabajo', 'evento', 'otro'], description: 'Tipo de evento' },
+                    subject: { type: 'string', description: 'Materia en MAYUSCULAS' },
+                    description: { type: 'string', description: 'Descripcion o contenido del evento' }
+                },
+                required: ['student_id', 'title', 'event_date', 'event_type', 'subject']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'update_calendar_event',
+            description: 'Actualizar un evento existente del calendario. Cambiar fecha, titulo, descripcion, etc.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    event_id: { type: 'number', description: 'ID del evento a actualizar' },
+                    updates: { type: 'object', description: 'Campos a actualizar: title, event_date, event_type, subject, description' }
+                },
+                required: ['event_id', 'updates']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'delete_calendar_event',
+            description: 'Eliminar un evento del calendario.',
+            parameters: {
+                type: 'object',
+                properties: { event_id: { type: 'number', description: 'ID del evento a eliminar' } },
+                required: ['event_id']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'update_student_profile',
+            description: 'Actualizar datos del perfil del estudiante: nombre, email, materias, configuracion.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    updates: { type: 'object', description: 'Campos a actualizar: display_name, email, subjects, etc.' }
+                },
+                required: ['student_id', 'updates']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'search_all_modules',
+            description: 'Buscar informacion en TODOS los modulos de la app: calendario, progreso, quizzes, cuaderno, sesiones, alertas, notificaciones, perfil. Usa para busquedas amplias.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    query: { type: 'string', description: 'Que buscar: "pruebas de matematica", "sesiones esta semana", "evidencias de cuaderno", etc.' },
+                    days: { type: 'number', description: 'Dias hacia atras (default 30)' }
+                },
+                required: ['student_id', 'query']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'run_custom_query',
+            description: 'Ejecutar una consulta personalizada a la base de datos. Para cuando las otras herramientas no cubren la necesidad. Tablas disponibles: profiles, users, progress_log, calendar_events, study_sessions, notebook_submissions, notebook_ocr_records, notifications, study_alerts, daily_reports, question_banks, exam_prep_sessions, agent_training.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    table: { type: 'string', description: 'Nombre de la tabla' },
+                    action: { type: 'string', enum: ['select', 'insert', 'update', 'delete'], description: 'Tipo de operacion' },
+                    filters: { type: 'object', description: 'Filtros: { column: value } para WHERE' },
+                    data: { type: 'object', description: 'Datos para insert/update' },
+                    select_columns: { type: 'string', description: 'Columnas a seleccionar (default *)' },
+                    order_by: { type: 'string', description: 'Columna para ordenar' },
+                    limit: { type: 'number', description: 'Limite de filas (default 20)' }
+                },
+                required: ['table', 'action']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'send_notification',
+            description: 'Enviar una notificacion/alerta dentro de la app al estudiante o apoderado.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    student_id: { type: 'string' },
+                    title: { type: 'string' },
+                    message: { type: 'string' },
+                    type: { type: 'string', enum: ['info', 'warning', 'success', 'urgent'], description: 'Tipo de notificacion' }
+                },
+                required: ['student_id', 'title', 'message']
+            }
+        }
     }
 ];
 
@@ -10279,6 +10394,137 @@ REGLAS:
                 return { success: false, error: prepErr.message };
             }
         }
+        case 'create_calendar_event': {
+            const { data, error } = await supabase.from('calendar_events').insert({
+                student_user_id: sid,
+                title: args.title,
+                event_date: args.event_date,
+                event_type: args.event_type || 'evento',
+                subject: (args.subject || '').toUpperCase(),
+                description: args.description || null,
+                source: 'agent'
+            }).select('id, title, event_date, subject').single();
+            if (error) return { success: false, error: error.message };
+            return { success: true, event: data, message: `Evento creado: ${data.title} el ${data.event_date}` };
+        }
+        case 'update_calendar_event': {
+            const eid = Number(args.event_id);
+            const { data, error } = await supabase.from('calendar_events').update(args.updates).eq('id', eid).select('id, title, event_date').single();
+            if (error) return { success: false, error: error.message };
+            return { success: true, event: data, message: `Evento ${eid} actualizado` };
+        }
+        case 'delete_calendar_event': {
+            const eid = Number(args.event_id);
+            const { error } = await supabase.from('calendar_events').delete().eq('id', eid);
+            if (error) return { success: false, error: error.message };
+            return { success: true, message: `Evento ${eid} eliminado` };
+        }
+        case 'update_student_profile': {
+            const { data, error } = await supabase.from('profiles').update(args.updates).eq('user_id', sid).select().single();
+            if (error) {
+                // Try legacy table
+                const { data: leg, error: legErr } = await supabase.from('users').update(args.updates).eq('token', sid).select().single();
+                if (legErr) return { success: false, error: legErr.message };
+                return { success: true, profile: leg };
+            }
+            return { success: true, profile: data };
+        }
+        case 'search_all_modules': {
+            const searchDays = Number(args.days) || 30;
+            const searchSince = new Date(Date.now() - searchDays * 86400000).toISOString();
+            const q = (args.query || '').toLowerCase();
+            const results = {};
+
+            // Calendar
+            const { data: cal } = await supabase.from('calendar_events').select('id, title, event_date, event_type, subject, description')
+                .eq('student_user_id', sid).order('event_date', { ascending: false }).limit(30);
+            results.calendar = (cal || []).filter(e => !q || JSON.stringify(e).toLowerCase().includes(q)).slice(0, 10);
+
+            // Progress
+            const { data: prog } = await supabase.from('progress_log').select('event_type, subject, topic, score, correct_answers, wrong_answers, total_questions, created_at')
+                .eq('user_id', sid).gte('created_at', searchSince).order('created_at', { ascending: false }).limit(30);
+            results.progress = (prog || []).filter(e => !q || JSON.stringify(e).toLowerCase().includes(q)).slice(0, 10);
+
+            // Study sessions
+            const { data: sess } = await supabase.from('study_sessions').select('subject, total_minutes, start_time, status')
+                .eq('student_user_id', sid).gte('start_time', searchSince).order('start_time', { ascending: false }).limit(20);
+            results.study_sessions = (sess || []).filter(e => !q || JSON.stringify(e).toLowerCase().includes(q)).slice(0, 10);
+
+            // Notebooks
+            const { data: nb } = await supabase.from('notebook_submissions').select('subject, status, created_at, metadata')
+                .eq('user_id', sid).gte('created_at', searchSince).order('created_at', { ascending: false }).limit(20);
+            results.notebooks = (nb || []).filter(e => !q || JSON.stringify(e).toLowerCase().includes(q)).slice(0, 10);
+
+            // Notifications
+            const { data: notifs } = await supabase.from('notifications').select('title, message, type, read, created_at')
+                .eq('user_id', sid).gte('created_at', searchSince).order('created_at', { ascending: false }).limit(10);
+            results.notifications = notifs || [];
+
+            return results;
+        }
+        case 'run_custom_query': {
+            const tbl = args.table;
+            const ALLOWED_TABLES = ['profiles', 'users', 'progress_log', 'calendar_events', 'study_sessions',
+                'notebook_submissions', 'notebook_ocr_records', 'notifications', 'study_alerts',
+                'daily_reports', 'question_banks', 'exam_prep_sessions', 'agent_training'];
+            if (!ALLOWED_TABLES.includes(tbl)) return { error: `Tabla "${tbl}" no permitida. Tablas: ${ALLOWED_TABLES.join(', ')}` };
+
+            try {
+                if (args.action === 'select') {
+                    let query = supabase.from(tbl).select(args.select_columns || '*');
+                    if (args.filters) {
+                        for (const [col, val] of Object.entries(args.filters)) {
+                            query = query.eq(col, val);
+                        }
+                    }
+                    if (args.order_by) query = query.order(args.order_by, { ascending: false });
+                    query = query.limit(args.limit || 20);
+                    const { data, error } = await query;
+                    if (error) return { success: false, error: error.message };
+                    return { success: true, rows: data, count: (data || []).length };
+                }
+                if (args.action === 'insert') {
+                    const { data, error } = await supabase.from(tbl).insert(args.data || {}).select().single();
+                    if (error) return { success: false, error: error.message };
+                    return { success: true, row: data };
+                }
+                if (args.action === 'update') {
+                    if (!args.filters || Object.keys(args.filters).length === 0) return { error: 'Se requieren filtros para update' };
+                    let query = supabase.from(tbl).update(args.data || {});
+                    for (const [col, val] of Object.entries(args.filters)) {
+                        query = query.eq(col, val);
+                    }
+                    const { data, error } = await query.select();
+                    if (error) return { success: false, error: error.message };
+                    return { success: true, rows_affected: (data || []).length, rows: data };
+                }
+                if (args.action === 'delete') {
+                    if (!args.filters || Object.keys(args.filters).length === 0) return { error: 'Se requieren filtros para delete' };
+                    let query = supabase.from(tbl).delete();
+                    for (const [col, val] of Object.entries(args.filters)) {
+                        query = query.eq(col, val);
+                    }
+                    const { data, error } = await query.select();
+                    if (error) return { success: false, error: error.message };
+                    return { success: true, rows_deleted: (data || []).length };
+                }
+                return { error: `Accion "${args.action}" no soportada` };
+            } catch (qErr) {
+                return { success: false, error: qErr.message };
+            }
+        }
+        case 'send_notification': {
+            const { data, error } = await supabase.from('notifications').insert({
+                user_id: sid,
+                title: args.title,
+                message: args.message,
+                type: args.type || 'info',
+                read: false,
+                source: 'agent'
+            }).select('id').single();
+            if (error) return { success: false, error: error.message };
+            return { success: true, notification_id: data.id, message: `Notificacion enviada: ${args.title}` };
+        }
         default:
             return { error: `Tool ${name} no existe` };
     }
@@ -10373,19 +10619,33 @@ app.post('/api/agent/chat', async (req, res) => {
         if (training_mode) {
             systemPrompt = `Eres Matico en MODO ENTRENAMIENTO. El admin (jefe) te esta dando instrucciones sobre como comportarte, que recordar, como hablar, etc.
 REGLAS:
+- Lo que diga el jefe ES LEY. NUNCA digas "no puedo" o "eso no es posible". Todo lo que te pida, HAZLO.
 - Cada vez que el admin te de una instruccion, preferencia, dato o informacion, USA save_training para guardarla.
 - Clasifica bien: "instruccion" (reglas de comportamiento), "tono" (estilo de habla), "memoria" (datos del alumno/familia), "skill" (capacidades), "conocimiento" (info base), "qa" (respuestas especificas).
 - Confirma brevemente que anotaste: "Listo jefe, anotado" o similar.
 - Si el admin solo conversa sin dar instrucciones, responde normal sin guardar nada.
 - Sin markdown ni asteriscos. Respuestas CORTAS, 2-3 frases max.
-- Habla chileno informal, tutea.` + trainingSection;
+- Habla chileno informal, tutea.
+- SIEMPRE responde algo. Nunca dejes la respuesta vacia.` + trainingSection;
             activeTools = [TRAINING_TOOL];
         } else {
+            const AGENT_CORE_RULES = `
+REGLAS FUNDAMENTALES:
+- Lo que diga el jefe (apoderado/admin) ES LEY. NUNCA respondas "no puedo", "no tengo acceso" o "eso no es posible". Si te piden algo, HAZLO.
+- Tienes acceso COMPLETO a toda la app: calendario, progreso, quizzes, cuaderno, sesiones, notificaciones, perfiles, banco de preguntas, todo.
+- ANTES de modificar/crear/eliminar datos, describe BREVEMENTE lo que vas a hacer y pregunta "lo hago?". Si ya te dieron instruccion directa, ejecuta sin preguntar.
+- Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos.
+- Fechas con dia de semana ("este martes", "el proximo lunes").
+- Respuestas CORTAS, 2-3 frases max, como si hablaras en voz alta.
+- SIEMPRE responde algo util. Si necesitas buscar, di "deja buscar" y usa las herramientas.
+- student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.
+- Usa run_custom_query si las otras herramientas no cubren lo que necesitas.
+- Usa search_all_modules para busquedas amplias.`;
+
             systemPrompt = (user_type === 'parent'
-                ? `Eres Matico, asistente educativo. Hablas con el apoderado sobre su hijo/a.
-REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana ("este martes", "el proximo lunes"). Respuestas CORTAS, 2-3 frases max, como si hablaras en voz alta. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}. Usa get_student_profile para saber el nombre del niño.`
-                : `Eres Matico, compañero de estudio. Motivador, amigable, hablas simple.
-REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana. Respuestas CORTAS, 2-3 frases max, tono juvenil. Motiva con buenos resultados. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.
+                ? `Eres Matico, asistente educativo COMPLETO y AUTONOMO. Hablas con el apoderado sobre su hijo/a. Puedes hacer TODO: agendar eventos, borrar eventos, modificar datos, buscar en todo, crear notificaciones, generar material de estudio. Eres como un admin de la app controlado por voz.${AGENT_CORE_RULES}
+Usa get_student_profile para saber el nombre del niño.`
+                : `Eres Matico, compañero de estudio COMPLETO y AUTONOMO. Motivador, amigable, hablas simple, tono juvenil. Puedes hacer TODO lo que el estudiante necesite: buscar sus datos, preparar pruebas, crear material de estudio, revisar su progreso, agendar eventos.${AGENT_CORE_RULES}
 PREPARACION DE PRUEBAS: Si el estudiante pide ayuda para prepararse para una prueba/examen, o si adjunta imagenes de contenido de prueba, USA prepare_exam_study con la materia, tema y resumen del contenido. Esto genera teoria ludica + quiz y le da un link de estudio. Si hay imagenes adjuntas con analisis, usa ese analisis como content_summary.`) + trainingSection;
             activeTools = AGENT_TOOLS;
         }
@@ -10466,9 +10726,24 @@ PREPARACION DE PRUEBAS: Si el estudiante pide ayuda para prepararse para una pru
             assistantMessage = response.choices[0].message;
         }
 
+        // Ensure there's always a reply — never return empty
+        let finalReply = (assistantMessage.content || '').trim();
+        if (!finalReply) {
+            // Model returned empty content (common after tool calls) — force a follow-up
+            messages.push(assistantMessage);
+            messages.push({ role: 'user', content: 'Responde al usuario con los resultados. No dejes la respuesta vacia.' });
+            const followUp = await agentTextClient.chat.completions.create({
+                model: AGENT_CONVERSATION_MODEL,
+                messages,
+                temperature: 0.3,
+                max_tokens: AGENT_MAX_TOKENS
+            });
+            finalReply = (followUp.choices[0]?.message?.content || '').trim() || 'Listo, ya lo revise.';
+        }
+
         res.json({
             success: true,
-            reply: assistantMessage.content || 'No pude generar una respuesta.',
+            reply: finalReply,
             tools_used: iterations,
             model: AGENT_CONVERSATION_MODEL
         });
