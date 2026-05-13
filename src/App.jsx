@@ -3403,6 +3403,62 @@ const App = () => {
     });
     const [isSavingAdminStage, setIsSavingAdminStage] = useState(false);
 
+    // Agent Training states
+    const [agentTrainingEntries, setAgentTrainingEntries] = useState([]);
+    const [agentTrainingInput, setAgentTrainingInput] = useState('');
+    const [agentTrainingType, setAgentTrainingType] = useState('instruccion');
+    const [agentTrainingSaving, setAgentTrainingSaving] = useState(false);
+    const [agentTrainingLoaded, setAgentTrainingLoaded] = useState(false);
+
+    const fetchAgentTraining = async () => {
+        try {
+            const res = await fetch(`/api/agent/training?admin_user_id=${USER_ID}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.success) { setAgentTrainingEntries(data.entries || []); setAgentTrainingLoaded(true); }
+        } catch {}
+    };
+
+    const saveAgentTraining = async () => {
+        if (!agentTrainingInput.trim() || agentTrainingSaving) return;
+        setAgentTrainingSaving(true);
+        try {
+            const res = await fetch('/api/agent/training', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_user_id: USER_ID, content: agentTrainingInput.trim(), type: agentTrainingType })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAgentTrainingInput('');
+                fetchAgentTraining();
+            }
+        } catch {} finally { setAgentTrainingSaving(false); }
+    };
+
+    const toggleAgentTraining = async (id, active) => {
+        try {
+            await fetch(`/api/agent/training/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_user_id: USER_ID, active })
+            });
+            fetchAgentTraining();
+        } catch {}
+    };
+
+    const deleteAgentTraining = async (id) => {
+        if (!confirm('Eliminar esta entrada de entrenamiento?')) return;
+        try {
+            await fetch(`/api/agent/training/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_user_id: USER_ID })
+            });
+            fetchAgentTraining();
+        } catch {}
+    };
+
     // 1. Fetch Profile on Load
     const fetchProfile = async () => {
         if (!USER_ID) return;
@@ -7263,6 +7319,91 @@ ${finalData.capsule}`;
                                             >
                                                 ABRIR BIBLIOTECA VISUAL <ImageIcon className="w-5 h-5" />
                                             </button>
+
+                                            <div className="h-px bg-gray-100" />
+
+                                            {/* === AGENT TRAINING SECTION === */}
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center border border-cyan-100">
+                                                    <Brain className="w-4 h-4 text-cyan-600" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">Entrenamiento Agente</span>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Memoria, instrucciones y skills</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Add new training entry */}
+                                            <div className="space-y-2">
+                                                <select
+                                                    value={agentTrainingType}
+                                                    onChange={(e) => setAgentTrainingType(e.target.value)}
+                                                    className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2 text-xs font-black text-gray-700 outline-none focus:border-cyan-300"
+                                                >
+                                                    <option value="instruccion">Instrucción (cómo debe comportarse)</option>
+                                                    <option value="skill">Skill (qué sabe hacer)</option>
+                                                    <option value="memoria">Memoria (datos del alumno/familia)</option>
+                                                    <option value="tono">Tono (estilo de hablar)</option>
+                                                </select>
+                                                <textarea
+                                                    value={agentTrainingInput}
+                                                    onChange={(e) => setAgentTrainingInput(e.target.value)}
+                                                    placeholder="Ej: Siempre tutea al apoderado y habla como chilena. / El alumno tiene TDAH. / Cuando pregunten por notas, buscar en la base de datos."
+                                                    rows={3}
+                                                    className="w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-3 py-2 text-xs font-bold text-gray-700 outline-none focus:border-cyan-300 resize-none"
+                                                />
+                                                <button
+                                                    onClick={saveAgentTraining}
+                                                    disabled={!agentTrainingInput.trim() || agentTrainingSaving}
+                                                    className={`${clayBtnAction} !bg-[#0891B2] !border-[#0E7490] hover:!bg-[#0E7490] disabled:opacity-60`}
+                                                >
+                                                    {agentTrainingSaving ? 'GUARDANDO...' : 'AGREGAR ENTRENAMIENTO'} <Brain className="w-5 h-5" />
+                                                </button>
+                                            </div>
+
+                                            {/* Load & show existing entries */}
+                                            {!agentTrainingLoaded ? (
+                                                <button
+                                                    onClick={fetchAgentTraining}
+                                                    className="w-full text-[10px] font-black text-cyan-500 uppercase tracking-widest py-2 bg-cyan-50 rounded-xl border border-cyan-100 hover:bg-cyan-100 transition-colors"
+                                                >
+                                                    CARGAR ENTRADAS EXISTENTES
+                                                </button>
+                                            ) : agentTrainingEntries.length === 0 ? (
+                                                <p className="text-[10px] text-gray-400 text-center py-2">No hay entradas de entrenamiento aún</p>
+                                            ) : (
+                                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                                    {agentTrainingEntries.map((entry) => (
+                                                        <div key={entry.id} className={`rounded-xl border-2 p-3 ${entry.active ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200 opacity-50'}`}>
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <span className={`inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-full mb-1 ${
+                                                                        entry.type === 'instruccion' ? 'bg-blue-100 text-blue-600' :
+                                                                        entry.type === 'skill' ? 'bg-green-100 text-green-600' :
+                                                                        entry.type === 'memoria' ? 'bg-amber-100 text-amber-600' :
+                                                                        'bg-purple-100 text-purple-600'
+                                                                    }`}>{entry.type}</span>
+                                                                    <p className="text-[11px] text-gray-600 leading-relaxed break-words">{entry.content}</p>
+                                                                </div>
+                                                                <div className="flex flex-col gap-1 flex-shrink-0">
+                                                                    <button
+                                                                        onClick={() => toggleAgentTraining(entry.id, !entry.active)}
+                                                                        className={`text-[9px] font-black px-2 py-1 rounded-lg ${entry.active ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}
+                                                                    >
+                                                                        {entry.active ? 'ON' : 'OFF'}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => deleteAgentTraining(entry.id)}
+                                                                        className="text-[9px] font-black px-2 py-1 rounded-lg bg-red-100 text-red-500"
+                                                                    >
+                                                                        DEL
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
 
                                             <div className="h-px bg-gray-100" />
 

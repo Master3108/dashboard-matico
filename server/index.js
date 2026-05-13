@@ -10205,10 +10205,17 @@ app.post('/api/agent/chat', async (req, res) => {
                 .eq('active', true)
                 .order('created_at', { ascending: true });
             if (trainingEntries && trainingEntries.length > 0) {
-                const grouped = { instruccion: [], conocimiento: [], qa: [] };
-                for (const e of trainingEntries) if (grouped[e.type]) grouped[e.type].push(e.content);
+                const grouped = { instruccion: [], skill: [], memoria: [], tono: [], conocimiento: [], qa: [] };
+                for (const e of trainingEntries) {
+                    if (grouped[e.type]) grouped[e.type].push(e.content);
+                    else if (!grouped.instruccion) grouped.instruccion = [e.content];
+                    else grouped.instruccion.push(e.content); // fallback
+                }
                 const parts = [];
                 if (grouped.instruccion.length) parts.push('INSTRUCCIONES ADICIONALES:\n' + grouped.instruccion.join('\n'));
+                if (grouped.tono.length) parts.push('TONO Y ESTILO:\n' + grouped.tono.join('\n'));
+                if (grouped.skill.length) parts.push('SKILLS (capacidades especiales):\n' + grouped.skill.join('\n'));
+                if (grouped.memoria.length) parts.push('MEMORIA (datos del alumno/familia):\n' + grouped.memoria.join('\n'));
                 if (grouped.conocimiento.length) parts.push('CONOCIMIENTO BASE:\n' + grouped.conocimiento.join('\n'));
                 if (grouped.qa.length) parts.push('RESPUESTAS ESPECÍFICAS:\n' + grouped.qa.join('\n'));
                 if (parts.length) trainingSection = '\n\n' + parts.join('\n\n');
