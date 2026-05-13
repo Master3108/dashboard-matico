@@ -10281,7 +10281,7 @@ REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas co
 });
 
 // === AGENT TRAINING — admin only ===
-const ADMIN_TOKENS = new Set(['TK-NNO29O4FO', ...(process.env.ADMIN_USER_ID ? [process.env.ADMIN_USER_ID] : [])]);
+const ADMIN_TOKENS = new Set(['TK-NNO29O4FO', 'TK-ADMIN001', ...(process.env.ADMIN_USER_ID ? [process.env.ADMIN_USER_ID] : [])]);
 const checkAdmin = async (uid) => {
     if (!uid) return false;
     if (ADMIN_TOKENS.has(uid)) return true;
