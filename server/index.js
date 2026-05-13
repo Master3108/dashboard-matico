@@ -9953,11 +9953,11 @@ const AGENT_TOOLS = [
         type: 'function',
         function: {
             name: 'search_students',
-            description: 'Buscar estudiantes/usuarios por nombre, email o listar todos. Usa cuando el admin pregunte por un alumno especifico ("como le fue a Matias", "busca a Camila", "muestrame los alumnos", "quien es el usuario X"). Retorna user_id, nombre, email de cada resultado.',
+            description: 'Buscar estudiantes/usuarios por nombre, email o listar todos. Usa cuando el admin pregunte por un alumno especifico ("como le fue a Matias", "busca a Camila", "muestrame los alumnos", "quien es el usuario X"). Retorna user_id, nombre, email de cada resultado. IMPORTANTE: copia EXACTAMENTE el nombre que dice el usuario, NO corrijas ortografia ni agregues/quites letras.',
             parameters: {
                 type: 'object',
                 properties: {
-                    query: { type: 'string', description: 'Nombre o email a buscar. Dejar vacio para listar todos.' },
+                    query: { type: 'string', description: 'Nombre o email a buscar EXACTAMENTE como lo escribio el usuario, sin corregir ortografia. Dejar vacio para listar todos.' },
                     limit: { type: 'number', description: 'Maximo de resultados (default 20)' }
                 }
             }
@@ -10245,44 +10245,86 @@ async function executeAgentTool(name, args) {
             const q = (args.query || '').trim();
             const lim = Number(args.limit) || 20;
             const results = [];
+            const seenIds = new Set();
 
-            // Search in profiles table
-            let profileQuery = supabase.from('profiles').select('user_id, display_name, email, role, created_at');
-            if (q) {
-                profileQuery = profileQuery.or(`display_name.ilike.%${q}%,email.ilike.%${q}%,user_id.ilike.%${q}%`);
+            // Build search terms: full query + individual words for fuzzy matching
+            const searchTerms = [q];
+            const words = q.split(/\s+/).filter(w => w.length >= 2);
+            if (words.length > 1) searchTerms.push(...words);
+
+            for (const term of searchTerms) {
+                if (!term) continue;
+
+                // Search in profiles table
+                const { data: profiles } = await supabase.from('profiles')
+                    .select('user_id, display_name, email, role, created_at')
+                    .or(`display_name.ilike.%${term}%,email.ilike.%${term}%,user_id.ilike.%${term}%`)
+                    .order('created_at', { ascending: false }).limit(lim);
+
+                for (const p of (profiles || [])) {
+                    if (seenIds.has(p.user_id)) continue;
+                    seenIds.add(p.user_id);
+                    results.push({
+                        user_id: p.user_id,
+                        name: p.display_name || 'Sin nombre',
+                        email: p.email || '',
+                        role: p.role || '',
+                        source: 'profiles',
+                        created_at: p.created_at
+                    });
+                }
+
+                // Search in legacy users table too
+                const { data: legacyUsers } = await supabase.from('users')
+                    .select('token, nombre, name, mail, email, role, tipo, created_at')
+                    .or(`nombre.ilike.%${term}%,name.ilike.%${term}%,mail.ilike.%${term}%,email.ilike.%${term}%,token.ilike.%${term}%`)
+                    .order('created_at', { ascending: false }).limit(lim);
+
+                for (const u of (legacyUsers || [])) {
+                    const uid = u.token;
+                    if (seenIds.has(uid)) continue;
+                    seenIds.add(uid);
+                    results.push({
+                        user_id: uid,
+                        name: u.nombre || u.name || 'Sin nombre',
+                        email: u.mail || u.email || '',
+                        role: u.role || u.tipo || '',
+                        source: 'users',
+                        created_at: u.created_at
+                    });
+                }
             }
-            const { data: profiles } = await profileQuery.order('created_at', { ascending: false }).limit(lim);
 
-            for (const p of (profiles || [])) {
-                results.push({
-                    user_id: p.user_id,
-                    name: p.display_name || 'Sin nombre',
-                    email: p.email || '',
-                    role: p.role || '',
-                    source: 'profiles',
-                    created_at: p.created_at
-                });
-            }
-
-            // Search in legacy users table too
-            let legacyQuery = supabase.from('users').select('token, nombre, name, mail, email, role, tipo, created_at');
-            if (q) {
-                legacyQuery = legacyQuery.or(`nombre.ilike.%${q}%,name.ilike.%${q}%,mail.ilike.%${q}%,email.ilike.%${q}%,token.ilike.%${q}%`);
-            }
-            const { data: legacyUsers } = await legacyQuery.order('created_at', { ascending: false }).limit(lim);
-
-            const profileIds = new Set(results.map(r => r.user_id));
-            for (const u of (legacyUsers || [])) {
-                const uid = u.token;
-                if (profileIds.has(uid)) continue; // skip duplicates
-                results.push({
-                    user_id: uid,
-                    name: u.nombre || u.name || 'Sin nombre',
-                    email: u.mail || u.email || '',
-                    role: u.role || u.tipo || '',
-                    source: 'users',
-                    created_at: u.created_at
-                });
+            // If no results and query has no space, try without accents/H variations
+            if (results.length === 0 && q) {
+                const noH = q.replace(/h/gi, '');
+                if (noH !== q.toLowerCase()) {
+                    const { data: fuzzyProfiles } = await supabase.from('profiles')
+                        .select('user_id, display_name, email, role, created_at')
+                        .ilike('display_name', `%${noH}%`)
+                        .order('created_at', { ascending: false }).limit(lim);
+                    for (const p of (fuzzyProfiles || [])) {
+                        if (seenIds.has(p.user_id)) continue;
+                        seenIds.add(p.user_id);
+                        results.push({
+                            user_id: p.user_id, name: p.display_name || 'Sin nombre',
+                            email: p.email || '', role: p.role || '', source: 'profiles', created_at: p.created_at
+                        });
+                    }
+                    const { data: fuzzyLegacy } = await supabase.from('users')
+                        .select('token, nombre, name, mail, email, role, tipo, created_at')
+                        .or(`nombre.ilike.%${noH}%,name.ilike.%${noH}%`)
+                        .order('created_at', { ascending: false }).limit(lim);
+                    for (const u of (fuzzyLegacy || [])) {
+                        const uid = u.token;
+                        if (seenIds.has(uid)) continue;
+                        seenIds.add(uid);
+                        results.push({
+                            user_id: uid, name: u.nombre || u.name || 'Sin nombre',
+                            email: u.mail || u.email || '', role: u.role || u.tipo || '', source: 'users', created_at: u.created_at
+                        });
+                    }
+                }
             }
 
             return { total: results.length, students: results.slice(0, lim) };
