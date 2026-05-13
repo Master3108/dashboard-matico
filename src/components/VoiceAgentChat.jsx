@@ -122,7 +122,7 @@ const LightningField = ({ hueRef, analyserRef = null }) => {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
 };
 
-const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', studentName = '', onClose, onCalendarChanged }) => {
+const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', studentName = '', onClose, onCalendarChanged, trainingMode = false }) => {
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -221,7 +221,9 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     useEffect(() => {
         if (greetedRef.current) return;
         greetedRef.current = true;
-        const greeting = `Hola jefe, soy la tutora virtual de ${studentName || 'tu hijo'}. Pregúntame lo que quieras, estoy aquí pa' ayudarte.`;
+        const greeting = trainingMode
+            ? `Estoy en modo entrenamiento jefe. Dime cómo quieres que me comporte, qué debo recordar o cómo debo hablar. Yo anoto todo.`
+            : `Hola jefe, soy la tutora virtual de ${studentName || 'tu hijo'}. Pregúntame lo que quieras, estoy aquí pa' ayudarte.`;
         setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
         if (ttsEnabled) speakText(greeting);
     }, []);
@@ -532,15 +534,20 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 return;
             }
 
+            const chatBody = {
+                message: text,
+                student_id: studentUserId || userId,
+                user_type: userRole === 'apoderado' ? 'parent' : 'student',
+                conversation_history: conversationRef.current.slice(-6)
+            };
+            if (trainingMode) {
+                chatBody.training_mode = true;
+                chatBody.admin_user_id = userId;
+            }
             const res = await fetch('/api/agent/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: text,
-                    student_id: studentUserId || userId,
-                    user_type: userRole === 'apoderado' ? 'parent' : 'student',
-                    conversation_history: conversationRef.current.slice(-6)
-                })
+                body: JSON.stringify(chatBody)
             });
             const data = await res.json();
 

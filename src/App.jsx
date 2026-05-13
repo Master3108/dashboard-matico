@@ -12,6 +12,7 @@ import MaticoAgent from './components/MaticoAgent';
 import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
 import QuestionBankManager from './components/QuestionBankManager';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntake';
+import VoiceAgentChat from './components/VoiceAgentChat';
 import {
     BookOpen,
     Brain,
@@ -53,7 +54,7 @@ import {
     HelpCircle,
     Loader,
     Image as ImageIcon, Maximize, Minimize, Download
-    , FlaskConical, Globe, Trash2, Shield
+    , FlaskConical, Globe, Trash2, Shield, Mic
 } from 'lucide-react';
 import {
     BarChart,
@@ -3416,6 +3417,7 @@ const App = () => {
     const [agentTestInput, setAgentTestInput] = useState('');
     const [agentTestLoading, setAgentTestLoading] = useState(false);
     const agentTestEndRef = useRef(null);
+    const [showTrainingVoice, setShowTrainingVoice] = useState(false);
 
     const sendAgentTestMessage = async () => {
         const msg = agentTestInput.trim();
@@ -7494,6 +7496,15 @@ ${finalData.capsule}`;
                                                 </div>
                                             )}
 
+                                            {/* Voice Training Button */}
+                                            <button
+                                                onClick={() => setShowTrainingVoice(true)}
+                                                className={`${clayBtnAction} !bg-[#2563EB] !border-[#1D4ED8] hover:!bg-[#1D4ED8]`}
+                                            >
+                                                ENTRENAR CON VOZ <Mic className="w-5 h-5" />
+                                            </button>
+                                            <p className="text-[9px] text-gray-400 text-center -mt-1">Habla con el agente y dale instrucciones. Las guarda automaticamente.</p>
+
                                             <div className="h-px bg-gray-100" />
 
                                             <div className="flex items-center gap-3">
@@ -7577,6 +7588,19 @@ ${finalData.capsule}`;
                     </div>
                 )}
             </div>
+
+            {/* Voice Training Agent Overlay */}
+            {showTrainingVoice && (
+                <VoiceAgentChat
+                    studentUserId={currentUser?.user_id}
+                    userId={currentUser?.user_id}
+                    userRole="apoderado"
+                    studentName=""
+                    trainingMode={true}
+                    onCalendarChanged={() => {}}
+                    onClose={() => { setShowTrainingVoice(false); fetchAgentTraining(); }}
+                />
+            )}
         </div>
     );
 };

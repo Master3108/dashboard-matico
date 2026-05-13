@@ -10187,8 +10187,14 @@ async function executeAgentTool(name, args) {
 
 app.post('/api/agent/chat', async (req, res) => {
     try {
-        const { message, student_id, user_type = 'parent', conversation_history = [] } = req.body;
+        const { message, student_id, user_type = 'parent', conversation_history = [], training_mode = false, admin_user_id } = req.body;
         if (!message || !student_id) return res.status(400).json({ success: false, error: 'Falta message o student_id' });
+
+        // Training mode: verify admin
+        if (training_mode) {
+            const isAdm = await checkAdmin(admin_user_id);
+            if (!isAdm) return res.status(403).json({ success: false, error: 'No autorizado para modo entrenamiento' });
+        }
 
         const todayChileStr = dateOnlyChile();
         const todayDate = new Date(todayChileStr + 'T12:00:00');
@@ -10222,11 +10228,43 @@ app.post('/api/agent/chat', async (req, res) => {
             }
         } catch (_) { /* non-critical */ }
 
-        const systemPrompt = (user_type === 'parent'
-            ? `Eres Matico, asistente educativo. Hablas con el apoderado sobre su hijo/a.
+        // Training mode: special system prompt + save_training tool
+        const TRAINING_TOOL = {
+            type: 'function',
+            function: {
+                name: 'save_training',
+                description: 'Guardar una instruccion, preferencia de tono, memoria o skill que el admin te indica. SIEMPRE usa esta herramienta cuando el admin te de una instruccion o informacion que deba ser recordada.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        type: { type: 'string', enum: ['instruccion', 'tono', 'memoria', 'skill', 'conocimiento', 'qa'], description: 'Tipo de entrenamiento' },
+                        content: { type: 'string', description: 'El contenido a guardar, redactado como instruccion directa para ti mismo' }
+                    },
+                    required: ['type', 'content']
+                }
+            }
+        };
+
+        let systemPrompt;
+        let activeTools;
+        if (training_mode) {
+            systemPrompt = `Eres Matico en MODO ENTRENAMIENTO. El admin (jefe) te esta dando instrucciones sobre como comportarte, que recordar, como hablar, etc.
+REGLAS:
+- Cada vez que el admin te de una instruccion, preferencia, dato o informacion, USA save_training para guardarla.
+- Clasifica bien: "instruccion" (reglas de comportamiento), "tono" (estilo de habla), "memoria" (datos del alumno/familia), "skill" (capacidades), "conocimiento" (info base), "qa" (respuestas especificas).
+- Confirma brevemente que anotaste: "Listo jefe, anotado" o similar.
+- Si el admin solo conversa sin dar instrucciones, responde normal sin guardar nada.
+- Sin markdown ni asteriscos. Respuestas CORTAS, 2-3 frases max.
+- Habla chileno informal, tutea.` + trainingSection;
+            activeTools = [TRAINING_TOOL];
+        } else {
+            systemPrompt = (user_type === 'parent'
+                ? `Eres Matico, asistente educativo. Hablas con el apoderado sobre su hijo/a.
 REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana ("este martes", "el proximo lunes"). Respuestas CORTAS, 2-3 frases max, como si hablaras en voz alta. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}. Usa get_student_profile para saber el nombre del niño.`
-            : `Eres Matico, compañero de estudio. Motivador, amigable, hablas simple.
+                : `Eres Matico, compañero de estudio. Motivador, amigable, hablas simple.
 REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas con dia de semana. Respuestas CORTAS, 2-3 frases max, tono juvenil. Motiva con buenos resultados. student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.`) + trainingSection;
+            activeTools = AGENT_TOOLS;
+        }
 
         const messages = [
             { role: 'system', content: systemPrompt },
@@ -10237,7 +10275,7 @@ REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas co
         let response = await agentTextClient.chat.completions.create({
             model: AGENT_CONVERSATION_MODEL,
             messages,
-            tools: AGENT_TOOLS,
+            tools: activeTools,
             tool_choice: 'auto',
             temperature: 0.3,
             max_tokens: AGENT_MAX_TOKENS
@@ -10256,7 +10294,27 @@ REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas co
                 const args = JSON.parse(tc.function.arguments);
                 if (!args.student_id) args.student_id = student_id;
                 console.log(`[AGENT] Tool: ${tc.function.name}`, JSON.stringify(args).substring(0, 200));
-                const result = await executeAgentTool(tc.function.name, args);
+
+                let result;
+                if (tc.function.name === 'save_training' && training_mode) {
+                    // Save training entry to Supabase
+                    try {
+                        const { data, error } = await supabase.from('agent_training').insert({
+                            type: args.type || 'instruccion',
+                            content: args.content,
+                            active: true
+                        }).select().single();
+                        if (error) throw error;
+                        result = { success: true, id: data.id, message: `Guardado: ${args.type} - ${args.content.substring(0, 60)}` };
+                        console.log(`[AGENT-TRAINING] Saved: ${args.type} - ${args.content.substring(0, 80)}`);
+                    } catch (saveErr) {
+                        result = { success: false, error: saveErr.message };
+                        console.error('[AGENT-TRAINING] Save error:', saveErr.message);
+                    }
+                } else {
+                    result = await executeAgentTool(tc.function.name, args);
+                }
+
                 messages.push({
                     role: 'tool',
                     tool_call_id: tc.id,
@@ -10267,7 +10325,7 @@ REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas co
             response = await agentTextClient.chat.completions.create({
                 model: AGENT_CONVERSATION_MODEL,
                 messages,
-                tools: AGENT_TOOLS,
+                tools: activeTools,
                 tool_choice: 'auto',
                 temperature: 0.3,
                 max_tokens: AGENT_MAX_TOKENS
