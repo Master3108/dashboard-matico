@@ -10282,10 +10282,17 @@ REGLAS: Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos. Fechas co
 
 // === AGENT TRAINING — admin only ===
 const ADMIN_TOKENS = new Set(['TK-NNO29O4FO', ...(process.env.ADMIN_USER_ID ? [process.env.ADMIN_USER_ID] : [])]);
-const isAdmin = (uid) => uid && ADMIN_TOKENS.has(uid);
+const checkAdmin = async (uid) => {
+    if (!uid) return false;
+    if (ADMIN_TOKENS.has(uid)) return true;
+    try {
+        const { data } = await supabase.from('users').select('role').eq('user_id', uid).single();
+        return data && (data.role === 'admin' || data.role === 'apoderado');
+    } catch { return false; }
+};
 
 app.get('/api/agent/training', async (req, res) => {
-    if (!isAdmin(req.query.admin_user_id)) return res.status(403).json({ success: false, error: 'No autorizado' });
+    if (!(await checkAdmin(req.query.admin_user_id))) return res.status(403).json({ success: false, error: 'No autorizado' });
     try {
         const { data, error } = await supabase.from('agent_training').select('*').order('created_at', { ascending: false });
         if (error) throw error;
@@ -10295,7 +10302,7 @@ app.get('/api/agent/training', async (req, res) => {
 
 app.post('/api/agent/training', async (req, res) => {
     const { admin_user_id, content, type = 'instruccion' } = req.body;
-    if (!isAdmin(admin_user_id)) return res.status(403).json({ success: false, error: 'No autorizado' });
+    if (!(await checkAdmin(admin_user_id))) return res.status(403).json({ success: false, error: 'No autorizado' });
     if (!content?.trim()) return res.status(400).json({ success: false, error: 'Falta content' });
     try {
         const { data, error } = await supabase.from('agent_training')
@@ -10308,7 +10315,7 @@ app.post('/api/agent/training', async (req, res) => {
 
 app.patch('/api/agent/training/:id', async (req, res) => {
     const { admin_user_id, active } = req.body;
-    if (!isAdmin(admin_user_id)) return res.status(403).json({ success: false, error: 'No autorizado' });
+    if (!(await checkAdmin(admin_user_id))) return res.status(403).json({ success: false, error: 'No autorizado' });
     try {
         const { data, error } = await supabase.from('agent_training')
             .update({ active }).eq('id', req.params.id).select().single();
@@ -10319,7 +10326,7 @@ app.patch('/api/agent/training/:id', async (req, res) => {
 
 app.delete('/api/agent/training/:id', async (req, res) => {
     const { admin_user_id } = req.body;
-    if (!isAdmin(admin_user_id)) return res.status(403).json({ success: false, error: 'No autorizado' });
+    if (!(await checkAdmin(admin_user_id))) return res.status(403).json({ success: false, error: 'No autorizado' });
     try {
         const { error } = await supabase.from('agent_training').delete().eq('id', req.params.id);
         if (error) throw error;
