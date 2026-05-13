@@ -589,7 +589,9 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 return;
             }
 
-            if (trainingMode && isCalendarIntent(text)) {
+            // Calendar intent: only bypass to legacy endpoint if NO images pending
+            // When images are attached, let the agent handle everything (it has create_calendar_event tool)
+            if (trainingMode && isCalendarIntent(text) && imagesToSend.length === 0) {
                 const reply = await createEventsFromTextOrImages({ text });
                 await addAssistantMessage(reply);
                 return;
