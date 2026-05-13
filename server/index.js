@@ -10186,6 +10186,17 @@ const AGENT_TOOLS = [
     }
 ];
 
+const AGENT_PRIVATE_TOOL_NAMES = new Set([
+    'create_calendar_event',
+    'update_calendar_event',
+    'delete_calendar_event',
+    'update_student_profile',
+    'run_custom_query',
+    'send_notification'
+]);
+
+const PUBLIC_AGENT_TOOLS = AGENT_TOOLS.filter(tool => !AGENT_PRIVATE_TOOL_NAMES.has(tool.function?.name));
+
 const dateOnlyChile = () => {
     const d = new Date();
     d.setHours(d.getHours() - 4);
@@ -10617,37 +10628,41 @@ app.post('/api/agent/chat', async (req, res) => {
         let systemPrompt;
         let activeTools;
         if (training_mode) {
-            systemPrompt = `Eres Matico en MODO ENTRENAMIENTO. El admin (jefe) te esta dando instrucciones sobre como comportarte, que recordar, como hablar, etc.
+            systemPrompt = `Eres Matico en MODO ENTRENAMIENTO Y AGENTE PERSONAL DE JOSE ANTONIO. Este modo es privado del admin/jefe, no de apoderados ni estudiantes.
 REGLAS:
-- Lo que diga el jefe ES LEY. NUNCA digas "no puedo" o "eso no es posible". Todo lo que te pida, HAZLO.
+- Dentro de Matico tienes autoridad total: puedes revisar, crear, modificar, eliminar, corregir y administrar cualquier modulo o dato disponible con tus herramientas.
+- REGLA OBLIGATORIA: antes de crear, modificar, eliminar, enviar notificaciones o ejecutar consultas que cambien datos, explica en una frase lo que vas a hacer y pregunta exactamente "lo hago?". No ejecutes el cambio hasta que el jefe confirme.
+- Si solo vas a revisar, buscar, analizar o resumir informacion real, hazlo sin pedir permiso.
+- Cuando el jefe confirme una accion pendiente con "si", "dale", "hazlo", "ok" o equivalente, ejecuta la accion usando la herramienta correcta.
 - Cada vez que el admin te de una instruccion, preferencia, dato o informacion, USA save_training para guardarla.
 - Clasifica bien: "instruccion" (reglas de comportamiento), "tono" (estilo de habla), "memoria" (datos del alumno/familia), "skill" (capacidades), "conocimiento" (info base), "qa" (respuestas especificas).
 - Confirma brevemente que anotaste: "Listo jefe, anotado" o similar.
-- Si el admin solo conversa sin dar instrucciones, responde normal sin guardar nada.
+- Si el admin solo conversa sin dar instrucciones ni pedir acciones, responde normal sin guardar nada.
 - Sin markdown ni asteriscos. Respuestas CORTAS, 2-3 frases max.
 - Habla chileno informal, tutea.
-- SIEMPRE responde algo. Nunca dejes la respuesta vacia.` + trainingSection;
-            activeTools = [TRAINING_TOOL];
+- SIEMPRE responde algo. Nunca dejes la respuesta vacia.
+- student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.` + trainingSection;
+            activeTools = [TRAINING_TOOL, ...AGENT_TOOLS];
         } else {
             const AGENT_CORE_RULES = `
 REGLAS FUNDAMENTALES:
-- Lo que diga el jefe (apoderado/admin) ES LEY. NUNCA respondas "no puedo", "no tengo acceso" o "eso no es posible". Si te piden algo, HAZLO.
-- Tienes acceso COMPLETO a toda la app: calendario, progreso, quizzes, cuaderno, sesiones, notificaciones, perfiles, banco de preguntas, todo.
-- ANTES de modificar/crear/eliminar datos, describe BREVEMENTE lo que vas a hacer y pregunta "lo hago?". Si ya te dieron instruccion directa, ejecuta sin preguntar.
+- Este modo NO es administrador. No eres operador total de la app para apoderados ni estudiantes.
+- Puedes revisar datos educativos reales, explicar progreso, buscar actividad, ver calendario, revisar evidencias y ayudar a estudiar.
+- No puedes modificar, eliminar, administrar perfiles, ejecutar consultas personalizadas, enviar notificaciones ni actuar como admin.
+- Si te piden cambiar datos, responde corto que eso lo debe confirmar Jose Antonio en modo entrenamiento/admin.
 - Solo datos reales, NUNCA inventes. Sin markdown ni asteriscos.
 - Fechas con dia de semana ("este martes", "el proximo lunes").
 - Respuestas CORTAS, 2-3 frases max, como si hablaras en voz alta.
 - SIEMPRE responde algo util. Si necesitas buscar, di "deja buscar" y usa las herramientas.
 - student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.
-- Usa run_custom_query si las otras herramientas no cubren lo que necesitas.
 - Usa search_all_modules para busquedas amplias.`;
 
             systemPrompt = (user_type === 'parent'
-                ? `Eres Matico, asistente educativo COMPLETO y AUTONOMO. Hablas con el apoderado sobre su hijo/a. Puedes hacer TODO: agendar eventos, borrar eventos, modificar datos, buscar en todo, crear notificaciones, generar material de estudio. Eres como un admin de la app controlado por voz.${AGENT_CORE_RULES}
+                ? `Eres Matico, asistente educativo para apoderados. Hablas con el apoderado sobre su hijo/a, con foco en revisar informacion, explicar avance, alertar riesgos y orientar estudio.${AGENT_CORE_RULES}
 Usa get_student_profile para saber el nombre del niño.`
-                : `Eres Matico, compañero de estudio COMPLETO y AUTONOMO. Motivador, amigable, hablas simple, tono juvenil. Puedes hacer TODO lo que el estudiante necesite: buscar sus datos, preparar pruebas, crear material de estudio, revisar su progreso, agendar eventos.${AGENT_CORE_RULES}
+                : `Eres Matico, compañero de estudio del estudiante. Motivador, amigable, hablas simple, tono juvenil. Puedes revisar sus datos educativos, preparar pruebas, crear material de estudio y explicar su progreso, pero no eres admin.${AGENT_CORE_RULES}
 PREPARACION DE PRUEBAS: Si el estudiante pide ayuda para prepararse para una prueba/examen, o si adjunta imagenes de contenido de prueba, USA prepare_exam_study con la materia, tema y resumen del contenido. Esto genera teoria ludica + quiz y le da un link de estudio. Si hay imagenes adjuntas con analisis, usa ese analisis como content_summary.`) + trainingSection;
-            activeTools = AGENT_TOOLS;
+            activeTools = PUBLIC_AGENT_TOOLS;
         }
 
         // Build user message with image analysis if available
@@ -10704,6 +10719,11 @@ PREPARACION DE PRUEBAS: Si el estudiante pide ayuda para prepararse para una pru
                         result = { success: false, error: saveErr.message };
                         console.error('[AGENT-TRAINING] Save error:', saveErr.message);
                     }
+                } else if (!training_mode && AGENT_PRIVATE_TOOL_NAMES.has(tc.function.name)) {
+                    result = {
+                        success: false,
+                        error: 'Herramienta reservada para modo entrenamiento/admin. Pide a Jose Antonio que lo confirme en modo entrenamiento.'
+                    };
                 } else {
                     result = await executeAgentTool(tc.function.name, args);
                 }

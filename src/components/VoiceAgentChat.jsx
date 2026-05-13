@@ -570,7 +570,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
                 return;
             }
 
-            if (isCalendarIntent(text)) {
+            if (trainingMode && isCalendarIntent(text)) {
                 const reply = await createEventsFromTextOrImages({ text });
                 await addAssistantMessage(reply);
                 return;
