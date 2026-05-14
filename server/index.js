@@ -7,6 +7,7 @@ import nodemailer from 'nodemailer';
 import cron from 'node-cron';
 import { Readable } from 'stream';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
@@ -11093,6 +11094,416 @@ app.post('/api/agent/stt', upload.single('audio'), async (req, res) => {
         res.json({ success: true, text: transcription.text });
     } catch (err) {
         console.error('[STT] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// =============================================
+// REMOTE CAPTURE — Celular → PC image bridge
+// =============================================
+
+function generateCaptureToken() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let token = '';
+    for (let i = 0; i < 6; i++) token += chars[Math.floor(Math.random() * chars.length)];
+    return token.substring(0, 3) + '-' + token.substring(3);
+}
+
+// POST /api/capture/create — PC requests a photo from phone
+app.post('/api/capture/create', async (req, res) => {
+    try {
+        const { user_id, student_id, context, context_data } = req.body;
+        if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+
+        // Cancel any existing waiting captures for this user
+        await supabase.from('device_captures')
+            .update({ status: 'cancelled' })
+            .eq('user_id', user_id)
+            .eq('status', 'waiting');
+
+        // Create new capture request
+        const token = generateCaptureToken();
+        const { data, error } = await supabase.from('device_captures').insert({
+            user_id,
+            student_id: student_id || user_id,
+            token,
+            status: 'waiting',
+            context: context || 'general',
+            context_data: context_data || {},
+            requested_from: 'pc',
+            expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+        }).select().single();
+
+        if (error) throw error;
+        console.log(`[CAPTURE] Created request ${token} for user ${user_id}, context: ${context}`);
+        res.json({ success: true, capture_id: data.capture_id, token: data.token, expires_at: data.expires_at });
+    } catch (err) {
+        console.error('[CAPTURE] Create error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/capture/poll — PC polls for completed capture
+app.get('/api/capture/poll', async (req, res) => {
+    try {
+        const { token, user_id } = req.query;
+        if (!token && !user_id) return res.status(400).json({ success: false, error: 'Falta token o user_id' });
+
+        let query = supabase.from('device_captures').select('capture_id, token, status, image_url, context, context_data, completed_at');
+
+        if (token) {
+            query = query.eq('token', token);
+        } else {
+            query = query.eq('user_id', user_id).in('status', ['waiting', 'completed']).order('created_at', { ascending: false }).limit(1);
+        }
+
+        const { data, error } = await query.maybeSingle();
+        if (error) throw error;
+        if (!data) return res.json({ success: true, status: 'none' });
+
+        // Check expiration
+        if (data.status === 'waiting') {
+            const capture = await supabase.from('device_captures').select('expires_at').eq('token', data.token).single();
+            if (capture.data && new Date(capture.data.expires_at) < new Date()) {
+                await supabase.from('device_captures').update({ status: 'expired' }).eq('token', data.token);
+                return res.json({ success: true, status: 'expired' });
+            }
+        }
+
+        res.json({ success: true, ...data });
+    } catch (err) {
+        console.error('[CAPTURE] Poll error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/capture/pending — Phone checks for pending capture requests
+app.get('/api/capture/pending', async (req, res) => {
+    try {
+        const { user_id } = req.query;
+        if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+
+        // Clean up expired
+        await supabase.from('device_captures').update({ status: 'expired' })
+            .eq('user_id', user_id).eq('status', 'waiting').lt('expires_at', new Date().toISOString());
+
+        const { data, error } = await supabase.from('device_captures')
+            .select('capture_id, token, context, context_data, created_at, expires_at')
+            .eq('user_id', user_id)
+            .eq('status', 'waiting')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error) throw error;
+        res.json({ success: true, pending: data && data.length > 0 ? data[0] : null });
+    } catch (err) {
+        console.error('[CAPTURE] Pending error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/capture/upload — Phone uploads captured image
+app.post('/api/capture/upload', upload.single('image'), async (req, res) => {
+    try {
+        const { token, user_id } = req.body;
+        if (!token && !user_id) return res.status(400).json({ success: false, error: 'Falta token o user_id' });
+
+        // Find the capture request
+        let query = supabase.from('device_captures').select('*');
+        if (token) {
+            query = query.eq('token', token.toUpperCase().trim());
+        } else {
+            query = query.eq('user_id', user_id).eq('status', 'waiting').order('created_at', { ascending: false }).limit(1);
+        }
+        const { data: capture } = await query.maybeSingle();
+
+        if (!capture) return res.status(404).json({ success: false, error: 'No hay solicitud de captura pendiente' });
+        if (capture.status !== 'waiting') return res.status(400).json({ success: false, error: 'Solicitud ya completada o expirada' });
+
+        let imageUrl = '';
+
+        // Handle file upload
+        if (req.file) {
+            const filename = `capture_${capture.capture_id}_${Date.now()}.${req.file.originalname.split('.').pop() || 'jpg'}`;
+            const destPath = path.join(uploadsDir, filename);
+            fsSync.renameSync(req.file.path, destPath);
+            imageUrl = `/uploads/${filename}`;
+        } else if (req.body.image_base64) {
+            // Handle base64 upload
+            const b64 = req.body.image_base64.replace(/^data:image\/\w+;base64,/, '');
+            const filename = `capture_${capture.capture_id}_${Date.now()}.jpg`;
+            const destPath = path.join(uploadsDir, filename);
+            fsSync.writeFileSync(destPath, Buffer.from(b64, 'base64'));
+            imageUrl = `/uploads/${filename}`;
+        } else {
+            return res.status(400).json({ success: false, error: 'No se recibio imagen' });
+        }
+
+        // Update capture as completed
+        const { error } = await supabase.from('device_captures')
+            .update({
+                status: 'completed',
+                image_url: imageUrl,
+                captured_from: req.body.captured_from || 'phone',
+                completed_at: new Date().toISOString()
+            })
+            .eq('capture_id', capture.capture_id);
+
+        if (error) throw error;
+        console.log(`[CAPTURE] Completed ${capture.token}: ${imageUrl}`);
+        res.json({ success: true, image_url: imageUrl });
+    } catch (err) {
+        console.error('[CAPTURE] Upload error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /captura/:token — Standalone phone capture page (no login required)
+app.get('/captura/:token', (req, res) => {
+    const token = (req.params.token || '').toUpperCase().trim();
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Matico — Captura Remota</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f4ff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.card{background:#fff;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,.1);padding:24px;max-width:400px;width:100%;text-align:center}
+.logo{font-size:24px;font-weight:800;color:#4338ca;margin-bottom:4px}
+.subtitle{font-size:13px;color:#6b7280;margin-bottom:20px}
+.token-badge{display:inline-block;background:#eef2ff;border:2px solid #c7d2fe;border-radius:12px;padding:8px 20px;font-size:22px;font-weight:800;letter-spacing:3px;color:#4338ca;margin-bottom:20px}
+.status{font-size:14px;font-weight:600;padding:12px;border-radius:12px;margin-bottom:16px}
+.status.loading{background:#fef3c7;color:#92400e}
+.status.ready{background:#ecfdf5;color:#065f46}
+.status.error{background:#fef2f2;color:#991b1b}
+.status.done{background:#ecfdf5;color:#065f46}
+.status.expired{background:#fff7ed;color:#9a3412}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:.2s}
+.btn-primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff}
+.btn-primary:active{transform:scale(.97)}
+.btn-secondary{background:#f3f4f6;color:#374151;margin-top:8px}
+.preview{width:100%;border-radius:12px;margin:12px 0;max-height:300px;object-fit:contain;border:2px solid #e5e7eb}
+.hidden{display:none}
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid #d1d5db;border-top-color:#4f46e5;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.timer{font-size:12px;color:#9ca3af;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Matico</div>
+  <div class="subtitle">Captura remota desde celular</div>
+  <div class="token-badge" id="tokenDisplay">${token}</div>
+  <div class="status loading" id="statusBox"><span class="spinner"></span> Verificando solicitud...</div>
+  <div id="cameraSection" class="hidden">
+    <button class="btn btn-primary" id="btnCamera" onclick="openCamera()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Tomar foto
+    </button>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden"/>
+    <button class="btn btn-secondary" onclick="openGallery()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      Elegir de galeria
+    </button>
+    <input type="file" id="galleryInput" accept="image/*" class="hidden"/>
+  </div>
+  <img id="preview" class="preview hidden"/>
+  <div id="confirmSection" class="hidden">
+    <button class="btn btn-primary" onclick="uploadImage()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg>
+      Enviar foto al computador
+    </button>
+    <button class="btn btn-secondary" onclick="retake()">Tomar otra</button>
+  </div>
+  <div id="doneSection" class="hidden">
+    <div class="status done">Foto enviada. Ya puedes cerrar esta pagina.</div>
+  </div>
+  <div class="timer" id="timerText"></div>
+</div>
+<script>
+const TOKEN = '${token}';
+let captureData = null;
+let selectedFile = null;
+let expiresAt = null;
+let timerInterval = null;
+
+async function init() {
+  try {
+    const r = await fetch('/api/capture/poll?token=' + TOKEN);
+    const d = await r.json();
+    if (!d.success && d.error) throw new Error(d.error);
+    if (d.status === 'none') { showStatus('No se encontro esta solicitud', 'error'); return; }
+    if (d.status === 'expired') { showStatus('Esta solicitud ya expiro', 'expired'); return; }
+    if (d.status === 'completed') { showStatus('Esta foto ya fue enviada', 'done'); return; }
+    if (d.status === 'cancelled') { showStatus('Solicitud cancelada', 'expired'); return; }
+    // Fetch full expiry
+    const p = await fetch('/api/capture/poll?token=' + TOKEN);
+    const pd = await p.json();
+    showStatus('Listo para capturar', 'ready');
+    document.getElementById('cameraSection').classList.remove('hidden');
+    // Timer
+    startTimer();
+  } catch(e) {
+    showStatus('Error: ' + e.message, 'error');
+  }
+}
+
+function showStatus(msg, type) {
+  const box = document.getElementById('statusBox');
+  box.className = 'status ' + type;
+  box.innerHTML = type === 'loading' ? '<span class="spinner"></span> ' + msg : msg;
+}
+
+function startTimer() {
+  // 10 min from now as fallback
+  const end = Date.now() + 10 * 60 * 1000;
+  timerInterval = setInterval(() => {
+    const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
+    const m = Math.floor(left / 60);
+    const s = left % 60;
+    document.getElementById('timerText').textContent = 'Expira en ' + m + ':' + String(s).padStart(2, '0');
+    if (left <= 0) {
+      clearInterval(timerInterval);
+      showStatus('Solicitud expirada', 'expired');
+      document.getElementById('cameraSection').classList.add('hidden');
+      document.getElementById('confirmSection').classList.add('hidden');
+    }
+  }, 1000);
+}
+
+function openCamera() {
+  document.getElementById('cameraInput').click();
+}
+
+function openGallery() {
+  document.getElementById('galleryInput').click();
+}
+
+document.getElementById('cameraInput').addEventListener('change', handleFile);
+document.getElementById('galleryInput').addEventListener('change', handleFile);
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    captureData = ev.target.result;
+    document.getElementById('preview').src = captureData;
+    document.getElementById('preview').classList.remove('hidden');
+    document.getElementById('cameraSection').classList.add('hidden');
+    document.getElementById('confirmSection').classList.remove('hidden');
+    showStatus('Revisa la foto y envia', 'ready');
+  };
+  reader.readAsDataURL(file);
+}
+
+function retake() {
+  captureData = null;
+  selectedFile = null;
+  document.getElementById('preview').classList.add('hidden');
+  document.getElementById('confirmSection').classList.add('hidden');
+  document.getElementById('cameraSection').classList.remove('hidden');
+  showStatus('Listo para capturar', 'ready');
+}
+
+async function uploadImage() {
+  showStatus('Enviando...', 'loading');
+  document.getElementById('confirmSection').classList.add('hidden');
+  try {
+    const fd = new FormData();
+    fd.append('token', TOKEN);
+    fd.append('captured_from', 'phone_web');
+    if (selectedFile) {
+      fd.append('image', selectedFile);
+    } else if (captureData) {
+      fd.append('image_base64', captureData);
+    }
+    const r = await fetch('/api/capture/upload', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    showStatus('Foto enviada al computador', 'done');
+    document.getElementById('preview').classList.add('hidden');
+    document.getElementById('doneSection').classList.remove('hidden');
+    if (timerInterval) clearInterval(timerInterval);
+    document.getElementById('timerText').textContent = '';
+  } catch(e) {
+    showStatus('Error: ' + e.message, 'error');
+    document.getElementById('confirmSection').classList.remove('hidden');
+  }
+}
+
+init();
+</script>
+</body>
+</html>`);
+});
+
+// GET /captura — Phone landing page (enter code manually)
+app.get('/captura', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Matico — Captura Remota</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f4ff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.card{background:#fff;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,.1);padding:24px;max-width:400px;width:100%;text-align:center}
+.logo{font-size:24px;font-weight:800;color:#4338ca;margin-bottom:4px}
+.subtitle{font-size:13px;color:#6b7280;margin-bottom:20px}
+.input-code{width:100%;text-align:center;font-size:28px;font-weight:800;letter-spacing:4px;padding:14px;border:2px solid #c7d2fe;border-radius:14px;outline:none;color:#4338ca;text-transform:uppercase;margin-bottom:16px}
+.input-code:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;transition:.2s}
+.btn:active{transform:scale(.97)}
+.hint{font-size:12px;color:#9ca3af;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Matico</div>
+  <div class="subtitle">Ingresa el codigo que aparece en el computador</div>
+  <input type="text" id="codeInput" class="input-code" maxlength="7" placeholder="ABC-123" autofocus autocomplete="off"/>
+  <button class="btn" onclick="go()">Continuar</button>
+  <div class="hint">El codigo tiene 6 caracteres (ej: ABC-123)</div>
+</div>
+<script>
+const inp = document.getElementById('codeInput');
+inp.addEventListener('input', function() {
+  let v = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  if (v.length > 3) v = v.substring(0,3) + '-' + v.substring(3);
+  this.value = v.substring(0, 7);
+});
+inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') go(); });
+function go() {
+  const code = inp.value.trim();
+  if (code.length >= 6) window.location.href = '/captura/' + encodeURIComponent(code);
+}
+</script>
+</body>
+</html>`);
+});
+
+// POST /api/capture/cancel — Cancel a pending capture
+app.post('/api/capture/cancel', async (req, res) => {
+    try {
+        const { token, user_id } = req.body;
+        if (!token && !user_id) return res.status(400).json({ success: false, error: 'Falta token o user_id' });
+
+        let query = supabase.from('device_captures').update({ status: 'cancelled' });
+        if (token) query = query.eq('token', token);
+        else query = query.eq('user_id', user_id).eq('status', 'waiting');
+
+        const { error } = await query;
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[CAPTURE] Cancel error:', err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });

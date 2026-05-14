@@ -274,6 +274,8 @@ const OracleNotebookExamBuilder = ({
                 showNativeCapture
                 showPasteHint={false}
                 nativeQueueOnly
+                userId={userId}
+                captureContext="exam"
             />
 
             <div className="grid md:grid-cols-2 gap-3">

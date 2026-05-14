@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Camera, Clipboard, Monitor, Smartphone, UploadCloud, X } from 'lucide-react';
+import RemoteCaptureButton from './RemoteCaptureButton';
 import {
     captureNowNativeSession,
     clearNativeQueuedCaptures,
@@ -101,10 +102,17 @@ const EvidenceIntake = ({
     onError,
     showNativeCapture = true,
     showPasteHint = true,
-    nativeQueueOnly = false
+    nativeQueueOnly = false,
+    userId = '',
+    studentId = '',
+    captureContext = 'general',
+    captureContextData = {}
 }) => {
     // Detecta si está corriendo como app nativa Android (Capacitor)
     const isNativePlatform = Boolean(window?.Capacitor?.isNativePlatform?.());
+    const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    const showRemoteCapture = !isNativePlatform && !isMobileUA && !!userId;
+    const [remoteMode, setRemoteMode] = useState(false);
 
     const [items, setItems] = useState(Array.isArray(value) ? value.map(normalizeEvidenceAsset) : []);
     const [errorMsg, setErrorMsg] = useState('');
@@ -532,7 +540,50 @@ const EvidenceIntake = ({
                         {nativeCaptureSupported ? 'Captura de pantalla celular' : 'Captura celular (app Matico)'}
                     </button>
                 )}
+                {/* Remote capture: visible on desktop when userId is provided */}
+                {showRemoteCapture && !nativeQueueOnly && (
+                    <button
+                        type="button"
+                        onClick={() => setRemoteMode(true)}
+                        className="rounded-2xl border-2 border-[#7C3AED] bg-[#F5F3FF] px-3 py-3 text-sm font-black text-[#6D28D9] hover:border-[#6D28D9] flex items-center justify-center gap-2"
+                    >
+                        <Smartphone className="w-4 h-4" /> Foto desde celular
+                    </button>
+                )}
             </div>
+
+            {/* Remote capture widget */}
+            {remoteMode && showRemoteCapture && (
+                <RemoteCaptureButton
+                    userId={userId}
+                    studentId={studentId || userId}
+                    context={captureContext}
+                    contextData={captureContextData}
+                    onImageReceived={async (imageUrl) => {
+                        // Fetch the image and convert to base64 asset
+                        try {
+                            const resp = await fetch(imageUrl);
+                            const blob = await resp.blob();
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                                const dataUrl = reader.result;
+                                addAsset({
+                                    previewUrl: dataUrl,
+                                    imageBase64: dataUrl.split(',')[1],
+                                    imageMimeType: blob.type || 'image/jpeg',
+                                    sourceType: 'remote_capture'
+                                });
+                                setRemoteMode(false);
+                            };
+                            reader.readAsDataURL(blob);
+                        } catch {
+                            handleError('No se pudo cargar la imagen remota.');
+                            setRemoteMode(false);
+                        }
+                    }}
+                    onCancel={() => setRemoteMode(false)}
+                />
+            )}
 
             {nativeCaptureSupported && nativeQueueCount > 0 && (
                 <button

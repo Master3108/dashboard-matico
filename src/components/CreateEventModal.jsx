@@ -367,6 +367,8 @@ const CreateEventModal = ({ isOpen, onClose, userId, userRole = 'estudiante', st
                             showNativeCapture
                             showPasteHint={false}
                             nativeQueueOnly
+                            userId={userId}
+                            captureContext="evidence"
                         />
                     </div>
 

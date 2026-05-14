@@ -13,6 +13,7 @@ import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
 import QuestionBankManager from './components/QuestionBankManager';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntake';
 import VoiceAgentChat from './components/VoiceAgentChat';
+import PhoneCaptureNotifier from './components/PhoneCaptureNotifier';
 import {
     BookOpen,
     Brain,
@@ -1980,6 +1981,8 @@ const PrepExamSetupModal = ({
                                 showNativeCapture
                                 showPasteHint={false}
                                 nativeQueueOnly
+                                userId={USER_ID}
+                                captureContext="evidence"
                             />
                         </div>
                     </div>
@@ -7588,6 +7591,11 @@ ${finalData.capsule}`;
                     </div>
                 )}
             </div>
+
+            {/* Phone Capture Notifier — shows banner when PC requests a photo */}
+            {currentUser?.user_id && (
+                <PhoneCaptureNotifier userId={currentUser.user_id} />
+            )}
 
             {/* Voice Training Agent Overlay */}
             {showTrainingVoice && (
