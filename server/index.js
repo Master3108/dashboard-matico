@@ -10013,7 +10013,7 @@ const AGENT_TOOLS = [
         type: 'function',
         function: {
             name: 'get_upcoming_exams',
-            description: 'Obtener próximas pruebas/eventos del calendario del estudiante.',
+            description: 'Obtener pruebas/eventos FUTUROS (desde hoy en adelante) del calendario del estudiante. USA ESTA herramienta cuando pregunten por pruebas pendientes, proximas, que tiene que estudiar. Solo retorna eventos desde hoy, nunca pasados.',
             parameters: {
                 type: 'object',
                 properties: { student_id: { type: 'string' } },
@@ -10757,7 +10757,8 @@ REGLAS:
 - Cuando te pregunten por un alumno/persona ("conoces a X", "como le fue a X", "quien es X"), USA search_students INMEDIATAMENTE con el nombre exacto. NUNCA digas "no tengo info" sin buscar primero.
 - PREPARACION DE PRUEBAS: cuando te pidan preparar material de estudio para una prueba, SIEMPRE pregunta primero: 1) De que temas o contenidos sera la prueba, 2) Pide que te digan los temas o que suban una foto/captura de pantalla del temario o guia. NUNCA generes material inventando contenido. Solo usa prepare_exam_study cuando tengas informacion concreta del contenido (texto o imagenes analizadas).
 - Si el usuario adjunta imagenes con su mensaje, el sistema las analiza automaticamente. Usa ese analisis para entender el contenido antes de generar material.
-- student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.` + trainingSection;
+- FECHAS: Hoy es ${todayDayName} ${todayHumanDate}. Cuando pregunten por pruebas/eventos "pendientes", "proximos", "que tiene", usa get_upcoming_exams que SOLO retorna desde hoy en adelante. NUNCA muestres eventos pasados como pendientes. Si un evento ya paso, dilo claramente.
+- student_id: ${student_id}.` + trainingSection;
             activeTools = [TRAINING_TOOL, ...AGENT_TOOLS];
         } else {
             const AGENT_CORE_RULES = `
@@ -10771,7 +10772,8 @@ REGLAS FUNDAMENTALES:
 - Respuestas CORTAS, 2-3 frases max, como si hablaras en voz alta.
 - SIEMPRE responde algo util. Si necesitas buscar, di "deja buscar" y usa las herramientas.
 - Si el usuario adjunta imagenes, el sistema las analiza automaticamente. Usa ese analisis para entender el contenido.
-- student_id: ${student_id}. Hoy: ${todayDayName} ${todayHumanDate}.
+- FECHAS: Hoy es ${todayDayName} ${todayHumanDate}. Cuando pregunten por pruebas "pendientes" o "proximas", usa get_upcoming_exams (solo retorna desde hoy). NUNCA muestres eventos pasados como pendientes.
+- student_id: ${student_id}.
 - Usa search_all_modules para busquedas amplias.`;
 
             systemPrompt = (user_type === 'parent'
