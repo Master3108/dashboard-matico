@@ -11284,7 +11284,7 @@ app.post('/api/capture/upload', upload.single('image'), async (req, res) => {
     }
 });
 
-// GET /captura/:token — Standalone phone capture page (multi-page, no login required)
+// GET /captura/:token — Standalone phone capture page (multi-page, queue + batch upload)
 app.get('/captura/:token', (req, res) => {
     const token = (req.params.token || '').toUpperCase().trim();
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -11312,65 +11312,91 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .btn-primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff}
 .btn-primary:active{transform:scale(.97)}
 .btn-secondary{background:#f3f4f6;color:#374151;margin-top:8px}
+.btn-send{background:#eab308;color:#713f12;margin-top:8px;animation:pulse 1.5s infinite}
+.btn-send:active{transform:scale(.97)}
 .btn-success{background:#16a34a;color:#fff;margin-top:8px}
 .btn-success:active{transform:scale(.97)}
 .btn:disabled{opacity:.5;pointer-events:none}
-.preview{width:100%;border-radius:12px;margin:12px 0;max-height:250px;object-fit:contain;border:2px solid #e5e7eb}
 .hidden{display:none}
 .spinner{display:inline-block;width:18px;height:18px;border:3px solid #d1d5db;border-top-color:#4f46e5;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.8}}
 .timer{font-size:12px;color:#9ca3af;margin-top:8px}
 .counter{display:inline-flex;align-items:center;gap:6px;background:#eef2ff;border:2px solid #c7d2fe;border-radius:12px;padding:6px 16px;font-size:18px;font-weight:800;color:#4338ca;margin-bottom:12px}
 .thumbs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0}
-.thumbs img{width:48px;height:48px;border-radius:8px;object-fit:cover;border:2px solid #e5e7eb}
+.thumbs .thumb-wrap{position:relative;display:inline-block}
+.thumbs img{width:52px;height:52px;border-radius:8px;object-fit:cover;border:2px solid #e5e7eb}
+.thumbs .sent img{border-color:#16a34a}
+.thumbs .queued img{border-color:#4f46e5;border-style:dashed}
+.remove-btn{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:#ef4444;color:#fff;border:none;border-radius:50%;font-size:11px;line-height:18px;text-align:center;cursor:pointer;padding:0}
+.progress-bar{width:100%;height:6px;background:#e5e7eb;border-radius:3px;margin:8px 0;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#4f46e5,#7c3aed);border-radius:3px;transition:width .3s}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn-row .btn{flex:1}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="logo">Matico</div>
   <div class="subtitle">Captura remota multipagina</div>
-  <div class="token-badge" id="tokenDisplay">${token}</div>
-  <div class="counter hidden" id="counterBox">Enviadas: <span id="countNum">0</span>/10</div>
+  <div class="token-badge">${token}</div>
+  <div class="counter hidden" id="counterBox">Enviadas: <span id="sentNum">0</span> | Cola: <span id="queueNum">0</span></div>
   <div class="status loading" id="statusBox"><span class="spinner"></span> Verificando solicitud...</div>
-  <div id="cameraSection" class="hidden">
-    <button class="btn btn-primary" onclick="openCamera()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      Tomar foto
-    </button>
+
+  <!-- Capture buttons -->
+  <div id="captureSection" class="hidden">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="openCamera()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Foto
+      </button>
+      <button class="btn btn-secondary" onclick="openGallery()" style="margin-top:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        Galeria
+      </button>
+    </div>
     <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden"/>
-    <button class="btn btn-secondary" onclick="openGallery()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-      Elegir de galeria
-    </button>
-    <input type="file" id="galleryInput" accept="image/*" class="hidden"/>
+    <input type="file" id="galleryInput" accept="image/*" multiple class="hidden"/>
   </div>
-  <img id="preview" class="preview hidden"/>
-  <div id="confirmSection" class="hidden">
-    <button class="btn btn-primary" onclick="uploadImage()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg>
-      Enviar foto
-    </button>
-    <button class="btn btn-secondary" onclick="retake()">Tomar otra</button>
-  </div>
+
+  <!-- Thumbnails: sent + queued -->
   <div class="thumbs hidden" id="thumbsContainer"></div>
+
+  <!-- Send queue button -->
+  <div id="sendSection" class="hidden">
+    <button class="btn btn-send" id="sendBtn" onclick="uploadAll()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg>
+      <span id="sendLabel">Enviar</span>
+    </button>
+  </div>
+
+  <!-- Upload progress -->
+  <div id="progressSection" class="hidden">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="status loading" id="progressText"><span class="spinner"></span> Enviando...</div>
+  </div>
+
+  <!-- Finish button -->
   <div id="finishSection" class="hidden">
     <button class="btn btn-success" onclick="finishSession()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       Finalizar envio
     </button>
   </div>
+
+  <!-- Done -->
   <div id="doneSection" class="hidden">
-    <div class="status done">Fotos enviadas. Ya puedes cerrar esta pagina.</div>
+    <div class="status done" id="doneMsg">Fotos enviadas. Ya puedes cerrar esta pagina.</div>
   </div>
+
   <div class="timer" id="timerText"></div>
 </div>
 <script>
 const TOKEN = '${token}';
-let selectedFile = null;
-let captureData = null;
 let sentCount = 0;
 let timerInterval = null;
-const thumbUrls = [];
+const sentUrls = [];
+const queue = []; // [{file, objectUrl}]
 
 async function init() {
   try {
@@ -11381,155 +11407,175 @@ async function init() {
     if (d.status === 'expired') { showStatus('Esta solicitud ya expiro', 'expired'); return; }
     if (d.status === 'completed') { showStatus('Esta sesion ya fue finalizada', 'done'); return; }
     if (d.status === 'cancelled') { showStatus('Solicitud cancelada', 'expired'); return; }
-    // Resume count if images already sent
     sentCount = (d.image_urls || []).length;
-    if (sentCount > 0) {
-      updateCounter();
-      (d.image_urls || []).forEach(u => addThumb(u));
-    }
-    showStatus('Listo para capturar', 'ready');
-    document.getElementById('cameraSection').classList.remove('hidden');
+    (d.image_urls || []).forEach(u => sentUrls.push(u));
+    renderThumbs();
+    updateUI();
+    showStatus('Listo — toma fotos o selecciona de galeria', 'ready');
+    show('captureSection');
     startTimer();
-  } catch(e) {
-    showStatus('Error: ' + e.message, 'error');
-  }
+  } catch(e) { showStatus('Error: ' + e.message, 'error'); }
 }
 
 function showStatus(msg, type) {
-  const box = document.getElementById('statusBox');
-  box.className = 'status ' + type;
-  box.innerHTML = type === 'loading' ? '<span class="spinner"></span> ' + msg : msg;
+  const b = document.getElementById('statusBox');
+  b.className = 'status ' + type;
+  b.innerHTML = type === 'loading' ? '<span class="spinner"></span> ' + msg : msg;
+  b.classList.remove('hidden');
 }
 
-function updateCounter() {
-  document.getElementById('counterBox').classList.remove('hidden');
-  document.getElementById('countNum').textContent = sentCount;
-  if (sentCount > 0) document.getElementById('finishSection').classList.remove('hidden');
-  if (sentCount >= 10) {
-    document.getElementById('cameraSection').classList.add('hidden');
-    showStatus('Maximo 10 imagenes alcanzado', 'info');
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+function updateUI() {
+  // Counter
+  document.getElementById('sentNum').textContent = sentCount;
+  document.getElementById('queueNum').textContent = queue.length;
+  if (sentCount > 0 || queue.length > 0) show('counterBox');
+
+  // Send button
+  if (queue.length > 0) {
+    show('sendSection');
+    document.getElementById('sendLabel').textContent = 'Enviar ' + queue.length + ' foto' + (queue.length > 1 ? 's' : '');
+  } else {
+    hide('sendSection');
+  }
+
+  // Finish button (only when sent > 0 and queue empty)
+  if (sentCount > 0 && queue.length === 0) show('finishSection');
+  else hide('finishSection');
+
+  // Capture buttons (hide if max reached)
+  if (sentCount + queue.length >= 10) {
+    hide('captureSection');
+    if (queue.length === 0) showStatus('Maximo 10 imagenes alcanzado', 'info');
+  } else {
+    show('captureSection');
   }
 }
 
-function addThumb(url) {
-  thumbUrls.push(url);
-  const container = document.getElementById('thumbsContainer');
-  container.classList.remove('hidden');
-  const img = document.createElement('img');
-  img.src = url;
-  img.alt = 'Pag ' + thumbUrls.length;
-  container.appendChild(img);
+function renderThumbs() {
+  const c = document.getElementById('thumbsContainer');
+  c.innerHTML = '';
+  // Sent thumbs
+  sentUrls.forEach((url, i) => {
+    const w = document.createElement('div');
+    w.className = 'thumb-wrap sent';
+    w.innerHTML = '<img src="' + url + '" alt="Pag ' + (i+1) + '"/>';
+    c.appendChild(w);
+  });
+  // Queued thumbs
+  queue.forEach((item, i) => {
+    const w = document.createElement('div');
+    w.className = 'thumb-wrap queued';
+    w.innerHTML = '<img src="' + item.objectUrl + '" alt="Cola ' + (i+1) + '"/><button class="remove-btn" onclick="removeFromQueue(' + i + ')">x</button>';
+    c.appendChild(w);
+  });
+  if (sentUrls.length > 0 || queue.length > 0) show('thumbsContainer');
+  else hide('thumbsContainer');
+}
+
+function removeFromQueue(idx) {
+  URL.revokeObjectURL(queue[idx].objectUrl);
+  queue.splice(idx, 1);
+  renderThumbs();
+  updateUI();
 }
 
 function startTimer() {
   const end = Date.now() + 10 * 60 * 1000;
   timerInterval = setInterval(() => {
     const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
-    const m = Math.floor(left / 60);
-    const s = left % 60;
+    const m = Math.floor(left / 60), s = left % 60;
     document.getElementById('timerText').textContent = 'Expira en ' + m + ':' + String(s).padStart(2, '0');
     if (left <= 0) {
       clearInterval(timerInterval);
-      if (sentCount > 0) { finishSession(); }
-      else { showStatus('Solicitud expirada', 'expired'); document.getElementById('cameraSection').classList.add('hidden'); }
+      if (sentCount > 0) finishSession();
+      else { showStatus('Solicitud expirada', 'expired'); hide('captureSection'); hide('sendSection'); }
     }
   }, 1000);
 }
 
-function openCamera() { document.getElementById('cameraInput').value=''; document.getElementById('cameraInput').click(); }
-function openGallery() { document.getElementById('galleryInput').value=''; document.getElementById('galleryInput').click(); }
+function openCamera() { const i = document.getElementById('cameraInput'); i.value=''; i.click(); }
+function openGallery() { const i = document.getElementById('galleryInput'); i.value=''; i.click(); }
 
-document.getElementById('cameraInput').addEventListener('change', handleFile);
-document.getElementById('galleryInput').addEventListener('change', handleFile);
+// Camera: single file → add to queue
+document.getElementById('cameraInput').addEventListener('change', function(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  queue.push({ file: f, objectUrl: URL.createObjectURL(f) });
+  renderThumbs();
+  updateUI();
+  showStatus(queue.length + ' en cola — agrega mas o envia', 'info');
+});
 
-function handleFile(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  selectedFile = file;
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    captureData = ev.target.result;
-    document.getElementById('preview').src = captureData;
-    document.getElementById('preview').classList.remove('hidden');
-    document.getElementById('cameraSection').classList.add('hidden');
-    document.getElementById('confirmSection').classList.remove('hidden');
-    showStatus('Revisa la foto y envia', 'ready');
-  };
-  reader.readAsDataURL(file);
-}
-
-function retake() {
-  captureData = null; selectedFile = null;
-  document.getElementById('preview').classList.add('hidden');
-  document.getElementById('confirmSection').classList.add('hidden');
-  document.getElementById('cameraSection').classList.remove('hidden');
-  showStatus(sentCount > 0 ? 'Enviadas: ' + sentCount + '/10 — toma otra' : 'Listo para capturar', 'ready');
-}
-
-function convertToJpeg(file) {
-  return new Promise(function(resolve) {
-    var img = new Image();
-    var url = URL.createObjectURL(file);
-    img.onload = function() {
-      var c = document.createElement('canvas');
-      c.width = img.naturalWidth; c.height = img.naturalHeight;
-      c.getContext('2d').drawImage(img, 0, 0);
-      c.toBlob(function(blob) {
-        URL.revokeObjectURL(url);
-        resolve(blob ? new File([blob], 'capture.jpg', {type:'image/jpeg'}) : file);
-      }, 'image/jpeg', 0.92);
-    };
-    img.onerror = function() { URL.revokeObjectURL(url); resolve(file); };
-    img.src = url;
-  });
-}
-
-async function uploadImage() {
-  showStatus('Enviando...', 'loading');
-  document.getElementById('confirmSection').classList.add('hidden');
-  try {
-    var jpegFile = selectedFile ? await convertToJpeg(selectedFile) : null;
-    const fd = new FormData();
-    fd.append('token', TOKEN);
-    fd.append('captured_from', 'phone_web');
-    if (jpegFile) fd.append('image', jpegFile);
-    else if (captureData) fd.append('image_base64', captureData);
-    const r = await fetch('/api/capture/upload', { method: 'POST', body: fd });
-    const d = await r.json();
-    if (!d.success) throw new Error(d.error);
-    sentCount = d.image_count || (sentCount + 1);
-    addThumb(d.image_url);
-    updateCounter();
-    captureData = null; selectedFile = null;
-    document.getElementById('preview').classList.add('hidden');
-    if (sentCount >= 10) {
-      finishSession();
-    } else {
-      showStatus('Imagen enviada. Puedes tomar otra o finalizar.', 'info');
-      document.getElementById('cameraSection').classList.remove('hidden');
+// Gallery: MULTIPLE files → add all to queue
+document.getElementById('galleryInput').addEventListener('change', function(e) {
+  const files = Array.from(e.target.files || []);
+  files.forEach(f => {
+    if (sentCount + queue.length < 10) {
+      queue.push({ file: f, objectUrl: URL.createObjectURL(f) });
     }
-  } catch(e) {
-    showStatus('Error: ' + e.message, 'error');
-    document.getElementById('confirmSection').classList.remove('hidden');
+  });
+  renderThumbs();
+  updateUI();
+  if (queue.length > 0) showStatus(queue.length + ' en cola — agrega mas o envia', 'info');
+});
+
+// Upload all queued photos sequentially
+async function uploadAll() {
+  if (queue.length === 0) return;
+  hide('captureSection');
+  hide('sendSection');
+  hide('finishSection');
+  show('progressSection');
+  const toSend = queue.splice(0, queue.length); // drain queue
+  const total = toSend.length;
+  let done = 0;
+
+  for (const item of toSend) {
+    if (sentCount >= 10) break;
+    document.getElementById('progressText').innerHTML = '<span class="spinner"></span> Enviando ' + (done+1) + '/' + total + '...';
+    document.getElementById('progressFill').style.width = Math.round(((done) / total) * 100) + '%';
+    try {
+      const fd = new FormData();
+      fd.append('token', TOKEN);
+      fd.append('captured_from', 'phone_web');
+      fd.append('image', item.file); // server converts via sharp
+      const r = await fetch('/api/capture/upload', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (!d.success) throw new Error(d.error);
+      sentCount = d.image_count || (sentCount + 1);
+      sentUrls.push(d.image_url);
+      done++;
+    } catch(e) {
+      console.error('Upload error:', e);
+    }
+    URL.revokeObjectURL(item.objectUrl);
+  }
+
+  document.getElementById('progressFill').style.width = '100%';
+  hide('progressSection');
+  renderThumbs();
+  updateUI();
+
+  if (sentCount >= 10) {
+    finishSession();
+  } else {
+    showStatus(sentCount + ' enviada' + (sentCount > 1 ? 's' : '') + ' — agrega mas o finaliza', 'info');
   }
 }
 
 async function finishSession() {
   showStatus('Finalizando...', 'loading');
-  document.getElementById('cameraSection').classList.add('hidden');
-  document.getElementById('confirmSection').classList.add('hidden');
-  document.getElementById('finishSection').classList.add('hidden');
+  hide('captureSection'); hide('sendSection'); hide('finishSection');
   try {
-    await fetch('/api/capture/finish', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ token: TOKEN })
-    });
+    await fetch('/api/capture/finish', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:TOKEN}) });
   } catch {}
   if (timerInterval) clearInterval(timerInterval);
   document.getElementById('timerText').textContent = '';
   showStatus(sentCount + ' foto' + (sentCount > 1 ? 's' : '') + ' enviada' + (sentCount > 1 ? 's' : '') + ' al computador', 'done');
-  document.getElementById('doneSection').classList.remove('hidden');
+  show('doneSection');
 }
 
 init();
