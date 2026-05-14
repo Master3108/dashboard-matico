@@ -183,7 +183,8 @@ export default function PhoneCaptureNotifier({ userId }) {
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="font-bold text-sm">{contextLabel}</div>
-                        <div className="text-xs text-blue-200 mt-0.5">
+                        <div className="text-xs text-blue-200 mt-0.5 flex items-center gap-1.5">
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded font-mono font-bold tracking-wider">{pending?.token}</span>
                             {sentCount === 0 && queue.length === 0
                                 ? 'El computador solicita imagenes'
                                 : queue.length > 0
