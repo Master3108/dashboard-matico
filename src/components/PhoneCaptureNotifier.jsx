@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Camera, X, Loader2 } from 'lucide-react';
+import { Camera, UploadCloud, X, Loader2 } from 'lucide-react';
 
 /**
  * PhoneCaptureNotifier — Shows a floating banner on the phone when
@@ -17,7 +17,9 @@ export default function PhoneCaptureNotifier({ userId }) {
     const [done, setDone] = useState(false);
     const [dismissed, setDismissed] = useState(false);
     const pollRef = useRef(null);
-    const fileInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
+    const sourceRef = useRef('phone_app');
 
     const checkPending = useCallback(async () => {
         if (!userId) return;
@@ -45,9 +47,18 @@ export default function PhoneCaptureNotifier({ userId }) {
     }, [userId, checkPending]);
 
     const handleCapture = () => {
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-            fileInputRef.current.click();
+        sourceRef.current = 'phone_camera';
+        if (cameraInputRef.current) {
+            cameraInputRef.current.value = '';
+            cameraInputRef.current.click();
+        }
+    };
+
+    const handleGallery = () => {
+        sourceRef.current = 'phone_gallery';
+        if (galleryInputRef.current) {
+            galleryInputRef.current.value = '';
+            galleryInputRef.current.click();
         }
     };
 
@@ -59,7 +70,7 @@ export default function PhoneCaptureNotifier({ userId }) {
         try {
             const fd = new FormData();
             fd.append('token', pending.token);
-            fd.append('captured_from', 'phone_app');
+            fd.append('captured_from', sourceRef.current || 'phone_app');
             fd.append('image', file);
 
             const res = await fetch('/api/capture/upload', { method: 'POST', body: fd });
@@ -109,10 +120,17 @@ export default function PhoneCaptureNotifier({ userId }) {
     return (
         <>
             <input
-                ref={fileInputRef}
+                ref={cameraInputRef}
                 type="file"
                 accept="image/*"
                 capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+            />
+            <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
                 className="hidden"
                 onChange={handleFileChange}
             />
@@ -123,8 +141,8 @@ export default function PhoneCaptureNotifier({ userId }) {
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="font-bold text-sm">{contextLabel}</div>
-                        <div className="text-xs text-blue-200 mt-0.5">El computador solicita una foto</div>
-                        <div className="flex gap-2 mt-3">
+                        <div className="text-xs text-blue-200 mt-0.5">El computador solicita una imagen</div>
+                        <div className="flex flex-wrap gap-2 mt-3">
                             <button
                                 onClick={handleCapture}
                                 disabled={uploading}
@@ -134,6 +152,17 @@ export default function PhoneCaptureNotifier({ userId }) {
                                     <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
                                 ) : (
                                     <><Camera className="w-4 h-4" /> Tomar foto</>
+                                )}
+                            </button>
+                            <button
+                                onClick={handleGallery}
+                                disabled={uploading}
+                                className="flex items-center gap-2 px-4 py-2 bg-white text-blue-700 rounded-xl text-sm font-bold shadow-lg disabled:opacity-50"
+                            >
+                                {uploading ? (
+                                    <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
+                                ) : (
+                                    <><UploadCloud className="w-4 h-4" /> Subir imagen</>
                                 )}
                             </button>
                             <button

@@ -540,7 +540,7 @@ const EvidenceIntake = ({
                     </button>
                 )}
                 {/* Remote capture: visible on desktop when userId is provided */}
-                {showRemoteCapture && !nativeQueueOnly && (
+                {showRemoteCapture && (
                     <button
                         type="button"
                         onClick={() => setRemoteMode(true)}

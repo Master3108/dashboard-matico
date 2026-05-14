@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Camera, CheckCircle, Clipboard, Download, Monitor, RotateCcw, Sparkles, Star, Trash2, UploadCloud, Video, X, Smartphone } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import RemoteCaptureButton from './RemoteCaptureButton';
 import {
     captureNowNativeSession,
     clearNativeQueuedCaptures,
@@ -181,6 +182,9 @@ const CuadernoMission = ({
     const [nativeSessionActive, setNativeSessionActive] = useState(false);
     const [nativeQueueCount, setNativeQueueCount] = useState(0);
     const isNativePlatform = Boolean(window?.Capacitor?.isNativePlatform?.());
+    const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    const showRemoteCapture = !isNativePlatform && !isMobileUA && !!userId;
+    const [remoteMode, setRemoteMode] = useState(false);
 
     const videoRef = useRef(null);
     const streamRef = useRef(null);
@@ -380,6 +384,34 @@ const CuadernoMission = ({
         };
         img.src = objectUrl;
     });
+
+    const handleRemoteImageReceived = async (imageUrl) => {
+        try {
+            setFeedback('Imagen recibida desde el celular. Preparando cuaderno...');
+            const resp = await fetch(imageUrl);
+            const blob = await resp.blob();
+            await addPageFromFile(blob);
+            setRemoteMode(false);
+        } catch (error) {
+            setFeedback(error.message || 'No se pudo importar la imagen enviada desde el celular.');
+        }
+    };
+
+    const renderRemoteCaptureWidget = () => {
+        if (!remoteMode || !showRemoteCapture) return null;
+        return (
+            <RemoteCaptureButton
+                userId={userId}
+                studentId={userId}
+                context="theory_ludic"
+                contextData={{ sessionId, phase, subject, topic, source: 'cuaderno_mission' }}
+                label="Usar celular"
+                onImageReceived={handleRemoteImageReceived}
+                onCancel={() => setRemoteMode(false)}
+                className="w-full"
+            />
+        );
+    };
 
     const loadImageFromFile = (file) => new Promise((resolve, reject) => {
         const img = new Image();
@@ -811,6 +843,15 @@ const CuadernoMission = ({
                                 >
                                     <UploadCloud size={20} /> Subir imagen
                                 </button>
+                                {showRemoteCapture && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setRemoteMode(true)}
+                                        className="flex-1 bg-[#F5F3FF] border-2 border-[#7C3AED] text-[#6D28D9] px-4 py-4 rounded-xl font-bold flex items-center justify-center gap-2"
+                                    >
+                                        <Smartphone size={20} /> Usar celular
+                                    </button>
+                                )}
                                 <input
                                     ref={multiGalleryInputRef}
                                     type="file"
@@ -820,6 +861,7 @@ const CuadernoMission = ({
                                     onChange={handleCapture}
                                 />
                             </div>
+                            {renderRemoteCaptureWidget()}
                             <p className="text-xs text-slate-500 text-center -mt-1">Tip: con "Subir imagen" puedes seleccionar hasta {MAX_PAGES} imagenes de una sola vez desde tu galeria.</p>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 {/* Solo en web/desktop: en Android nativo muestra dialogo confuso */}
@@ -918,6 +960,15 @@ const CuadernoMission = ({
                                         >
                                             <UploadCloud size={18} /> Subir imagen
                                         </button>
+                                        {showRemoteCapture && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setRemoteMode(true)}
+                                                className="w-full bg-[#F5F3FF] border-2 border-[#7C3AED] text-[#6D28D9] py-3 rounded-xl font-bold flex items-center justify-center gap-2"
+                                            >
+                                                <Smartphone size={18} /> Usar celular
+                                            </button>
+                                        )}
                                         {!isNativePlatform && (
                                             <button
                                                 type="button"
@@ -935,6 +986,7 @@ const CuadernoMission = ({
                                             className="hidden"
                                             onChange={handleCapture}
                                         />
+                                        {renderRemoteCaptureWidget()}
                                     </>
                                 )}
 
