@@ -11233,14 +11233,14 @@ app.post('/api/capture/upload', upload.single('image'), async (req, res) => {
         // Handle file upload
         if (req.file) {
             const filename = `capture_${capture.capture_id}_${Date.now()}.${req.file.originalname.split('.').pop() || 'jpg'}`;
-            const destPath = path.join(uploadsDir, filename);
+            const destPath = path.join(LOCAL_UPLOADS_DIR, filename);
             fsSync.renameSync(req.file.path, destPath);
             imageUrl = `/uploads/${filename}`;
         } else if (req.body.image_base64) {
             // Handle base64 upload
             const b64 = req.body.image_base64.replace(/^data:image\/\w+;base64,/, '');
             const filename = `capture_${capture.capture_id}_${Date.now()}.jpg`;
-            const destPath = path.join(uploadsDir, filename);
+            const destPath = path.join(LOCAL_UPLOADS_DIR, filename);
             fsSync.writeFileSync(destPath, Buffer.from(b64, 'base64'));
             imageUrl = `/uploads/${filename}`;
         } else {
