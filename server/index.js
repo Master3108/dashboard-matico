@@ -11451,14 +11451,33 @@ function retake() {
   showStatus(sentCount > 0 ? 'Enviadas: ' + sentCount + '/10 — toma otra' : 'Listo para capturar', 'ready');
 }
 
+function convertToJpeg(file) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function() {
+      var c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      c.toBlob(function(blob) {
+        URL.revokeObjectURL(url);
+        resolve(blob ? new File([blob], 'capture.jpg', {type:'image/jpeg'}) : file);
+      }, 'image/jpeg', 0.92);
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function uploadImage() {
   showStatus('Enviando...', 'loading');
   document.getElementById('confirmSection').classList.add('hidden');
   try {
+    var jpegFile = selectedFile ? await convertToJpeg(selectedFile) : null;
     const fd = new FormData();
     fd.append('token', TOKEN);
     fd.append('captured_from', 'phone_web');
-    if (selectedFile) fd.append('image', selectedFile);
+    if (jpegFile) fd.append('image', jpegFile);
     else if (captureData) fd.append('image_base64', captureData);
     const r = await fetch('/api/capture/upload', { method: 'POST', body: fd });
     const d = await r.json();

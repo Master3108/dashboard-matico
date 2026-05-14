@@ -69,16 +69,36 @@ export default function PhoneCaptureNotifier({ userId }) {
         }
     };
 
+    // Convert any image (including HEIC) to JPG via canvas
+    const convertToJpeg = (file) => new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            canvas.toBlob((blob) => {
+                URL.revokeObjectURL(url);
+                resolve(blob ? new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }) : file);
+            }, 'image/jpeg', 0.92);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+    });
+
     const handleFileChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file || !pending) return;
 
         setUploading(true);
         try {
+            // Convert HEIC/HEIF or any format to JPEG
+            const jpegFile = await convertToJpeg(file);
             const fd = new FormData();
             fd.append('token', pending.token);
             fd.append('captured_from', sourceRef.current || 'phone_app');
-            fd.append('image', file);
+            fd.append('image', jpegFile);
 
             const res = await fetch('/api/capture/upload', { method: 'POST', body: fd });
             const data = await res.json();
