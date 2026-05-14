@@ -192,6 +192,8 @@ const CuadernoMission = ({
     const mountedRef = useRef(true);
     const autoImportingRef = useRef(false);
     const submitTapLockRef = useRef(false);
+    // Ref to always read latest scanAssets in async callbacks (avoids stale closure)
+    const scanAssetsRef = useRef(scanAssets);
     // Input dedicado para subir MULTIPLES imagenes desde galeria (sin capture=environment).
     const multiGalleryInputRef = useRef(null);
     const extraMultiGalleryInputRef = useRef(null);
@@ -204,6 +206,8 @@ const CuadernoMission = ({
         if (extraMultiGalleryInputRef.current) extraMultiGalleryInputRef.current.value = '';
         extraMultiGalleryInputRef.current?.click();
     };
+
+    useEffect(() => { scanAssetsRef.current = scanAssets; }, [scanAssets]);
 
     useEffect(() => () => {
         mountedRef.current = false;
@@ -385,34 +389,6 @@ const CuadernoMission = ({
         img.src = objectUrl;
     });
 
-    const handleRemoteImageReceived = async (imageUrl) => {
-        try {
-            setFeedback('Imagen recibida desde el celular. Preparando cuaderno...');
-            const resp = await fetch(imageUrl);
-            const blob = await resp.blob();
-            await addPageFromFile(blob);
-            setRemoteMode(false);
-        } catch (error) {
-            setFeedback(error.message || 'No se pudo importar la imagen enviada desde el celular.');
-        }
-    };
-
-    const renderRemoteCaptureWidget = () => {
-        if (!remoteMode || !showRemoteCapture) return null;
-        return (
-            <RemoteCaptureButton
-                userId={userId}
-                studentId={userId}
-                context="theory_ludic"
-                contextData={{ sessionId, phase, subject, topic, source: 'cuaderno_mission' }}
-                label="Usar celular"
-                onImageReceived={handleRemoteImageReceived}
-                onCancel={() => setRemoteMode(false)}
-                className="w-full"
-            />
-        );
-    };
-
     const loadImageFromFile = (file) => new Promise((resolve, reject) => {
         const img = new Image();
         const objectUrl = URL.createObjectURL(file);
@@ -426,6 +402,65 @@ const CuadernoMission = ({
         };
         img.src = objectUrl;
     });
+
+    const handleRemoteImageReceived = async (imageUrl) => {
+        try {
+            // Read latest pages from ref to avoid stale closure
+            const currentPages = scanAssetsRef.current?.pages || [];
+            if (currentPages.length >= MAX_PAGES) {
+                setFeedback(`Máximo ${MAX_PAGES} páginas.`);
+                return;
+            }
+            const pageNum = currentPages.length + 1;
+            setFeedback(`Recibiendo imagen ${pageNum} desde el celular...`);
+            setIsGeneratingPdf(true);
+            setStatus('processing');
+
+            const resp = await fetch(imageUrl);
+            const blob = await resp.blob();
+            const img = await loadImageFromFile(blob);
+            const pageAsset = buildPageAsset(img, pageNum);
+
+            // Re-read ref in case another image was added while we fetched
+            const latestPages = scanAssetsRef.current?.pages || [];
+            const nextPages = [...latestPages, pageAsset];
+            const scanId = scanAssetsRef.current?.scanId || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            await rebuildAssets(nextPages, scanId);
+
+            setFeedback(`${nextPages.length} ${nextPages.length === 1 ? 'página recibida' : 'páginas recibidas'} del celular. Esperando más...`);
+            setStatus('preview');
+        } catch (error) {
+            setFeedback(error.message || 'No se pudo importar la imagen enviada desde el celular.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+
+    const handleRemoteFinish = (imageUrls) => {
+        const totalPages = scanAssetsRef.current?.pages?.length || 0;
+        setRemoteMode(false);
+        if (totalPages > 0) {
+            setFeedback(`PDF listo con ${totalPages} ${totalPages === 1 ? 'página' : 'páginas'}. Puedes agregar más hojas o enviarlo a Profe Matico.`);
+            setStatus('preview');
+        }
+    };
+
+    const renderRemoteCaptureWidget = () => {
+        if (!remoteMode || !showRemoteCapture) return null;
+        return (
+            <RemoteCaptureButton
+                userId={userId}
+                studentId={userId}
+                context="theory_ludic"
+                contextData={{ sessionId, phase, subject, topic, source: 'cuaderno_mission' }}
+                label="Usar celular"
+                onImageReceived={handleRemoteImageReceived}
+                onFinish={handleRemoteFinish}
+                onCancel={() => setRemoteMode(false)}
+                className="w-full"
+            />
+        );
+    };
 
     // Soporta multiples archivos en una sola seleccion. En el input nativo con
     // capture=environment siempre llega 1, pero en el selector de galeria con
