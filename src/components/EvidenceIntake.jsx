@@ -551,15 +551,17 @@ const EvidenceIntake = ({
                 )}
             </div>
 
-            {/* Remote capture widget */}
+            {/* Remote capture widget (multi-page) */}
             {remoteMode && showRemoteCapture && (
                 <RemoteCaptureButton
                     userId={userId}
                     studentId={studentId || userId}
                     context={captureContext}
                     contextData={captureContextData}
+                    maxImages={maxEvidence}
+                    existingCount={items.length}
                     onImageReceived={async (imageUrl) => {
-                        // Fetch the image and convert to base64 asset
+                        // Each new image from phone gets added as asset
                         try {
                             const resp = await fetch(imageUrl);
                             const blob = await resp.blob();
@@ -572,13 +574,15 @@ const EvidenceIntake = ({
                                     imageMimeType: blob.type || 'image/jpeg',
                                     sourceType: 'remote_capture'
                                 });
-                                setRemoteMode(false);
                             };
                             reader.readAsDataURL(blob);
                         } catch {
-                            handleError('No se pudo cargar la imagen remota.');
-                            setRemoteMode(false);
+                            handleError('No se pudo cargar una imagen remota.');
                         }
+                    }}
+                    onFinish={() => {
+                        // Session finalized — close remote mode
+                        setRemoteMode(false);
                     }}
                     onCancel={() => setRemoteMode(false)}
                 />
