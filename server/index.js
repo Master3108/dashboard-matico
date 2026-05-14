@@ -12,6 +12,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import sharp from 'sharp';
 import { supabase } from './db/supabaseClient.js';
 import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions, sampleGeneratedQuestions } from './generatedQuestionBank.js';
 import { recordAdaptiveEvent, getAdaptiveSnapshot, backfillAdaptiveProfileFromProgressRows } from './adaptiveProfileStore.js';
@@ -11230,18 +11231,32 @@ app.post('/api/capture/upload', upload.single('image'), async (req, res) => {
 
         let imageUrl = '';
 
+        // Helper: convert any image buffer to JPEG using sharp (handles HEIC, WEBP, TIFF, PNG, etc.)
+        const toJpeg = async (buf) => {
+            try {
+                return await sharp(buf).jpeg({ quality: 92 }).toBuffer();
+            } catch (e) {
+                console.warn('[CAPTURE] sharp conversion failed, saving raw:', e.message);
+                return buf; // fallback: save as-is
+            }
+        };
+
         // Handle file upload (multer memoryStorage — file is in req.file.buffer)
         if (req.file) {
-            const filename = `capture_${capture.capture_id}_${Date.now()}.${req.file.originalname?.split('.').pop() || 'jpg'}`;
+            const jpegBuf = await toJpeg(req.file.buffer);
+            const filename = `capture_${capture.capture_id}_${Date.now()}.jpg`;
             const destPath = path.join(LOCAL_UPLOADS_DIR, filename);
-            fsSync.writeFileSync(destPath, req.file.buffer);
+            fsSync.writeFileSync(destPath, jpegBuf);
             imageUrl = `/uploads/${filename}`;
+            console.log(`[CAPTURE] Converted ${req.file.originalname} (${req.file.mimetype}) → ${filename} (${jpegBuf.length} bytes)`);
         } else if (req.body.image_base64) {
             // Handle base64 upload
             const b64 = req.body.image_base64.replace(/^data:image\/\w+;base64,/, '');
+            const rawBuf = Buffer.from(b64, 'base64');
+            const jpegBuf = await toJpeg(rawBuf);
             const filename = `capture_${capture.capture_id}_${Date.now()}.jpg`;
             const destPath = path.join(LOCAL_UPLOADS_DIR, filename);
-            fsSync.writeFileSync(destPath, Buffer.from(b64, 'base64'));
+            fsSync.writeFileSync(destPath, jpegBuf);
             imageUrl = `/uploads/${filename}`;
         } else {
             return res.status(400).json({ success: false, error: 'No se recibio imagen' });
