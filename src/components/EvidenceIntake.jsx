@@ -374,7 +374,7 @@ const EvidenceIntake = ({
             setErrorMsg('Captura guardada. Volviste a Matico automaticamente; ahora pulsa "Importar cola".');
         } catch (error) {
             if (error?.message === 'native_not_available') {
-                handleError('Captura de pantalla celular requiere app movil nativa. En web movil usa "Subir archivo".');
+                handleError('Captura de pantalla celular requiere app movil nativa. En web movil usa "Subir imagen".');
                 return;
             }
             if (String(error?.message || '').toLowerCase().includes('session_not_active')) {
@@ -498,14 +498,13 @@ const EvidenceIntake = ({
                 onChange={handleNativeCameraCapture}
             />
             <div className={`grid gap-3 ${nativeQueueOnly ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
-                {/* Tomar foto: siempre visible en todos los modulos.
-                    En APK abre camara nativa (1 por click, puedes repetir cuantas veces quieras). */}
+                {/* Tomar foto: abre camara. En APK abre camara nativa, en web usa getUserMedia. */}
                 <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
                     <Camera className="w-4 h-4" /> Tomar foto
                 </button>
-                {/* Subir archivo: siempre visible. Permite MULTIPLES imagenes desde galeria en una sola seleccion. */}
+                {/* Subir imagen: permite MULTIPLES imagenes desde galeria en una sola seleccion. */}
                 <label className="rounded-2xl border-2 border-[#4D96FF] bg-[#EEF4FF] px-3 py-3 text-sm font-black text-[#1D4ED8] hover:border-[#1D4ED8] flex items-center justify-center gap-2 cursor-pointer">
-                    <UploadCloud className="w-4 h-4" /> Subir varias fotos
+                    <UploadCloud className="w-4 h-4" /> Subir imagen
                     <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
                 </label>
                 {/* Capturar pantalla (web getDisplayMedia): solo en web/desktop y modo completo.
@@ -526,7 +525,7 @@ const EvidenceIntake = ({
                             : () => handleError(
                                 isRunningInNativeApp()
                                     ? 'La captura de pantalla celular no se inicializo. Cierra y vuelve a abrir la app Matico.'
-                                    : 'Captura de pantalla celular requiere la app Matico instalada en Android. En web/desktop usa "Capturar pantalla" o "Subir archivo".'
+                                    : 'Captura de pantalla celular requiere la app Matico instalada en Android. En web/desktop usa "Capturar pantalla" o "Subir imagen".'
                             )
                         }
                         className={
@@ -651,11 +650,11 @@ const EvidenceIntake = ({
             )}
 
             <p className="text-xs text-[#64748B] font-bold">
-                Tip: con &quot;Subir varias fotos&quot; puedes seleccionar hasta {maxEvidence} imagenes de una vez desde tu galeria. Con &quot;Tomar foto&quot; toma una, se suma al listado y puedes repetir para agregar mas.
+                Tip: con &quot;Subir imagen&quot; puedes seleccionar hasta {maxEvidence} imagenes de una vez desde tu galeria.
             </p>
             {!nativeCaptureSupported && showNativeCapture && (
                 <p className="text-xs text-[#64748B] font-bold">
-                    En celular web usa &quot;Subir varias fotos&quot; (screenshot de galeria). La captura de pantalla celular funciona en app movil nativa.
+                    En celular web usa &quot;Subir imagen&quot; (screenshot de galeria). La captura de pantalla celular funciona en app movil nativa.
                 </p>
             )}
 

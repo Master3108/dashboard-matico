@@ -188,8 +188,6 @@ const CuadernoMission = ({
     const mountedRef = useRef(true);
     const autoImportingRef = useRef(false);
     const submitTapLockRef = useRef(false);
-    const uploadInputRef = useRef(null);
-    const extraUploadInputRef = useRef(null);
     // Input dedicado para subir MULTIPLES imagenes desde galeria (sin capture=environment).
     const multiGalleryInputRef = useRef(null);
     const extraMultiGalleryInputRef = useRef(null);
@@ -444,14 +442,6 @@ const CuadernoMission = ({
             setIsGeneratingPdf(false);
             event.target.value = '';
         }
-    };
-
-    const openUploadPicker = () => {
-        uploadInputRef.current?.click();
-    };
-
-    const openExtraUploadPicker = () => {
-        extraUploadInputRef.current?.click();
     };
 
     // Cierra el modal y vuelve a Teoria Ludica. Advierte si el % de interpretacion es bajo.
@@ -813,20 +803,13 @@ const CuadernoMission = ({
                                 <button onClick={openCamera} className="flex-1 bg-[#2B2E4A] text-white px-4 py-4 rounded-xl font-bold hover:bg-[#3d426b] flex items-center justify-center gap-2">
                                     <Video size={20} /> Abrir cámara
                                 </button>
-                                {/* Subir foto desde camara (1 a la vez, por si queda algo suelto). */}
-                                <button type="button" onClick={openUploadPicker} className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-4 rounded-xl font-bold flex items-center justify-center gap-2">
-                                    <UploadCloud size={20} /> Subir foto
-                                </button>
-                                <input ref={uploadInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
-                            </div>
-                            {/* Subir MULTIPLES imagenes desde la galeria en una sola seleccion. */}
-                            <div className="flex flex-col sm:flex-row gap-3">
+                                {/* Subir imagen: permite MULTIPLES imagenes desde galeria */}
                                 <button
                                     type="button"
                                     onClick={openMultiGalleryPicker}
-                                    className="w-full bg-indigo-600 text-white px-4 py-4 rounded-xl font-bold hover:bg-indigo-700 flex items-center justify-center gap-2"
+                                    className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-4 rounded-xl font-bold flex items-center justify-center gap-2"
                                 >
-                                    <UploadCloud size={20} /> Subir varias fotos (galeria)
+                                    <UploadCloud size={20} /> Subir imagen
                                 </button>
                                 <input
                                     ref={multiGalleryInputRef}
@@ -837,7 +820,7 @@ const CuadernoMission = ({
                                     onChange={handleCapture}
                                 />
                             </div>
-                            <p className="text-xs text-slate-500 text-center -mt-1">Tip: con "Subir varias fotos" puedes seleccionar hasta {MAX_PAGES} imagenes de una sola vez desde tu galeria.</p>
+                            <p className="text-xs text-slate-500 text-center -mt-1">Tip: con "Subir imagen" puedes seleccionar hasta {MAX_PAGES} imagenes de una sola vez desde tu galeria.</p>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 {/* Solo en web/desktop: en Android nativo muestra dialogo confuso */}
                                 {!isNativePlatform && (
@@ -852,7 +835,7 @@ const CuadernoMission = ({
                                         : () => setFeedback(
                                             isRunningInNativeApp()
                                                 ? 'La captura de pantalla celular no se inicializo. Cierra y vuelve a abrir la app Matico.'
-                                                : 'Captura de pantalla celular requiere la app Matico instalada en Android. En web usa "Capturar pantalla" o "Subir foto".'
+                                                : 'Captura de pantalla celular requiere la app Matico instalada en Android. En web usa "Capturar pantalla" o "Subir imagen".'
                                         )
                                     }
                                     className={
@@ -927,14 +910,13 @@ const CuadernoMission = ({
                                             <button onClick={openCamera} className="flex-1 bg-[#2B2E4A] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
                                                 <Camera size={18} /> Agregar otra página
                                             </button>
-                                            <input ref={extraUploadInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
                                         </div>
                                         <button
                                             type="button"
                                             onClick={openExtraMultiGalleryPicker}
                                             className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
                                         >
-                                            <UploadCloud size={18} /> Subir imagenes
+                                            <UploadCloud size={18} /> Subir imagen
                                         </button>
                                         {!isNativePlatform && (
                                             <button
