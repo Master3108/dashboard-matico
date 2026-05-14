@@ -561,21 +561,22 @@ const EvidenceIntake = ({
                     maxImages={maxEvidence}
                     existingCount={items.length}
                     onImageReceived={async (imageUrl) => {
-                        // Each new image from phone gets added as asset
+                        // Each new image from phone — must return Promise so caller can await sequentially
                         try {
                             const resp = await fetch(imageUrl);
                             const blob = await resp.blob();
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                                const dataUrl = reader.result;
-                                addAsset({
-                                    previewUrl: dataUrl,
-                                    imageBase64: dataUrl.split(',')[1],
-                                    imageMimeType: blob.type || 'image/jpeg',
-                                    sourceType: 'remote_capture'
-                                });
-                            };
-                            reader.readAsDataURL(blob);
+                            const dataUrl = await new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onload = () => resolve(reader.result);
+                                reader.onerror = reject;
+                                reader.readAsDataURL(blob);
+                            });
+                            addAsset({
+                                previewUrl: dataUrl,
+                                imageBase64: dataUrl.split(',')[1],
+                                imageMimeType: blob.type || 'image/jpeg',
+                                sourceType: 'remote_capture'
+                            });
                         } catch {
                             handleError('No se pudo cargar una imagen remota.');
                         }

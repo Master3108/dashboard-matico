@@ -89,9 +89,9 @@ export default function RemoteCaptureButton({
                         // Session finalized (by phone or server)
                         cleanup();
                         const urls = pollData.image_urls || [];
-                        // Process any remaining new images
+                        // Process remaining new images SEQUENTIALLY (await each)
                         for (let i = lastCountRef.current; i < urls.length; i++) {
-                            onImageReceived?.(urls[i], i, urls.length);
+                            await onImageReceived?.(urls[i], i, urls.length);
                         }
                         setReceivedUrls(urls);
                         lastCountRef.current = urls.length;
@@ -109,9 +109,9 @@ export default function RemoteCaptureButton({
                     // Still waiting — check for new images
                     const urls = pollData.image_urls || [];
                     if (urls.length > lastCountRef.current) {
-                        // New images arrived — fire callbacks for each new one
+                        // New images arrived — process SEQUENTIALLY (await each to avoid stale closure)
                         for (let i = lastCountRef.current; i < urls.length; i++) {
-                            onImageReceived?.(urls[i], i, urls.length);
+                            await onImageReceived?.(urls[i], i, urls.length);
                         }
                         setReceivedUrls([...urls]);
                         lastCountRef.current = urls.length;
