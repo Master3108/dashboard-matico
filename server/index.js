@@ -11230,11 +11230,11 @@ app.post('/api/capture/upload', upload.single('image'), async (req, res) => {
 
         let imageUrl = '';
 
-        // Handle file upload
+        // Handle file upload (multer memoryStorage — file is in req.file.buffer)
         if (req.file) {
-            const filename = `capture_${capture.capture_id}_${Date.now()}.${req.file.originalname.split('.').pop() || 'jpg'}`;
+            const filename = `capture_${capture.capture_id}_${Date.now()}.${req.file.originalname?.split('.').pop() || 'jpg'}`;
             const destPath = path.join(LOCAL_UPLOADS_DIR, filename);
-            fsSync.renameSync(req.file.path, destPath);
+            fsSync.writeFileSync(destPath, req.file.buffer);
             imageUrl = `/uploads/${filename}`;
         } else if (req.body.image_base64) {
             // Handle base64 upload
