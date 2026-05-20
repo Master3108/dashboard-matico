@@ -2261,13 +2261,33 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 </button>
             </div>
 
-            {/* Voice Agent Button */}
+            {/* JARVIS Orb Button — bottom-left */}
             <button
                 onClick={() => setShowVoiceChat(true)}
-                className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3.5 rounded-full font-black text-sm shadow-[0_10px_30px_rgba(99,102,241,0.5)] hover:scale-105 transition-all flex items-center gap-2"
+                className="fixed bottom-6 left-6 z-[200] group"
+                style={{ width: 68, height: 68 }}
             >
-                <Mic className="w-5 h-5" />
-                J.A.R.V.I.S.
+                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_18px_rgba(90,215,255,0.5)] group-hover:drop-shadow-[0_0_28px_rgba(90,215,255,0.7)] transition-all group-hover:scale-110">
+                    <defs>
+                        <radialGradient id="jOrb" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#5ad7ff" stopOpacity="0.25"/>
+                            <stop offset="70%" stopColor="#3b82f6" stopOpacity="0.15"/>
+                            <stop offset="100%" stopColor="#1e1e2e" stopOpacity="0.9"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#jOrb)" stroke="#5ad7ff" strokeWidth="2" opacity="0.9"/>
+                    <circle cx="50" cy="50" r="34" fill="none" stroke="#5ad7ff" strokeWidth="1" opacity="0.4">
+                        <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="8s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="50" cy="50" r="22" fill="none" stroke="#7ad6c0" strokeWidth="0.8" opacity="0.3" strokeDasharray="6 4">
+                        <animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="5s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="50" cy="50" r="8" fill="#5ad7ff" opacity="0.7">
+                        <animate attributeName="r" values="7;9;7" dur="2s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+                    </circle>
+                    <text x="50" y="82" textAnchor="middle" fill="#5ad7ff" fontSize="8" fontFamily="Orbitron,monospace" fontWeight="700" opacity="0.9">J.A.R.V.I.S.</text>
+                </svg>
             </button>
 
             {/* Voice Agent Chat */}
