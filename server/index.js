@@ -11102,17 +11102,23 @@ app.post('/api/agent/stt', upload.single('audio'), async (req, res) => {
         if (!req.file) return res.status(400).json({ success: false, error: 'Falta audio file' });
 
         const ttsClient = openaiVisionClient || openai;
-        const sttParams = {
-            file: new (await import('openai')).toFile(req.file.buffer, 'audio.webm', { type: req.file.mimetype }),
-            model: AGENT_STT_MODEL,
-        };
-        // Only whisper models support the 'language' parameter
-        if (AGENT_STT_MODEL.includes('whisper')) {
-            sttParams.language = 'es';
+        // Write buffer to temp file for reliable SDK compatibility
+        const tmpPath = `/tmp/stt_${Date.now()}.webm`;
+        await fs.writeFile(tmpPath, req.file.buffer);
+        try {
+            const sttParams = {
+                file: fsSync.createReadStream(tmpPath),
+                model: AGENT_STT_MODEL,
+            };
+            // Only whisper models support the 'language' parameter
+            if (AGENT_STT_MODEL.includes('whisper')) {
+                sttParams.language = 'es';
+            }
+            const transcription = await ttsClient.audio.transcriptions.create(sttParams);
+            res.json({ success: true, text: transcription.text });
+        } finally {
+            fs.unlink(tmpPath).catch(() => {});
         }
-        const transcription = await ttsClient.audio.transcriptions.create(sttParams);
-
-        res.json({ success: true, text: transcription.text });
     } catch (err) {
         console.error('[STT] Error:', err.message);
         res.status(500).json({ success: false, error: err.message });
