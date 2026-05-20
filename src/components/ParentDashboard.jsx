@@ -2037,6 +2037,24 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                             </span>
                                                         )}
                                                     </div>
+                                                    {/* Teoría lúdica + Cuaderno + Similitud */}
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        {item.has_teoria_ludica ? (
+                                                            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">✓ Teoría lúdica</span>
+                                                        ) : (
+                                                            <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg border border-gray-200">✗ Sin teoría lúdica</span>
+                                                        )}
+                                                        {item.has_cuaderno ? (
+                                                            <span className="text-[10px] font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200">✓ Cuaderno</span>
+                                                        ) : (
+                                                            <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg border border-gray-200">✗ Sin cuaderno</span>
+                                                        )}
+                                                        {item.cuaderno_similarity != null && (
+                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border ${item.cuaderno_similarity >= 70 ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : item.cuaderno_similarity >= 40 ? 'text-yellow-700 bg-yellow-50 border-yellow-200' : 'text-red-700 bg-red-50 border-red-200'}`}>
+                                                                Similitud {item.cuaderno_similarity}%
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     {item.detail && <p className="text-xs text-gray-500 mt-2 line-clamp-2">{item.detail}</p>}
                                                     {incompleteReason && (
                                                         <p className="text-xs font-bold text-amber-700 mt-2">{incompleteReason}</p>

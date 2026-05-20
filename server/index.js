@@ -9379,6 +9379,32 @@ app.get('/api/parent/student-history', async (req, res) => {
         const hasEvidenceOnDay = (subject, day) => [...notebookRows, ...ocrRows].some(row =>
             dateOnly(row.created_at) === day && (!subject || normalizeSubject(row.subject || row.metadata?.subject || '') === subject)
         );
+        // Cross-reference: teoría lúdica (quiz/progress activity) on same subject+day
+        const hasTeoriaLudicaOnDay = (subject, day) => {
+            if (!subject || !day) return false;
+            return [...progressRows, ...quizRows].some(row => {
+                const rowSubject = normalizeSubject(row.subject || '');
+                const rowDay = dateOnly(row.created_at);
+                const eventType = String(row.event_type || row.type || '').toLowerCase();
+                const isQuizLike = eventType.includes('quiz') || eventType.includes('eval') || eventType.includes('prep_exam') || row.total_questions > 0;
+                return rowDay === day && rowSubject === subject && isQuizLike;
+            });
+        };
+        // Cross-reference: cuaderno OCR on same subject+day + best similarity score
+        const getCuadernoInfoOnDay = (subject, day) => {
+            if (!subject || !day) return { has_cuaderno: false, cuaderno_similarity: null };
+            const matches = ocrRows.filter(row => {
+                const rowSubject = normalizeSubject(row.subject || '');
+                const rowDay = dateOnly(row.created_at);
+                return rowDay === day && rowSubject === subject;
+            });
+            if (!matches.length) return { has_cuaderno: false, cuaderno_similarity: null };
+            const bestScore = matches.reduce((best, row) => {
+                const s = row.interpretation_score != null ? Number(row.interpretation_score) : null;
+                return s != null && (best === null || s > best) ? s : best;
+            }, null);
+            return { has_cuaderno: true, cuaderno_similarity: bestScore };
+        };
         const evidenceSummaryFor = (subject, day) => {
             const matches = [
                 ...notebookRows.map(row => ({ kind: 'imagen/pdf', subject: row.metadata?.subject || '', date: row.created_at })),
@@ -9622,7 +9648,17 @@ app.get('/api/parent/student-history', async (req, res) => {
                 duration_minutes: Number(row.total_minutes || 0) || null,
                 metadata: { milestones: row.milestones || [] }
             })),
-        ].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, maxRows);
+        ].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, maxRows).map(item => {
+            const subj = normalizeSubject(item.subject || '');
+            const day = dateOnly(item.date);
+            const cuadernoInfo = getCuadernoInfoOnDay(subj, day);
+            return {
+                ...item,
+                has_teoria_ludica: hasTeoriaLudicaOnDay(subj, day),
+                has_cuaderno: cuadernoInfo.has_cuaderno,
+                cuaderno_similarity: cuadernoInfo.cuaderno_similarity
+            };
+        });
 
         res.json({
             success: true,
