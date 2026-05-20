@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import ChatEventCreator from './ChatEventCreator';
 import CalendarView from './CalendarView';
-import VoiceAgentChat from './VoiceAgentChat';
+import JarvisAssistant from './JarvisAssistant';
 
 const EVENT_TYPE_CONFIG = {
     prueba: { label: 'Prueba', color: '#EF4444', bg: '#FEF2F2', emoji: '📝' },
@@ -2267,12 +2267,12 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3.5 rounded-full font-black text-sm shadow-[0_10px_30px_rgba(99,102,241,0.5)] hover:scale-105 transition-all flex items-center gap-2"
             >
                 <Mic className="w-5 h-5" />
-                Hablar con Matico
+                J.A.R.V.I.S.
             </button>
 
             {/* Voice Agent Chat */}
             {showVoiceChat && (
-                <VoiceAgentChat
+                <JarvisAssistant
                     studentUserId={selectedChild?.user_id}
                     userId={currentUser?.user_id}
                     userRole="apoderado"

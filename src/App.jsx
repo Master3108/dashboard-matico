@@ -13,6 +13,7 @@ import OracleNotebookExamBuilder from './components/OracleNotebookExamBuilder';
 import QuestionBankManager from './components/QuestionBankManager';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntake';
 import VoiceAgentChat from './components/VoiceAgentChat';
+import JarvisAssistant from './components/JarvisAssistant';
 import PhoneCaptureNotifier from './components/PhoneCaptureNotifier';
 import {
     BookOpen,
@@ -7597,9 +7598,9 @@ ${finalData.capsule}`;
                 <PhoneCaptureNotifier userId={currentUser.user_id} />
             )}
 
-            {/* Voice Training Agent Overlay */}
+            {/* Voice Training Agent Overlay (JARVIS) */}
             {showTrainingVoice && (
-                <VoiceAgentChat
+                <JarvisAssistant
                     studentUserId={currentUser?.user_id}
                     userId={currentUser?.user_id}
                     userRole="apoderado"

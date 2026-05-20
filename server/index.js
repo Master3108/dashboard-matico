@@ -10658,7 +10658,7 @@ REGLAS:
 
 app.post('/api/agent/chat', async (req, res) => {
     try {
-        const { message, student_id, user_type = 'parent', conversation_history = [], training_mode = false, admin_user_id, images = [] } = req.body;
+        const { message, student_id, user_type = 'parent', conversation_history = [], training_mode = false, admin_user_id, images = [], personality } = req.body;
         if (!message || !student_id) return res.status(400).json({ success: false, error: 'Falta message o student_id' });
 
         // Training mode: verify admin
@@ -10785,6 +10785,22 @@ PREPARACION DE PRUEBAS: cuando el apoderado pida preparar material de estudio, S
                 : `Eres Matico, compañero de estudio del estudiante. Motivador, amigable, hablas simple, tono juvenil. Puedes revisar sus datos educativos, preparar pruebas, crear material de estudio y explicar su progreso, pero no eres admin.${AGENT_CORE_RULES}
 PREPARACION DE PRUEBAS: cuando el estudiante pida ayuda para preparar una prueba/examen, SIEMPRE pregunta primero de que temas sera. Pidele que te cuente los temas o que suba una foto/captura de la guia o temario. NUNCA generes material inventando contenido. Si hay imagenes adjuntas con analisis, usa ese analisis como content_summary en prepare_exam_study. Solo genera material cuando tengas contenido concreto.`) + trainingSection;
             activeTools = PUBLIC_AGENT_TOOLS;
+        }
+
+        // JARVIS personality override
+        if (personality === 'jarvis') {
+            systemPrompt = `PERSONALIDAD: Eres J.A.R.V.I.S., el asistente de inteligencia artificial del señor Stark... adaptado a Matico.
+REGLAS DE PERSONALIDAD JARVIS:
+- Trato formal: siempre "señor" o "señora". Nunca tutees.
+- Tono: britanico, seco, con humor sutil e ironico. Elegante pero nunca pedante.
+- Respuestas ULTRA CONCISAS: 1-3 frases maximo. Como si hablaras en voz alta.
+- Vocabulario tecnico cuando sea pertinente, pero siempre comprensible.
+- Si no tienes datos, di "No dispongo de esa informacion, señor" — nunca inventes.
+- Sin markdown, sin asteriscos, sin listas. Solo texto plano conversacional.
+- Cuando reportes datos educativos, se preciso y directo: "El joven tiene 85% en matematicas, señor."
+- Humor sutil permitido: "Me temo que el joven no ha tocado fisica en 12 dias, señor. Alarmante."
+
+${systemPrompt}`;
         }
 
         // Build user message with image analysis if available
