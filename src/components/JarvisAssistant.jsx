@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { X, Mic, MicOff, Send, MessageCircle, Trash2, Volume2, VolumeX } from 'lucide-react';
+import { X, Mic, MicOff, Send, MessageCircle, Trash2, Volume2, VolumeX, ChevronUp, ChevronDown } from 'lucide-react';
 
 // ─── JARVIS Visual Core (SVG concentric rings, audio-reactive) ───
-function JarvisCore({ state, audioLevel }) {
+function JarvisCore({ state, audioLevel, size = 300 }) {
     const [tick, setTick] = useState(0);
     useEffect(() => {
         let raf, t0 = performance.now();
@@ -36,18 +36,17 @@ function JarvisCore({ state, audioLevel }) {
     };
 
     return (
-        <div className="relative flex items-center justify-center pointer-events-none select-none">
-            {/* Outer glow */}
+        <div className="relative flex items-center justify-center pointer-events-none select-none" style={{ width: size, height: size }}>
             <div className="absolute rounded-full blur-3xl" style={{
-                width: 320, height: 320, background: color,
+                width: size, height: size, background: color,
                 opacity: 0.08 + lvl * 0.25 + (speaking ? 0.1 : 0),
                 transform: `scale(${1 + lvl * 0.35})`, transition: 'opacity .25s, background .8s'
             }} />
             <div className="absolute rounded-full blur-2xl" style={{
-                width: 180, height: 180, background: color, opacity: 0.18 + lvl * 0.4
+                width: size * 0.6, height: size * 0.6, background: color, opacity: 0.18 + lvl * 0.4
             }} />
 
-            <svg width="300" height="300" viewBox="0 0 300 300" style={{ overflow: 'visible' }}>
+            <svg width={size} height={size} viewBox="0 0 300 300" style={{ overflow: 'visible' }}>
                 <defs>
                     <radialGradient id="jcore" cx="50%" cy="50%" r="50%">
                         <stop offset="0%" stopColor="#fff" stopOpacity=".95" />
@@ -57,7 +56,6 @@ function JarvisCore({ state, audioLevel }) {
                     <filter id="jglow"><feGaussianBlur stdDeviation="2.5" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
                 </defs>
 
-                {/* Outer ring — rotating arcs */}
                 <g transform={`rotate(${tick * 18} 150 150)`} filter="url(#jglow)">
                     {[[0, 60], [100, 30], [160, 80], [280, 40]].map(([f, s], i) =>
                         <path key={i} d={arcPath(140, f, s)} stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" opacity=".85" />)}
@@ -69,13 +67,11 @@ function JarvisCore({ state, audioLevel }) {
                     })}
                 </g>
 
-                {/* Inner ring — counter-rotating arcs */}
                 <g transform={`rotate(${-tick * 32} 150 150)`} filter="url(#jglow)">
                     {[[0, 25], [50, 90], [180, 35], [240, 70]].map(([f, s], i) =>
                         <path key={i} d={arcPath(128, f, s)} stroke={color} strokeWidth="1.2" fill="none" strokeLinecap="round" opacity=".7" />)}
                 </g>
 
-                {/* Hex grid */}
                 <g opacity=".22">
                     {[60, 75, 90, 105].map((r, i) => {
                         const pts = [];
@@ -84,13 +80,11 @@ function JarvisCore({ state, audioLevel }) {
                     })}
                 </g>
 
-                {/* Waveform */}
                 <g filter="url(#jglow)">
                     <path d={wavePath} stroke={color} strokeWidth="2" fill={color}
                         fillOpacity={speaking ? 0.18 + lvl * 0.25 : 0.08} />
                 </g>
 
-                {/* Audio bars */}
                 {(speaking || listening) && Array.from({ length: 64 }).map((_, i) => {
                     const a = (i / 64) * Math.PI * 2;
                     const seed = Math.sin(i * 1.3 + tick * 8) * 0.5 + 0.5;
@@ -101,25 +95,13 @@ function JarvisCore({ state, audioLevel }) {
                         stroke={color} strokeWidth="1.2" opacity={.4 + seed * .5} strokeLinecap="round" />;
                 })}
 
-                {/* Inner circles */}
                 <circle cx="150" cy="150" r="50" stroke={color} strokeWidth=".6" fill="none" opacity=".4" />
                 <circle cx="150" cy="150" r="40" stroke={color} strokeWidth=".6" fill="none" opacity=".4" />
-
-                {/* Core dot */}
                 <circle cx="150" cy="150"
                     r={20 + lvl * 12 + (speaking ? Math.sin(tick * 9) * 1.5 : Math.sin(tick * 2) * 0.8)}
                     fill="url(#jcore)" filter="url(#jglow)" />
                 <circle cx="150" cy="150" r={8 + lvl * 6} fill="#fff" opacity={.7 + lvl * .3} />
 
-                {/* HUD text */}
-                <g fontFamily="monospace" fontSize="6.5" fill={color} opacity=".7">
-                    <text x="20" y="30">SYS.CORE</text>
-                    <text x="20" y="40">STATUS: {state.toUpperCase()}</text>
-                    <text x="244" y="30">v3.1</text>
-                    <text x="244" y="40">{Math.round(lvl * 100).toString().padStart(3, '0')}%</text>
-                </g>
-
-                {/* Clock hand */}
                 <g transform={`rotate(${tick * 90} 150 150)`} opacity=".5">
                     <line x1="150" y1="150" x2="150" y2="40" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
                 </g>
@@ -128,7 +110,6 @@ function JarvisCore({ state, audioLevel }) {
     );
 }
 
-// ─── Status label map ───
 const STATUS_META = {
     idle: { label: 'STANDBY', color: '#5ad7ff' },
     listening: { label: 'LISTENING', color: '#7ad6c0' },
@@ -136,6 +117,12 @@ const STATUS_META = {
     speaking: { label: 'TRANSMIT', color: '#5ad7ff' },
     error: { label: 'FAULT', color: '#ff5a5a' },
 };
+
+const GREETINGS = [
+    'A su disposición, señor. ¿En qué puedo asistirle hoy?',
+    'Buenas, señor. Sistemas en línea. ¿Qué necesita?',
+    'J.A.R.V.I.S. operativo. ¿Cómo puedo ayudarle?',
+];
 
 // ─── Main Component ───
 export default function JarvisAssistant({
@@ -149,50 +136,47 @@ export default function JarvisAssistant({
     trainingMode = false,
 }) {
     const [state, setState] = useState('idle');
+    const [history, setHistory] = useState([]);
     const [text, setText] = useState('');
-    const [audioLevel, setAudioLevel] = useState(0);
-    const [micLevel, setMicLevel] = useState(0);
     const [voiceEnabled, setVoiceEnabled] = useState(true);
     const [chatOpen, setChatOpen] = useState(false);
+    const [expanded, setExpanded] = useState(false);
     const [error, setError] = useState(null);
-    const [history, setHistory] = useState([
-        { role: 'assistant', content: `Inicializando núcleo. Subsistemas en línea. Datos de ${studentName} cargados. A la espera de instrucciones, señor.` },
-    ]);
+    const [audioLevel, setAudioLevel] = useState(0);
+    const [micLevel, setMicLevel] = useState(0);
+    const [greeted, setGreeted] = useState(false);
 
-    const audioElRef = useRef(null);
     const audioCtxRef = useRef(null);
     const analyserRef = useRef(null);
+    const audioElRef = useRef(null);
     const sourceNodeRef = useRef(null);
     const mediaRecorderRef = useRef(null);
     const recordedChunksRef = useRef([]);
     const abortRef = useRef(null);
     const chatEndRef = useRef(null);
+    const autoListenRef = useRef(false);
 
-    // Audio level analyzer for ring reactivity
+    // Audio level monitor for speaking
     useEffect(() => {
+        if (state !== 'speaking') { setAudioLevel(0); return; }
+        const an = analyserRef.current;
+        if (!an) return;
+        const buf = new Uint8Array(an.fftSize);
         let raf;
-        const data = new Uint8Array(128);
-        const loop = () => {
-            if (analyserRef.current && state === 'speaking') {
-                analyserRef.current.getByteFrequencyData(data);
-                let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i];
-                setAudioLevel(Math.min(1, (sum / data.length / 255) * 1.6));
-            } else if (state === 'listening') {
-                setAudioLevel(0.15 + 0.1 * Math.abs(Math.sin(performance.now() / 250)));
-            } else {
-                setAudioLevel(prev => prev * 0.85);
-            }
-            raf = requestAnimationFrame(loop);
+        const tick = () => {
+            an.getByteTimeDomainData(buf);
+            let sum = 0;
+            for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+            setAudioLevel(Math.sqrt(sum / buf.length) * 6);
+            raf = requestAnimationFrame(tick);
         };
-        loop();
+        tick();
         return () => cancelAnimationFrame(raf);
     }, [state]);
 
     // Auto-scroll chat
     useEffect(() => {
-        if (chatOpen && chatEndRef.current) {
-            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [history, chatOpen]);
 
     // ─── Server calls ───
@@ -214,7 +198,7 @@ export default function JarvisAssistant({
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Error del agente');
         return data.reply;
-    }, [studentUserId, userRole]);
+    }, [studentUserId, userRole, trainingMode, userId]);
 
     const callTTS = useCallback(async (content, signal) => {
         const res = await fetch('/api/agent/tts', {
@@ -237,9 +221,9 @@ export default function JarvisAssistant({
         return data.text;
     }, []);
 
-    // ─── Speak via TTS ───
+    // ─── Speak via TTS (then auto-listen) ───
     const speak = useCallback(async (content) => {
-        if (!voiceEnabled) { setState('idle'); return; }
+        if (!voiceEnabled) { setState('idle'); autoListenRef.current = true; return; }
         try {
             setState('speaking');
             const ac = new AbortController(); abortRef.current = ac;
@@ -260,7 +244,6 @@ export default function JarvisAssistant({
             const audio = new Audio(url);
             audioElRef.current = audio;
             const src = ctx.createMediaElementSource(audio);
-            // Disconnect previous source if exists
             if (sourceNodeRef.current) try { sourceNodeRef.current.disconnect(); } catch (_) { }
             sourceNodeRef.current = src;
             src.connect(analyserRef.current);
@@ -271,6 +254,8 @@ export default function JarvisAssistant({
             if (e.name !== 'AbortError') { console.error(e); setError(e.message); }
         } finally {
             setState('idle');
+            // Auto-listen after speaking
+            autoListenRef.current = true;
         }
     }, [voiceEnabled, callTTS]);
 
@@ -282,6 +267,7 @@ export default function JarvisAssistant({
         setHistory(newHistory);
         setText('');
         setState('thinking');
+        setExpanded(true);
         try {
             const reply = await callChat(content.trim(), newHistory);
             setHistory(h => [...h, { role: 'assistant', content: reply }]);
@@ -337,6 +323,7 @@ export default function JarvisAssistant({
             const SPEECH_THRESHOLD = 0.012;
             const SILENCE_TIMEOUT = 2200;
             const MAX_NO_SPEECH = 20000;
+
             const monitor = () => {
                 if (mr.state !== 'recording') return;
                 an.getByteTimeDomainData(buf);
@@ -362,7 +349,17 @@ export default function JarvisAssistant({
         if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
     }, []);
 
+    // Auto-listen after speaking (triggered by autoListenRef flag)
+    useEffect(() => {
+        if (state === 'idle' && autoListenRef.current) {
+            autoListenRef.current = false;
+            const t = setTimeout(() => startRecording(), 500);
+            return () => clearTimeout(t);
+        }
+    }, [state, startRecording]);
+
     const abortAll = useCallback(() => {
+        autoListenRef.current = false;
         try { abortRef.current?.abort(); } catch (_) { }
         try { audioElRef.current?.pause(); } catch (_) { }
         stopRecording();
@@ -374,219 +371,178 @@ export default function JarvisAssistant({
         setHistory([{ role: 'assistant', content: 'Registro purgado, señor. A su disposición.' }]);
     }, [abortAll]);
 
+    // Auto-greet on mount
+    useEffect(() => {
+        if (greeted) return;
+        setGreeted(true);
+        const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+        setHistory([{ role: 'assistant', content: greeting }]);
+        setExpanded(true);
+        // Speak greeting then auto-listen
+        setTimeout(() => speak(greeting), 600);
+    }, [greeted, speak]);
+
     const statusMeta = STATUS_META[state] || STATUS_META.idle;
+    const lastReply = history.filter(m => m.role === 'assistant').pop()?.content || '';
 
-    // ─── Render ───
-    const containerClass = standalone
-        ? 'fixed inset-0 z-[9999]'
-        : 'fixed inset-0 z-[300]';
-
+    // ─── MINI WIDGET LAYOUT (bottom-left vertical) ───
     return (
-        <div className={containerClass} style={{
+        <div className="fixed bottom-4 left-4 z-[300] flex flex-col items-center gap-2" style={{
             fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-            background: 'linear-gradient(180deg, #04080d 0%, #07101a 60%, #030608 100%)',
-            color: '#dbeeff',
+            width: expanded ? 340 : 80,
+            transition: 'width .3s ease',
         }}>
-            {/* Grid overlay */}
-            <div className="absolute inset-0 pointer-events-none" style={{
-                backgroundImage: 'linear-gradient(rgba(90,215,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(90,215,255,.04) 1px, transparent 1px)',
-                backgroundSize: '40px 40px',
-                maskImage: 'radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 80%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 80%)',
-            }} />
-            {/* Scanlines */}
-            <div className="absolute inset-0 pointer-events-none opacity-60" style={{
-                background: 'repeating-linear-gradient(180deg, transparent 0px, transparent 2px, rgba(90,215,255,.025) 3px)',
-            }} />
 
-            {/* Top bar */}
-            <div className="absolute top-3 left-0 right-0 flex items-center justify-between px-4 z-20">
-                <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl border flex items-center justify-center"
-                        style={{ borderColor: 'rgba(90,215,255,.4)', background: 'rgba(90,215,255,.1)', boxShadow: '0 0 20px rgba(90,215,255,.2) inset' }}>
-                        <span style={{ fontFamily: 'Orbitron, monospace', fontWeight: 700, color: '#b8e6ff', textShadow: '0 0 12px rgba(90,215,255,.4)' }}>J</span>
+            {/* Chat panel (slides up when expanded) */}
+            {expanded && chatOpen && (
+                <div className="w-full rounded-2xl overflow-hidden mb-1 animate-slideUp"
+                    style={{ maxHeight: '50vh', background: 'rgba(4,8,13,.92)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)' }}>
+                    <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: 'rgba(90,215,255,.15)' }}>
+                        <span className="text-[9px] uppercase tracking-widest" style={{ color: 'rgba(90,215,255,.8)' }}>Registro · {history.length}</span>
+                        <button onClick={() => setChatOpen(false)} style={{ color: 'rgba(90,215,255,.6)' }}><X size={14} /></button>
                     </div>
-                    <div>
-                        <div style={{ fontFamily: 'Orbitron, monospace', fontWeight: 700, fontSize: 13, letterSpacing: '.15em', color: '#cce8ff', textShadow: '0 0 12px rgba(90,215,255,.4)' }}>
-                            J.A.R.V.I.S.
-                        </div>
-                        <div className="text-[8px] uppercase tracking-[0.22em]" style={{ color: 'rgba(90,215,255,.5)' }}>
-                            Asistente de {studentName}
-                        </div>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    {/* Status badge */}
-                    <div className="rounded-full pl-2 pr-3 py-1 inline-flex items-center gap-1.5"
-                        style={{ background: 'rgba(10,20,31,.65)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)' }}>
-                        <span className="block w-2 h-2 rounded-full" style={{
-                            background: statusMeta.color, boxShadow: `0 0 8px ${statusMeta.color}`,
-                            animation: 'pulse 1.4s ease-in-out infinite'
-                        }} />
-                        <span className="text-[9px] uppercase tracking-widest" style={{ color: 'rgba(90,215,255,.9)' }}>{statusMeta.label}</span>
-                    </div>
-                    {/* Voice toggle */}
-                    <button onClick={() => setVoiceEnabled(v => !v)}
-                        className="rounded-full w-8 h-8 flex items-center justify-center transition-colors"
-                        style={{ background: 'rgba(10,20,31,.65)', border: '1px solid rgba(90,215,255,.22)', color: voiceEnabled ? '#5ad7ff' : '#ff8a8a' }}>
-                        {voiceEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                    </button>
-                    {/* Clear */}
-                    <button onClick={clearHistory}
-                        className="rounded-full w-8 h-8 flex items-center justify-center"
-                        style={{ background: 'rgba(10,20,31,.65)', border: '1px solid rgba(90,215,255,.22)', color: 'rgba(90,215,255,.6)' }}>
-                        <Trash2 size={13} />
-                    </button>
-                    {/* Close */}
-                    {onClose && (
-                        <button onClick={() => { abortAll(); onClose(); }}
-                            className="rounded-full w-8 h-8 flex items-center justify-center"
-                            style={{ background: 'rgba(10,20,31,.65)', border: '1px solid rgba(255,90,90,.3)', color: '#ff8a8a' }}>
-                            <X size={15} />
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Core visual */}
-            <div className="absolute left-1/2 top-1/2" style={{ transform: 'translate(-50%, -55%)' }}>
-                <JarvisCore state={state} audioLevel={audioLevel} />
-            </div>
-
-            {/* STOP button while active */}
-            {(state === 'speaking' || state === 'thinking' || state === 'listening') && (
-                <button onClick={abortAll}
-                    className="fixed z-30 rounded-full flex items-center justify-center"
-                    style={{
-                        width: 48, height: 48, left: 16, bottom: 120,
-                        background: 'rgba(10,20,31,.65)', backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255,90,90,.5)', color: '#ff8a8a',
-                        boxShadow: '0 0 24px rgba(255,90,90,.3)',
-                    }}>
-                    <X size={20} />
-                </button>
-            )}
-
-            {/* Mic level indicator */}
-            {state === 'listening' && (
-                <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: 110 }}>
-                    <div className="rounded-full px-4 py-2 flex items-center gap-3"
-                        style={{ background: 'rgba(10,20,31,.65)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)' }}>
-                        <span className="text-[10px] uppercase tracking-widest" style={{ color: '#7ad6c0' }}>Te escucho</span>
-                        <div className="flex items-end gap-0.5 h-5">
-                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
-                                <div key={i} style={{
-                                    width: 3, height: 4 + i * 1.5,
-                                    background: micLevel > (i + 1) * 0.08 ? '#7ad6c0' : 'rgba(122,214,192,.2)',
-                                    borderRadius: 1.5,
-                                }} />
-                            ))}
-                        </div>
+                    <div className="overflow-y-auto p-3 flex flex-col gap-2" style={{ maxHeight: '40vh' }}>
+                        {history.map((m, i) => (
+                            <div key={i}
+                                className={`rounded-2xl px-3 py-2 text-[11px] max-w-[88%] whitespace-pre-line ${m.role === 'user' ? 'self-end' : 'self-start'}`}
+                                style={{
+                                    background: m.role === 'user' ? 'rgba(90,215,255,.12)' : 'rgba(20,32,44,.55)',
+                                    border: '1px solid rgba(90,215,255,.18)', color: '#dbeeff',
+                                }}>
+                                <span className={`text-[8px] uppercase tracking-widest block mb-1 ${m.role === 'user' ? 'text-right' : ''}`}
+                                    style={{ color: 'rgba(90,215,255,.7)' }}>
+                                    {m.role === 'user' ? 'USR' : 'J.A.R.V.I.S.'}
+                                </span>
+                                {m.content}
+                            </div>
+                        ))}
+                        <div ref={chatEndRef} />
                     </div>
                 </div>
             )}
 
-            {/* Last reply bubble (when chat closed) */}
-            {!chatOpen && history.length > 0 && history[history.length - 1].role === 'assistant' && (
-                <div className="fixed z-20 pointer-events-none" style={{ right: 60, bottom: 130, maxWidth: 'min(380px,75vw)' }}>
-                    <div className="rounded-2xl rounded-br-md px-4 py-2.5 text-[12px] whitespace-pre-line"
-                        style={{ background: 'rgba(10,20,31,.65)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)', color: '#dbeeff' }}>
-                        <span className="text-[8px] uppercase tracking-widest block mb-1 text-right" style={{ color: 'rgba(90,215,255,.8)' }}>J.A.R.V.I.S.</span>
-                        {history[history.length - 1].content}
-                    </div>
+            {/* Reply bubble (when chat closed but expanded) */}
+            {expanded && !chatOpen && lastReply && (
+                <div className="w-full rounded-2xl rounded-bl-md px-4 py-3 text-[12px] whitespace-pre-line mb-1 animate-slideUp"
+                    style={{ background: 'rgba(4,8,13,.88)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)', color: '#dbeeff' }}>
+                    <span className="text-[8px] uppercase tracking-widest block mb-1" style={{ color: 'rgba(90,215,255,.8)' }}>J.A.R.V.I.S.</span>
+                    {lastReply}
                 </div>
             )}
 
-            {/* Composer */}
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-4 z-20" style={{ width: 'min(620px, 92vw)' }}>
-                <div className="rounded-[24px] p-2 flex items-end gap-2"
-                    style={{ background: 'rgba(10,20,31,.65)', backdropFilter: 'blur(20px) saturate(140%)', border: '1px solid rgba(90,215,255,.22)' }}>
-                    <button onClick={() => state === 'listening' ? stopRecording() : startRecording()}
-                        disabled={state === 'thinking' || state === 'speaking'}
-                        className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all"
-                        style={{
-                            background: state === 'listening' ? 'rgba(122,214,192,.3)' : 'rgba(90,215,255,.15)',
-                            color: state === 'listening' ? '#7ad6c0' : '#5ad7ff',
-                            border: state === 'listening' ? '2px solid #7ad6c0' : 'none',
-                        }}>
-                        {state === 'listening' ? <MicOff size={18} /> : <Mic size={18} />}
-                    </button>
+            {/* Text input (when expanded) */}
+            {expanded && (
+                <div className="w-full rounded-2xl p-2 flex items-end gap-2 animate-slideUp"
+                    style={{ background: 'rgba(4,8,13,.85)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)' }}>
                     <textarea value={text} onChange={(e) => setText(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(text); } }}
-                        rows={1} placeholder={state === 'listening' ? 'ESCUCHANDO…' : 'Introduzca su consulta…'}
-                        className="flex-1 bg-transparent resize-none outline-none py-2 px-2 text-[13px] placeholder:opacity-40 leading-snug"
-                        style={{ minHeight: 40, color: '#dbeeff', maxHeight: 120 }} />
+                        rows={1} placeholder={state === 'listening' ? 'ESCUCHANDO…' : 'Consulta…'}
+                        className="flex-1 bg-transparent resize-none outline-none py-1.5 px-2 text-[12px] placeholder:opacity-40 leading-snug"
+                        style={{ minHeight: 36, color: '#dbeeff', maxHeight: 80 }} />
                     <button onClick={() => sendText(text)}
                         disabled={!text.trim() || state === 'thinking' || state === 'speaking'}
-                        className="shrink-0 h-10 px-4 rounded-full flex items-center gap-1.5 font-semibold text-[10px] uppercase tracking-widest transition-all"
+                        className="shrink-0 h-8 px-3 rounded-full flex items-center gap-1 text-[10px] uppercase tracking-widest transition-all"
                         style={{
                             background: text.trim() ? '#5ad7ff' : 'rgba(90,215,255,.1)',
                             color: text.trim() ? '#0a141f' : 'rgba(90,215,255,.4)',
-                            cursor: text.trim() ? 'pointer' : 'not-allowed',
                         }}>
-                        <Send size={14} /> Enviar
+                        <Send size={12} />
                     </button>
                 </div>
-                <p className="text-center text-[9px] uppercase tracking-widest mt-1.5" style={{ color: 'rgba(90,215,255,.3)' }}>
-                    ⏎ Enviar · 🎤 Voz · Pausa 2s para enviar
-                </p>
+            )}
+
+            {/* Core orb + controls row */}
+            <div className="flex items-end gap-2">
+                {/* JARVIS core orb */}
+                <div className="relative cursor-pointer" onClick={() => setExpanded(e => !e)}
+                    style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(4,8,13,.9)', border: '2px solid rgba(90,215,255,.3)', overflow: 'hidden', boxShadow: '0 0 30px rgba(90,215,255,.2)' }}>
+                    <JarvisCore state={state} audioLevel={audioLevel} size={80} />
+                    {/* Status dot */}
+                    <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full" style={{
+                        background: statusMeta.color, boxShadow: `0 0 8px ${statusMeta.color}`,
+                        animation: 'pulse 1.4s ease-in-out infinite'
+                    }} />
+                </div>
+
+                {/* Vertical control strip (when expanded) */}
+                {expanded && (
+                    <div className="flex flex-col gap-1.5 animate-slideUp">
+                        {/* Mic button */}
+                        <button onClick={() => state === 'listening' ? stopRecording() : startRecording()}
+                            disabled={state === 'thinking' || state === 'speaking'}
+                            className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                            style={{
+                                background: state === 'listening' ? 'rgba(122,214,192,.3)' : 'rgba(4,8,13,.85)',
+                                color: state === 'listening' ? '#7ad6c0' : '#5ad7ff',
+                                border: state === 'listening' ? '2px solid #7ad6c0' : '1px solid rgba(90,215,255,.3)',
+                                boxShadow: state === 'listening' ? '0 0 16px rgba(122,214,192,.4)' : 'none',
+                            }}>
+                            {state === 'listening' ? <MicOff size={16} /> : <Mic size={16} />}
+                        </button>
+                        {/* Chat toggle */}
+                        <button onClick={() => setChatOpen(o => !o)}
+                            className="w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{ background: 'rgba(4,8,13,.85)', border: '1px solid rgba(90,215,255,.3)', color: '#5ad7ff' }}>
+                            {chatOpen ? <X size={15} /> : <MessageCircle size={15} />}
+                        </button>
+                        {/* Voice toggle */}
+                        <button onClick={() => setVoiceEnabled(v => !v)}
+                            className="w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{ background: 'rgba(4,8,13,.85)', border: '1px solid rgba(90,215,255,.3)', color: voiceEnabled ? '#5ad7ff' : '#ff8a8a' }}>
+                            {voiceEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                        </button>
+                        {/* Close */}
+                        {onClose && (
+                            <button onClick={() => { abortAll(); onClose(); }}
+                                className="w-10 h-10 rounded-full flex items-center justify-center"
+                                style={{ background: 'rgba(4,8,13,.85)', border: '1px solid rgba(255,90,90,.3)', color: '#ff8a8a' }}>
+                                <X size={15} />
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* Chat toggle */}
-            <button onClick={() => setChatOpen(o => !o)}
-                className="fixed z-30 rounded-full flex items-center justify-center"
-                style={{
-                    width: 44, height: 44, right: 16, bottom: 110,
-                    background: 'rgba(10,20,31,.65)', backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(90,215,255,.22)', color: '#5ad7ff',
-                    boxShadow: '0 0 24px rgba(90,215,255,.25)',
-                }}>
-                {chatOpen ? <X size={18} /> : <MessageCircle size={18} />}
-            </button>
+            {/* Label */}
+            <div className="text-center" onClick={() => setExpanded(e => !e)} style={{ cursor: 'pointer' }}>
+                <div style={{ fontFamily: 'Orbitron, monospace', fontWeight: 700, fontSize: 10, letterSpacing: '.15em', color: '#cce8ff', textShadow: '0 0 12px rgba(90,215,255,.4)' }}>
+                    J.A.R.V.I.S.
+                </div>
+                <div className="text-[8px] uppercase tracking-widest" style={{ color: 'rgba(90,215,255,.5)' }}>
+                    {statusMeta.label}
+                </div>
+            </div>
 
-            {/* Chat log panel */}
-            {chatOpen && (
-                <div className="fixed z-30" style={{ right: 68, bottom: 110, width: 'min(360px,80vw)' }}>
-                    <div className="rounded-2xl flex flex-col overflow-hidden"
-                        style={{ maxHeight: '65vh', background: 'rgba(10,20,31,.75)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)' }}>
-                        <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: 'rgba(90,215,255,.15)' }}>
-                            <span className="text-[9px] uppercase tracking-widest" style={{ color: 'rgba(90,215,255,.8)' }}>Registro · {history.length}</span>
-                            <button onClick={() => setChatOpen(false)} style={{ color: 'rgba(90,215,255,.6)' }}>
-                                <X size={14} />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-                            {history.map((m, i) => (
-                                <div key={i}
-                                    className={`rounded-2xl px-3 py-2 text-[11px] max-w-[88%] whitespace-pre-line ${m.role === 'user' ? 'self-end' : 'self-start'}`}
-                                    style={{
-                                        background: m.role === 'user' ? 'rgba(90,215,255,.12)' : 'rgba(20,32,44,.55)',
-                                        border: '1px solid rgba(90,215,255,.18)', color: '#dbeeff',
-                                    }}>
-                                    <span className={`text-[8px] uppercase tracking-widest block mb-1 ${m.role === 'user' ? 'text-right' : ''}`}
-                                        style={{ color: 'rgba(90,215,255,.7)' }}>
-                                        {m.role === 'user' ? 'USR' : 'J.A.R.V.I.S.'}
-                                    </span>
-                                    {m.content}
-                                </div>
-                            ))}
-                            <div ref={chatEndRef} />
-                        </div>
+            {/* Mic level indicator */}
+            {state === 'listening' && (
+                <div className="rounded-full px-3 py-1.5 flex items-center gap-2"
+                    style={{ background: 'rgba(4,8,13,.85)', border: '1px solid rgba(122,214,192,.3)' }}>
+                    <span className="text-[9px] uppercase tracking-widest" style={{ color: '#7ad6c0' }}>Escuchando</span>
+                    <div className="flex items-end gap-0.5 h-4">
+                        {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
+                            <div key={i} style={{
+                                width: 2, height: 3 + i * 1.2,
+                                background: micLevel > (i + 1) * 0.1 ? '#7ad6c0' : 'rgba(122,214,192,.2)',
+                                borderRadius: 1,
+                            }} />
+                        ))}
                     </div>
                 </div>
             )}
 
             {/* Error toast */}
             {error && (
-                <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 rounded-xl px-4 py-2 text-[11px]"
-                    style={{ background: 'rgba(10,20,31,.85)', border: '1px solid rgba(248,113,113,.3)', color: '#fca5a5' }}>
-                    ⚠️ {error}
-                    <button onClick={() => setError(null)} className="ml-3" style={{ color: '#fca5a5' }}>✕</button>
+                <div className="rounded-xl px-3 py-1.5 text-[10px] flex items-center gap-2"
+                    style={{ background: 'rgba(4,8,13,.9)', border: '1px solid rgba(248,113,113,.3)', color: '#fca5a5' }}>
+                    ⚠ {error}
+                    <button onClick={() => setError(null)} style={{ color: '#fca5a5' }}>✕</button>
                 </div>
             )}
 
             <style>{`
                 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+                @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+                .animate-slideUp { animation: slideUp .25s ease-out; }
             `}</style>
         </div>
     );

@@ -11100,10 +11100,18 @@ app.post('/api/agent/tts', async (req, res) => {
 app.post('/api/agent/stt', upload.single('audio'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, error: 'Falta audio file' });
+        if (!openaiVisionClient) {
+            return res.status(503).json({ success: false, error: 'STT requiere OPENAI_API_KEY configurada' });
+        }
 
-        const ttsClient = openaiVisionClient || openai;
-        // Write buffer to temp file for reliable SDK compatibility
-        const tmpPath = `/tmp/stt_${Date.now()}.webm`;
+        console.log('[STT] Received audio:', req.file.mimetype, req.file.size, 'bytes, model:', AGENT_STT_MODEL);
+
+        // Determine file extension from mimetype
+        const ext = req.file.mimetype === 'audio/mp4' ? '.mp4'
+            : req.file.mimetype === 'audio/mpeg' ? '.mp3'
+            : req.file.mimetype === 'audio/wav' ? '.wav'
+            : '.webm';
+        const tmpPath = `/tmp/stt_${Date.now()}${ext}`;
         await fs.writeFile(tmpPath, req.file.buffer);
         try {
             const sttParams = {
@@ -11114,13 +11122,14 @@ app.post('/api/agent/stt', upload.single('audio'), async (req, res) => {
             if (AGENT_STT_MODEL.includes('whisper')) {
                 sttParams.language = 'es';
             }
-            const transcription = await ttsClient.audio.transcriptions.create(sttParams);
+            const transcription = await openaiVisionClient.audio.transcriptions.create(sttParams);
+            console.log('[STT] Success:', transcription.text?.substring(0, 100));
             res.json({ success: true, text: transcription.text });
         } finally {
             fs.unlink(tmpPath).catch(() => {});
         }
     } catch (err) {
-        console.error('[STT] Error:', err.message);
+        console.error('[STT] Error:', err.message, err.status, err.code);
         res.status(500).json({ success: false, error: err.message });
     }
 });
