@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { X, Mic, MicOff, Send, MessageCircle, Trash2, Volume2, VolumeX, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, Mic, MicOff, Send, Volume2, VolumeX, Trash2, ChevronDown } from 'lucide-react';
 
 // ─── JARVIS Visual Core (SVG concentric rings, audio-reactive) ───
 function JarvisCore({ state, audioLevel, size = 300 }) {
@@ -110,6 +110,51 @@ function JarvisCore({ state, audioLevel, size = 300 }) {
     );
 }
 
+// ─── HUD corner decorations ───
+function HudCorners() {
+    const corner = (rotate, tx, ty) => (
+        <g transform={`translate(${tx},${ty}) rotate(${rotate})`} opacity=".35">
+            <line x1="0" y1="0" x2="40" y2="0" stroke="#5ad7ff" strokeWidth="1.5" />
+            <line x1="0" y1="0" x2="0" y2="40" stroke="#5ad7ff" strokeWidth="1.5" />
+            <circle cx="0" cy="0" r="3" fill="#5ad7ff" opacity=".6" />
+        </g>
+    );
+    return (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
+            {corner(0, 16, 16)}
+            {corner(90, '100%', 16)}
+            {corner(180, '100%', '100%')}
+            {corner(270, 16, '100%')}
+        </svg>
+    );
+}
+
+// ─── Animated grid background ───
+function CyberGrid() {
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {/* Grid lines */}
+            <svg className="absolute inset-0 w-full h-full" opacity=".06">
+                <defs>
+                    <pattern id="jgrid" width="60" height="60" patternUnits="userSpaceOnUse">
+                        <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#5ad7ff" strokeWidth="0.5" />
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#jgrid)" />
+            </svg>
+            {/* Horizontal scanline */}
+            <div className="absolute left-0 right-0 h-px opacity-10" style={{
+                background: 'linear-gradient(90deg, transparent, #5ad7ff, transparent)',
+                animation: 'jarvisScan 4s linear infinite',
+            }} />
+            {/* Vignette */}
+            <div className="absolute inset-0" style={{
+                background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,4,12,.7) 100%)',
+            }} />
+        </div>
+    );
+}
+
 const STATUS_META = {
     idle: { label: 'STANDBY', color: '#5ad7ff' },
     listening: { label: 'LISTENING', color: '#7ad6c0' },
@@ -124,7 +169,7 @@ const GREETINGS = [
     'J.A.R.V.I.S. operativo. ¿Cómo puedo ayudarle?',
 ];
 
-// ─── Main Component ───
+// ─── Main Component — FULLSCREEN HUD ───
 export default function JarvisAssistant({
     studentUserId,
     userId,
@@ -139,8 +184,6 @@ export default function JarvisAssistant({
     const [history, setHistory] = useState([]);
     const [text, setText] = useState('');
     const [voiceEnabled, setVoiceEnabled] = useState(true);
-    const [chatOpen, setChatOpen] = useState(false);
-    const [expanded, setExpanded] = useState(false);
     const [error, setError] = useState(null);
     const [audioLevel, setAudioLevel] = useState(0);
     const [micLevel, setMicLevel] = useState(0);
@@ -177,7 +220,7 @@ export default function JarvisAssistant({
     // Auto-scroll chat
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [history, chatOpen]);
+    }, [history]);
 
     // ─── Server calls ───
     const callChat = useCallback(async (message, convHistory) => {
@@ -254,7 +297,6 @@ export default function JarvisAssistant({
             if (e.name !== 'AbortError') { console.error(e); setError(e.message); }
         } finally {
             setState('idle');
-            // Auto-listen after speaking
             autoListenRef.current = true;
         }
     }, [voiceEnabled, callTTS]);
@@ -267,7 +309,6 @@ export default function JarvisAssistant({
         setHistory(newHistory);
         setText('');
         setState('thinking');
-        setExpanded(true);
         try {
             const reply = await callChat(content.trim(), newHistory);
             setHistory(h => [...h, { role: 'assistant', content: reply }]);
@@ -310,7 +351,6 @@ export default function JarvisAssistant({
             mr.start();
             setState('listening');
 
-            // Silence-based auto-stop
             const ac = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
             audioCtxRef.current = ac;
             if (ac.state === 'suspended') await ac.resume();
@@ -349,7 +389,7 @@ export default function JarvisAssistant({
         if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
     }, []);
 
-    // Auto-listen after speaking (triggered by autoListenRef flag)
+    // Auto-listen after speaking
     useEffect(() => {
         if (state === 'idle' && autoListenRef.current) {
             autoListenRef.current = false;
@@ -377,172 +417,189 @@ export default function JarvisAssistant({
         setGreeted(true);
         const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
         setHistory([{ role: 'assistant', content: greeting }]);
-        setExpanded(true);
-        // Speak greeting then auto-listen
         setTimeout(() => speak(greeting), 600);
     }, [greeted, speak]);
 
     const statusMeta = STATUS_META[state] || STATUS_META.idle;
-    const lastReply = history.filter(m => m.role === 'assistant').pop()?.content || '';
 
-    // ─── MINI WIDGET LAYOUT (bottom-left vertical) ───
+    // ─── FULLSCREEN CYBERNETIC HUD ───
     return (
-        <div className="fixed bottom-4 left-4 z-[300] flex flex-col items-center gap-2" style={{
+        <div className="fixed inset-0 z-[400] flex flex-col" style={{
             fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-            width: expanded ? 340 : 80,
-            transition: 'width .3s ease',
+            background: 'linear-gradient(135deg, #020810 0%, #0a1628 30%, #081020 60%, #020a14 100%)',
         }}>
+            <CyberGrid />
+            <HudCorners />
 
-            {/* Chat panel (slides up when expanded) */}
-            {expanded && chatOpen && (
-                <div className="w-full rounded-2xl overflow-hidden mb-1 animate-slideUp"
-                    style={{ maxHeight: '50vh', background: 'rgba(4,8,13,.92)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)' }}>
-                    <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: 'rgba(90,215,255,.15)' }}>
-                        <span className="text-[9px] uppercase tracking-widest" style={{ color: 'rgba(90,215,255,.8)' }}>Registro · {history.length}</span>
-                        <button onClick={() => setChatOpen(false)} style={{ color: 'rgba(90,215,255,.6)' }}><X size={14} /></button>
+            {/* ─── TOP BAR ─── */}
+            <div className="relative z-10 flex items-center justify-between px-5 py-3" style={{
+                borderBottom: '1px solid rgba(90,215,255,.12)',
+                background: 'rgba(2,8,16,.6)',
+            }}>
+                <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{
+                        background: statusMeta.color,
+                        boxShadow: `0 0 10px ${statusMeta.color}`,
+                        animation: 'jarvisPulse 1.4s ease-in-out infinite',
+                    }} />
+                    <span style={{
+                        fontFamily: 'Orbitron, monospace',
+                        fontWeight: 800,
+                        fontSize: 14,
+                        letterSpacing: '.2em',
+                        color: '#cce8ff',
+                        textShadow: '0 0 15px rgba(90,215,255,.5)',
+                    }}>J.A.R.V.I.S.</span>
+                    <span className="text-[10px] uppercase tracking-[.2em] px-2 py-0.5 rounded" style={{
+                        color: statusMeta.color,
+                        border: `1px solid ${statusMeta.color}40`,
+                        background: `${statusMeta.color}10`,
+                    }}>{statusMeta.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => setVoiceEnabled(v => !v)}
+                        className="p-2 rounded-lg transition-all hover:scale-105"
+                        style={{ color: voiceEnabled ? '#5ad7ff' : '#ff8a8a', border: '1px solid rgba(90,215,255,.2)', background: 'rgba(4,8,13,.6)' }}>
+                        {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                    </button>
+                    <button onClick={clearHistory}
+                        className="p-2 rounded-lg transition-all hover:scale-105"
+                        style={{ color: '#5ad7ff', border: '1px solid rgba(90,215,255,.2)', background: 'rgba(4,8,13,.6)' }}>
+                        <Trash2 size={16} />
+                    </button>
+                    {onClose && (
+                        <button onClick={() => { abortAll(); onClose(); }}
+                            className="p-2 rounded-lg transition-all hover:scale-105"
+                            style={{ color: '#ff8a8a', border: '1px solid rgba(255,90,90,.25)', background: 'rgba(4,8,13,.6)' }}>
+                            <X size={16} />
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* ─── MAIN CONTENT ─── */}
+            <div className="relative z-10 flex-1 flex flex-col items-center overflow-hidden">
+
+                {/* ORB area */}
+                <div className="flex-shrink-0 flex items-center justify-center" style={{ height: '38%', minHeight: 180 }}>
+                    <JarvisCore state={state} audioLevel={audioLevel} size={Math.min(260, window.innerWidth * 0.45)} />
+                </div>
+
+                {/* Mic level bar (visible when listening) */}
+                {state === 'listening' && (
+                    <div className="flex items-center gap-3 mb-3 px-4 py-2 rounded-full animate-jSlideUp" style={{
+                        background: 'rgba(4,8,13,.7)',
+                        border: '1px solid rgba(122,214,192,.3)',
+                    }}>
+                        <span className="text-[10px] uppercase tracking-[.15em]" style={{ color: '#7ad6c0' }}>Escuchando</span>
+                        <div className="flex items-end gap-0.5 h-4">
+                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
+                                <div key={i} style={{
+                                    width: 3, borderRadius: 1.5,
+                                    height: 4 + i * 1.5,
+                                    background: micLevel > (i + 1) * 0.08 ? '#7ad6c0' : 'rgba(122,214,192,.15)',
+                                    transition: 'background .1s',
+                                }} />
+                            ))}
+                        </div>
                     </div>
-                    <div className="overflow-y-auto p-3 flex flex-col gap-2" style={{ maxHeight: '40vh' }}>
+                )}
+
+                {/* Chat messages */}
+                <div className="flex-1 w-full max-w-lg px-4 overflow-y-auto" style={{ maskImage: 'linear-gradient(transparent, black 12px, black 92%, transparent)' }}>
+                    <div className="flex flex-col gap-3 py-3">
                         {history.map((m, i) => (
-                            <div key={i}
-                                className={`rounded-2xl px-3 py-2 text-[11px] max-w-[88%] whitespace-pre-line ${m.role === 'user' ? 'self-end' : 'self-start'}`}
-                                style={{
-                                    background: m.role === 'user' ? 'rgba(90,215,255,.12)' : 'rgba(20,32,44,.55)',
-                                    border: '1px solid rgba(90,215,255,.18)', color: '#dbeeff',
+                            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-jSlideUp`}>
+                                <div className="max-w-[85%] rounded-2xl px-4 py-3" style={{
+                                    background: m.role === 'user'
+                                        ? 'rgba(90,215,255,.08)'
+                                        : 'rgba(10,22,40,.55)',
+                                    border: `1px solid ${m.role === 'user' ? 'rgba(90,215,255,.2)' : 'rgba(90,215,255,.1)'}`,
+                                    backdropFilter: 'blur(8px)',
                                 }}>
-                                <span className={`text-[8px] uppercase tracking-widest block mb-1 ${m.role === 'user' ? 'text-right' : ''}`}
-                                    style={{ color: 'rgba(90,215,255,.7)' }}>
-                                    {m.role === 'user' ? 'USR' : 'J.A.R.V.I.S.'}
-                                </span>
-                                {m.content}
+                                    <span className="text-[9px] uppercase tracking-[.2em] block mb-1.5" style={{
+                                        color: m.role === 'user' ? 'rgba(90,215,255,.6)' : 'rgba(90,215,255,.8)',
+                                    }}>
+                                        {m.role === 'user' ? 'USR' : 'J.A.R.V.I.S.'}
+                                    </span>
+                                    <p className="text-[13px] leading-relaxed whitespace-pre-line" style={{ color: '#d4e8ff' }}>
+                                        {m.content}
+                                    </p>
+                                </div>
                             </div>
                         ))}
                         <div ref={chatEndRef} />
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Reply bubble (when chat closed but expanded) */}
-            {expanded && !chatOpen && lastReply && (
-                <div className="w-full rounded-2xl rounded-bl-md px-4 py-3 text-[12px] whitespace-pre-line mb-1 animate-slideUp"
-                    style={{ background: 'rgba(4,8,13,.88)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)', color: '#dbeeff' }}>
-                    <span className="text-[8px] uppercase tracking-widest block mb-1" style={{ color: 'rgba(90,215,255,.8)' }}>J.A.R.V.I.S.</span>
-                    {lastReply}
-                </div>
-            )}
-
-            {/* Text input (when expanded) */}
-            {expanded && (
-                <div className="w-full rounded-2xl p-2 flex items-end gap-2 animate-slideUp"
-                    style={{ background: 'rgba(4,8,13,.85)', backdropFilter: 'blur(20px)', border: '1px solid rgba(90,215,255,.22)' }}>
-                    <textarea value={text} onChange={(e) => setText(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(text); } }}
-                        rows={1} placeholder={state === 'listening' ? 'ESCUCHANDO…' : 'Consulta…'}
-                        className="flex-1 bg-transparent resize-none outline-none py-1.5 px-2 text-[12px] placeholder:opacity-40 leading-snug"
-                        style={{ minHeight: 36, color: '#dbeeff', maxHeight: 80 }} />
-                    <button onClick={() => sendText(text)}
-                        disabled={!text.trim() || state === 'thinking' || state === 'speaking'}
-                        className="shrink-0 h-8 px-3 rounded-full flex items-center gap-1 text-[10px] uppercase tracking-widest transition-all"
-                        style={{
-                            background: text.trim() ? '#5ad7ff' : 'rgba(90,215,255,.1)',
-                            color: text.trim() ? '#0a141f' : 'rgba(90,215,255,.4)',
-                        }}>
-                        <Send size={12} />
-                    </button>
-                </div>
-            )}
-
-            {/* Core orb + controls row */}
-            <div className="flex items-end gap-2">
-                {/* JARVIS core orb */}
-                <div className="relative cursor-pointer" onClick={() => setExpanded(e => !e)}
-                    style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(4,8,13,.9)', border: '2px solid rgba(90,215,255,.3)', overflow: 'hidden', boxShadow: '0 0 30px rgba(90,215,255,.2)' }}>
-                    <JarvisCore state={state} audioLevel={audioLevel} size={80} />
-                    {/* Status dot */}
-                    <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full" style={{
-                        background: statusMeta.color, boxShadow: `0 0 8px ${statusMeta.color}`,
-                        animation: 'pulse 1.4s ease-in-out infinite'
-                    }} />
-                </div>
-
-                {/* Vertical control strip (when expanded) */}
-                {expanded && (
-                    <div className="flex flex-col gap-1.5 animate-slideUp">
-                        {/* Mic button */}
-                        <button onClick={() => state === 'listening' ? stopRecording() : startRecording()}
-                            disabled={state === 'thinking' || state === 'speaking'}
-                            className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
-                            style={{
-                                background: state === 'listening' ? 'rgba(122,214,192,.3)' : 'rgba(4,8,13,.85)',
-                                color: state === 'listening' ? '#7ad6c0' : '#5ad7ff',
-                                border: state === 'listening' ? '2px solid #7ad6c0' : '1px solid rgba(90,215,255,.3)',
-                                boxShadow: state === 'listening' ? '0 0 16px rgba(122,214,192,.4)' : 'none',
-                            }}>
-                            {state === 'listening' ? <MicOff size={16} /> : <Mic size={16} />}
-                        </button>
-                        {/* Chat toggle */}
-                        <button onClick={() => setChatOpen(o => !o)}
-                            className="w-10 h-10 rounded-full flex items-center justify-center"
-                            style={{ background: 'rgba(4,8,13,.85)', border: '1px solid rgba(90,215,255,.3)', color: '#5ad7ff' }}>
-                            {chatOpen ? <X size={15} /> : <MessageCircle size={15} />}
-                        </button>
-                        {/* Voice toggle */}
-                        <button onClick={() => setVoiceEnabled(v => !v)}
-                            className="w-10 h-10 rounded-full flex items-center justify-center"
-                            style={{ background: 'rgba(4,8,13,.85)', border: '1px solid rgba(90,215,255,.3)', color: voiceEnabled ? '#5ad7ff' : '#ff8a8a' }}>
-                            {voiceEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                        </button>
-                        {/* Close */}
-                        {onClose && (
-                            <button onClick={() => { abortAll(); onClose(); }}
-                                className="w-10 h-10 rounded-full flex items-center justify-center"
-                                style={{ background: 'rgba(4,8,13,.85)', border: '1px solid rgba(255,90,90,.3)', color: '#ff8a8a' }}>
-                                <X size={15} />
-                            </button>
-                        )}
+            {/* ─── BOTTOM CONTROLS ─── */}
+            <div className="relative z-10 px-4 pb-5 pt-3" style={{
+                borderTop: '1px solid rgba(90,215,255,.1)',
+                background: 'linear-gradient(to top, rgba(2,8,16,.9), transparent)',
+            }}>
+                {/* Error toast */}
+                {error && (
+                    <div className="mx-auto max-w-lg mb-3 rounded-xl px-4 py-2 flex items-center justify-between text-[11px] animate-jSlideUp"
+                        style={{ background: 'rgba(4,8,13,.9)', border: '1px solid rgba(248,113,113,.3)', color: '#fca5a5' }}>
+                        <span>⚠ {error}</span>
+                        <button onClick={() => setError(null)} className="ml-3" style={{ color: '#fca5a5' }}>✕</button>
                     </div>
                 )}
-            </div>
 
-            {/* Label */}
-            <div className="text-center" onClick={() => setExpanded(e => !e)} style={{ cursor: 'pointer' }}>
-                <div style={{ fontFamily: 'Orbitron, monospace', fontWeight: 700, fontSize: 10, letterSpacing: '.15em', color: '#cce8ff', textShadow: '0 0 12px rgba(90,215,255,.4)' }}>
-                    J.A.R.V.I.S.
-                </div>
-                <div className="text-[8px] uppercase tracking-widest" style={{ color: 'rgba(90,215,255,.5)' }}>
-                    {statusMeta.label}
-                </div>
-            </div>
+                {/* Input row */}
+                <div className="mx-auto max-w-lg flex items-end gap-3">
+                    {/* Mic button */}
+                    <button onClick={() => state === 'listening' ? stopRecording() : startRecording()}
+                        disabled={state === 'thinking' || state === 'speaking'}
+                        className="shrink-0 w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-105"
+                        style={{
+                            background: state === 'listening'
+                                ? 'rgba(122,214,192,.15)'
+                                : 'rgba(4,8,13,.7)',
+                            border: state === 'listening'
+                                ? '2px solid #7ad6c0'
+                                : '1px solid rgba(90,215,255,.25)',
+                            color: state === 'listening' ? '#7ad6c0' : '#5ad7ff',
+                            boxShadow: state === 'listening'
+                                ? '0 0 24px rgba(122,214,192,.35), inset 0 0 12px rgba(122,214,192,.1)'
+                                : '0 0 12px rgba(90,215,255,.1)',
+                        }}>
+                        {state === 'listening' ? <MicOff size={22} /> : <Mic size={22} />}
+                    </button>
 
-            {/* Mic level indicator */}
-            {state === 'listening' && (
-                <div className="rounded-full px-3 py-1.5 flex items-center gap-2"
-                    style={{ background: 'rgba(4,8,13,.85)', border: '1px solid rgba(122,214,192,.3)' }}>
-                    <span className="text-[9px] uppercase tracking-widest" style={{ color: '#7ad6c0' }}>Escuchando</span>
-                    <div className="flex items-end gap-0.5 h-4">
-                        {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
-                            <div key={i} style={{
-                                width: 2, height: 3 + i * 1.2,
-                                background: micLevel > (i + 1) * 0.1 ? '#7ad6c0' : 'rgba(122,214,192,.2)',
-                                borderRadius: 1,
-                            }} />
-                        ))}
+                    {/* Text input */}
+                    <div className="flex-1 flex items-end rounded-2xl overflow-hidden" style={{
+                        background: 'rgba(4,8,13,.6)',
+                        border: '1px solid rgba(90,215,255,.18)',
+                        backdropFilter: 'blur(12px)',
+                    }}>
+                        <textarea value={text} onChange={(e) => setText(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(text); } }}
+                            rows={1}
+                            placeholder={state === 'listening' ? 'ESCUCHANDO…' : state === 'thinking' ? 'PROCESANDO…' : 'Consulta…'}
+                            className="flex-1 bg-transparent resize-none outline-none py-3 px-4 text-[13px] placeholder:opacity-30 leading-snug"
+                            style={{ minHeight: 48, maxHeight: 100, color: '#d4e8ff' }}
+                        />
+                        <button onClick={() => sendText(text)}
+                            disabled={!text.trim() || state === 'thinking' || state === 'speaking'}
+                            className="shrink-0 m-2 h-10 w-10 rounded-full flex items-center justify-center transition-all hover:scale-105"
+                            style={{
+                                background: text.trim() ? '#5ad7ff' : 'rgba(90,215,255,.08)',
+                                color: text.trim() ? '#0a141f' : 'rgba(90,215,255,.3)',
+                            }}>
+                            <Send size={16} />
+                        </button>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Error toast */}
-            {error && (
-                <div className="rounded-xl px-3 py-1.5 text-[10px] flex items-center gap-2"
-                    style={{ background: 'rgba(4,8,13,.9)', border: '1px solid rgba(248,113,113,.3)', color: '#fca5a5' }}>
-                    ⚠ {error}
-                    <button onClick={() => setError(null)} style={{ color: '#fca5a5' }}>✕</button>
-                </div>
-            )}
-
+            {/* Animations */}
             <style>{`
-                @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-                @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-                .animate-slideUp { animation: slideUp .25s ease-out; }
+                @keyframes jarvisPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+                @keyframes jarvisScan { 0%{top:0} 100%{top:100%} }
+                @keyframes jSlideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+                .animate-jSlideUp { animation: jSlideUp .3s ease-out; }
             `}</style>
         </div>
     );
