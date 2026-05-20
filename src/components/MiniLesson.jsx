@@ -96,15 +96,7 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
                                 </span>
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            onClick={onComplete}
-                            aria-label="Cerrar mini leccion"
-                            title="Cerrar"
-                            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/25 hover:bg-white/40 text-white border-2 border-white/50 flex items-center justify-center transition-colors"
-                        >
-                            <X className="w-5 h-5" strokeWidth={3} />
-                        </button>
+                        {/* X button removed — correction is mandatory, no escape */}
                     </div>
 
                     {/* Timer Progress Bar */}

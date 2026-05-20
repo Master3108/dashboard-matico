@@ -17,7 +17,7 @@ import {
 
 const MAX_PAGES = 10;
 const POLL_INTERVAL_MS = 2000;
-const NOTEBOOK_QUIZ_THRESHOLD = 80;
+const NOTEBOOK_QUIZ_THRESHOLD = 73;
 
 const TIER_UI = {
     oro: { xp: 50, title: 'Excelente trabajo', box: 'bg-amber-50 border-amber-300', text: 'text-amber-700' },
@@ -934,7 +934,7 @@ const CuadernoMission = ({
                                     Importar cola ({nativeQueueCount})
                                 </button>
                             )}
-                            {onSkip && allowSkip && <button onClick={onSkip} className="w-full text-sm text-slate-400 hover:text-slate-600 py-2">Saltar por ahora</button>}
+                            {/* Saltar deshabilitado: el cuaderno es siempre obligatorio */}
                         </div>
                     )}
 
@@ -1103,11 +1103,7 @@ const CuadernoMission = ({
                                             </button>
                                         )}
                                     </div>
-                                    {retryCount >= 2 && onSkip && allowSkip && (
-                                        <button onClick={onSkip} className="w-full bg-slate-100 text-slate-600 py-2 rounded-xl font-medium text-sm">
-                                            Seguir sin quiz (saltar cuaderno)
-                                        </button>
-                                    )}
+                                    {/* Saltar deshabilitado: el cuaderno es siempre obligatorio */}
                                 </div>
                             )}
                         </div>
@@ -1127,9 +1123,7 @@ const CuadernoMission = ({
                                     <button onClick={() => onComplete?.(0, 'insuficiente')} className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-semibold">
                                         Continuar al quiz
                                     </button>
-                                ) : (
-                                    onSkip && allowSkip && <button onClick={onSkip} className="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl">Saltar</button>
-                                )}
+                                ) : null}
                             </div>
                             {canBypassProviderFailure && (
                                 <p className="text-xs text-slate-500 text-center">

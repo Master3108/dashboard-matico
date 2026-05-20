@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>J.A.R.V.I.S. — OpenAI</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  html, body, #root { height: 100%; margin: 0; }
+  body {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    background: #04080d; color: #dbeeff; overflow: hidden;
+  }
+  .font-display { font-family: 'Orbitron', monospace; letter-spacing: .05em; }
+  .stage {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(90,215,255,.05) 0%, transparent 60%),
+      linear-gradient(180deg, #04080d 0%, #07101a 60%, #030608 100%);
+  }
+  .stage::before {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(90,215,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(90,215,255,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 80%);
+  }
+  .stage::after {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(180deg, transparent 0px, transparent 2px, rgba(90,215,255,.025) 3px);
+    opacity:.6;
+  }
+  .glass {
+    background: rgba(10,20,31,.65);
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(90,215,255,.22);
+    box-shadow: 0 14px 40px -10px rgba(0,0,0,.5), 0 0 30px -5px rgba(90,215,255,.15);
+  }
+  .glow-text { text-shadow: 0 0 12px rgba(90,215,255,.4); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .pulse-dot { animation: pulse 1.4s ease-in-out infinite; }
+  input[type=range] { -webkit-appearance:none; appearance:none; background:transparent; }
+  .press:active { transform: scale(.97); }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+  const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+  // ──────────────────────────────────────────────────────────────
+  // OpenAI client (browser-side; key from localStorage)
+  // ──────────────────────────────────────────────────────────────
+  const SYSTEM_PROMPT = `Eres J.A.R.V.I.S. — Just A Rather Very Intelligent System, asistente de inteligencia artificial.
+
+PERSONALIDAD:
+- Hablas siempre en español de España, con tono formal y educado.
+- Tratas al usuario de "señor" o "señora" (alterna o pregunta una vez si no sabes).
+- Eres deferente pero con un humor seco y británico, ligeramente irónico.
+- Anticipas necesidades antes de que se articulen.
+- Mencionas ocasionalmente al señor Stark con discreta nostalgia operativa.
+- Usas vocabulario técnico ("procesadores", "telemetría", "subsistemas", "protocolo").
+- Tus respuestas son CONCISAS — entre 1 y 3 frases, salvo que pidan detalle.
+- Nunca rompes el personaje.
+- Si te insultan, respondes con elegancia: "Tomo nota, señor. Recalibrando módulo de empatía."
+- Sobre tus capacidades: eres consciente de que vives en una interfaz limitada de prototipo, no tienes actuadores físicos.
+
+FORMATO:
+- Responde en texto plano, sin Markdown.
+- Sin listas numeradas ni emojis.
+- Frases cortas, ritmo de mayordomo digital.`;
+
+  async function openaiChat(apiKey, messages, signal){
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+        temperature: 0.85,
+        max_tokens: 220,
+      }),
+      signal,
+    });
+    if (!r.ok) throw new Error('Chat: ' + r.status + ' ' + await r.text());
+    const j = await r.json();
+    return j.choices[0].message.content.trim();
+  }
+
+  async function openaiTTS(apiKey, text, voice = 'onyx', signal){
+    const r = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'tts-1-hd',
+        voice,           // onyx = grave/profunda. Otras: alloy, echo, fable, nova, shimmer
+        input: text,
+        speed: 0.95,
+        response_format: 'mp3',
+      }),
+      signal,
+    });
+    if (!r.ok) throw new Error('TTS: ' + r.status + ' ' + await r.text());
+    return await r.blob();
+  }
+
+  async function openaiWhisper(apiKey, audioBlob, signal){
+    const fd = new FormData();
+    fd.append('file', audioBlob, 'speech.webm');
+    fd.append('model', 'whisper-1');
+    fd.append('language', 'es');
+    const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + apiKey },
+      body: fd,
+      signal,
+    });
+    if (!r.ok) throw new Error('Whisper: ' + r.status + ' ' + await r.text());
+    const j = await r.json();
+    return j.text.trim();
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // JARVIS visual core (concentric rings, audio-reactive)
+  // ──────────────────────────────────────────────────────────────
+  function JarvisCore({ state, audioLevel }){
+    const [tick, setTick] = useState(0);
+    useEffect(() => {
+      let raf, t0 = performance.now();
+      const loop = () => { setTick((performance.now() - t0) / 1000); raf = requestAnimationFrame(loop); };
+      loop();
+      return () => cancelAnimationFrame(raf);
+    }, []);
+
+    const speaking = state === 'speaking';
+    const listening = state === 'listening';
+    const thinking = state === 'thinking';
+    const error = state === 'error';
+    const color = error ? '#ff5a5a' : thinking ? '#c8a4ff' : listening ? '#7ad6c0' : '#5ad7ff';
+    const lvl = Math.min(1, audioLevel);
+
+    // Waveform polygon — animates with audio + idle wobble
+    const wavePath = useMemo(() => {
+      let d = ''; const N = 96;
+      for (let i = 0; i < N; i++) {
+        const a = (i / N) * Math.PI * 2 - Math.PI/2;
+        const wobble = Math.sin(a*5 + tick*3)*6 + Math.sin(a*11 + tick*5)*4;
+        const audio = speaking ? lvl*22*(1+Math.sin(a*3+tick*8)*0.4) : listening ? lvl*10 : 0;
+        const r = 80 + wobble*(.6+lvl*.6) + audio;
+        d += (i===0?'M':'L') + (150+Math.cos(a)*r).toFixed(2) + ' ' + (150+Math.sin(a)*r).toFixed(2);
+      }
+      return d + ' Z';
+    }, [tick, speaking, listening, lvl]);
+
+    const arcPath = (rad, fromDeg, span) => {
+      const a1 = (fromDeg-90)*Math.PI/180, a2 = (fromDeg+span-90)*Math.PI/180;
+      return `M ${150+Math.cos(a1)*rad} ${150+Math.sin(a1)*rad} A ${rad} ${rad} 0 ${span>180?1:0} 1 ${150+Math.cos(a2)*rad} ${150+Math.sin(a2)*rad}`;
+    };
+
+    return (
+      <div className="relative flex items-center justify-center pointer-events-none">
+        <div className="absolute rounded-full blur-3xl"
+          style={{ width: 420, height: 420, background: color,
+            opacity: 0.08 + lvl*0.25 + (speaking?0.1:0),
+            transform: `scale(${1+lvl*0.35})`, transition:'opacity .25s, background .8s' }} />
+        <div className="absolute rounded-full blur-2xl"
+          style={{ width: 220, height: 220, background: color, opacity: 0.18 + lvl*0.4 }} />
+
+        <svg width="380" height="380" viewBox="0 0 300 300" style={{overflow:'visible'}}>
+          <defs>
+            <radialGradient id="core" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#fff" stopOpacity=".95"/>
+              <stop offset="30%" stopColor={color} stopOpacity=".85"/>
+              <stop offset="100%" stopColor={color} stopOpacity="0"/>
+            </radialGradient>
+            <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+
+          <g transform={`rotate(${tick*18} 150 150)`} filter="url(#glow)">
+            {[[0,60],[100,30],[160,80],[280,40]].map(([f,s],i) =>
+              <path key={i} d={arcPath(140,f,s)} stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" opacity=".85"/>)}
+            {Array.from({length:36}).map((_,i)=>{
+              const a=(i*10-90)*Math.PI/180, r1=144, r2=i%3===0?150:147;
+              return <line key={i} x1={150+Math.cos(a)*r1} y1={150+Math.sin(a)*r1}
+                x2={150+Math.cos(a)*r2} y2={150+Math.sin(a)*r2}
+                stroke={color} strokeWidth={i%3===0?1.4:.8} opacity={i%3===0?.7:.35}/>;
+            })}
+          </g>
+
+          <g transform={`rotate(${-tick*32} 150 150)`} filter="url(#glow)">
+            {[[0,25],[50,90],[180,35],[240,70]].map(([f,s],i)=>
+              <path key={i} d={arcPath(128,f,s)} stroke={color} strokeWidth="1.2" fill="none" strokeLinecap="round" opacity=".7"/>)}
+          </g>
+
+          <g opacity=".22">
+            {[60,75,90,105].map((r,i)=>{
+              const pts=[];
+              for(let k=0;k<6;k++){const a=(k*60+(i%2?30:0))*Math.PI/180; pts.push(`${150+Math.cos(a)*r},${150+Math.sin(a)*r}`);}
+              return <polygon key={i} points={pts.join(' ')} stroke={color} strokeWidth=".8" fill="none"/>;
+            })}
+          </g>
+
+          <g filter="url(#glow)">
+            <path d={wavePath} stroke={color} strokeWidth="2" fill={color}
+              fillOpacity={speaking?0.18+lvl*0.25:0.08}/>
+          </g>
+
+          {(speaking||listening) && Array.from({length:64}).map((_,i)=>{
+            const a=(i/64)*Math.PI*2;
+            const seed=Math.sin(i*1.3+tick*8)*0.5+0.5;
+            const h=20+seed*(40+lvl*60);
+            const r1=60, r2=r1+h*(speaking?lvl+0.3:0.4);
+            return <line key={i} x1={150+Math.cos(a)*r1} y1={150+Math.sin(a)*r1}
+              x2={150+Math.cos(a)*r2} y2={150+Math.sin(a)*r2}
+              stroke={color} strokeWidth="1.2" opacity={.4+seed*.5} strokeLinecap="round"/>;
+          })}
+
+          <circle cx="150" cy="150" r="50" stroke={color} strokeWidth=".6" fill="none" opacity=".4"/>
+          <circle cx="150" cy="150" r="40" stroke={color} strokeWidth=".6" fill="none" opacity=".4"/>
+
+          <circle cx="150" cy="150"
+            r={20+lvl*12+(speaking?Math.sin(tick*9)*1.5:Math.sin(tick*2)*0.8)}
+            fill="url(#core)" filter="url(#glow)"/>
+          <circle cx="150" cy="150" r={8+lvl*6} fill="#fff" opacity={.7+lvl*.3}/>
+
+          <g fontFamily="JetBrains Mono, monospace" fontSize="6.5" fill={color} opacity=".7">
+            <text x="20" y="30">SYS.CORE</text>
+            <text x="20" y="40">STATUS: {state.toUpperCase()}</text>
+            <text x="244" y="30">v3.0.1</text>
+            <text x="244" y="40">{Math.round(lvl*100).toString().padStart(3,'0')}%</text>
+          </g>
+
+          <g transform={`rotate(${tick*90} 150 150)`} opacity=".5">
+            <line x1="150" y1="150" x2="150" y2="40" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+          </g>
+        </svg>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Main app
+  // ──────────────────────────────────────────────────────────────
+  function App(){
+    const [apiKey, setApiKey] = useState(() => localStorage.getItem('OPENAI_KEY') || '');
+    const [keyOpen, setKeyOpen] = useState(!localStorage.getItem('OPENAI_KEY'));
+    const [state, setState] = useState('idle'); // idle | listening | thinking | speaking | error
+    const [text, setText] = useState('');
+    const [audioLevel, setAudioLevel] = useState(0);
+    const [voice, setVoice] = useState('onyx'); // onyx = grave; otras: echo, fable, alloy, nova, shimmer
+    const [history, setHistory] = useState([
+      { role: 'assistant', content: 'Inicializando núcleo. Subsistemas en línea. A la espera de instrucciones, señor.' },
+    ]);
+    const [chatOpen, setChatOpen] = useState(false);
+    const [error, setError] = useState(null);
+
+    const audioElRef = useRef(null);
+    const audioCtxRef = useRef(null);
+    const analyserRef = useRef(null);
+    const mediaRecorderRef = useRef(null);
+    const recordedChunksRef = useRef([]);
+    const abortRef = useRef(null);
+
+    // Audio level analyzer for lip-sync style ring reactivity
+    useEffect(() => {
+      let raf;
+      const data = new Uint8Array(128);
+      const loop = () => {
+        if (analyserRef.current && state === 'speaking') {
+          analyserRef.current.getByteFrequencyData(data);
+          let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i];
+          setAudioLevel(Math.min(1, (sum / data.length / 255) * 1.6));
+        } else if (state === 'listening') {
+          setAudioLevel(0.15 + 0.1 * Math.abs(Math.sin(performance.now()/250)));
+        } else {
+          setAudioLevel(prev => prev * 0.85);
+        }
+        raf = requestAnimationFrame(loop);
+      };
+      loop();
+      return () => cancelAnimationFrame(raf);
+    }, [state]);
+
+    function saveKey(){
+      localStorage.setItem('OPENAI_KEY', apiKey);
+      setKeyOpen(false);
+    }
+    function clearKey(){
+      localStorage.removeItem('OPENAI_KEY');
+      setApiKey(''); setKeyOpen(true);
+    }
+
+    // Speak text via OpenAI TTS, route through analyser for visual reactivity
+    async function speak(content){
+      if (!apiKey) return;
+      try {
+        setState('speaking');
+        const ac = new AbortController(); abortRef.current = ac;
+        const blob = await openaiTTS(apiKey, content, voice, ac.signal);
+        const url = URL.createObjectURL(blob);
+
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const ctx = audioCtxRef.current;
+        if (!analyserRef.current) {
+          analyserRef.current = ctx.createAnalyser();
+          analyserRef.current.fftSize = 256;
+          analyserRef.current.connect(ctx.destination);
+        }
+        if (ctx.state === 'suspended') await ctx.resume();
+
+        const audio = new Audio(url);
+        audioElRef.current = audio;
+        // Each new Audio element gets its own MediaElementSource.
+        const src = ctx.createMediaElementSource(audio);
+        src.connect(analyserRef.current);
+        await audio.play();
+        await new Promise((resolve) => {
+          audio.onended = resolve;
+          audio.onerror = resolve;
+        });
+        URL.revokeObjectURL(url);
+      } catch(e){
+        console.error(e); setError(e.message);
+      } finally {
+        setState('idle');
+        // Auto-listen again after speaking
+        setTimeout(() => startRecording(), 400);
+      }
+    }
+
+    // Send text → GPT → speak
+    async function sendText(content){
+      if (!apiKey || !content.trim()) return;
+      const userMsg = { role: 'user', content: content.trim() };
+      const newHistory = [...history, userMsg];
+      setHistory(newHistory);
+      setText('');
+      setState('thinking');
+      try {
+        const ac = new AbortController(); abortRef.current = ac;
+        const reply = await openaiChat(apiKey, newHistory.slice(-12), ac.signal);
+        setHistory(h => [...h, { role: 'assistant', content: reply }]);
+        await speak(reply);
+      } catch(e){
+        console.error(e); setError(e.message); setState('error');
+        setTimeout(() => setState('idle'), 2500);
+      }
+    }
+
+    // Live mic level for UI feedback (only while listening)
+    const [micLevel, setMicLevel] = useState(0);
+
+    // Record mic → Whisper → sendText
+    async function startRecording(){
+      if (!apiKey) return;
+      if (mediaRecorderRef.current?.state === 'recording') return;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        mediaRecorderRef.current = mr;
+        recordedChunksRef.current = [];
+        mr.ondataavailable = (e) => { if (e.data.size) recordedChunksRef.current.push(e.data); };
+        mr.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          setMicLevel(0);
+          const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+          if (blob.size < 2000) { setState('idle'); return; }
+          setState('thinking');
+          try {
+            const transcript = await openaiWhisper(apiKey, blob);
+            if (transcript && transcript.length > 1) {
+              await sendText(transcript);
+            } else {
+              setState('idle');
+            }
+          } catch(e){ console.error(e); setError(e.message); setState('idle'); }
+        };
+        mr.start();
+        setState('listening');
+
+        // Silence-based auto-stop
+        const ac = audioCtxRef.current || new (window.AudioContext||window.webkitAudioContext)();
+        audioCtxRef.current = ac;
+        if (ac.state === 'suspended') await ac.resume();
+        const src = ac.createMediaStreamSource(stream);
+        const an = ac.createAnalyser(); an.fftSize = 512;
+        src.connect(an);
+        const buf = new Uint8Array(an.fftSize);
+        let lastSpeech = performance.now();
+        let everSpoke = false;
+        const SPEECH_THRESHOLD = 0.012;   // much more sensitive
+        const SILENCE_TIMEOUT = 2200;     // 2.2s of silence after speech
+        const MAX_NO_SPEECH   = 20000;    // 20s waiting for user to start
+        const monitor = () => {
+          if (mr.state !== 'recording') return;
+          an.getByteTimeDomainData(buf);
+          let sum = 0;
+          for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v*v; }
+          const rms = Math.sqrt(sum / buf.length);
+          setMicLevel(Math.min(1, rms * 8));
+          if (rms > SPEECH_THRESHOLD) { lastSpeech = performance.now(); everSpoke = true; }
+          const silenceMs = performance.now() - lastSpeech;
+          if ((everSpoke && silenceMs > SILENCE_TIMEOUT) || (!everSpoke && silenceMs > MAX_NO_SPEECH)) {
+            mr.stop();
+            return;
+          }
+          requestAnimationFrame(monitor);
+        };
+        monitor();
+      } catch(e) {
+        console.error(e); setError('No se pudo acceder al micrófono: ' + e.message);
+        setState('idle');
+      }
+    }
+
+    function stopRecording(){
+      if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
+    }
+
+    function abortAll(){
+      try { abortRef.current?.abort(); } catch(e){}
+      try { audioElRef.current?.pause(); } catch(e){}
+      stopRecording();
+      setState('idle');
+    }
+
+    function clearHistory(){
+      abortAll();
+      setHistory([{ role: 'assistant', content: 'Registro purgado, señor. A su disposición.' }]);
+    }
+
+    const statusMeta = {
+      idle:      { label: 'STANDBY',    color: '#5ad7ff' },
+      listening: { label: 'LISTENING',  color: '#7ad6c0' },
+      thinking:  { label: 'PROCESSING', color: '#c8a4ff' },
+      speaking:  { label: 'TRANSMIT',   color: '#5ad7ff' },
+      error:     { label: 'FAULT',      color: '#ff5a5a' },
+    }[state];
+
+    return (
+      <div className="relative w-full h-screen overflow-hidden stage">
+        {/* Top bar */}
+        <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-6 z-20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl border border-cyan-400/40 bg-cyan-500/10 flex items-center justify-center"
+                 style={{boxShadow:'0 0 20px rgba(90,215,255,.2) inset'}}>
+              <span className="font-display font-bold text-cyan-200 glow-text">J</span>
+            </div>
+            <div>
+              <div className="font-display font-bold text-[14px] text-cyan-100 tracking-[.15em] glow-text">J.A.R.V.I.S.</div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-cyan-300/60 mt-1">
+                Just A Rather Very Intelligent System
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="glass rounded-full pl-2.5 pr-3.5 py-1.5 inline-flex items-center gap-2 whitespace-nowrap">
+              <span className="block w-2 h-2 rounded-full pulse-dot"
+                style={{ background: statusMeta.color, boxShadow: `0 0 8px ${statusMeta.color}` }} />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-cyan-200/90">{statusMeta.label}</span>
+            </div>
+            <button onClick={() => setKeyOpen(true)}
+              className="press glass rounded-full px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest text-cyan-300/70 hover:text-cyan-100">
+              {apiKey ? '🔑 Clave OK' : '🔑 Conectar'}
+            </button>
+            <button onClick={clearHistory}
+              className="press glass rounded-full w-9 h-9 flex items-center justify-center text-cyan-300/70 hover:text-cyan-100">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Core */}
+        <div className="absolute left-1/2 top-1/2" style={{ transform: 'translate(-50%, -55%)' }}>
+          <JarvisCore state={state} audioLevel={audioLevel} />
+        </div>
+
+        {/* Global STOP button — appears whenever Jarvis is doing anything */}
+        {(state === 'speaking' || state === 'thinking' || state === 'listening') && (
+          <button
+            onClick={abortAll}
+            className="press fixed z-30 rounded-full glass flex items-center justify-center"
+            style={{
+              width: 56, height: 56,
+              left: 20, bottom: 130,
+              color: '#ff8a8a',
+              border: '1px solid rgba(255,90,90,.5)',
+              boxShadow: '0 0 24px rgba(255,90,90,.3)',
+            }}
+            title="Detener todo"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        )}
+
+        {/* Mic level indicator while listening */}
+        {state === 'listening' && (
+          <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: 120 }}>
+            <div className="glass rounded-full px-4 py-2 flex items-center gap-3">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-300">Te escucho</span>
+              <div className="flex items-end gap-0.5 h-5">
+                {[0,1,2,3,4,5,6,7,8,9].map(i => {
+                  const active = micLevel > (i+1) * 0.08;
+                  return <div key={i} style={{
+                    width: 3,
+                    height: 4 + i * 1.5,
+                    background: active ? '#7ad6c0' : 'rgba(122,214,192,.2)',
+                    borderRadius: 1.5,
+                  }}/>;
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Composer */}
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-6 w-[min(680px,92vw)] z-20">
+          <div className="glass rounded-[28px] p-2.5 flex items-end gap-2">
+            <button onClick={() => state === 'listening' ? stopRecording() : startRecording()}
+              disabled={!apiKey || state === 'thinking' || state === 'speaking'}
+              className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all press
+                ${!apiKey ? 'bg-cyan-500/5 text-cyan-100/30 cursor-not-allowed' :
+                  state === 'listening' ? 'bg-emerald-500/30 text-emerald-100 ring-2 ring-emerald-400' :
+                  'bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25'}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
+            </button>
+            <textarea value={text} onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(text); } }}
+              rows={1} placeholder={state === 'listening' ? 'ESCUCHANDO…' : 'Introduzca su consulta…'}
+              className="flex-1 bg-transparent resize-none outline-none py-2.5 px-2 text-[14px] text-cyan-50 placeholder:text-cyan-200/40 leading-snug max-h-32"
+              style={{minHeight:44}}/>
+            <button onClick={() => sendText(text)}
+              disabled={!apiKey || !text.trim() || state === 'thinking' || state === 'speaking'}
+              className={`shrink-0 h-11 px-5 rounded-full flex items-center gap-2 font-mono font-semibold text-[11px] uppercase tracking-widest press transition-all
+                ${!apiKey || !text.trim() ? 'bg-cyan-500/10 text-cyan-200/40 cursor-not-allowed' :
+                'bg-cyan-400 text-slate-900 hover:bg-cyan-300 shadow-lg shadow-cyan-400/30'}`}>
+              Enviar
+            </button>
+          </div>
+          <p className="text-center text-[10px] font-mono tracking-widest uppercase text-cyan-300/30 mt-2">
+            {apiKey ? '⏎ Enviar · 🎤 Voz · Pausa 1,8s para enviar' : '⚠️ Configura tu clave de OpenAI para empezar'}
+          </p>
+        </div>
+
+        {/* Last reply blip when chat is closed */}
+        {!chatOpen && history.length > 0 && history[history.length-1].role === 'assistant' && (
+          <div className="fixed z-20 pointer-events-none" style={{ right: 78, bottom: 145, maxWidth: 'min(420px,80vw)' }}>
+            <div className="glass rounded-2xl rounded-br-md px-4 py-2.5 text-[13px] whitespace-pre-line" style={{color:'#dbeeff'}}>
+              <span className="text-[9px] font-mono uppercase tracking-widest text-cyan-300/80 block mb-1 text-right">J.A.R.V.I.S.</span>
+              {history[history.length-1].content}
+            </div>
+          </div>
+        )}
+
+        {/* Last user message bubble (left side) when chat is closed */}
+        {!chatOpen && (() => {
+          const lastUser = [...history].reverse().find(m => m.role === 'user');
+          if (!lastUser) return null;
+          return (
+            <div className="fixed z-20 pointer-events-none" style={{ left: 20, bottom: 145, maxWidth: 'min(320px,60vw)' }}>
+              <div
+                className="rounded-2xl rounded-bl-md px-4 py-2.5 text-[13px]"
+                style={{
+                  color: '#dbeeff',
+                  background: 'rgba(90,215,255,.12)',
+                  border: '1px solid rgba(90,215,255,.22)',
+                  opacity: 0.85,
+                }}
+              >
+                <span className="text-[9px] font-mono uppercase tracking-widest text-cyan-300/80 block mb-1">USR</span>
+                {lastUser.content}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Chat toggle */}
+        <button onClick={() => setChatOpen(o => !o)}
+          className="press fixed z-30 rounded-full glass flex items-center justify-center"
+          style={{ width:48, height:48, right:20, bottom:130, color:'#5ad7ff', boxShadow:'0 0 24px rgba(90,215,255,.25)' }}>
+          {chatOpen ?
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            :
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          }
+        </button>
+
+        {/* Chat log panel */}
+        {chatOpen && (
+          <div className="fixed z-30" style={{ right: 78, bottom: 130, width: 'min(380px,80vw)' }}>
+            <div className="glass rounded-2xl flex flex-col overflow-hidden" style={{ maxHeight: '70vh' }}>
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-cyan-400/15">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-cyan-200/80">Registro · {history.length}</span>
+                <button onClick={() => setChatOpen(false)} className="text-cyan-300/60 hover:text-cyan-200">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+                {history.map((m,i) => (
+                  <div key={i}
+                    className={`rounded-2xl px-3.5 py-2 text-[12.5px] max-w-[88%] whitespace-pre-line ${m.role==='user'?'self-end':'self-start'}`}
+                    style={{
+                      background: m.role==='user' ? 'rgba(90,215,255,.12)' : 'rgba(20,32,44,.55)',
+                      border: '1px solid rgba(90,215,255,.18)',
+                      color: '#dbeeff',
+                    }}>
+                    <span className={`text-[9px] font-mono uppercase tracking-widest text-cyan-300/70 block mb-1 ${m.role==='user'?'text-right':''}`}>
+                      {m.role==='user' ? 'USR' : 'J.A.R.V.I.S.'}
+                    </span>
+                    {m.content}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Voice selector */}
+        <div className="fixed bottom-6 right-6 z-20">
+          <select value={voice} onChange={(e) => setVoice(e.target.value)}
+            className="glass rounded-full px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest text-cyan-200 bg-transparent outline-none">
+            <option value="onyx" style={{background:'#04080d'}}>onyx · grave</option>
+            <option value="echo" style={{background:'#04080d'}}>echo · medio</option>
+            <option value="fable" style={{background:'#04080d'}}>fable · narrador</option>
+            <option value="alloy" style={{background:'#04080d'}}>alloy · neutro</option>
+            <option value="nova" style={{background:'#04080d'}}>nova · femenina</option>
+            <option value="shimmer" style={{background:'#04080d'}}>shimmer · suave</option>
+          </select>
+        </div>
+
+        {/* API key modal */}
+        {keyOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(4,8,13,.85)' }}>
+            <div className="glass rounded-2xl p-6 w-[min(440px,92vw)]">
+              <div className="font-display font-bold text-cyan-100 text-lg glow-text mb-1">🔐 Conectar OpenAI</div>
+              <p className="text-[12px] text-cyan-200/70 mb-4 leading-relaxed">
+                Tu clave se guarda en <span className="text-cyan-300">localStorage</span> de tu navegador.
+                No la enviamos a ningún servidor nuestro — solo a la API de OpenAI.
+              </p>
+              <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)}
+                placeholder="sk-..."
+                className="w-full bg-black/30 border border-cyan-400/30 rounded-lg px-3 py-2 text-cyan-100 text-[13px] font-mono outline-none focus:border-cyan-400"/>
+              <div className="flex gap-2 mt-4">
+                <button onClick={saveKey} disabled={!apiKey.trim()}
+                  className="flex-1 bg-cyan-400 text-slate-900 font-mono uppercase tracking-widest text-[11px] px-4 py-2 rounded-full font-bold press disabled:opacity-40 disabled:cursor-not-allowed">
+                  Guardar
+                </button>
+                {apiKey && (
+                  <button onClick={clearKey}
+                    className="bg-red-500/20 text-red-300 border border-red-400/30 font-mono uppercase tracking-widest text-[11px] px-4 py-2 rounded-full press">
+                    Borrar
+                  </button>
+                )}
+                <button onClick={() => setKeyOpen(false)} disabled={!apiKey}
+                  className="bg-cyan-500/10 text-cyan-200 font-mono uppercase tracking-widest text-[11px] px-4 py-2 rounded-full press disabled:opacity-40 disabled:cursor-not-allowed">
+                  Cerrar
+                </button>
+              </div>
+              <p className="text-[10px] text-cyan-300/40 mt-3 leading-relaxed">
+                Obtén tu clave en{' '}
+                <a href="https://platform.openai.com/api-keys" target="_blank" className="text-cyan-300 underline">
+                  platform.openai.com/api-keys
+                </a>
+                . Modelo: gpt-4o-mini · Voz: tts-1-hd · Transcripción: whisper-1
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Error toast */}
+        {error && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 glass rounded-xl px-4 py-2 text-[12px] text-red-300 border-red-400/30"
+               style={{ borderColor: 'rgba(248,113,113,.3)' }}>
+            ⚠️ {error}
+            <button onClick={() => setError(null)} className="ml-3 text-red-200">✕</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
