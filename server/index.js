@@ -2351,7 +2351,15 @@ OBJETIVO
 - Haz OCR solo del texto principal legible.
 - Compara contra la teoria.
 - Evalua comprension, ideas principales, uso de palabras propias, errores conceptuales, omisiones relevantes y, si aplica, evidencia de correccion de falencias.
-
+${isCorrectionFlow ? `
+CRITERIOS ESPECIALES PARA CORRECCION DE ERROR:
+- El alumno fallo una pregunta del quiz y debe demostrar que ENTIENDE por que la respuesta correcta es correcta.
+- NO basta con copiar la pregunta y la letra correcta. Debe explicar el RAZONAMIENTO o CALCULO.
+- Si es matematica o fisica, debe mostrar el procedimiento paso a paso (ej: v=340, f=170, lambda=v/f=340/170=2m).
+- Si es lenguaje u otra materia, debe explicar con sus propias palabras por que esa alternativa es la correcta.
+- Si solo copio la pregunta y la respuesta sin explicar el porqué, interpretation_score debe ser menor a ${NOTEBOOK_QUIZ_THRESHOLD}.
+- Si explico el razonamiento/calculo correctamente con sus palabras, interpretation_score debe ser ${NOTEBOOK_QUIZ_THRESHOLD} o mas.
+` : ''}
 REGLAS
 - interpretation_score debe ser un entero de 0 a 100.
 - Si no es manuscrito, marca is_handwritten=false.

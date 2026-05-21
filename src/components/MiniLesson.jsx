@@ -63,7 +63,8 @@ const MiniLesson = ({ question, selectedAnswer, correctAnswer, explanation, onCo
     const getOptionText = (letter) => question?.options?.[letter] || letter || '';
     const correctionCopyText = [
         `Pregunta: ${getQuestionText(question)}`,
-        `Respuesta correcta: ${correctAnswer}) ${getOptionText(correctAnswer)}`
+        `Respuesta correcta: ${correctAnswer}) ${getOptionText(correctAnswer)}`,
+        explanation ? `\nExplicación (escríbela con tus propias palabras):\n${explanation}` : ''
     ].filter(Boolean).join('\n\n');
 
     return (
