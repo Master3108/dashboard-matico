@@ -2468,6 +2468,30 @@ RESPONDE SOLO JSON VALIDO CON ESTA FORMA:
     }));
     await recordNotebookOcr(submission, normalized);
 
+    // Save quiz correction record if this is a correction flow
+    if (isCorrectionFlow && submission.user_id) {
+        try {
+            const corrScore = Number(normalized.interpretation_score || 0);
+            const { error: corrErr } = await supabase.from('quiz_corrections').insert({
+                student_id: submission.user_id,
+                subject: normalizeSubjectCode(submission.subject || ''),
+                session_id: submission.session_id || null,
+                question_text: String(readingContent || '').substring(0, 2000),
+                wrong_answer: null,
+                correct_answer: null,
+                explanation_expected: String(readingContent || '').substring(0, 4000),
+                ocr_text: String(normalized.ocr_text || '').substring(0, 4000),
+                correction_score: corrScore,
+                passed: corrScore >= NOTEBOOK_QUIZ_THRESHOLD,
+                notebook_submission_id: submission.id || null
+            });
+            if (corrErr) console.warn('[QUIZ_CORRECTION] Insert error:', corrErr.message);
+            else console.log(`[QUIZ_CORRECTION] Saved: student=${submission.user_id} score=${corrScore} passed=${corrScore >= NOTEBOOK_QUIZ_THRESHOLD}`);
+        } catch (corrError) {
+            console.warn('[QUIZ_CORRECTION] Error saving correction:', corrError.message);
+        }
+    }
+
     if (normalized.xp_reward > 0 && submission.user_id) {
         try {
             const sheets = await getSheetsClient();
