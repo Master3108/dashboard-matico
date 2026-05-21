@@ -1979,7 +1979,7 @@ const computeNotebookStrictScore = ({
     // el puntaje debe ser 100% aunque haya agregado palabras adicionales con sus propias palabras.
     // Esto evita penalizar la comprensión demostrada con explicaciones extendidas.
     if (theoryCoverage >= 0.95) {
-        const finalScore = clampNumber(Math.min(safeAiScore, 100), 0, 100);
+        const finalScore = safeAiScore > 0 ? clampNumber(safeAiScore, 0, 100) : 95;
         return {
             finalScore,
             strictScore: 100,
@@ -1996,7 +1996,18 @@ const computeNotebookStrictScore = ({
     if (safePageCount === 1 && ocrWordCount < 40) strictScore = Math.min(strictScore, 60);
     if (theoryCoverage < 0.2) strictScore = Math.min(strictScore, 65);
 
-    const finalScore = clampNumber(Math.min(safeAiScore, strictScore), 0, 100);
+    // Promedio ponderado en vez de min. Si la IA devuelve 0 (fallo parsing), usar strictScore solo.
+    let finalScore;
+    if (safeAiScore <= 0 && strictScore > 0) {
+        // IA falló o devolvió 0 → confiar en strictScore
+        finalScore = strictScore;
+    } else if (safeAiScore > 0 && strictScore > 0) {
+        // Ambos disponibles → promedio ponderado (IA 40%, estricto 60%)
+        finalScore = Math.round(safeAiScore * 0.4 + strictScore * 0.6);
+    } else {
+        finalScore = Math.max(safeAiScore, strictScore);
+    }
+    finalScore = clampNumber(finalScore, 0, 100);
 
     return {
         finalScore,
