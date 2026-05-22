@@ -18,7 +18,13 @@
     "gen:fisica": "node scripts/pregenerateWithImages.js --subject FISICA",
     "gen:retrofit:math": "node scripts/pregenerateWithImages.js --subject MATEMATICA --retrofit",
     "gen:retrofit:lenguaje": "node scripts/pregenerateWithImages.js --subject COMPETENCIA_LECTORA --retrofit",
-    "gen:retrofit:fisica": "node scripts/pregenerateWithImages.js --subject FISICA --retrofit"
+    "gen:retrofit:fisica": "node scripts/pregenerateWithImages.js --subject FISICA --retrofit",
+    "gen:quimica": "node scripts/pregenerateWithImages.js --subject QUIMICA",
+    "gen:biologia": "node scripts/pregenerateWithImages.js --subject BIOLOGIA",
+    "gen:historia": "node scripts/pregenerateWithImages.js --subject HISTORIA",
+    "gen:retrofit:quimica": "node scripts/pregenerateWithImages.js --subject QUIMICA --retrofit",
+    "gen:retrofit:biologia": "node scripts/pregenerateWithImages.js --subject BIOLOGIA --retrofit",
+    "gen:retrofit:historia": "node scripts/pregenerateWithImages.js --subject HISTORIA --retrofit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

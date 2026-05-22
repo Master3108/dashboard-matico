@@ -119,6 +119,24 @@ const SUBJECT_CONFIG = {
         displayName: 'Fisica',
         temperature: 0.4,
         resolveContext: ({ session, topic, phase }) => resolveMoralejaFisicaContext({ session, topic, phase, mode: 'quiz' })
+    },
+    QUIMICA: {
+        code: 'QUI',
+        displayName: 'Quimica',
+        temperature: 0.35,
+        resolveContext: () => ({})
+    },
+    BIOLOGIA: {
+        code: 'BIO',
+        displayName: 'Biologia',
+        temperature: 0.4,
+        resolveContext: () => ({})
+    },
+    HISTORIA: {
+        code: 'HIS',
+        displayName: 'Historia, Geografia y Ciencias Sociales',
+        temperature: 0.45,
+        resolveContext: () => ({})
     }
 };
 
@@ -441,7 +459,7 @@ const main = async () => {
     const args = parseArgs(process.argv.slice(2));
     const subject = normalizeSubject(args.subject || 'MATEMATICA');
     const subjectConfig = SUBJECT_CONFIG[subject];
-    if (!subjectConfig) throw new Error(`Asignatura no soportada: ${subject}. Usa MATEMATICA, COMPETENCIA_LECTORA o FISICA.`);
+    if (!subjectConfig) throw new Error(`Asignatura no soportada: ${subject}. Usa MATEMATICA, COMPETENCIA_LECTORA, FISICA, QUIMICA, BIOLOGIA o HISTORIA.`);
 
     const fromSession = Math.max(1, Number(args.from || 1));
     const toSession = Math.max(fromSession, Number(args.to || 46));
