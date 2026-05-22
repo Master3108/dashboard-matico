@@ -12,7 +12,13 @@
     "migrate:dry": "node scripts/migrate_sheets_to_supabase.js --dry-run",
     "pregenerate:math-bank": "node scripts/pregenerateQuestionBank.js --subject MATEMATICA",
     "pregenerate:language-bank": "node scripts/pregenerateQuestionBank.js --subject LENGUAJE",
-    "pregenerate:physics-bank": "node scripts/pregenerateQuestionBank.js --subject FISICA"
+    "pregenerate:physics-bank": "node scripts/pregenerateQuestionBank.js --subject FISICA",
+    "gen:math": "node scripts/pregenerateWithImages.js --subject MATEMATICA",
+    "gen:lenguaje": "node scripts/pregenerateWithImages.js --subject COMPETENCIA_LECTORA",
+    "gen:fisica": "node scripts/pregenerateWithImages.js --subject FISICA",
+    "gen:retrofit:math": "node scripts/pregenerateWithImages.js --subject MATEMATICA --retrofit",
+    "gen:retrofit:lenguaje": "node scripts/pregenerateWithImages.js --subject COMPETENCIA_LECTORA --retrofit",
+    "gen:retrofit:fisica": "node scripts/pregenerateWithImages.js --subject FISICA --retrofit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
