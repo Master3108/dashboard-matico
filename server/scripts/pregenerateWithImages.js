@@ -446,7 +446,7 @@ const main = async () => {
     const fromSession = Math.max(1, Number(args.from || 1));
     const toSession = Math.max(fromSession, Number(args.to || 46));
     const phaseFilter = args.phase ? Number(args.phase) : null;
-    const imageCap = Math.max(1, Number(args.imageCap || 6));
+    const imageCap = Math.max(1, Number(args.imageCap || 1));
     const minImageScore = Math.max(0, Number(args.minImageScore || 5));
     const retries = Math.max(0, Number(args.retries || 2));
     const maxSessions = Number(args.maxSessions || 0);
