@@ -6022,7 +6022,16 @@ const createRequestTimingTrace = (flowName, meta = {}) => {
 // ENDPOINTS
 // ========================================================================
 
-app.post('/webhook/MATICO', loginLimiter, async (req, res) => {
+// Middleware condicional: loginLimiter SOLO en login/register para no bloquear acciones normales.
+const conditionalLoginLimiter = (req, res, next) => {
+    const action = (req.body && (req.body.action || req.body.accion)) || '';
+    if (action === 'login' || action === 'register') {
+        return loginLimiter(req, res, next);
+    }
+    return next();
+};
+
+app.post('/webhook/MATICO', conditionalLoginLimiter, async (req, res) => {
     const body = req.body;
     const currentAction = body.action || body.accion || '';
     const user_id = body.user_id;
