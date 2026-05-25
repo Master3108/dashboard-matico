@@ -177,14 +177,9 @@ export function validateFileUpload(allowedTypes = ['image/jpeg', 'image/png', 'i
 // ========== 5. CORS ==========
 
 export function getCorsConfig() {
-    const origins = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
-    if (!origins.length) origins.push('http://localhost:5173', 'http://localhost:8080');
+    // Nginx hace proxy — CORS permisivo aquí, seguridad real via JWT + rate limiting
     return {
-        origin(origin, cb) {
-            if (!origin) return cb(null, true); // mobile/server
-            if (origins.some(o => origin === o || origin.endsWith(o.replace('https://', '.').replace('http://', '.')))) return cb(null, true);
-            cb(new Error(`CORS bloqueado: ${origin}`));
-        },
+        origin: true,
         credentials: true,
         methods: ['GET','POST','PUT','PATCH','DELETE'],
         allowedHeaders: ['Content-Type','Authorization']
