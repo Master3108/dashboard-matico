@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { authFetch } from '../utils/authFetch';
 import { Calendar, Clock, BookOpen, CheckCircle, AlertTriangle, Trash2, ChevronLeft, ChevronRight, History } from 'lucide-react';
 
 const EVENT_TYPE_CONFIG = {
@@ -146,7 +147,7 @@ const CalendarView = ({ userId, userRole = 'estudiante', isOpen, onClose }) => {
                 limit: '500'
             });
 
-            const res = await fetch(`/api/calendar/events?${params}`);
+            const res = await authFetch(`/api/calendar/events?${params}`);
             const data = await res.json();
             if (data.success) setEvents(data.events || []);
         } catch (err) {
@@ -162,7 +163,7 @@ const CalendarView = ({ userId, userRole = 'estudiante', isOpen, onClose }) => {
 
     const handleStatusChange = async (eventId, newStatus) => {
         try {
-            const res = await fetch(`/api/calendar/events/${eventId}`, {
+            const res = await authFetch(`/api/calendar/events/${eventId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
@@ -179,7 +180,7 @@ const CalendarView = ({ userId, userRole = 'estudiante', isOpen, onClose }) => {
     const handleDelete = async (eventId) => {
         if (!confirm('¿Eliminar este evento?')) return;
         try {
-            const res = await fetch(`/api/calendar/events/${eventId}`, { method: 'DELETE' });
+            const res = await authFetch(`/api/calendar/events/${eventId}`, { method: 'DELETE' });
             const data = await res.json();
             if (data.success) {
                 setEvents(prev => prev.filter(e => e.event_id !== eventId));

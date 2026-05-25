@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
+import { authFetch } from './utils/authFetch';
 import MathRenderer from './components/MathRenderer';
 import InteractiveQuiz from './components/InteractiveQuiz';
 import LoginPage from './components/LoginPage';
@@ -3360,6 +3361,13 @@ const App = () => {
         setAuthChecking(false);
     }, []);
 
+    // Session-expired: authFetch dispatches this when JWT is invalid/expired
+    useEffect(() => {
+        const handler = () => { setCurrentUser(null); };
+        window.addEventListener('matico:session-expired', handler);
+        return () => window.removeEventListener('matico:session-expired', handler);
+    }, []);
+
     useEffect(() => {
         if (!isCallingN8N) {
             setLoadingDiagnostics(null);
@@ -3432,7 +3440,7 @@ const App = () => {
         setAgentTestInput('');
         setAgentTestLoading(true);
         try {
-            const res = await fetch('/api/agent/chat', {
+            const res = await authFetch('/api/agent/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -3454,7 +3462,7 @@ const App = () => {
 
     const fetchAgentTraining = async () => {
         try {
-            const res = await fetch(`/api/agent/training?admin_user_id=${USER_ID}`);
+            const res = await authFetch(`/api/agent/training?admin_user_id=${USER_ID}`);
             if (!res.ok) return;
             const data = await res.json();
             if (data.success) { setAgentTrainingEntries(data.entries || []); setAgentTrainingLoaded(true); }
@@ -3465,7 +3473,7 @@ const App = () => {
         if (!agentTrainingInput.trim() || agentTrainingSaving) return;
         setAgentTrainingSaving(true);
         try {
-            const res = await fetch('/api/agent/training', {
+            const res = await authFetch('/api/agent/training', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ admin_user_id: USER_ID, content: agentTrainingInput.trim(), type: agentTrainingType })
@@ -3480,7 +3488,7 @@ const App = () => {
 
     const toggleAgentTraining = async (id, active) => {
         try {
-            await fetch(`/api/agent/training/${id}`, {
+            await authFetch(`/api/agent/training/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ admin_user_id: USER_ID, active })
@@ -3492,7 +3500,7 @@ const App = () => {
     const deleteAgentTraining = async (id) => {
         if (!confirm('Eliminar esta entrada de entrenamiento?')) return;
         try {
-            await fetch(`/api/agent/training/${id}`, {
+            await authFetch(`/api/agent/training/${id}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ admin_user_id: USER_ID })
@@ -3706,7 +3714,7 @@ const App = () => {
             if (!shouldReplaceActive) return activeStudySession; // Already active
 
             try {
-                await fetch('/api/study-sessions/end', {
+                await authFetch('/api/study-sessions/end', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ session_id: activeStudySession.session_id })
@@ -3717,7 +3725,7 @@ const App = () => {
             setActiveStudySession(null);
         }
         try {
-            const res = await fetch('/api/study-sessions/start', {
+            const res = await authFetch('/api/study-sessions/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -3743,7 +3751,7 @@ const App = () => {
         const session = sessionOverride || activeStudySession;
         if (!session?.session_id) return;
         try {
-            await fetch('/api/study-sessions/milestone', {
+            await authFetch('/api/study-sessions/milestone', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: session.session_id, milestone })
@@ -3757,7 +3765,7 @@ const App = () => {
     const endStudyTimer = async () => {
         if (!activeStudySession?.session_id) return;
         try {
-            const res = await fetch('/api/study-sessions/end', {
+            const res = await authFetch('/api/study-sessions/end', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: activeStudySession.session_id })
@@ -3799,7 +3807,7 @@ const App = () => {
                 if (navigator.sendBeacon) {
                     navigator.sendBeacon('/api/study-sessions/end', new Blob([payload], { type: 'application/json' }));
                 } else {
-                    fetch('/api/study-sessions/end', {
+                    authFetch('/api/study-sessions/end', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: payload,
@@ -3916,7 +3924,7 @@ const App = () => {
                 setLoadingProgress(true);
                 console.log('[MATICO] Fetching progress from server...');
 
-                const response = await fetch('/webhook/MATICO', {
+                const response = await authFetch('/webhook/MATICO', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -4470,7 +4478,7 @@ const App = () => {
                 const clean = (v = '') => String(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
                 return `${clean(q.question)} || ${Object.values(opts).map(clean).sort().join(' | ')}`;
             });
-            const response = await fetch('/api/oracle/exam-from-notebook/generate-batch', {
+            const response = await authFetch('/api/oracle/exam-from-notebook/generate-batch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4529,7 +4537,7 @@ const App = () => {
                     const clean = (v = '') => String(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
                     return `${clean(q.question)} || ${Object.values(opts).map(clean).sort().join(' | ')}`;
                 });
-                prepExamNextBatchPromiseRef.current = fetch('/api/oracle/exam-from-notebook/generate-batch', {
+                prepExamNextBatchPromiseRef.current = authFetch('/api/oracle/exam-from-notebook/generate-batch', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4857,7 +4865,7 @@ const App = () => {
         formData.append('caption', formValues.caption || '');
         formData.append('status', formValues.status || 'draft');
 
-        const response = await fetch('/api/pedagogical-assets/upload', {
+        const response = await authFetch('/api/pedagogical-assets/upload', {
             method: 'POST',
             body: formData
         });

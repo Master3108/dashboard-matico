@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { authFetch } from '../utils/authFetch';
 import {
     Calendar, Clock, BookOpen, CheckCircle, AlertTriangle, Trash2,
     ChevronLeft, ChevronRight, Bell, User, LogOut, TrendingUp,
@@ -88,7 +89,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const fetchProfile = useCallback(async () => {
         if (!currentUser?.user_id) return;
         try {
-            const res = await fetch(`/api/profile?user_id=${currentUser.user_id}`);
+            const res = await authFetch(`/api/profile?user_id=${currentUser.user_id}`);
             const data = await res.json();
             if (data.success && data.children?.length > 0) {
                 setChildren(data.children);
@@ -118,7 +119,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 limit: '500'
             });
 
-            const res = await fetch(`/api/calendar/events?${params}`);
+            const res = await authFetch(`/api/calendar/events?${params}`);
             const data = await res.json();
             if (data.success) setEvents(data.events || []);
         } catch (err) {
@@ -130,7 +131,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const fetchChildProgress = useCallback(async () => {
         if (!selectedChild?.user_id) return;
         try {
-            const res = await fetch(`/api/progress/child?child_user_id=${selectedChild.user_id}&limit=50`);
+            const res = await authFetch(`/api/progress/child?child_user_id=${selectedChild.user_id}&limit=50`);
             const data = await res.json();
             if (data.success) setProgress(data.progress || []);
         } catch (err) {
@@ -152,7 +153,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             if (targetUserId) params.set('student_user_id', targetUserId);
             if (targetEmail) params.set('student_email', targetEmail);
             if (parentEmail) params.set('parent_email', parentEmail);
-            const res = await fetch(`/api/study-sessions?${params}`);
+            const res = await authFetch(`/api/study-sessions?${params}`);
             const data = await res.json();
             if (data.success) setStudySessions(data.sessions || []);
         } catch (err) {
@@ -160,7 +161,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         }
         // Check active session
         try {
-            const res2 = await fetch(`/api/study-sessions/active?student_user_id=${targetUserId}`);
+            const res2 = await authFetch(`/api/study-sessions/active?student_user_id=${targetUserId}`);
             const data2 = await res2.json();
             setActiveStudy(data2.success && data2.is_studying ? data2.session : null);
         } catch (_) {}
@@ -178,7 +179,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             if (targetEmail) params.set('student_email', targetEmail);
             if (parentEmail) params.set('parent_email', parentEmail);
 
-            const res = await fetch(`/api/parent/student-history?${params}`);
+            const res = await authFetch(`/api/parent/student-history?${params}`);
             const data = await res.json();
             if (data.success) {
                 setStudentHistory({
@@ -196,7 +197,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         if (!targetUserId) return;
         try {
             const params = new URLSearchParams({ student_user_id: targetUserId });
-            const res = await fetch(`/api/parent/daily-report?${params}`);
+            const res = await authFetch(`/api/parent/daily-report?${params}`);
             const data = await res.json();
             if (data.success) setDailyReport(data.report || null);
         } catch (err) {
@@ -208,7 +209,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
     const fetchNotifications = useCallback(async () => {
         if (!currentUser?.user_id) return;
         try {
-            const res = await fetch(`/api/notifications?user_id=${currentUser.user_id}&limit=20`);
+            const res = await authFetch(`/api/notifications?user_id=${currentUser.user_id}&limit=20`);
             const data = await res.json();
             if (data.success) setNotifications(data.notifications || []);
         } catch (err) {
@@ -260,7 +261,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
         if (!confirm(`Eliminar "${title}" del calendario?`)) return;
 
         try {
-            const res = await fetch(`/api/calendar/events/${event.event_id}`, { method: 'DELETE' });
+            const res = await authFetch(`/api/calendar/events/${event.event_id}`, { method: 'DELETE' });
             const data = await res.json();
             if (data.success) {
                 setEvents(prev => prev.filter(item => item.event_id !== event.event_id));
@@ -280,7 +281,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
 
         const year = new Date().getFullYear() + yearOffset;
         try {
-            const res = await fetch('/api/calendar/dedupe', {
+            const res = await authFetch('/api/calendar/dedupe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

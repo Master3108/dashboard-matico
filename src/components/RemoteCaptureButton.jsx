@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { authFetch } from '../utils/authFetch';
 import { Smartphone, Camera, X, Check, Loader2, Copy, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 /**
@@ -56,7 +57,7 @@ export default function RemoteCaptureButton({
             setReceivedUrls([]);
             lastCountRef.current = 0;
 
-            const res = await fetch('/api/capture/create', {
+            const res = await authFetch('/api/capture/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId, student_id: studentId || userId, context, context_data: contextData })
@@ -82,7 +83,7 @@ export default function RemoteCaptureButton({
             // Poll every 2 seconds for new images
             pollRef.current = setInterval(async () => {
                 try {
-                    const pollRes = await fetch(`/api/capture/poll?token=${data.token}`);
+                    const pollRes = await authFetch(`/api/capture/poll?token=${data.token}`);
                     const pollData = await pollRes.json();
 
                     if (pollData.status === 'completed') {
@@ -130,7 +131,7 @@ export default function RemoteCaptureButton({
         setFinishing(true);
         cleanup();
         try {
-            await fetch('/api/capture/finish', {
+            await authFetch('/api/capture/finish', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token })
@@ -144,7 +145,7 @@ export default function RemoteCaptureButton({
     const cancelCapture = async () => {
         cleanup();
         try {
-            await fetch('/api/capture/cancel', {
+            await authFetch('/api/capture/cancel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token })

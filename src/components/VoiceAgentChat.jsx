@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { authFetch } from '../utils/authFetch';
 import { X, Mic, MicOff, Send, Volume2, VolumeX, MessageCircle, ChevronDown, UploadCloud, BookOpen, Trash2, ToggleLeft, ToggleRight, Plus } from 'lucide-react';
 
 // WebGL LightningField — 4 rayos radiales, hue por estado, intensidad sincronizada con voz.
@@ -479,7 +480,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             const controller = new AbortController();
             const fetchTimer = setTimeout(() => controller.abort(), 10000);
 
-            const res = await fetch('/api/agent/tts', {
+            const res = await authFetch('/api/agent/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text, voice: 'nova' }),
@@ -557,7 +558,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         if (text) formData.append('text_input', text);
         limitedFiles.forEach(file => formData.append('images', file));
 
-        const res = await fetch('/api/calendar/smart-create', {
+        const res = await authFetch('/api/calendar/smart-create', {
             method: 'POST',
             body: formData
         });
@@ -652,7 +653,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
             if (imagesToSend.length > 0) {
                 chatBody.images = imagesToSend.map(i => i.base64);
             }
-            const res = await fetch('/api/agent/chat', {
+            const res = await authFetch('/api/agent/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(chatBody)
@@ -882,7 +883,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
     // Training helpers
     const fetchTraining = useCallback(async () => {
         try {
-            const res = await fetch(`/api/agent/training?admin_user_id=${userId || studentUserId}`);
+            const res = await authFetch(`/api/agent/training?admin_user_id=${userId || studentUserId}`);
             if (res.status === 403) { setIsAdmin(false); return; }
             const data = await res.json();
             if (data.success) { setIsAdmin(true); setTrainingEntries(data.entries || []); }
@@ -893,7 +894,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
         if (!trainingInput.trim() || trainingSaving) return;
         setTrainingSaving(true);
         try {
-            const res = await fetch('/api/agent/training', {
+            const res = await authFetch('/api/agent/training', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ admin_user_id: userId || studentUserId, content: trainingInput.trim(), type: trainingType })
@@ -905,7 +906,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
     const toggleTrainingEntry = async (id, active) => {
         try {
-            const res = await fetch(`/api/agent/training/${id}`, {
+            const res = await authFetch(`/api/agent/training/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ admin_user_id: userId || studentUserId, active: !active })
@@ -917,7 +918,7 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
     const deleteTrainingEntry = async (id) => {
         try {
-            await fetch(`/api/agent/training/${id}`, {
+            await authFetch(`/api/agent/training/${id}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ admin_user_id: userId || studentUserId })

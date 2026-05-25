@@ -13,6 +13,13 @@ import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import sharp from 'sharp';
+import {
+    generateToken, requireAuth, requireAdmin, requireOwnership,
+    generalLimiter, loginLimiter, aiLimiter, uploadLimiter,
+    sanitizeBody, validateFileUpload,
+    getCorsConfig, securityHeaders,
+    hashPassword, verifyPassword
+} from './middleware/security.js';
 import { supabase } from './db/supabaseClient.js';
 import { deleteGeneratedQuestion, listGeneratedQuestions, recordGeneratedQuestions, sampleGeneratedQuestions } from './generatedQuestionBank.js';
 import { recordAdaptiveEvent, getAdaptiveSnapshot, backfillAdaptiveProfileFromProgressRows } from './adaptiveProfileStore.js';
@@ -67,9 +74,12 @@ import {
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors(getCorsConfig()));
+app.use(securityHeaders);
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+app.use(sanitizeBody);
+app.use(generalLimiter);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,7 +95,23 @@ const PRIORITY_STUDY_SUBJECTS = ['MATEMATICA', 'BIOLOGIA', 'FISICA', 'QUIMICA', 
 const STUDY_STALE_DAYS = 7;
 const SMART_CREATE_MAX_IMAGES = 10;
 
-app.use('/uploads', express.static(LOCAL_UPLOADS_DIR));
+// Archivos subidos — solo accesibles con auth
+app.use('/uploads', requireAuth, express.static(LOCAL_UPLOADS_DIR));
+
+// Auth global para /api/* con excepciones públicas
+const PUBLIC_API_PATHS = ['/api/health', '/api/capture/poll', '/api/capture/upload', '/api/capture/pending', '/api/capture/create'];
+app.use('/api', (req, res, next) => {
+    const fullPath = req.originalUrl.split('?')[0];
+    if (PUBLIC_API_PATHS.some(p => fullPath.startsWith(p))) return next();
+    requireAuth(req, res, next);
+});
+
+// Rate limiters específicos
+app.use('/api/agent', aiLimiter);
+app.use('/api/oracle', aiLimiter);
+app.use('/api/capture/upload', uploadLimiter);
+app.use('/api/pedagogical-assets/upload', uploadLimiter);
+app.use('/api/notebook/submissions', uploadLimiter);
 
 app.get('/api/health', (req, res) => {
     res.json({
@@ -2663,7 +2689,7 @@ app.post('/api/pedagogical-assets/upload', (req, res) => {
                 return res.status(400).json({ success: false, error: message });
             }
 
-            if (!isAdminEmail(req.body?.email || '')) {
+            if (!isAdminEmail(req.user?.email || req.body?.email || '')) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -5995,13 +6021,28 @@ const createRequestTimingTrace = (flowName, meta = {}) => {
 // ENDPOINTS
 // ========================================================================
 
-app.post('/webhook/MATICO', async (req, res) => {
+app.post('/webhook/MATICO', loginLimiter, async (req, res) => {
     const body = req.body;
     const currentAction = body.action || body.accion || '';
     const user_id = body.user_id;
     const data = body.data || {};
 
     console.log(`[MATICO] Accion: "${currentAction}" | Topic: ${body.tema || body.topic || '(sin tema)'}`);
+
+    // Auth: login/register son públicos, el resto requiere JWT
+    const publicActions = ['login', 'register'];
+    if (!publicActions.includes(currentAction)) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, error: 'Token requerido' });
+        }
+        try {
+            const jwt = await import('jsonwebtoken');
+            req.user = jwt.default.verify(authHeader.split(' ')[1], process.env.JWT_SECRET || 'CAMBIA-ESTE-SECRET-EN-PRODUCCION');
+        } catch (err) {
+            return res.status(401).json({ success: false, error: 'Token inválido o expirado' });
+        }
+    }
 
     try {
         const sheets = await getSheetsClient();
@@ -6013,14 +6054,17 @@ app.post('/webhook/MATICO', async (req, res) => {
             const user = await getRuntimeUserByEmail(email);
 
             if (currentAction === 'login') {
-                if (user && user.pass === password) {
+                const passOk = user ? await verifyPassword(password, user.pass || '') : false;
+                if (user && passOk) {
+                    const jwt = generateToken(user);
                     return res.json({
                         success: true,
                         user_id: user.token,
                         name: user.nombre || 'Estudiante',
                         role: user.role || 'estudiante',
                         parent_user_id: user.parent_user_id || null,
-                        email: user.email || email
+                        email: user.email || email,
+                        jwt
                     });
                 }
                 return res.status(401).json({ success: false, message: "Credenciales invalidas" });
@@ -6029,9 +6073,10 @@ app.post('/webhook/MATICO', async (req, res) => {
             if (currentAction === 'register') {
                 if (user) return res.status(400).json({ success: false, message: "El usuario ya existe" });
                 const newToken = `TK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+                const hashedPass = await hashPassword(password);
                 await upsertRuntimeUser({
                     token: newToken,
-                    pass: password,
+                    pass: hashedPass,
                     mail: email,
                     nombre: name || 'Estudiante',
                     celular: phone || '',
@@ -6039,7 +6084,9 @@ app.post('/webhook/MATICO', async (req, res) => {
                     comuna: commune || '',
                     correo_apoderado: correo_apoderado || ''
                 });
-                return res.json({ success: true, user_id: newToken, name: name || 'Estudiante' });
+                const newUser = { token: newToken, email, role: 'estudiante', nombre: name || 'Estudiante' };
+                const jwt = generateToken(newUser);
+                return res.json({ success: true, user_id: newToken, name: name || 'Estudiante', jwt });
             }
         }
 
@@ -7336,7 +7383,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'list_notebook_files') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7345,7 +7392,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'delete_notebook_file') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7358,7 +7405,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'admin_set_student_stage') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7422,7 +7469,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'list_generated_questions') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7434,7 +7481,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'delete_generated_question') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7447,7 +7494,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'list_pedagogical_assets') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7460,7 +7507,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'get_image_generation_config') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             const config = await getImageGenerationConfig();
@@ -7471,7 +7518,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'update_image_generation_runtime_config') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             const provider = normalizeImageGeneratorProvider(body.provider || '');
@@ -7491,7 +7538,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'generate_pedagogical_image') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7556,7 +7603,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         // El tema tambien lo propone la IA (o admin lo sugiere con body.topic_hint).
         // Si body.save === true, ademas persiste la pregunta en el Question Bank.
         if (currentAction === 'generate_question_with_image') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             const subject = String(body.subject || 'MATEMATICA').trim().toUpperCase();
@@ -7602,7 +7649,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         // Aplica el cap (default 6) de imagenes por fase: las preguntas top
         // por image_score reciben imagen, el resto se guardan sin imagen.
         if (currentAction === 'populate_phase_with_images') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             const subject = String(body.subject || 'MATEMATICA').trim().toUpperCase();
@@ -7731,7 +7778,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         // Este flujo no duplica preguntas: reescribe la fila original para que
         // pregunta, opciones e imagen queden acopladas.
         if (currentAction === 'add_images_to_existing_phase_questions') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7908,7 +7955,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'update_pedagogical_asset_status') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             if (!body.asset_id) {
@@ -7922,7 +7969,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'list_question_bank_rows') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7936,7 +7983,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'create_question_bank_row') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             if (!String(body.question || '').trim()) {
@@ -7955,7 +8002,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'list_theory_rows') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
 
@@ -7970,7 +8017,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'link_question_image_asset') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             if (!body.question_id) {
@@ -7985,7 +8032,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'update_question_visual_role') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             if (!body.question_id) {
@@ -8000,7 +8047,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'link_theory_image_asset') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             if (!body.row_number) {
@@ -8015,7 +8062,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'suggest_question_matches_from_asset') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             if (!body.asset_id) {
@@ -8048,7 +8095,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'suggest_theory_matches_from_asset') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             if (!body.asset_id) {
@@ -8077,7 +8124,7 @@ SÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â Ãƒ
         }
 
         if (currentAction === 'generate_question_from_asset') {
-            if (!isAdminEmail(body.email)) {
+            if (!isAdminEmail(req.user?.email || body.email)) {
                 return res.status(403).json({ success: false, error: 'Acceso solo para administrador' });
             }
             if (!body.asset_id) {
@@ -9019,11 +9066,9 @@ app.delete('/api/calendar/events/:event_id', async (req, res) => {
 });
 
 // Admin: vincular hijo a apoderado
-app.post('/api/admin/link-child', async (req, res) => {
+app.post('/api/admin/link-child', requireAdmin, async (req, res) => {
     try {
-        const { admin_email, child_user_id, parent_user_id } = req.body;
-        const ADMIN_EMAILS = ['joseantonio.olguinr@gmail.com'];
-        if (!ADMIN_EMAILS.includes(admin_email)) return res.status(403).json({ success: false, error: 'No autorizado' });
+        const { child_user_id, parent_user_id } = req.body;
         if (!child_user_id || !parent_user_id) return res.status(400).json({ success: false, error: 'Faltan parametros' });
 
         // Check if child exists in profiles
@@ -9088,13 +9133,9 @@ app.get('/api/profile', async (req, res) => {
 // =====================================================================
 // MIGRACIÓN: Google Sheets progress_log → Supabase progress_log
 // =====================================================================
-app.post('/api/admin/migrate-sheets-to-supabase', async (req, res) => {
+app.post('/api/admin/migrate-sheets-to-supabase', requireAdmin, async (req, res) => {
     try {
-        const { admin_email, dry_run = false } = req.body;
-        const ADMIN_EMAILS = ['joseantonio.olguinr@gmail.com'];
-        if (!ADMIN_EMAILS.includes(admin_email)) {
-            return res.status(403).json({ success: false, error: 'No autorizado' });
-        }
+        const { dry_run = false } = req.body;
 
         console.log('[MIGRATION] Iniciando migración de Google Sheets → Supabase...');
 
@@ -9762,52 +9803,7 @@ app.put('/api/notifications/:notif_id/read', async (req, res) => {
 // STUDY SESSIONS (hora de estudio)
 // =====================================================================
 
-// Crear tabla si no existe (auto-migration)
-app.post('/api/study-sessions/init-table', async (req, res) => {
-    try {
-        const { error } = await supabase.rpc('exec_sql', {
-            query: `
-                CREATE TABLE IF NOT EXISTS study_sessions (
-                    session_id TEXT PRIMARY KEY,
-                    student_user_id TEXT NOT NULL,
-                    subject TEXT DEFAULT '',
-                    session_number INTEGER DEFAULT 0,
-                    type TEXT DEFAULT 'daily',
-                    start_time TIMESTAMPTZ DEFAULT now(),
-                    end_time TIMESTAMPTZ,
-                    total_minutes INTEGER DEFAULT 0,
-                    milestones JSONB DEFAULT '[]'::jsonb,
-                    created_at TIMESTAMPTZ DEFAULT now()
-                );
-                CREATE INDEX IF NOT EXISTS idx_study_sessions_student ON study_sessions(student_user_id);
-                CREATE INDEX IF NOT EXISTS idx_study_sessions_start ON study_sessions(start_time);
-            `
-        });
-        if (error) {
-            // If rpc doesn't exist, try direct insert to test table existence
-            console.warn('[STUDY] rpc exec_sql not available, trying direct approach:', error.message);
-            return res.json({ success: true, message: 'Table must be created manually in Supabase SQL editor', sql: `
-CREATE TABLE IF NOT EXISTS study_sessions (
-    session_id TEXT PRIMARY KEY,
-    student_user_id TEXT NOT NULL,
-    subject TEXT DEFAULT '',
-    session_number INTEGER DEFAULT 0,
-    type TEXT DEFAULT 'daily',
-    start_time TIMESTAMPTZ DEFAULT now(),
-    end_time TIMESTAMPTZ,
-    total_minutes INTEGER DEFAULT 0,
-    milestones JSONB DEFAULT '[]'::jsonb,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_study_sessions_student ON study_sessions(student_user_id);
-CREATE INDEX IF NOT EXISTS idx_study_sessions_start ON study_sessions(start_time);
-            `.trim() });
-        }
-        res.json({ success: true, message: 'Table created' });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
+// [REMOVED] init-table endpoint — usar Supabase SQL editor directamente
 
 // Iniciar sesión de estudio
 app.post('/api/study-sessions/start', async (req, res) => {

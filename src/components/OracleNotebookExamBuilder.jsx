@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { authFetch } from '../utils/authFetch';
 import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './EvidenceIntake';
 
@@ -76,7 +77,7 @@ const OracleNotebookExamBuilder = ({
         setAccumQuestions([]);
         setBatchInfo({ total_batches: 1, done_batches: 0, has_more: false, loading_batch: false });
         try {
-            const response = await fetch('/api/oracle/exam-from-notebook/intake', {
+            const response = await authFetch('/api/oracle/exam-from-notebook/intake', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -136,7 +137,7 @@ const OracleNotebookExamBuilder = ({
         setAccumQuestions([]);
         setGeneratedResult(null);
         try {
-            const response = await fetch('/api/oracle/exam-from-notebook/generate', {
+            const response = await authFetch('/api/oracle/exam-from-notebook/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -194,7 +195,7 @@ const OracleNotebookExamBuilder = ({
         for (let idx = startAtIndex; idx < totalBatches; idx += 1) {
             setBatchInfo((prev) => ({ ...prev, loading_batch: true }));
             try {
-                const response = await fetch('/api/oracle/exam-from-notebook/generate-batch', {
+                const response = await authFetch('/api/oracle/exam-from-notebook/generate-batch', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

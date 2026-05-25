@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { authFetch } from '../utils/authFetch';
 import { AlertTriangle, Camera, CheckCircle, Clipboard, Download, Monitor, RotateCcw, Sparkles, Star, Trash2, UploadCloud, Video, X, Smartphone } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import RemoteCaptureButton from './RemoteCaptureButton';
@@ -724,7 +725,7 @@ const CuadernoMission = ({
 
     const pollSubmission = async (id) => {
         try {
-            const response = await fetch(`/api/notebook/submissions/${encodeURIComponent(id)}`);
+            const response = await authFetch(`/api/notebook/submissions/${encodeURIComponent(id)}`);
             const data = await response.json();
 
             if (!response.ok || !data.success) {
@@ -757,7 +758,7 @@ const CuadernoMission = ({
         setFeedback('Profe Matico está leyendo todas las páginas de tu cuaderno...');
 
         try {
-            const response = await fetch('/api/notebook/submissions', {
+            const response = await authFetch('/api/notebook/submissions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, Loader, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { setToken } from '../utils/authFetch';
 
 const LoginPage = ({ onLogin }) => {
     const [isRegistering, setIsRegistering] = useState(false);
@@ -43,6 +44,8 @@ const LoginPage = ({ onLogin }) => {
             const data = await response.json();
 
             if (data.success || (data.user_id && !data.error)) {
+                // Guardar JWT para requests autenticados
+                if (data.jwt) setToken(data.jwt);
                 // Success!
                 onLogin({
                     user_id: data.user_id,

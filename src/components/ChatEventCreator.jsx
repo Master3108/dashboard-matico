@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { authFetch } from '../utils/authFetch';
 import {
     Send, Mic, MicOff, Image, Camera, X, Calendar,
     CheckCircle, Loader, Sparkles, Clock, AlertTriangle,
@@ -250,7 +251,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
             if (studentUserId) formData.append('student_user_id', studentUserId);
             formData.append('events_json', JSON.stringify(selectedEvents.map(({ reviewItemId, selected, ...event }) => event)));
 
-            const res = await fetch('/api/calendar/smart-create', { method: 'POST', body: formData });
+            const res = await authFetch('/api/calendar/smart-create', { method: 'POST', body: formData });
             const data = await res.json();
             setMessages(prev => prev.filter(m => m.id !== 'processing'));
 
@@ -506,7 +507,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
             userImages.slice(0, MAX_EVENT_IMAGES).forEach((imageFile) => formData.append('images', imageFile));
             formData.append('dry_run', 'true');
 
-            const res = await fetch('/api/calendar/smart-create', {
+            const res = await authFetch('/api/calendar/smart-create', {
                 method: 'POST',
                 body: formData
             });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { authFetch } from '../utils/authFetch';
 import {
     Send, Mic, MicOff, Image, Camera, X, Calendar,
     CheckCircle, Loader, Sparkles, Clock, MessageCircle,
@@ -241,7 +242,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
             if (studentUserId) formData.append('student_user_id', studentUserId);
             formData.append('events_json', JSON.stringify(selectedEvents.map(({ reviewItemId, selected, ...event }) => event)));
 
-            const res = await fetch('/api/calendar/smart-create', { method: 'POST', body: formData });
+            const res = await authFetch('/api/calendar/smart-create', { method: 'POST', body: formData });
             const data = await res.json();
             setMessages(prev => prev.filter(m => m.id !== 'processing'));
 
@@ -498,7 +499,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
         setMessages(prev => [...prev, { id: 'processing', type: 'processing', timestamp: new Date() }]);
         try {
             conversationHistoryRef.current.push({ role: 'user', content: queryText });
-            const res = await fetch('/api/agent/chat', {
+            const res = await authFetch('/api/agent/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -564,7 +565,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                 if (userImage) formData.append('image', userImage);
                 formData.append('dry_run', 'true');
 
-                const res = await fetch('/api/calendar/smart-create', {
+                const res = await authFetch('/api/calendar/smart-create', {
                     method: 'POST',
                     body: formData
                 });
@@ -586,7 +587,7 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                 // Flujo agente inteligente → consulta Supabase
                 conversationHistoryRef.current.push({ role: 'user', content: userText });
 
-                const res = await fetch('/api/agent/chat', {
+                const res = await authFetch('/api/agent/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

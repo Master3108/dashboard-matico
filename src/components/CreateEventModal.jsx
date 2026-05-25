@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { authFetch } from '../utils/authFetch';
 import { X, Calendar, Clock, Bell, BookOpen, Mic, MicOff } from 'lucide-react';
 import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './EvidenceIntake';
 
@@ -141,7 +142,7 @@ const CreateEventModal = ({ isOpen, onClose, userId, userRole = 'estudiante', st
                 }))
             };
 
-            const response = await fetch('/api/calendar/events', {
+            const response = await authFetch('/api/calendar/events', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

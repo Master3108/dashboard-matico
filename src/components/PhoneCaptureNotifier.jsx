@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { authFetch } from '../utils/authFetch';
 import { Camera, UploadCloud, X, Loader2, CheckCircle2, Send } from 'lucide-react';
 
 /**
@@ -24,7 +25,7 @@ export default function PhoneCaptureNotifier({ userId }) {
     const checkPending = useCallback(async () => {
         if (!userId) return;
         try {
-            const res = await fetch(`/api/capture/pending?user_id=${encodeURIComponent(userId)}`);
+            const res = await authFetch(`/api/capture/pending?user_id=${encodeURIComponent(userId)}`);
             const data = await res.json();
             if (data.success && data.pending) {
                 setPending(prev => {
@@ -104,7 +105,7 @@ export default function PhoneCaptureNotifier({ userId }) {
                 fd.append('token', pending.token);
                 fd.append('captured_from', sourceRef.current || 'phone_app');
                 fd.append('image', item.file); // server converts to JPEG via sharp
-                const res = await fetch('/api/capture/upload', { method: 'POST', body: fd });
+                const res = await authFetch('/api/capture/upload', { method: 'POST', body: fd });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error);
                 uploaded++;
@@ -125,7 +126,7 @@ export default function PhoneCaptureNotifier({ userId }) {
         if (!pending) return;
         setFinishing(true);
         try {
-            await fetch('/api/capture/finish', {
+            await authFetch('/api/capture/finish', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: pending.token })

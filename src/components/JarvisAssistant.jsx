@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { authFetch } from '../utils/authFetch';
 import { X, Mic, MicOff, Send, Volume2, VolumeX, Trash2, ChevronDown } from 'lucide-react';
 
 // ─── JARVIS Visual Core (SVG concentric rings, audio-reactive) ───
@@ -224,7 +225,7 @@ export default function JarvisAssistant({
 
     // ─── Server calls ───
     const callChat = useCallback(async (message, convHistory) => {
-        const res = await fetch('/api/agent/chat', {
+        const res = await authFetch('/api/agent/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -244,7 +245,7 @@ export default function JarvisAssistant({
     }, [studentUserId, userRole, trainingMode, userId]);
 
     const callTTS = useCallback(async (content, signal) => {
-        const res = await fetch('/api/agent/tts', {
+        const res = await authFetch('/api/agent/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: content, voice: 'onyx' }),
@@ -257,7 +258,7 @@ export default function JarvisAssistant({
     const callSTT = useCallback(async (audioBlob) => {
         const fd = new FormData();
         fd.append('audio', audioBlob, 'speech.webm');
-        const res = await fetch('/api/agent/stt', { method: 'POST', body: fd });
+        const res = await authFetch('/api/agent/stt', { method: 'POST', body: fd });
         if (!res.ok) throw new Error(`STT: ${res.status}`);
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'STT failed');
