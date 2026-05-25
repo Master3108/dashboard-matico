@@ -835,13 +835,13 @@ const CuadernoMission = ({
                             <p className="text-sm opacity-90 mt-1">PDF automático multipágina y desbloqueo del quiz por comprensión</p>
                         </div>
                     </div>
-                    {/* X arriba a la derecha: cierra el modal */}
-                    {status !== 'camera' && (
+                    {/* X arriba a la derecha: vuelve atras (a Teoria). Nunca completa la mision. */}
+                    {status !== 'camera' && typeof onSkip === 'function' && (
                         <button
                             type="button"
-                            onClick={typeof onSkip === 'function' ? handleCloseModal : onComplete}
-                            aria-label="Cerrar"
-                            title="Cerrar"
+                            onClick={handleCloseModal}
+                            aria-label="Volver"
+                            title="Volver a Teoria"
                             className="absolute top-3 right-3 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors"
                         >
                             <X size={20} />

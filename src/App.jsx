@@ -5956,10 +5956,12 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         await launchQuizAfterTheoryNotebook();
     };
 
-    const handleTheoryNotebookSkip = async () => {
+    // X/"Volver a Teoria" del cuaderno: cierra cuaderno y reabre teoria.
+    // NO marca completado, NO inicia quiz. Mantiene mandatory para que al volver a "Iniciar quiz"
+    // se le exija el cuaderno otra vez.
+    const handleTheoryNotebookBack = () => {
         setShowTheoryNotebookMission(false);
-        setIsTheoryNotebookMandatory(false);
-        await launchQuizAfterTheoryNotebook();
+        setShowTheoryModal(true);
     };
 
     const buildWeaknessSummary = (wrongAnswers = []) => {
@@ -6564,7 +6566,7 @@ ${finalData.capsule}`;
                         topic={theoryTitle || TODAYS_SUBJECT.oa_title || 'Teoría lúdica'}
                         readingContent={theoryContent || aiContent || TODAYS_SESSION.readingContent || ''}
                         onComplete={handleTheoryNotebookComplete}
-                        onSkip={isTheoryNotebookMandatory ? null : handleTheoryNotebookSkip}
+                        onSkip={handleTheoryNotebookBack}
                         userEmail={currentUser?.email}
                         userId={USER_ID}
                     />
