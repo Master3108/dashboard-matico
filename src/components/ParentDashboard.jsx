@@ -2340,4 +2340,10 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                 onEventCreated={() => {
                     fetchChildEvents();
                     fetchNotifications();
-    
+                }}
+            />
+        </div>
+    );
+};
+
+export default ParentDashboard;

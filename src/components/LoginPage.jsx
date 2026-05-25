@@ -200,4 +200,12 @@ const LoginPage = ({ onLogin }) => {
 
                 {/* Demo Hint */}
                 <div className="mt-4 text-center text-xs text-gray-400">
- 
+                    <p>Demo: demo@matico.ai / demo</p>
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+export default LoginPage;

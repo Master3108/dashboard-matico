@@ -1011,4 +1011,9 @@ const MaticoAgent = ({ userId, userRole, studentUserId, studentName, onEventCrea
                     from { opacity: 0; transform: translateY(100px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
-            `
+            `}</style>
+        </div>
+    );
+};
+
+export default MaticoAgent;

@@ -1174,4 +1174,8 @@ const CuadernoMission = ({
                     </div>
                 </div>
             )}
-      
+        </div>
+    );
+};
+
+export default CuadernoMission;

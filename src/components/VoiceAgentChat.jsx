@@ -1187,4 +1187,9 @@ const VoiceAgentChat = ({ studentUserId, userId, userRole = 'apoderado', student
 
             <style>{`
                 .toroid-glow { filter: drop-shadow(0 0 30px rgba(59,130,246,0.35)); transition: filter 0.4s; }
-    
+            `}</style>
+        </div>
+    );
+};
+
+export default VoiceAgentChat;

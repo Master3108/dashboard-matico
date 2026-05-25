@@ -269,4 +269,8 @@ export default function PhoneCaptureNotifier({ userId }) {
                     <button onClick={dismiss} className="text-white/60 hover:text-white">
                         <X className="w-5 h-5" />
                     </button>
-   
+                </div>
+            </div>
+        </>
+    );
+}

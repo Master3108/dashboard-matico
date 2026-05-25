@@ -399,4 +399,8 @@ const CreateEventModal = ({ isOpen, onClose, userId, userRole = 'estudiante', st
                     </button>
                 </div>
             </div>
-       
+        </div>
+    );
+};
+
+export default CreateEventModal;
