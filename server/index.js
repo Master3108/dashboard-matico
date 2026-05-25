@@ -13,6 +13,7 @@ import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import sharp from 'sharp';
+import jwt from 'jsonwebtoken';
 import {
     generateToken, requireAuth, requireAdmin, requireOwnership,
     generalLimiter, loginLimiter, aiLimiter, uploadLimiter,
@@ -6037,8 +6038,7 @@ app.post('/webhook/MATICO', loginLimiter, async (req, res) => {
             return res.status(401).json({ success: false, error: 'Token requerido' });
         }
         try {
-            const jwt = await import('jsonwebtoken');
-            req.user = jwt.default.verify(authHeader.split(' ')[1], process.env.JWT_SECRET || 'CAMBIA-ESTE-SECRET-EN-PRODUCCION');
+            req.user = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET || 'CAMBIA-ESTE-SECRET-EN-PRODUCCION');
         } catch (err) {
             return res.status(401).json({ success: false, error: 'Token inválido o expirado' });
         }

@@ -9,8 +9,7 @@
 
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
-import bcryptPkg from 'bcrypt';
-const bcrypt = bcryptPkg;
+import bcrypt from 'bcryptjs';
 
 // ========== 1. JWT AUTH ==========
 
