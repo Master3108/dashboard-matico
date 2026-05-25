@@ -61,17 +61,8 @@ const LoginPage = ({ onLogin }) => {
         } catch (err) {
             console.error("Auth error:", err);
             setError(err.message || "No se pudo conectar con el servidor. Intenta de nuevo.");
-
-            // DEMO FALLBACK (Para que puedas probar la UI sin el backend listo aún)
-            // Si falla la conexión, permitimos entrar como demo si es el usuario de prueba
-            if (formData.email === 'demo@matico.ai' && formData.password === 'demo') {
-                onLogin({
-                    user_id: "123e4567-e89b-12d3-a456-426614174000",
-                    username: "Estudiante Demo",
-                    email: "demo@matico.ai"
-                });
-            }
-
+            // Nota: se removio el demo fallback porque ahora todas las acciones
+            // requieren JWT — entrar sin token deja al user atascado en "Token requerido".
         } finally {
             setIsLoading(false);
         }

@@ -3347,16 +3347,21 @@ const App = () => {
     const [currentUser, setCurrentUser] = useState(null);
     const [authChecking, setAuthChecking] = useState(true);
 
-    // Check for saved session
+    // Check for saved session — requiere user + JWT, si falta uno se limpia todo
     useEffect(() => {
         const savedUser = localStorage.getItem('MATICO_USER');
-        if (savedUser) {
+        const savedToken = localStorage.getItem('matico_jwt');
+        if (savedUser && savedToken) {
             try {
                 setCurrentUser(JSON.parse(savedUser));
             } catch (e) {
                 console.error("Error parsing saved user", e);
                 localStorage.removeItem('MATICO_USER');
+                localStorage.removeItem('matico_jwt');
             }
+        } else if (savedUser && !savedToken) {
+            // Sesion vieja sin JWT (pre-fix de seguridad) — limpiar para forzar relogin
+            localStorage.removeItem('MATICO_USER');
         }
         setAuthChecking(false);
     }, []);

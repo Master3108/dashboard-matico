@@ -43,13 +43,13 @@ export async function authFetch(url, options = {}) {
         headers
     });
 
-    // If 401, token expired — clear and redirect to login
+    // If 401, token missing/expired/invalid — clear and redirect to login
     if (response.status === 401) {
         const data = await response.clone().json().catch(() => ({}));
-        if (data.error === 'Token expirado' || data.error === 'Token inválido') {
+        const err = String(data.error || '');
+        if (err === 'Token expirado' || err === 'Token inválido' || err === 'Token requerido') {
             clearToken();
-            localStorage.removeItem('matico_user');
-            // Dispatch event so App.jsx can catch it and show login
+            localStorage.removeItem('MATICO_USER');
             window.dispatchEvent(new CustomEvent('matico:session-expired'));
         }
     }
