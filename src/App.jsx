@@ -3519,7 +3519,7 @@ const App = () => {
         
         try {
             console.log("[PROFILE] Fetching latest profile for:", USER_ID);
-            const response = await fetch(`${activeWebhookUrl}?accion=get_profile&user_id=${USER_ID}`, {
+            const response = await authFetch(`${activeWebhookUrl}?accion=get_profile&user_id=${USER_ID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 signal: controller.signal,
@@ -3587,7 +3587,7 @@ const App = () => {
         }
 
         try {
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -3671,7 +3671,7 @@ const App = () => {
         else setProgressReportsEnabled(val);
 
         try {
-            await fetch(activeWebhookUrl, {
+            await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4272,7 +4272,7 @@ const App = () => {
 
             setLoadingMessage('Pidiendo la primera tanda al servidor...');
             prepExamDiagnostics.begin('Esperando primera tanda del servidor');
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4325,7 +4325,7 @@ const App = () => {
 
             if (totalBatches > 1) {
                 prepExamBackgroundLoadRef.current = true;
-                prepExamNextBatchPromiseRef.current = fetch(activeWebhookUrl, {
+                prepExamNextBatchPromiseRef.current = authFetch(activeWebhookUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4491,7 +4491,7 @@ const App = () => {
             const data = await response.json();
             parsed = data.success ? data : null;
         } else {
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4553,7 +4553,7 @@ const App = () => {
                         return null;
                     });
             } else {
-                prepExamNextBatchPromiseRef.current = fetch(activeWebhookUrl, {
+                prepExamNextBatchPromiseRef.current = authFetch(activeWebhookUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4596,7 +4596,7 @@ const App = () => {
 
         try {
             const weakSessions = prepExamReport.weakSessions.map(item => item.session);
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4651,7 +4651,7 @@ const App = () => {
 
         setIsLoadingAdminFiles(true);
         try {
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4685,7 +4685,7 @@ const App = () => {
         if (!confirm(`¿Eliminar este PDF?\n\n${file.fileName}`)) return;
 
         try {
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4721,7 +4721,7 @@ const App = () => {
 
         setIsSavingAdminStage(true);
         try {
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4761,7 +4761,7 @@ const App = () => {
 
         setIsLoadingAdminGeneratedQuestions(true);
         try {
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4795,7 +4795,7 @@ const App = () => {
         if (!confirm(`¿Eliminar esta pregunta generada?\n\n${item.question?.slice(0, 180) || item.id}`)) return;
 
         try {
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4823,7 +4823,7 @@ const App = () => {
 
         setIsLoadingAdminPedagogicalAssets(true);
         try {
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4878,7 +4878,7 @@ const App = () => {
     };
 
     const getImageGenerationConfig = async () => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4895,7 +4895,7 @@ const App = () => {
     };
 
     const generatePedagogicalImage = async (payload = {}) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4914,7 +4914,7 @@ const App = () => {
     };
 
     const populatePhaseWithImages = async (payload = {}) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4933,7 +4933,7 @@ const App = () => {
     };
 
     const updateImageGenerationRuntimeConfig = async (payload = {}) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4951,7 +4951,7 @@ const App = () => {
     };
 
     const updatePedagogicalAssetStatus = async (asset, status) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4971,7 +4971,7 @@ const App = () => {
     };
 
     const searchQuestionBankRows = async (filters = {}) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4989,7 +4989,7 @@ const App = () => {
     };
 
     const searchTheoryRows = async (filters = {}) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5007,7 +5007,7 @@ const App = () => {
     };
 
     const createQuestionBankRow = async (payload = {}) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5025,7 +5025,7 @@ const App = () => {
     };
 
     const linkQuestionImageAsset = async (questionId, assetId) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5044,7 +5044,7 @@ const App = () => {
     };
 
     const updateQuestionImageVisualRole = async (questionId, questionVisualRole) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5063,7 +5063,7 @@ const App = () => {
     };
 
     const linkTheoryImageAsset = async (rowNumber, assetId) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5082,7 +5082,7 @@ const App = () => {
     };
 
     const generateQuestionFromAsset = async (assetId, payload = {}) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5101,7 +5101,7 @@ const App = () => {
     };
 
     const suggestQuestionMatchesFromAsset = async (assetId, payload = {}) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5120,7 +5120,7 @@ const App = () => {
     };
 
     const suggestTheoryMatchesFromAsset = async (assetId, payload = {}) => {
-        const response = await fetch(activeWebhookUrl, {
+        const response = await authFetch(activeWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5449,7 +5449,7 @@ const App = () => {
                 setLoadingMessage('âš¡ Generando preguntas del quiz...');
             }
             quizDiagnostics.begin('Esperando respuesta del servidor');
-            const response = await fetch(activeWebhookUrl, {
+            const response = await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -5894,7 +5894,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
         try {
             // 1. Enviar Reporte Detallado al Alumno y Apoderado (IA)
             // Nota: El servidor ya se encarga de enviarlo a ambos si están configurados
-            await fetch(activeWebhookUrl, {
+            await authFetch(activeWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -6237,7 +6237,7 @@ SALIDA REQUERIDA (JSON ESTRICTO):
             console.log("[N8N] Action:", n8nAction);
             console.log("[N8N] Body:", body);
 
-            const response = await fetch(`${activeWebhookUrl}?${params.toString()}`, {
+            const response = await authFetch(`${activeWebhookUrl}?${params.toString()}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
