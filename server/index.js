@@ -11799,7 +11799,4 @@ app.listen(PORT, () => {
     if (emailStatus.enabled) {
         console.log(`[EMAIL] Habilitado con la cuenta ${EMAIL_CONFIG.user}`);
     } else {
-        console.log(`[EMAIL] Deshabilitado. Faltan variables: ${emailStatus.missing.join(', ')}`);
-    }
-    console.log(`[AGENT] Conversacion: ${AGENT_CONVERSATION_MODEL} | STT: ${AGENT_STT_MODEL} | TTS: ${AGENT_TTS_MODEL}`);
-});
+        console.log(`[EMAIL] Deshabilitado. Faltan variables: 

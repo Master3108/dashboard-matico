@@ -833,8 +833,4 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
                     </div>
                 </div>
             </div>
-        </div>
-    );
-};
-
-export default ChatEventCreator;
+   

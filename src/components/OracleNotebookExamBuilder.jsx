@@ -375,8 +375,4 @@ const OracleNotebookExamBuilder = ({
                     <span>{errorMsg}</span>
                 </div>
             )}
-        </div>
-    );
-};
-
-export default OracleNotebookExamBuilder;
+        

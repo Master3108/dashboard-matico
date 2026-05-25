@@ -354,9 +354,4 @@ const CalendarView = ({ userId, userRole = 'estudiante', isOpen, onClose }) => {
                         </>
                     )}
                 </div>
-            </div>
-        </div>
-    );
-};
-
-export default CalendarView;
+            </

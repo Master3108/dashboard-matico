@@ -600,8 +600,4 @@ export default function JarvisAssistant({
                 @keyframes jarvisPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
                 @keyframes jarvisScan { 0%{top:0} 100%{top:100%} }
                 @keyframes jSlideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-                .animate-jSlideUp { animation: jSlideUp .3s ease-out; }
-            `}</style>
-        </div>
-    );
-}
+                .animate-jSlideUp { animation: jSlideUp .3s

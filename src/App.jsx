@@ -7609,17 +7609,4 @@ ${finalData.capsule}`;
             {/* Voice Training Agent Overlay (JARVIS) */}
             {showTrainingVoice && (
                 <JarvisAssistant
-                    studentUserId={currentUser?.user_id}
-                    userId={currentUser?.user_id}
-                    userRole="apoderado"
-                    studentName=""
-                    trainingMode={true}
-                    onCalendarChanged={() => {}}
-                    onClose={() => { setShowTrainingVoice(false); fetchAgentTraining(); }}
-                />
-            )}
-        </div>
-    );
-};
-
-export default App;
+                  
