@@ -265,31 +265,233 @@ const CHAPTERS = [
     }
 ];
 
+// =====================================================================
+// CAPITULOS 2° MEDIO (Mineduc 2019)
+// =====================================================================
+const CHAPTERS_2M = [
+    {
+        id: 'cap1_reales_irracionales',
+        chapterNumber: 1,
+        title: 'Numeros reales e irracionales',
+        skill: 'Distinguir y operar con numeros reales, racionales e irracionales',
+        keywords: ['reales', 'irracionales', 'racionales', 'recta real', 'pi', 'raiz dos', 'numeros reales', 'densidad', 'aproximacion'],
+        theoryFocus: [
+            'distinguir numeros racionales e irracionales y ubicarlos en la recta real',
+            'operar con numeros reales y comparar magnitudes irracionales',
+            'analizar densidad de los reales y aproximaciones decimales'
+        ],
+        quizFocus: [
+            'clasificacion de numeros reales',
+            'comparacion y orden en la recta',
+            'operatoria con irracionales',
+            'aproximaciones racionales de irracionales'
+        ]
+    },
+    {
+        id: 'cap2_raices_racionalizacion',
+        chapterNumber: 2,
+        title: 'Raices, radicacion y racionalizacion',
+        skill: 'Aplicar propiedades de radicacion y racionalizar denominadores',
+        keywords: ['raices', 'radicales', 'racionalizar', 'raiz enesima', 'radicando', 'indice', 'simplificar raices'],
+        theoryFocus: [
+            'aplicar propiedades de raices enesimas: producto, cociente y potencia',
+            'simplificar, sumar y restar expresiones con radicales semejantes',
+            'racionalizar denominadores monomios y binomios'
+        ],
+        quizFocus: [
+            'propiedades de radicacion',
+            'simplificacion de radicales',
+            'racionalizacion de denominadores',
+            'ecuaciones con radicales'
+        ]
+    },
+    {
+        id: 'cap3_notacion_cientifica',
+        chapterNumber: 3,
+        title: 'Notacion cientifica y orden de magnitud',
+        skill: 'Expresar y comparar magnitudes en notacion cientifica',
+        keywords: ['notacion cientifica', 'orden de magnitud', 'mantisa', 'exponente', 'potencias de diez', 'micro', 'nano', 'tera', 'mega'],
+        theoryFocus: [
+            'expresar numeros muy grandes y muy pequenos en notacion cientifica',
+            'operar productos y cocientes en notacion cientifica',
+            'comparar ordenes de magnitud en contextos cientificos'
+        ],
+        quizFocus: [
+            'conversion entre forma decimal y cientifica',
+            'operaciones en notacion cientifica',
+            'comparacion de ordenes de magnitud',
+            'aplicaciones en fisica y biologia'
+        ]
+    },
+    {
+        id: 'cap4_productos_factorizacion',
+        chapterNumber: 4,
+        title: 'Productos notables y factorizacion',
+        skill: 'Desarrollar productos notables y factorizar expresiones algebraicas',
+        keywords: ['productos notables', 'factorizacion', 'cuadrado de binomio', 'suma por diferencia', 'factor comun', 'trinomio', 'agrupacion'],
+        theoryFocus: [
+            'desarrollar cuadrado de binomio, suma por diferencia y cubo de binomio',
+            'factorizar por factor comun, agrupacion, trinomio y suma o diferencia de cubos',
+            'simplificar fracciones algebraicas con factorizaciones'
+        ],
+        quizFocus: [
+            'productos notables',
+            'factorizacion estrategica',
+            'simplificacion de fracciones algebraicas',
+            'modelacion algebraica'
+        ]
+    },
+    {
+        id: 'cap5_sistemas_2x2',
+        chapterNumber: 5,
+        title: 'Sistemas de ecuaciones lineales 2x2',
+        skill: 'Resolver sistemas 2x2 por sustitucion, igualacion y reduccion',
+        keywords: ['sistemas', 'ecuaciones', 'sustitucion', 'igualacion', 'reduccion', 'sistemas lineales', '2x2', 'compatible', 'incompatible'],
+        theoryFocus: [
+            'resolver sistemas 2x2 por sustitucion, igualacion y reduccion',
+            'interpretar graficamente sistemas compatibles, incompatibles e indeterminados',
+            'plantear sistemas a partir de problemas de contexto'
+        ],
+        quizFocus: [
+            'metodos de resolucion 2x2',
+            'interpretacion grafica',
+            'modelacion con sistemas',
+            'analisis de soluciones'
+        ]
+    },
+    {
+        id: 'cap6_funcion_cuadratica',
+        chapterNumber: 6,
+        title: 'Funcion cuadratica y parabola',
+        skill: 'Modelar y analizar funciones cuadraticas',
+        keywords: ['funcion cuadratica', 'parabola', 'vertice', 'eje de simetria', 'concavidad', 'discriminante', 'ceros', 'raices reales'],
+        theoryFocus: [
+            'analizar vertice, eje de simetria, concavidad e intersecciones de la parabola',
+            'resolver ecuaciones cuadraticas con formula general y discriminante',
+            'modelar fenomenos cuadraticos en fisica y economia'
+        ],
+        quizFocus: [
+            'vertice y eje',
+            'ceros y discriminante',
+            'analisis de graficos',
+            'modelacion con cuadraticas'
+        ]
+    },
+    {
+        id: 'cap7_funcion_inversa_raiz',
+        chapterNumber: 7,
+        title: 'Funcion inversa y raiz cuadrada',
+        skill: 'Reconocer funcion inversa y propiedades de la funcion raiz cuadrada',
+        keywords: ['funcion inversa', 'funcion raiz', 'dominio', 'recorrido', 'biyectiva', 'composicion', 'raiz cuadrada'],
+        theoryFocus: [
+            'identificar funciones invertibles, calcular y graficar inversas',
+            'analizar dominio, recorrido y simetria de funciones raiz cuadrada',
+            'relacionar funcion cuadratica y su inversa en el dominio adecuado'
+        ],
+        quizFocus: [
+            'calculo de funcion inversa',
+            'dominio y recorrido de la funcion raiz',
+            'graficos asociados',
+            'composicion de funciones'
+        ]
+    },
+    {
+        id: 'cap8_semejanza_tales',
+        chapterNumber: 8,
+        title: 'Semejanza, homotecia y teorema de Tales',
+        skill: 'Aplicar semejanza y teorema de Tales en problemas geometricos',
+        keywords: ['semejanza', 'homotecia', 'tales', 'thales', 'razon de semejanza', 'figuras semejantes', 'criterios', 'proporcionalidad de segmentos'],
+        theoryFocus: [
+            'aplicar criterios de semejanza de triangulos (AA, LAL, LLL)',
+            'usar homotecia como transformacion que produce figuras semejantes',
+            'aplicar teorema de Tales en haces de paralelas y problemas de altura'
+        ],
+        quizFocus: [
+            'criterios de semejanza',
+            'teorema de Tales',
+            'homotecia',
+            'modelacion con figuras semejantes'
+        ]
+    },
+    {
+        id: 'cap9_cuerpos_geometricos',
+        chapterNumber: 9,
+        title: 'Cuerpos geometricos: area y volumen',
+        skill: 'Calcular area y volumen de prismas, piramides, cilindros, conos y esferas',
+        keywords: ['prisma', 'piramide', 'cilindro', 'cono', 'esfera', 'area total', 'volumen', 'apotema', 'generatriz'],
+        theoryFocus: [
+            'calcular area lateral y total de prismas, piramides, cilindros y conos',
+            'calcular volumen de cuerpos geometricos y aplicar en situaciones reales',
+            'relacionar formulas de area y volumen con secciones planas'
+        ],
+        quizFocus: [
+            'area de cuerpos geometricos',
+            'volumen de cuerpos geometricos',
+            'modelacion con solidos',
+            'comparacion volumen-area'
+        ]
+    },
+    {
+        id: 'cap10_probabilidad_estadistica',
+        chapterNumber: 10,
+        title: 'Probabilidad, variable aleatoria y estadistica',
+        skill: 'Analizar variable aleatoria, distribucion y medidas de dispersion',
+        keywords: ['variable aleatoria', 'distribucion', 'laplace', 'binomial', 'media', 'mediana', 'varianza', 'desviacion estandar', 'probabilidad'],
+        theoryFocus: [
+            'definir variable aleatoria discreta y construir distribuciones de probabilidad',
+            'aplicar regla de Laplace y calcular probabilidades en experimentos compuestos',
+            'calcular e interpretar media, varianza y desviacion estandar como medidas de dispersion'
+        ],
+        quizFocus: [
+            'variable aleatoria y distribucion',
+            'probabilidad con regla de Laplace',
+            'medidas de dispersion',
+            'interpretacion de datos estadisticos'
+        ]
+    }
+];
+
 const fallbackChapter = CHAPTERS[0];
 const CHAPTERS_BY_ID = Object.fromEntries(CHAPTERS.map((chapter) => [chapter.id, chapter]));
+const fallbackChapter2M = CHAPTERS_2M[0];
+const CHAPTERS_BY_ID_2M = Object.fromEntries(CHAPTERS_2M.map((chapter) => [chapter.id, chapter]));
 
 const scoreChapter = (chapter, normalizedTopic) => chapter.keywords.reduce((score, keyword) => {
     return normalizedTopic.includes(keyword) ? score + 1 : score;
 }, 0);
 
-export const resolveMoralejaMatematicaContext = ({ topic = '', session = 0, phase = '', mode = 'quiz' } = {}) => {
+const normalizeGradeKey = (value) => {
+    const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+    if (!raw) return '1medio';
+    if (raw === '2medio' || raw === '2m' || raw === '2°medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    return '1medio';
+};
+
+export const resolveMoralejaMatematicaContext = ({ topic = '', session = 0, phase = '', mode = 'quiz', grade = '1medio' } = {}) => {
     const normalizedTopic = normalize(topic);
     const numericSession = Number(session || 0) || 0;
     const normalizedPhase = normalize(phase);
+    const gradeKey = normalizeGradeKey(grade);
+    const is2M = gradeKey === '2medio';
+    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
+
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'MATEMATICA',
-        session: numericSession
+        session: numericSession,
+        grade: gradeKey
     });
 
-    let bestChapter = fallbackChapter;
+    let bestChapter = fallbackForGrade;
     let bestScore = -1;
     let resolutionMode = 'fallback';
 
-    if (sessionReference?.chapterId && CHAPTERS_BY_ID[sessionReference.chapterId]) {
-        bestChapter = CHAPTERS_BY_ID[sessionReference.chapterId];
+    if (sessionReference?.chapterId && chaptersByIdForGrade[sessionReference.chapterId]) {
+        bestChapter = chaptersByIdForGrade[sessionReference.chapterId];
         resolutionMode = 'session_map';
     } else {
-        for (const chapter of CHAPTERS) {
+        for (const chapter of chaptersForGrade) {
             const score = scoreChapter(chapter, normalizedTopic);
             if (score > bestScore) {
                 bestScore = score;
@@ -299,18 +501,21 @@ export const resolveMoralejaMatematicaContext = ({ topic = '', session = 0, phas
 
         if (bestScore > 0) {
             resolutionMode = 'keyword_match';
-        } else if (numericSession >= 1 && numericSession <= 7) {
-            bestChapter = CHAPTERS[0];
-            resolutionMode = 'session_range_fallback';
-        } else if (numericSession >= 8 && numericSession <= 12) {
-            bestChapter = CHAPTERS[1];
-            resolutionMode = 'session_range_fallback';
-        } else if (numericSession >= 13 && numericSession <= 18) {
-            bestChapter = CHAPTERS[2];
-            resolutionMode = 'session_range_fallback';
-        } else if (numericSession >= 19 && numericSession <= 24) {
-            bestChapter = CHAPTERS[3];
-            resolutionMode = 'session_range_fallback';
+        } else if (!is2M) {
+            // fallback por rango solo en 1° medio (preserva comportamiento previo)
+            if (numericSession >= 1 && numericSession <= 7) {
+                bestChapter = CHAPTERS[0];
+                resolutionMode = 'session_range_fallback';
+            } else if (numericSession >= 8 && numericSession <= 12) {
+                bestChapter = CHAPTERS[1];
+                resolutionMode = 'session_range_fallback';
+            } else if (numericSession >= 13 && numericSession <= 18) {
+                bestChapter = CHAPTERS[2];
+                resolutionMode = 'session_range_fallback';
+            } else if (numericSession >= 19 && numericSession <= 24) {
+                bestChapter = CHAPTERS[3];
+                resolutionMode = 'session_range_fallback';
+            }
         }
     }
 

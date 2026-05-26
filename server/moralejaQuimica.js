@@ -191,31 +191,197 @@ const CHAPTERS = [
     }
 ];
 
+// =====================================================================
+// CAPITULOS 2° MEDIO (Mineduc 2019)
+// =====================================================================
+const CHAPTERS_2M = [
+    {
+        id: 'cap1_disoluciones',
+        chapterNumber: 1,
+        title: 'Disoluciones quimicas y concentracion',
+        skill: 'Calcular concentracion y preparar disoluciones',
+        keywords: ['disolucion', 'solucion', 'soluto', 'solvente', 'concentracion', 'molaridad', 'molalidad', 'normalidad', 'porcentual', 'ppm', 'dilucion'],
+        theoryFocus: [
+            'distinguir soluto, solvente y disolucion; tipos de disoluciones',
+            'calcular concentracion porcentual, molaridad, molalidad y normalidad',
+            'preparar diluciones y resolver problemas de mezclas con C1V1 = C2V2'
+        ],
+        quizFocus: [
+            'concentracion porcentual y ppm',
+            'molaridad, molalidad y normalidad',
+            'diluciones y mezclas',
+            'analisis de etiquetas de productos'
+        ]
+    },
+    {
+        id: 'cap2_propiedades_coligativas',
+        chapterNumber: 2,
+        title: 'Propiedades coligativas',
+        skill: 'Analizar propiedades coligativas y aplicaciones',
+        keywords: ['coligativa', 'presion de vapor', 'ebulloscopia', 'crioscopia', 'osmosis', 'presion osmotica', 'tonometria'],
+        theoryFocus: [
+            'definir presion de vapor, descenso crioscopico y aumento ebulloscopico',
+            'calcular variaciones coligativas con formulas y constantes molales',
+            'aplicar presion osmotica a contextos biologicos y medicos'
+        ],
+        quizFocus: [
+            'presion de vapor y tonometria',
+            'descenso crioscopico y ebulloscopico',
+            'presion osmotica',
+            'aplicaciones biologicas y medicas'
+        ]
+    },
+    {
+        id: 'cap3_acido_base_ph',
+        chapterNumber: 3,
+        title: 'Reacciones acido-base, pH y neutralizacion',
+        skill: 'Aplicar teorias acido-base y calcular pH',
+        keywords: ['acido', 'base', 'ph', 'poh', 'neutralizacion', 'arrhenius', 'bronsted', 'lewis', 'indicador', 'titulacion', 'valoracion'],
+        theoryFocus: [
+            'distinguir teorias de Arrhenius, Bronsted-Lowry y Lewis',
+            'calcular pH y pOH en soluciones acidas y basicas',
+            'resolver reacciones de neutralizacion y titulaciones acido-base'
+        ],
+        quizFocus: [
+            'teorias acido-base',
+            'calculo de pH y pOH',
+            'neutralizacion y titulaciones',
+            'indicadores acido-base'
+        ]
+    },
+    {
+        id: 'cap4_redox_electroquimica',
+        chapterNumber: 4,
+        title: 'Reacciones redox y electroquimica',
+        skill: 'Balancear redox y analizar celdas electroquimicas',
+        keywords: ['redox', 'oxidacion', 'reduccion', 'numero de oxidacion', 'pila', 'celda galvanica', 'electrolisis', 'voltaje', 'agente oxidante', 'agente reductor'],
+        theoryFocus: [
+            'identificar agente oxidante y reductor segun cambios en numero de oxidacion',
+            'balancear ecuaciones redox por metodo ion-electron',
+            'describir pilas galvanicas, electrolisis y aplicaciones industriales'
+        ],
+        quizFocus: [
+            'numeros de oxidacion',
+            'balance redox',
+            'pilas galvanicas y electrolisis',
+            'aplicaciones industriales'
+        ]
+    },
+    {
+        id: 'cap5_cinetica_equilibrio',
+        chapterNumber: 5,
+        title: 'Cinetica quimica y equilibrio',
+        skill: 'Analizar velocidad de reaccion y equilibrio quimico',
+        keywords: ['cinetica', 'velocidad de reaccion', 'catalizador', 'equilibrio quimico', 'le chatelier', 'kc', 'kp', 'reversible'],
+        theoryFocus: [
+            'analizar factores que afectan velocidad: concentracion, temperatura, catalizador, superficie',
+            'definir equilibrio quimico dinamico y constante de equilibrio',
+            'aplicar principio de Le Chatelier para predecir desplazamiento'
+        ],
+        quizFocus: [
+            'factores que afectan la velocidad',
+            'constante de equilibrio',
+            'principio de Le Chatelier',
+            'reacciones reversibles'
+        ]
+    },
+    {
+        id: 'cap6_polimeros',
+        chapterNumber: 6,
+        title: 'Polimeros sinteticos y naturales',
+        skill: 'Describir polimeros, polimerizacion y aplicaciones',
+        keywords: ['polimero', 'monomero', 'polimerizacion', 'plastico', 'caucho', 'nylon', 'celulosa', 'almidon', 'proteina', 'adn', 'biopolimero'],
+        theoryFocus: [
+            'distinguir polimeros naturales (celulosa, proteinas, ADN) y sinteticos (PE, PVC, nylon)',
+            'explicar polimerizacion por adicion y condensacion',
+            'evaluar aplicaciones tecnologicas y impacto ambiental de plasticos'
+        ],
+        quizFocus: [
+            'monomeros y polimeros',
+            'polimerizacion por adicion y condensacion',
+            'polimeros naturales y sinteticos',
+            'reciclaje y biopolimeros'
+        ]
+    },
+    {
+        id: 'cap7_organica_aplicada',
+        chapterNumber: 7,
+        title: 'Quimica organica aplicada',
+        skill: 'Relacionar quimica organica con farmacos, alimentos y materiales',
+        keywords: ['organica aplicada', 'farmaco', 'medicamento', 'alimento', 'cosmetico', 'aroma', 'sabor', 'grupo funcional', 'biomolecula'],
+        theoryFocus: [
+            'reconocer grupos funcionales en farmacos, alimentos y cosmeticos',
+            'analizar biomoleculas: lipidos, carbohidratos, proteinas',
+            'evaluar nuevos materiales: nanomateriales y materiales inteligentes'
+        ],
+        quizFocus: [
+            'grupos funcionales en productos cotidianos',
+            'biomoleculas',
+            'farmacos y medicamentos',
+            'nuevos materiales'
+        ]
+    },
+    {
+        id: 'cap8_quimica_ambiental',
+        chapterNumber: 8,
+        title: 'Quimica y medio ambiente',
+        skill: 'Evaluar contaminacion, quimica verde y sostenibilidad',
+        keywords: ['contaminacion', 'efecto invernadero', 'capa de ozono', 'lluvia acida', 'quimica verde', 'sostenible', 'ciclo del carbono', 'huella', 'reciclaje'],
+        theoryFocus: [
+            'analizar contaminantes atmosfericos, acuaticos y del suelo',
+            'explicar efecto invernadero, lluvia acida y agotamiento del ozono',
+            'introducir principios de quimica verde y sostenibilidad'
+        ],
+        quizFocus: [
+            'contaminacion ambiental',
+            'efecto invernadero y capa de ozono',
+            'quimica verde',
+            'ciclos biogeoquimicos'
+        ]
+    }
+];
+
 const fallbackChapter = CHAPTERS.find((chapter) => chapter.id === 'cap8_reacciones_estequiometria');
 const CHAPTERS_BY_ID = Object.fromEntries(CHAPTERS.map((chapter) => [chapter.id, chapter]));
+const fallbackChapter2M = CHAPTERS_2M[0];
+const CHAPTERS_BY_ID_2M = Object.fromEntries(CHAPTERS_2M.map((chapter) => [chapter.id, chapter]));
+
+const normalizeGradeKey = (value) => {
+    const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+    if (!raw) return '1medio';
+    if (raw === '2medio' || raw === '2m' || raw === '2°medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    return '1medio';
+};
 
 const scoreChapter = (chapter, normalizedTopic) => chapter.keywords.reduce((score, keyword) => {
     return normalizedTopic.includes(keyword) ? score + 1 : score;
 }, 0);
 
-export const resolveMoralejaQuimicaContext = ({ topic = '', session = 0, phase = '', mode = 'quiz' } = {}) => {
+export const resolveMoralejaQuimicaContext = ({ topic = '', session = 0, phase = '', mode = 'quiz', grade = '1medio' } = {}) => {
     const normalizedTopic = normalize(topic);
     const numericSession = Number(session || 0) || 0;
     const normalizedPhase = normalize(phase);
+    const gradeKey = normalizeGradeKey(grade);
+    const is2M = gradeKey === '2medio';
+    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
+
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'QUIMICA',
-        session: numericSession
+        session: numericSession,
+        grade: gradeKey
     });
 
-    let bestChapter = fallbackChapter;
+    let bestChapter = fallbackForGrade;
     let bestScore = -1;
     let resolutionMode = 'fallback';
 
-    if (sessionReference?.chapterId && CHAPTERS_BY_ID[sessionReference.chapterId]) {
-        bestChapter = CHAPTERS_BY_ID[sessionReference.chapterId];
+    if (sessionReference?.chapterId && chaptersByIdForGrade[sessionReference.chapterId]) {
+        bestChapter = chaptersByIdForGrade[sessionReference.chapterId];
         resolutionMode = 'session_map';
     } else {
-        for (const chapter of CHAPTERS) {
+        for (const chapter of chaptersForGrade) {
             const score = scoreChapter(chapter, normalizedTopic);
             if (score > bestScore) {
                 bestScore = score;
@@ -225,6 +391,8 @@ export const resolveMoralejaQuimicaContext = ({ topic = '', session = 0, phase =
 
         if (bestScore > 0) {
             resolutionMode = 'keyword_match';
+        } else if (is2M) {
+            // 2° medio: sin topic_hint fallback (los hints actuales son específicos de 1° medio)
         } else if (numericSession >= 1 && numericSession <= 8) {
             bestChapter = CHAPTERS_BY_ID.cap1_atomo;
             resolutionMode = 'session_range_fallback';

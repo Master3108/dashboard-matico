@@ -254,31 +254,233 @@ const CHAPTERS = [
     }
 ];
 
+// =====================================================================
+// CAPITULOS 2° MEDIO (Mineduc 2019)
+// =====================================================================
+const CHAPTERS_2M = [
+    {
+        id: 'cap1_neurona_sinapsis',
+        chapterNumber: 1,
+        title: 'Neurona, sinapsis y sistema nervioso',
+        skill: 'Describir neurona, potencial de accion y sinapsis',
+        keywords: ['neurona', 'axon', 'dendrita', 'sinapsis', 'potencial de accion', 'neurotransmisor', 'mielina', 'soma', 'nervio'],
+        theoryFocus: [
+            'identificar partes de la neurona y su funcion',
+            'explicar potencial de accion, despolarizacion y repolarizacion',
+            'describir sinapsis quimica y electrica, y rol de neurotransmisores'
+        ],
+        quizFocus: [
+            'estructura de la neurona',
+            'potencial de accion',
+            'sinapsis quimica',
+            'neurotransmisores'
+        ]
+    },
+    {
+        id: 'cap2_snc_snp_conducta',
+        chapterNumber: 2,
+        title: 'SNC, SNP y conducta',
+        skill: 'Comparar sistemas nerviosos y bases biologicas de la conducta',
+        keywords: ['sistema nervioso central', 'sistema nervioso periferico', 'cerebro', 'medula espinal', 'arco reflejo', 'conducta', 'lobulo', 'cortex'],
+        theoryFocus: [
+            'distinguir sistema nervioso central y periferico',
+            'analizar arco reflejo, vias aferentes y eferentes',
+            'relacionar areas cerebrales con funciones cognitivas y conductuales'
+        ],
+        quizFocus: [
+            'SNC y SNP',
+            'arcos reflejos',
+            'areas cerebrales y funciones',
+            'bases biologicas de la conducta'
+        ]
+    },
+    {
+        id: 'cap3_drogas_dano_cerebral',
+        chapterNumber: 3,
+        title: 'Drogas, alcohol y dano cerebral',
+        skill: 'Analizar efecto de sustancias sobre el cerebro y conducta',
+        keywords: ['droga', 'alcohol', 'nicotina', 'estimulante', 'depresor', 'adiccion', 'tolerancia', 'dependencia', 'dano cerebral', 'cannabis', 'cocaina'],
+        theoryFocus: [
+            'clasificar drogas: estimulantes, depresoras, alucinogenas',
+            'explicar mecanismos de adiccion, tolerancia y dependencia',
+            'evaluar danos en el sistema nervioso y prevencion del consumo'
+        ],
+        quizFocus: [
+            'tipos de drogas',
+            'mecanismos de adiccion',
+            'dano cerebral por consumo',
+            'prevencion y autocuidado'
+        ]
+    },
+    {
+        id: 'cap4_endocrino_homeostasis',
+        chapterNumber: 4,
+        title: 'Sistema endocrino y homeostasis',
+        skill: 'Explicar hormonas y regulacion homeostatica',
+        keywords: ['hormona', 'glandula', 'endocrino', 'hipofisis', 'tiroides', 'suprarrenal', 'pancreas', 'insulina', 'homeostasis', 'glicemia', 'feedback'],
+        theoryFocus: [
+            'identificar glandulas endocrinas y sus hormonas principales',
+            'explicar mecanismos de regulacion por feedback negativo y positivo',
+            'analizar homeostasis: glicemia, temperatura, balance hidrico'
+        ],
+        quizFocus: [
+            'glandulas y hormonas',
+            'mecanismos de feedback',
+            'homeostasis glucemica',
+            'enfermedades endocrinas'
+        ]
+    },
+    {
+        id: 'cap5_inmune',
+        chapterNumber: 5,
+        title: 'Sistema inmune e inmunidad',
+        skill: 'Distinguir inmunidad innata, adaptativa y respuesta inmune',
+        keywords: ['inmune', 'inmunidad', 'anticuerpo', 'antigeno', 'linfocito', 'vacuna', 'alergia', 'autoinmune', 'fagocito', 'memoria inmune'],
+        theoryFocus: [
+            'distinguir barreras defensivas, inmunidad innata y adaptativa',
+            'explicar accion de linfocitos B, T y memoria inmunologica',
+            'evaluar vacunas, alergias y enfermedades autoinmunes'
+        ],
+        quizFocus: [
+            'inmunidad innata vs adaptativa',
+            'linfocitos y anticuerpos',
+            'vacunas y memoria inmune',
+            'alergias y autoinmunidad'
+        ]
+    },
+    {
+        id: 'cap6_genetica_mendel',
+        chapterNumber: 6,
+        title: 'Genetica mendeliana',
+        skill: 'Aplicar leyes de Mendel y cruzamientos',
+        keywords: ['mendel', 'gen', 'alelo', 'genotipo', 'fenotipo', 'homocigoto', 'heterocigoto', 'dominante', 'recesivo', 'punnett', 'monohibrido', 'dihibrido'],
+        theoryFocus: [
+            'aplicar primera y segunda ley de Mendel',
+            'resolver cruzamientos monohibridos y dihibridos con tablas de Punnett',
+            'distinguir herencia dominante, recesiva, codominancia e incompleta'
+        ],
+        quizFocus: [
+            'leyes de Mendel',
+            'cruzamientos monohibridos y dihibridos',
+            'tablas de Punnett',
+            'codominancia e incompleta'
+        ]
+    },
+    {
+        id: 'cap7_herencia_sexo_mutaciones',
+        chapterNumber: 7,
+        title: 'Herencia ligada al sexo y mutaciones',
+        skill: 'Analizar herencia ligada al sexo, pedigris y mutaciones',
+        keywords: ['herencia ligada al sexo', 'cromosoma x', 'cromosoma y', 'daltonismo', 'hemofilia', 'pedigri', 'mutacion', 'cariotipo', 'sindrome', 'trisomia'],
+        theoryFocus: [
+            'analizar herencia ligada al cromosoma X (hemofilia, daltonismo)',
+            'leer e interpretar pedigris familiares',
+            'clasificar mutaciones puntuales y cromosomicas (sindrome de Down, Turner)'
+        ],
+        quizFocus: [
+            'herencia ligada al sexo',
+            'analisis de pedigris',
+            'tipos de mutaciones',
+            'enfermedades geneticas comunes'
+        ]
+    },
+    {
+        id: 'cap8_variabilidad_evolucion',
+        chapterNumber: 8,
+        title: 'Variabilidad genetica y evolucion',
+        skill: 'Integrar variabilidad, seleccion natural y especiacion',
+        keywords: ['variabilidad', 'evolucion', 'seleccion natural', 'deriva genetica', 'especiacion', 'adaptacion', 'darwin', 'aislamiento reproductivo'],
+        theoryFocus: [
+            'analizar fuentes de variabilidad genetica: mutacion y recombinacion',
+            'explicar seleccion natural, deriva y migracion como motores evolutivos',
+            'describir mecanismos de especiacion y aislamiento reproductivo'
+        ],
+        quizFocus: [
+            'fuentes de variabilidad',
+            'seleccion natural y deriva',
+            'especiacion',
+            'evidencias evolutivas'
+        ]
+    },
+    {
+        id: 'cap9_biotecnologia',
+        chapterNumber: 9,
+        title: 'Biotecnologia y aplicaciones',
+        skill: 'Evaluar biotecnologia moderna y bioetica',
+        keywords: ['biotecnologia', 'adn recombinante', 'transgenico', 'ogm', 'crispr', 'clonacion', 'terapia genica', 'bioetica', 'pcr'],
+        theoryFocus: [
+            'describir tecnicas: ADN recombinante, PCR, CRISPR, clonacion',
+            'evaluar aplicaciones en medicina, agricultura e industria',
+            'analizar dilemas bioeticos de la manipulacion genetica'
+        ],
+        quizFocus: [
+            'tecnicas biotecnologicas',
+            'transgenicos y OGM',
+            'terapia genica y CRISPR',
+            'bioetica'
+        ]
+    },
+    {
+        id: 'cap10_salud_bienestar',
+        chapterNumber: 10,
+        title: 'Salud, alimentacion y bienestar integral',
+        skill: 'Relacionar habitos saludables con prevencion de enfermedades',
+        keywords: ['salud', 'alimentacion', 'nutricion', 'ejercicio', 'sedentarismo', 'obesidad', 'diabetes', 'salud mental', 'prevencion', 'autocuidado'],
+        theoryFocus: [
+            'analizar pilares de salud: alimentacion, actividad fisica, sueno, salud mental',
+            'relacionar habitos con prevencion de enfermedades cronicas',
+            'evaluar factores de riesgo y promocion de bienestar integral'
+        ],
+        quizFocus: [
+            'alimentacion saludable',
+            'actividad fisica y sedentarismo',
+            'salud mental',
+            'prevencion de enfermedades cronicas'
+        ]
+    }
+];
+
 const fallbackChapter = CHAPTERS.find((chapter) => chapter.id === 'cap10_materia_flujo_energia');
 const CHAPTERS_BY_ID = Object.fromEntries(CHAPTERS.map((chapter) => [chapter.id, chapter]));
+const fallbackChapter2M = CHAPTERS_2M[0];
+const CHAPTERS_BY_ID_2M = Object.fromEntries(CHAPTERS_2M.map((chapter) => [chapter.id, chapter]));
+
+const normalizeGradeKey = (value) => {
+    const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+    if (!raw) return '1medio';
+    if (raw === '2medio' || raw === '2m' || raw === '2°medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    return '1medio';
+};
 
 const scoreChapter = (chapter, normalizedTopic) => chapter.keywords.reduce((score, keyword) => {
     return normalizedTopic.includes(keyword) ? score + 1 : score;
 }, 0);
 
-export const resolveMoralejaBiologiaContext = ({ topic = '', session = 0, phase = '', mode = 'quiz' } = {}) => {
+export const resolveMoralejaBiologiaContext = ({ topic = '', session = 0, phase = '', mode = 'quiz', grade = '1medio' } = {}) => {
     const normalizedTopic = normalize(topic);
     const numericSession = Number(session || 0) || 0;
     const normalizedPhase = normalize(phase);
+    const gradeKey = normalizeGradeKey(grade);
+    const is2M = gradeKey === '2medio';
+    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
+
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'BIOLOGIA',
-        session: numericSession
+        session: numericSession,
+        grade: gradeKey
     });
 
-    let bestChapter = fallbackChapter;
+    let bestChapter = fallbackForGrade;
     let bestScore = -1;
     let resolutionMode = 'fallback';
 
-    if (sessionReference?.chapterId && CHAPTERS_BY_ID[sessionReference.chapterId]) {
-        bestChapter = CHAPTERS_BY_ID[sessionReference.chapterId];
+    if (sessionReference?.chapterId && chaptersByIdForGrade[sessionReference.chapterId]) {
+        bestChapter = chaptersByIdForGrade[sessionReference.chapterId];
         resolutionMode = 'session_map';
     } else {
-        for (const chapter of CHAPTERS) {
+        for (const chapter of chaptersForGrade) {
             const score = scoreChapter(chapter, normalizedTopic);
             if (score > bestScore) {
                 bestScore = score;
@@ -288,6 +490,8 @@ export const resolveMoralejaBiologiaContext = ({ topic = '', session = 0, phase 
 
         if (bestScore > 0) {
             resolutionMode = 'keyword_match';
+        } else if (is2M) {
+            // 2° medio: sin topic_hint fallback (los hints actuales son específicos de 1° medio)
         } else if (numericSession >= 1 && numericSession <= 12) {
             bestChapter = CHAPTERS_BY_ID.cap9_evolucion_biodiversidad;
             resolutionMode = 'session_range_fallback';

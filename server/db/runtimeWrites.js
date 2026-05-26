@@ -402,10 +402,12 @@ export const updateRuntimeExistingQuestionWithImage = async ({
 // 3. THEORY LUDICA
 // =====================================================================
 
-export const findRuntimeTheoryLudicaByKey = async ({ subject = '', session = '', phase = '' } = {}) => {
+export const findRuntimeTheoryLudicaByKey = async ({ subject = '', session = '', phase = '', grade = '1medio' } = {}) => {
+    const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
     const { data, error } = await supabase
         .from('theory_ludica_bank')
         .select('*')
+        .eq('grade', normalizedGrade)
         .eq('subject', subject)
         .eq('session', Number(session))
         .eq('phase', Number(phase))
@@ -419,6 +421,7 @@ export const findRuntimeTheoryLudicaByKey = async ({ subject = '', session = '',
 
     return {
         id: data.id,
+        grade: data.grade || '1medio',
         subject: data.subject,
         session: data.session,
         phase: data.phase,
@@ -476,12 +479,14 @@ export const appendRuntimeTheoryLudica = async ({
     topic = '',
     theoryMarkdown = '',
     source = 'ai_generated',
-    supportImage = null
+    supportImage = null,
+    grade = '1medio'
 } = {}) => {
+    const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
     const { data, error } = await supabase
         .from('theory_ludica_bank')
         .insert({
-            grade: '1medio',  // default
+            grade: normalizedGrade,
             subject,
             session: Number(session) || 0,
             phase: Number(phase) || 0,
@@ -497,6 +502,7 @@ export const appendRuntimeTheoryLudica = async ({
     if (error) throw new Error(`appendRuntimeTheoryLudica: ${error.message}`);
     return {
         id: data.id,
+        grade: data.grade || normalizedGrade,
         subject: data.subject,
         session: data.session,
         phase: data.phase,
@@ -591,7 +597,8 @@ export const upsertRuntimeUser = async ({
     celular = '',
     region = '',
     comuna = '',
-    correo_apoderado = ''
+    correo_apoderado = '',
+    current_grade = ''
 } = {}) => {
     const upsertData = {
         user_id: token || `TK-${crypto.randomBytes(5).toString('hex').toUpperCase()}`,
@@ -603,6 +610,10 @@ export const upsertRuntimeUser = async ({
         commune: comuna,
         guardian_email: correo_apoderado,
     };
+    // Solo incluir current_grade si viene explicito; si no, dejar el default de DB ('1medio')
+    if (current_grade) {
+        upsertData.current_grade = current_grade;
+    }
 
     const { error } = await supabase
         .from('profiles')

@@ -24,7 +24,18 @@ const DEFAULT_CATALOG = {
                 HISTORIA: { label: 'Historia', active: true }
             }
         },
-        '2medio': { label: '2° medio', active: false, subjects: {} },
+        '2medio': {
+            label: '2° medio',
+            active: true,
+            subjects: {
+                MATEMATICA: { label: 'Matemática', active: true },
+                LENGUAJE: { label: 'Lenguaje', active: true },
+                FISICA: { label: 'Física', active: true },
+                QUIMICA: { label: 'Química', active: true },
+                BIOLOGIA: { label: 'Biología', active: true },
+                HISTORIA: { label: 'Historia', active: true }
+            }
+        },
         '3medio': { label: '3° medio', active: false, subjects: {} },
         '4medio': { label: '4° medio', active: false, subjects: {} }
     }

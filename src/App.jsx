@@ -3401,7 +3401,9 @@ const App = () => {
     const completedSessionsStorageKey = USER_ID ? `MATICO_COMPLETED_SESSIONS_${USER_ID}` : 'MATICO_COMPLETED_SESSIONS_ANON';
     const quizProgressStorageKey = USER_ID ? `MATICO_QUIZ_PROGRESS_${USER_ID}` : 'MATICO_QUIZ_PROGRESS_ANON';
     const [currentSubject, setCurrentSubject] = useState("MATEMATICA");
-    const ACTIVE_GRADE = '1medio';
+    // Grado activo del estudiante: viene del login (currentUser.grade / current_grade)
+    // Default '1medio' para retrocompatibilidad cuando el backend aún no lo retorna
+    const ACTIVE_GRADE = (currentUser?.grade || currentUser?.current_grade || '1medio');
     const [userProfile, setUserProfile] = useState({
         xp: 0,
         streak: 0,

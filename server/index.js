@@ -2348,7 +2348,7 @@ const analyzeNotebookSubmission = async (submission, {
 
         if (lookup.subject && lookup.session && lookup.phase) {
             const sheets = await getSheetsClient();
-            const storedTheory = await findTheoryLudicaByKey(sheets, lookup);
+            const storedTheory = await findTheoryLudicaByKey(sheets, { ...lookup, grade });
             if (storedTheory?.theory_markdown) {
                 resolvedTheoryForComparison = String(storedTheory.theory_markdown || '').trim();
             }
@@ -4348,10 +4348,10 @@ const getTheoryLudicaRows = async (sheets) => {
     }));
 };
 
-const findTheoryLudicaByKey = async (sheets, { subject = '', session = '', phase = '' } = {}) => {
+const findTheoryLudicaByKey = async (sheets, { subject = '', session = '', phase = '', grade = '1medio' } = {}) => {
     const key = resolveTheoryLookup({ subject, session, phase });
     if (!key.subject || !key.session || !key.phase) return null;
-    return findRuntimeTheoryLudicaByKey(key);
+    return findRuntimeTheoryLudicaByKey({ ...key, grade });
 };
 
 const listTheoryLudicaRowsForAdmin = async (sheets, {
@@ -4371,7 +4371,8 @@ const appendTheoryLudicaToSheet = async (sheets, {
     topic = '',
     theoryMarkdown = '',
     source = 'ai_generated',
-    supportImage = null
+    supportImage = null,
+    grade = '1medio'
 } = {}) => {
     const key = resolveTheoryLookup({ subject, session, phase, topic });
     if (!key.subject || !key.session || !key.phase || !String(theoryMarkdown || '').trim()) return null;
@@ -4383,7 +4384,8 @@ const appendTheoryLudicaToSheet = async (sheets, {
         topic,
         theoryMarkdown,
         source,
-        supportImage
+        supportImage,
+        grade
     });
 };
 
@@ -5743,7 +5745,7 @@ const isPhysicsSubject = (subject = '') => {
     return normalized.includes('FISICA');
 };
 
-const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = '' } = {}) => {
+const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = '', grade = '1medio' } = {}) => {
     const segments = [`Tema solicitado: ${topic || 'Sin tema especificado'}`];
     const normalizedSubject = String(subject || '').toUpperCase();
 
@@ -5755,7 +5757,8 @@ const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = 
             topic,
             session,
             phase,
-            mode: 'theory'
+            mode: 'theory',
+            grade
         });
         segments.push(`[BASE MORALEJA]\n${moralejaContext.theoryGuidance}`);
         segments.push('Cierra con una mini estrategia aplicable y un ejemplo breve de como resolver una pregunta tipo PAES.');
@@ -5764,7 +5767,8 @@ const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = 
             topic,
             session,
             phase,
-            mode: 'theory'
+            mode: 'theory',
+            grade
         });
         segments.push(`[BASE MORALEJA MATEMATICA]\n${moralejaMathContext.theoryGuidance}`);
         segments.push('Cierra con un mini tip de procedimiento y un ejemplo breve estilo DEMRE/PAES.');
@@ -5773,7 +5777,8 @@ const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = 
             topic,
             session,
             phase,
-            mode: 'theory'
+            mode: 'theory',
+            grade
         });
         segments.push(`[BASE MORALEJA BIOLOGIA]\n${moralejaBiologiaContext.theoryGuidance}`);
         segments.push('Cierra con una mini clave de analisis biologico y un ejemplo breve tipo DEMRE/PAES.');
@@ -5782,7 +5787,8 @@ const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = 
             topic,
             session,
             phase,
-            mode: 'theory'
+            mode: 'theory',
+            grade
         });
         segments.push(`[BASE MORALEJA QUIMICA]\n${moralejaQuimicaContext.theoryGuidance}`);
         segments.push('Cierra con una mini clave de resolucion quimica y un ejemplo breve tipo DEMRE/PAES.');
@@ -5791,7 +5797,8 @@ const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = 
             topic,
             session,
             phase,
-            mode: 'theory'
+            mode: 'theory',
+            grade
         });
         segments.push(`[BASE MORALEJA FISICA]\n${moralejaFisicaContext.theoryGuidance}`);
         segments.push('Cierra con una mini clave de razonamiento fisico y un ejemplo breve tipo DEMRE/PAES.');
@@ -5800,12 +5807,13 @@ const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = 
     return segments.filter(Boolean).join('\n\n');
 };
 
-const buildReadingPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+const buildReadingPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE, grade = '1medio' }) => {
     const moralejaContext = resolveMoralejaContext({
         topic,
         session,
         phase,
-        mode: 'quiz'
+        mode: 'quiz',
+        grade
     });
 
     return {
@@ -5825,12 +5833,13 @@ const buildReadingPromptContext = ({ topic = '', subject = '', session = 0, phas
     };
 };
 
-const buildMathPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+const buildMathPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE, grade = '1medio' }) => {
     const moralejaMathContext = resolveMoralejaMatematicaContext({
         topic,
         session,
         phase,
-        mode: 'quiz'
+        mode: 'quiz',
+        grade
     });
 
     return {
@@ -5851,12 +5860,13 @@ const buildMathPromptContext = ({ topic = '', subject = '', session = 0, phase =
     };
 };
 
-const buildBiologyPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+const buildBiologyPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE, grade = '1medio' }) => {
     const moralejaBiologiaContext = resolveMoralejaBiologiaContext({
         topic,
         session,
         phase,
-        mode: 'quiz'
+        mode: 'quiz',
+        grade
     });
 
     return {
@@ -5877,12 +5887,13 @@ const buildBiologyPromptContext = ({ topic = '', subject = '', session = 0, phas
     };
 };
 
-const buildChemistryPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+const buildChemistryPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE, grade = '1medio' }) => {
     const moralejaQuimicaContext = resolveMoralejaQuimicaContext({
         topic,
         session,
         phase,
-        mode: 'quiz'
+        mode: 'quiz',
+        grade
     });
 
     return {
@@ -5903,12 +5914,13 @@ const buildChemistryPromptContext = ({ topic = '', subject = '', session = 0, ph
     };
 };
 
-const buildPhysicsPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE }) => {
+const buildPhysicsPromptContext = ({ topic = '', subject = '', session = 0, phase = '', batchIndex = 0, totalBatches = QUIZ_BATCHES_PER_PHASE, requestedCount = QUIZ_BATCH_SIZE, grade = '1medio' }) => {
     const moralejaFisicaContext = resolveMoralejaFisicaContext({
         topic,
         session,
         phase,
-        mode: 'quiz'
+        mode: 'quiz',
+        grade
     });
 
     return {
@@ -6036,8 +6048,10 @@ app.post('/webhook/MATICO', conditionalLoginLimiter, async (req, res) => {
     const currentAction = body.action || body.accion || '';
     const user_id = body.user_id;
     const data = body.data || {};
+    // Grado del estudiante para todo el handler (default 1° medio retrocompatible)
+    const requestGrade = String(body.grade || body.nivel || data.grade || data.nivel || '1medio').trim() || '1medio';
 
-    console.log(`[MATICO] Accion: "${currentAction}" | Topic: ${body.tema || body.topic || '(sin tema)'}`);
+    console.log(`[MATICO] Accion: "${currentAction}" | Topic: ${body.tema || body.topic || '(sin tema)'} | Grade: ${requestGrade}`);
 
     // Auth: login/register son públicos, el resto requiere JWT
     const publicActions = ['login', 'register'];
@@ -6058,7 +6072,8 @@ app.post('/webhook/MATICO', conditionalLoginLimiter, async (req, res) => {
 
         // 1. LOGIN / REGISTER
         if (currentAction === 'login' || currentAction === 'register') {
-            const { email, password, name, phone, region, commune, correo_apoderado } = body;
+            const { email, password, name, phone, region, commune, correo_apoderado, grade } = body;
+            const normalizedRegisterGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
 
             const user = await getRuntimeUserByEmail(email);
 
@@ -6073,6 +6088,8 @@ app.post('/webhook/MATICO', conditionalLoginLimiter, async (req, res) => {
                         role: user.role || 'estudiante',
                         parent_user_id: user.parent_user_id || null,
                         email: user.email || email,
+                        grade: user.current_grade || '1medio',
+                        current_grade: user.current_grade || '1medio',
                         jwt
                     });
                 }
@@ -6091,11 +6108,19 @@ app.post('/webhook/MATICO', conditionalLoginLimiter, async (req, res) => {
                     celular: phone || '',
                     region: region || '',
                     comuna: commune || '',
-                    correo_apoderado: correo_apoderado || ''
+                    correo_apoderado: correo_apoderado || '',
+                    current_grade: normalizedRegisterGrade
                 });
                 const newUser = { token: newToken, email, role: 'estudiante', nombre: name || 'Estudiante' };
                 const jwt = generateToken(newUser);
-                return res.json({ success: true, user_id: newToken, name: name || 'Estudiante', jwt });
+                return res.json({
+                    success: true,
+                    user_id: newToken,
+                    name: name || 'Estudiante',
+                    grade: normalizedRegisterGrade,
+                    current_grade: normalizedRegisterGrade,
+                    jwt
+                });
             }
         }
 
@@ -6114,11 +6139,12 @@ app.post('/webhook/MATICO', conditionalLoginLimiter, async (req, res) => {
 
             if (theoryLookup.subject && theoryLookup.session && theoryLookup.phase) {
                 try {
-                    const storedTheory = await findTheoryLudicaByKey(sheets, theoryLookup);
+                    const storedTheory = await findTheoryLudicaByKey(sheets, { ...theoryLookup, grade: requestGrade });
                     if (storedTheory?.theory_markdown) {
                         return res.json({
                             output: storedTheory.theory_markdown,
                             theory_source: 'sheet',
+                            grade: storedTheory.grade || requestGrade,
                             subject: theoryLookup.subject,
                             session: theoryLookup.session,
                             phase: theoryLookup.phase,
@@ -6133,7 +6159,8 @@ app.post('/webhook/MATICO', conditionalLoginLimiter, async (req, res) => {
                 }
             }
 
-            const systemMsg = `Eres Matico, un mentor carismatico y experto en el curriculum chileno de 1ro Medio.
+            const gradeLabel = requestGrade === '2medio' ? '2do Medio' : '1ro Medio';
+            const systemMsg = `Eres Matico, un mentor carismatico y experto en el curriculum chileno de ${gradeLabel}.
 Responde SIEMPRE en Markdown legible y amigable para un estudiante joven.
 Usa emojis frecuentemente para hacer la lectura divertida y motivadora.
 Estructura tu respuesta con titulos (##), subtitulos (###), listas, **negritas** y ejemplos claros.
@@ -6151,7 +6178,8 @@ Tu tono es cercano, motivador y lleno de energia, como un tutor favorito.`;
                         topic: tema,
                         subject: theorySubject,
                         session: theorySession,
-                        phase: theoryPhase
+                        phase: theoryPhase,
+                        grade: requestGrade
                     })
                 }]
             });
@@ -6165,7 +6193,8 @@ Tu tono es cercano, motivador y lleno de energia, como un tutor favorito.`;
                         phase: theoryLookup.phase,
                         topic: tema,
                         theoryMarkdown: generatedTheory,
-                        source: 'ai_generated'
+                        source: 'ai_generated',
+                        grade: requestGrade
                     });
                 } catch (error) {
                     console.error('[THEORY] Error guardando TheoryLudicaBank:', error.message);
@@ -6578,7 +6607,8 @@ Estructura JSON:
                     phase: levelName,
                     batchIndex,
                     totalBatches,
-                    requestedCount
+                    requestedCount,
+                    grade: requestGrade
                 })
                 : null;
             const mathPromptBundle = isMathSubject(subject)
@@ -6589,7 +6619,8 @@ Estructura JSON:
                     phase: levelName,
                     batchIndex,
                     totalBatches,
-                    requestedCount
+                    requestedCount,
+                    grade: requestGrade
                 })
                 : null;
             const biologyPromptBundle = isBiologySubject(subject)
@@ -6600,7 +6631,8 @@ Estructura JSON:
                     phase: levelName,
                     batchIndex,
                     totalBatches,
-                    requestedCount
+                    requestedCount,
+                    grade: requestGrade
                 })
                 : null;
             const chemistryPromptBundle = isChemistrySubject(subject)
@@ -6611,7 +6643,8 @@ Estructura JSON:
                     phase: levelName,
                     batchIndex,
                     totalBatches,
-                    requestedCount
+                    requestedCount,
+                    grade: requestGrade
                 })
                 : null;
 
@@ -6778,7 +6811,8 @@ Estructura JSON:
                     phase: levelName,
                     batchIndex,
                     totalBatches,
-                    requestedCount: aiRequestedCount
+                    requestedCount: aiRequestedCount,
+                    grade: requestGrade
                 })
                 : null;
             const mathPromptForGeneration = isMathSubject(subject)
@@ -6789,7 +6823,8 @@ Estructura JSON:
                     phase: levelName,
                     batchIndex,
                     totalBatches,
-                    requestedCount: aiRequestedCount
+                    requestedCount: aiRequestedCount,
+                    grade: requestGrade
                 })
                 : null;
             const biologyPromptForGeneration = isBiologySubject(subject)
@@ -6800,7 +6835,8 @@ Estructura JSON:
                     phase: levelName,
                     batchIndex,
                     totalBatches,
-                    requestedCount: aiRequestedCount
+                    requestedCount: aiRequestedCount,
+                    grade: requestGrade
                 })
                 : null;
             const chemistryPromptForGeneration = isChemistrySubject(subject)
@@ -6811,7 +6847,8 @@ Estructura JSON:
                     phase: levelName,
                     batchIndex,
                     totalBatches,
-                    requestedCount: aiRequestedCount
+                    requestedCount: aiRequestedCount,
+                    grade: requestGrade
                 })
                 : null;
 

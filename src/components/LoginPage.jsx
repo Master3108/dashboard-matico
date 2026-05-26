@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, ArrowRight, Loader, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Loader, Sparkles, Eye, EyeOff, GraduationCap } from 'lucide-react';
 import { setToken } from '../utils/authFetch';
 
 const LoginPage = ({ onLogin }) => {
@@ -11,7 +11,8 @@ const LoginPage = ({ onLogin }) => {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        name: ''
+        name: '',
+        grade: '1medio'
     });
 
     const handleChange = (e) => {
@@ -37,7 +38,8 @@ const LoginPage = ({ onLogin }) => {
                     accion: action,
                     email: formData.email,
                     password: formData.password,
-                    name: isRegistering ? formData.name : undefined // Send name only for register
+                    name: isRegistering ? formData.name : undefined, // Send name only for register
+                    grade: isRegistering ? formData.grade : undefined // Send grade only for register
                 })
             });
 
@@ -52,7 +54,9 @@ const LoginPage = ({ onLogin }) => {
                     username: data.name || formData.name || 'Estudiante',
                     email: data.email || formData.email,
                     role: data.role || 'estudiante',
-                    parent_user_id: data.parent_user_id || null
+                    parent_user_id: data.parent_user_id || null,
+                    grade: data.grade || data.current_grade || '1medio',
+                    current_grade: data.current_grade || data.grade || '1medio'
                 });
             } else {
                 throw new Error(data.message || data.error || 'Error en la autenticación');
@@ -94,21 +98,53 @@ const LoginPage = ({ onLogin }) => {
                 <form onSubmit={handleSubmit} className="space-y-5">
 
                     {isRegistering && (
-                        <div className="space-y-1">
-                            <label className="text-sm font-bold text-gray-600 ml-1">Nombre</label>
-                            <div className="relative group">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                <input
-                                    type="text"
-                                    name="name"
-                                    required={isRegistering}
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    placeholder="Tu nombre"
-                                    className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
-                                />
+                        <>
+                            <div className="space-y-1">
+                                <label className="text-sm font-bold text-gray-600 ml-1">Nombre</label>
+                                <div className="relative group">
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        required={isRegistering}
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        placeholder="Tu nombre"
+                                        className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                    />
+                                </div>
                             </div>
-                        </div>
+
+                            <div className="space-y-1">
+                                <label className="text-sm font-bold text-gray-600 ml-1">Curso</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, grade: '1medio' })}
+                                        className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold transition-all ${
+                                            formData.grade === '1medio'
+                                                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
+                                                : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200'
+                                        }`}
+                                    >
+                                        <GraduationCap className="w-5 h-5" />
+                                        1° medio
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, grade: '2medio' })}
+                                        className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold transition-all ${
+                                            formData.grade === '2medio'
+                                                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
+                                                : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200'
+                                        }`}
+                                    >
+                                        <GraduationCap className="w-5 h-5" />
+                                        2° medio
+                                    </button>
+                                </div>
+                            </div>
+                        </>
                     )}
 
                     <div className="space-y-1">
