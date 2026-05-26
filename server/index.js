@@ -556,7 +556,8 @@ const appendQuestionBankQuestion = async (sheets, {
     explanation = '',
     sourceMode = 'image_ai_admin',
     promptImage = null,
-    questionVisualRole = 'required_for_interpretation'
+    questionVisualRole = 'required_for_interpretation',
+    grade = '1medio'
 } = {}) => {
     const phaseNumber = Number(phase || resolveQuestionBankPhase(levelName || '')) || resolveQuestionBankPhase(levelName || '');
     return createRuntimeQuestionBankQuestion({
@@ -573,7 +574,8 @@ const appendQuestionBankQuestion = async (sheets, {
         explanation,
         sourceMode,
         promptImage,
-        questionVisualRole: normalizeQuestionVisualRole(questionVisualRole || 'required_for_interpretation')
+        questionVisualRole: normalizeQuestionVisualRole(questionVisualRole || 'required_for_interpretation'),
+        grade
     });
 };
 
@@ -1727,7 +1729,8 @@ const sampleQuestionBankQuestions = async (sheets, {
     levelName = '',
     batchIndex = 0,
     requestedCount = QUIZ_BATCH_SIZE,
-    excludeSignatures = []
+    excludeSignatures = [],
+    grade = '1medio'
 } = {}) => {
     const normalizedSubject = normalizeSheetText(subject).toUpperCase();
     const normalizedLevel = normalizeQuestionBankLevel(levelName);
@@ -1741,7 +1744,8 @@ const sampleQuestionBankQuestions = async (sheets, {
         subject: normalizedSubject,
         session: sessionNumber,
         phase: expectedPhase,
-        limit: 300
+        limit: 300,
+        grade
     });
 
     const candidatesBySlot = new Map();
@@ -6323,7 +6327,7 @@ ${batchInstructions}
                 subject,
                 source_action: 'generate_prep_exam',
                 source_mode: 'prep_exam',
-                grade: body.grade || '1medio',
+                grade: requestGrade,
                 source_topic: sessionDetails.map(item => item.topic).join(' | '),
                 metadata: {
                     sessions,
@@ -6415,7 +6419,7 @@ ${batchInstructions}
                 subject,
                 source_action: 'generate_prep_exam_batch',
                 source_mode: 'prep_exam',
-                grade: body.grade || '1medio',
+                grade: requestGrade,
                 source_topic: sessionDetails.map(item => item.topic).join(' | '),
                 metadata: {
                     batch_index: batchIndex,
@@ -6662,7 +6666,8 @@ Estructura JSON:
                     levelName,
                     batchIndex,
                     requestedCount,
-                    excludeSignatures: Array.from(seenSignatures)
+                    excludeSignatures: Array.from(seenSignatures),
+                    grade: requestGrade
                 }).catch((err) => {
                     console.error('[QUESTION_BANK] Error leyendo QuestionBank:', err.message);
                     return [];
@@ -6675,7 +6680,8 @@ Estructura JSON:
                     levelName,
                     batch_index: batchIndex,
                     limit: requestedCount,
-                    exclude_signatures: Array.from(seenSignatures)
+                    exclude_signatures: Array.from(seenSignatures),
+                    grade: requestGrade
                 }).catch((err) => {
                     console.error('[QUESTION_BANK] Error leyendo banco IA:', err.message);
                     return [];
@@ -6956,7 +6962,7 @@ Estructura JSON:
                 subject,
                 source_action: 'generate_quiz',
                 source_mode: 'quiz',
-                grade: body.grade || '1medio',
+                grade: requestGrade,
                 source_topic: tema,
                 source_session: body.session || data.session || '',
                 levelName,

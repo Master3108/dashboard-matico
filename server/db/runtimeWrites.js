@@ -219,14 +219,16 @@ export const createRuntimeQuestionBankQuestion = async ({
     explanation = '',
     sourceMode = 'image_ai_admin',
     promptImage = null,
-    questionVisualRole = ''
+    questionVisualRole = '',
+    grade = '1medio'
 } = {}) => {
     const question_id = generateId('QB');
     const optionsJsonb = typeof options === 'object' ? options : { A: '', B: '', C: '', D: '' };
+    const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
 
     const row = {
         question_id,
-        grade: '1medio',  // default; callers can override if needed
+        grade: normalizedGrade,
         subject,
         session: Number(session) || 0,
         phase: Number(phase) || 0,
@@ -259,10 +261,15 @@ export const listRuntimeQuestionBankRowsForAdmin = async ({
     session = '',
     phase = '',
     search = '',
-    limit = 60
+    limit = 60,
+    grade = ''
 } = {}) => {
     let query = supabase.from('question_bank').select('*');
 
+    if (grade) {
+        const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+        query = query.eq('grade', normalizedGrade);
+    }
     if (subject) query = query.eq('subject', subject);
     if (session) query = query.eq('session', Number(session));
     if (phase) query = query.eq('phase', Number(phase));

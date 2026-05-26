@@ -85,6 +85,11 @@ const withWriteLock = (task) => {
     return next;
 };
 
+const normalizeGradeValue = (raw) => {
+    const trimmed = String(raw || '').trim().toLowerCase();
+    return trimmed === '2medio' ? '2medio' : '1medio';
+};
+
 const toGeneratedQuestionRecord = (question, meta = {}) => {
     const now = new Date().toISOString();
     const questionText = normalizeText(question?.question || '');
@@ -98,6 +103,7 @@ const toGeneratedQuestionRecord = (question, meta = {}) => {
     const sourceSession = Number(question?.source_session ?? meta.source_session ?? 0) || 0;
     const batchIndex = Number(question?.batch_index ?? meta.batch_index ?? 0) || 0;
     const questionIndex = Number(question?.question_index ?? meta.question_index ?? 0) || 0;
+    const grade = normalizeGradeValue(question?.grade ?? meta.grade ?? '1medio');
 
     return {
         id: question?.id || `gq_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`,
@@ -107,6 +113,7 @@ const toGeneratedQuestionRecord = (question, meta = {}) => {
         correct_answer: normalizeText(question?.correct_answer || 'A').toUpperCase().slice(0, 1) || 'A',
         explanation: normalizeText(question?.explanation || 'Sin explicación disponible.'),
         subject,
+        grade,
         source_session: sourceSession,
         source_topic: normalizeText(question?.source_topic || meta.source_topic || ''),
         source_action: sourceAction,
@@ -156,6 +163,7 @@ export const sampleGeneratedQuestions = async (filters = {}) => {
     const levelFilter = normalizeText(filters.levelName || filters.level || '').toUpperCase();
     const sessionFilter = Number(filters.source_session || 0) || 0;
     const batchFilter = Number(filters.batch_index ?? filters.batchIndex ?? -1);
+    const gradeFilter = filters.grade ? normalizeGradeValue(filters.grade) : '';
     const limit = Math.max(0, Number(filters.limit || 5) || 5);
     const excludeSignatures = new Set(
         Array.isArray(filters.exclude_signatures)
@@ -175,6 +183,10 @@ export const sampleGeneratedQuestions = async (filters = {}) => {
         if (sourceActionFilter && item.source_action !== sourceActionFilter) return false;
         if (sessionFilter && Number(item.source_session || 0) !== sessionFilter) return false;
         if (batchFilter >= 0 && Number(item.batch_index ?? -1) !== batchFilter) return false;
+        if (gradeFilter) {
+            const itemGrade = normalizeGradeValue(item.grade || '1medio');
+            if (itemGrade !== gradeFilter) return false;
+        }
         if (levelFilter) {
             const storedLevel = normalizeText(item.levelName || item.metadata?.level || '').toUpperCase();
             if (storedLevel !== levelFilter) return false;
