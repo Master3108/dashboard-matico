@@ -102,97 +102,115 @@ const CHAPTERS = [
 ];
 
 // =====================================================================
-// CAPITULOS 2° MEDIO (Mineduc 2019)
+// CAPITULOS 2° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA CN2M 09-14)
 // =====================================================================
 const CHAPTERS_2M = [
     {
-        id: 'cap1_electricidad_cargas',
+        id: 'cap1_cinematica',
         chapterNumber: 1,
-        title: 'Electricidad: cargas y corriente',
-        skill: 'Explicar fenomenos electricos basicos y corriente continua',
-        keywords: ['carga electrica', 'electron', 'coulomb', 'corriente', 'voltaje', 'amperio', 'conductor', 'aislante', 'electrostatica'],
+        title: 'Movimiento rectilineo: cinematica (OA9)',
+        skill: 'Analizar movimiento rectilineo uniforme y acelerado',
+        keywords: ['cinematica', 'movimiento rectilineo', 'mru', 'mua', 'velocidad', 'aceleracion', 'posicion', 'tiempo', 'grafico v-t', 'grafico x-t'],
         theoryFocus: [
-            'distinguir carga positiva y negativa, conductor y aislante',
-            'aplicar ley de Coulomb para fuerza entre cargas',
-            'relacionar corriente, voltaje y resistencia en circuitos sencillos'
+            'analizar movimiento rectilineo uniforme (MRU) y uniformemente acelerado (MUA)',
+            'relacionar posicion, velocidad, aceleracion y tiempo en situaciones cotidianas',
+            'interpretar y construir graficos posicion-tiempo y velocidad-tiempo'
         ],
         quizFocus: [
-            'cargas electricas y ley de Coulomb',
-            'conductores y aislantes',
-            'corriente, voltaje y unidades',
-            'aplicaciones de la electrostatica'
+            'ecuaciones de MRU y MUA',
+            'interpretacion de graficos x-t y v-t',
+            'caida libre y lanzamiento vertical',
+            'problemas de cinematica en contexto'
         ]
     },
     {
-        id: 'cap2_circuitos_ohm',
+        id: 'cap2_leyes_newton',
         chapterNumber: 2,
-        title: 'Circuitos electricos y ley de Ohm',
-        skill: 'Resolver circuitos serie y paralelo con ley de Ohm',
-        keywords: ['ley de ohm', 'circuito', 'serie', 'paralelo', 'resistencia', 'potencia electrica', 'consumo', 'amperimetro', 'voltimetro'],
+        title: 'Leyes de Newton y fuerzas (OA10)',
+        skill: 'Aplicar leyes de Newton mediante diagramas de cuerpo libre',
+        keywords: ['fuerza', 'newton', 'leyes de newton', 'inercia', 'diagrama de cuerpo libre', 'roce', 'tension', 'normal', 'peso', 'aceleracion'],
         theoryFocus: [
-            'aplicar ley de Ohm: V = I * R',
-            'resolver circuitos en serie, paralelo y mixtos',
-            'calcular potencia, energia electrica y consumo domestico'
+            'explicar los efectos de fuerzas netas mediante investigaciones experimentales',
+            'aplicar las tres leyes de Newton (inercia, F=ma, accion-reaccion)',
+            'construir diagramas de cuerpo libre para resolver problemas'
         ],
         quizFocus: [
-            'ley de Ohm',
-            'circuitos serie y paralelo',
-            'potencia y consumo electrico',
-            'analisis de circuitos mixtos'
+            'aplicacion de F=ma',
+            'diagramas de cuerpo libre',
+            'fuerzas de roce, tension, normal, peso',
+            'tercera ley de Newton (accion-reaccion)'
         ]
     },
     {
-        id: 'cap3_magnetismo',
+        id: 'cap3_energia_mecanica',
         chapterNumber: 3,
-        title: 'Magnetismo y campo magnetico',
-        skill: 'Describir campo magnetico y fuerza sobre cargas en movimiento',
-        keywords: ['magnetismo', 'iman', 'campo magnetico', 'lineas de campo', 'polo norte', 'polo sur', 'tesla', 'gauss', 'fuerza magnetica'],
+        title: 'Energia mecanica, trabajo y potencia (OA11)',
+        skill: 'Aplicar conservacion de energia mecanica',
+        keywords: ['energia cinetica', 'energia potencial', 'energia mecanica', 'trabajo', 'potencia', 'conservacion de la energia', 'joule', 'watt'],
         theoryFocus: [
-            'describir lineas de campo magnetico de imanes y bobinas',
-            'analizar fuerza magnetica sobre cargas en movimiento',
-            'reconocer el magnetismo terrestre y aplicaciones cotidianas'
+            'describir el movimiento usando ley de conservacion de la energia mecanica',
+            'aplicar conceptos de trabajo y potencia mecanica',
+            'analizar transformaciones entre energia cinetica y potencial'
         ],
         quizFocus: [
-            'campo magnetico y lineas de campo',
-            'fuerza magnetica',
-            'magnetismo terrestre',
-            'aplicaciones magneticas'
+            'energia cinetica y potencial gravitatoria',
+            'conservacion de la energia mecanica',
+            'calculo de trabajo y potencia',
+            'eficiencia energetica en contexto'
         ]
     },
     {
-        id: 'cap4_electromagnetismo',
+        id: 'cap4_momentum_colisiones',
         chapterNumber: 4,
-        title: 'Electromagnetismo e induccion',
-        skill: 'Relacionar electricidad y magnetismo mediante induccion',
-        keywords: ['electromagnetismo', 'induccion', 'faraday', 'lenz', 'oersted', 'motor', 'generador', 'transformador', 'flujo magnetico'],
+        title: 'Momentum y colisiones (OA12)',
+        skill: 'Analizar colisiones aplicando ley de conservacion del momentum',
+        keywords: ['momentum', 'cantidad de movimiento', 'impulso', 'colision', 'elastica', 'inelastica', 'choque', 'conservacion del momentum'],
         theoryFocus: [
-            'analizar experimentos de Oersted, Faraday y Lenz',
-            'explicar funcionamiento de motores, generadores y transformadores',
-            'aplicar ley de induccion electromagnetica en contextos tecnologicos'
+            'analizar datos de colisiones considerando cantidad de movimiento e impulso',
+            'aplicar la ley de conservacion del momentum lineal',
+            'distinguir colisiones elasticas e inelasticas'
         ],
         quizFocus: [
-            'induccion electromagnetica',
-            'leyes de Faraday y Lenz',
-            'motores y generadores',
-            'transformadores y aplicaciones'
+            'calculo de momentum y impulso',
+            'colisiones elasticas vs inelasticas',
+            'conservacion del momentum en sistemas aislados',
+            'aplicaciones a deportes y trafico'
         ]
     },
     {
-        id: 'cap5_calor_termodinamica',
+        id: 'cap5_universo_big_bang',
         chapterNumber: 5,
-        title: 'Calor, temperatura y termodinamica',
-        skill: 'Interpretar calor, temperatura y leyes de la termodinamica',
-        keywords: ['calor', 'temperatura', 'equilibrio termico', 'calor especifico', 'dilatacion', 'cambio de estado', 'caloria', 'termodinamica', 'entropia'],
+        title: 'Modelos del Universo y Big Bang (OA13)',
+        skill: 'Demostrar evolucion del conocimiento del Universo',
+        keywords: ['universo', 'big bang', 'geocentrico', 'heliocentrico', 'copernico', 'galileo', 'expansion', 'galaxia', 'cosmologia'],
         theoryFocus: [
-            'distinguir calor y temperatura, escalas termometricas y equilibrio termico',
-            'aplicar formula Q = m * c * dT y calcular calor en cambios de fase',
-            'introducir leyes de la termodinamica con ejemplos cotidianos'
+            'demostrar que el conocimiento del Universo cambia con nuevas evidencias',
+            'comparar modelos geocentrico (Ptolomeo), heliocentrico (Copernico) y Big Bang',
+            'analizar evidencias actuales: corrimiento al rojo, radiacion cosmica de fondo'
         ],
         quizFocus: [
-            'calor y temperatura',
-            'calor especifico y calorimetria',
-            'cambios de estado',
-            'leyes termodinamicas basicas'
+            'modelo geocentrico vs heliocentrico',
+            'teoria del Big Bang y evidencias',
+            'evolucion del conocimiento astronomico',
+            'estructura del Universo'
+        ]
+    },
+    {
+        id: 'cap6_gravitacion_kepler',
+        chapterNumber: 6,
+        title: 'Gravitacion universal y leyes de Kepler (OA14)',
+        skill: 'Explicar fenomenos cosmicos con leyes de Kepler y gravitacion',
+        keywords: ['kepler', 'gravitacion universal', 'newton', 'orbita', 'mareas', 'satelite', 'planeta', 'fuerza gravitacional', 'periodo orbital'],
+        theoryFocus: [
+            'explicar el origen de las mareas mediante leyes de Kepler y gravitacion universal',
+            'analizar formacion de estructuras cosmicas (planetas, sistemas solares)',
+            'describir movimiento de sondas espaciales y satelites artificiales'
+        ],
+        quizFocus: [
+            'tres leyes de Kepler',
+            'ley de gravitacion universal de Newton',
+            'mareas y efectos gravitacionales',
+            'orbitas y satelites'
         ]
     }
 ];

@@ -30,6 +30,7 @@ import { resolveMoralejaMatematicaContext } from './moralejaMatematica.js';
 import { resolveMoralejaBiologiaContext } from './moralejaBiologia.js';
 import { resolveMoralejaQuimicaContext } from './moralejaQuimica.js';
 import { resolveMoralejaFisicaContext } from './moralejaFisica.js';
+import { resolveMoralejaHistoriaContext } from './moralejaHistoria.js';
 import {
     appendRuntimeTheoryLudica,
     createRuntimePedagogicalAsset,
@@ -5749,6 +5750,14 @@ const isPhysicsSubject = (subject = '') => {
     return normalized.includes('FISICA');
 };
 
+const isHistorySubject = (subject = '') => {
+    const normalized = String(subject || '')
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    return normalized.includes('HISTORIA');
+};
+
 const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = '', grade = '1medio' } = {}) => {
     const segments = [`Tema solicitado: ${topic || 'Sin tema especificado'}`];
     const normalizedSubject = String(subject || '').toUpperCase();
@@ -5806,6 +5815,19 @@ const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = 
         });
         segments.push(`[BASE MORALEJA FISICA]\n${moralejaFisicaContext.theoryGuidance}`);
         segments.push('Cierra con una mini clave de razonamiento fisico y un ejemplo breve tipo DEMRE/PAES.');
+    } else if (isHistorySubject(normalizedSubject)) {
+        const moralejaHistoriaContext = resolveMoralejaHistoriaContext({
+            topic,
+            session,
+            phase,
+            mode: 'theory',
+            grade
+        });
+        // moralejaHistoria solo retorna contexto para 2° medio; en 1° medio retorna null y caemos a prompt generico
+        if (moralejaHistoriaContext) {
+            segments.push(`[BASE MORALEJA HISTORIA]\n${moralejaHistoriaContext.theoryGuidance}`);
+            segments.push('Cierra con una mini clave de analisis historico (fechas, actores, procesos) y un ejemplo tipo DEMRE/PAES.');
+        }
     }
 
     return segments.filter(Boolean).join('\n\n');

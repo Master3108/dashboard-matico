@@ -121,124 +121,238 @@ const CHAPTERS = [
 ];
 
 // =====================================================================
-// CAPITULOS 2° MEDIO (Mineduc 2019)
-// Mismas 5 habilidades transversales, con contenidos 2° medio
-// (narrativa romantica/realista, ensayo argumentativo, discurso publico)
+// CAPITULOS 2° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA LE2M 01-24)
+// 4 ejes: Lectura, Escritura, Comunicacion Oral, Investigacion
 // =====================================================================
 const CHAPTERS_2M = [
     {
-        id: 'cap1_coherencia_cohesion',
+        id: 'cap1_narrativa',
         chapterNumber: 1,
-        title: 'Coherencia, cohesion y referencia textual',
-        skill: 'Coherencia y cohesion en textos complejos',
-        keywords: ['coherencia', 'cohesion', 'referente', 'referentes', 'correferencia', 'elipsis', 'progresion tematica', 'macroestructura'],
+        title: 'Lectura literaria: narrativa contemporanea y latinoamericana (OA3, OA7-8)',
+        skill: 'Analizar narraciones e interpretar cuentos latinoamericanos',
+        keywords: ['narrador', 'cuento', 'novela', 'conflicto', 'personaje', 'estructura narrativa', 'simbolo', 'recurso literario', 'latinoamericano', 'boom'],
         theoryFocus: [
-            'Distinguir coherencia global y cohesion local en textos largos y complejos.',
-            'Rastrear referentes lexicos, pronominales y deicticos en discursos extensos.',
-            'Identificar quiebres de progresion tematica y mecanismos correctivos.'
+            'Analizar narraciones considerando conflictos, personajes, estructura, perspectiva del narrador, simbolos y recursos literarios.',
+            'Leer y comprender cuentos latinoamericanos modernos y contemporaneos.',
+            'Formular interpretaciones coherentes con punto de vista personal e historico.'
         ],
         procedures: [
-            'Identificar el eje tematico del texto completo.',
-            'Rastrear cadenas correferenciales a lo largo de varios parrafos.',
-            'Verificar la progresion logica desde la macroestructura.'
+            'Identificar conflicto central, personajes y tipo de narrador.',
+            'Reconocer simbolos y recursos literarios (metafora, prolepsis, etc.).',
+            'Construir interpretacion fundamentada en evidencia textual.'
         ],
         quizFocus: [
-            'identificacion de referentes complejos',
-            'cadenas correferenciales',
-            'progresion tematica',
-            'cohesion en textos largos'
+            'analisis de personajes y conflicto',
+            'tipo de narrador y perspectiva',
+            'simbolos y recursos literarios',
+            'interpretacion contextual del cuento latinoamericano'
         ]
     },
     {
-        id: 'cap2_info_explicita',
+        id: 'cap2_lirica',
         chapterNumber: 2,
-        title: 'Informacion explicita y vocabulario contextual avanzado',
-        skill: 'Localizar informacion explicita y vocabulario por contexto',
-        keywords: ['informacion explicita', 'literal', 'rastreo', 'parafrasis', 'vocabulario contextual', 'sinonimo', 'connotacion', 'denotacion'],
+        title: 'Lectura literaria: poesia y soneto (OA4)',
+        skill: 'Analizar poemas considerando lenguaje figurado y formas estroficas',
+        keywords: ['poesia', 'soneto', 'hablante lirico', 'simbolo', 'lenguaje figurado', 'metafora', 'rima', 'verso', 'estrofa', 'repeticion'],
         theoryFocus: [
-            'Aplicar estrategia PAES de rastreo en textos extensos y multimodales.',
-            'Reconocer parafrasis sutiles que reformulan datos literales.',
-            'Resolver vocabulario contextual avanzado: connotacion, denotacion y registro.'
+            'Analizar poemas considerando simbolos, actitud del hablante, lenguaje figurado y repeticiones.',
+            'Reconocer caracteristicas del soneto (estructura 4-4-3-3, endecasilabos, rima).',
+            'Interpretar el sentido global del poema relacionando forma y contenido.'
         ],
         procedures: [
-            'Subrayar referente, verbo y condicion clave de la pregunta.',
-            'Rastrear la informacion en el texto y descartar alternativas parafraseadas erroneamente.',
-            'Verificar el significado de la palabra en su contexto inmediato.'
+            'Identificar al hablante lirico y su actitud.',
+            'Reconocer figuras literarias y su funcion expresiva.',
+            'Analizar metrica y rima en el soneto.'
         ],
         quizFocus: [
-            'localizacion de datos literales en textos largos',
-            'vocabulario por contexto avanzado',
-            'parafrasis y reformulacion',
-            'denotacion vs connotacion'
+            'figuras literarias y simbolos',
+            'actitud del hablante lirico',
+            'estructura del soneto',
+            'interpretacion del poema'
         ]
     },
     {
-        id: 'cap3_sintesis',
+        id: 'cap3_drama',
         chapterNumber: 3,
-        title: 'Sintesis local y global de textos complejos',
-        skill: 'Sintetizar tema, tesis e idea principal en discursos extensos',
-        keywords: ['sintesis', 'idea principal', 'tema', 'tesis', 'macroestructura', 'macrorreglas', 'generalizacion', 'condensacion'],
+        title: 'Lectura literaria: texto dramatico y teatro (OA5)',
+        skill: 'Analizar textos dramaticos y elementos de puesta en escena',
+        keywords: ['drama', 'teatro', 'dialogo', 'acto', 'escena', 'acotacion', 'conflicto dramatico', 'puesta en escena', 'tragedia', 'comedia'],
         theoryFocus: [
-            'Distinguir tema, tesis e idea principal en ensayos, articulos y discursos.',
-            'Aplicar macrorreglas de seleccion, supresion y generalizacion en textos largos.',
-            'Producir sintesis fiel al texto original sin agregar ni omitir contenido esencial.'
+            'Analizar textos dramaticos examinando conflicto, personajes, simbolos y atmosfera.',
+            'Reconocer elementos de puesta en escena (acotaciones, dialogos, monologos).',
+            'Distinguir generos dramaticos (tragedia, comedia, drama moderno).'
         ],
         procedures: [
-            'Identificar el tema y luego la tesis defendida por el autor.',
-            'Suprimir ejemplos y detalles secundarios.',
-            'Reformular las ideas centrales en una sintesis breve y precisa.'
+            'Identificar conflicto dramatico central.',
+            'Analizar funcion de las acotaciones.',
+            'Reconocer atmosfera y simbolos escenicos.'
         ],
         quizFocus: [
-            'tema, tesis e idea principal',
-            'titulo adecuado a textos extensos',
-            'sintesis de articulos y ensayos',
-            'macrorreglas aplicadas'
+            'conflicto dramatico',
+            'estructura del texto teatral',
+            'funcion de acotaciones',
+            'puesta en escena'
         ]
     },
     {
-        id: 'cap4_propositos_relaciones',
+        id: 'cap4_siglo_oro',
         chapterNumber: 4,
-        title: 'Propositos, relaciones discursivas y argumentacion',
-        skill: 'Analizar propositos comunicativos y argumentacion formal',
-        keywords: ['proposito', 'argumentacion', 'tesis', 'argumento', 'contraargumento', 'falacia', 'discurso publico', 'ensayo', 'debate', 'medios'],
+        title: 'Literatura del Siglo de Oro (OA6)',
+        skill: 'Comprender obras del Siglo de Oro en contexto historico-cultural',
+        keywords: ['siglo de oro', 'cervantes', 'quijote', 'lope de vega', 'gongora', 'quevedo', 'barroco', 'renacimiento', 'picaresca', 'lazarillo'],
         theoryFocus: [
-            'Reconocer propositos: informar, persuadir, exhortar, argumentar.',
-            'Analizar estructura argumentativa: tesis, argumentos, contraargumentos, refutacion.',
-            'Detectar falacias logicas y recursos retoricos en discurso publico y prensa.'
+            'Comprender la relevancia de obras del Siglo de Oro espanol.',
+            'Caracterizar el contexto historico-cultural (Renacimiento, Barroco) que las origina.',
+            'Reconocer aportes a la literatura universal (novela moderna, picaresca, comedia nueva).'
         ],
         procedures: [
-            'Identificar tesis y modo argumental (deductivo, inductivo, por analogia).',
-            'Distinguir hecho y opinion, argumento solido y falacia.',
-            'Relacionar partes del discurso con funcion comunicativa.'
+            'Contextualizar la obra en su epoca historica.',
+            'Identificar elementos esteticos del Renacimiento o Barroco.',
+            'Relacionar la obra con su autor y legado.'
         ],
         quizFocus: [
-            'proposito en discurso publico',
-            'estructura argumentativa',
-            'falacias y recursos retoricos',
-            'hecho vs opinion en prensa'
+            'autores del Siglo de Oro',
+            'caracteristicas Renacimiento vs Barroco',
+            'Cervantes y la novela moderna',
+            'picaresca y comedia nueva'
         ]
     },
     {
-        id: 'cap5_inferencia',
+        id: 'cap5_argumentacion',
         chapterNumber: 5,
-        title: 'Inferencia, intertextualidad y sentido global',
-        skill: 'Inferir sentidos implicitos e intertextualidad en textos complejos',
-        keywords: ['inferencia', 'implicita', 'intertextualidad', 'tono', 'vision de mundo', 'simbolo', 'cosmovision', 'subtexto', 'ironia'],
+        title: 'Argumentacion: columnas, cartas y ensayos (OA9)',
+        skill: 'Analizar y evaluar textos argumentativos',
+        keywords: ['argumentacion', 'tesis', 'argumento', 'columna', 'carta al director', 'ensayo', 'persuasion', 'recurso retorico', 'contraargumento', 'evidencia'],
         theoryFocus: [
-            'Explicar inferencia local y global con pistas textuales.',
-            'Reconocer intertextualidad: alusiones, citas, parodias, referencias culturales.',
-            'Inferir vision de mundo, tono, ironia y subtexto en literatura y ensayo.'
+            'Analizar y evaluar textos argumentativos como columnas, cartas y ensayos.',
+            'Examinar tesis y recursos persuasivos (ethos, pathos, logos).',
+            'Distinguir argumentos solidos de falacias.'
         ],
         procedures: [
-            'Ubicar pistas textuales clave (palabras, simbolos, marcadores).',
-            'Relacionar pistas con conocimientos contextuales o intertextuales.',
-            'Justificar conclusion con evidencia textual verificable.'
+            'Identificar tesis central del texto.',
+            'Mapear argumentos, contraargumentos y refutaciones.',
+            'Evaluar validez y efectividad persuasiva.'
         ],
         quizFocus: [
-            'tono, ironia y vision de mundo',
-            'inferencias globales',
-            'intertextualidad',
-            'subtexto y simbolismo'
+            'identificacion de tesis',
+            'tipos de argumentos',
+            'recursos persuasivos',
+            'deteccion de falacias'
+        ]
+    },
+    {
+        id: 'cap6_medios_persuasion',
+        chapterNumber: 6,
+        title: 'Textos mediaticos y persuasion (OA10)',
+        skill: 'Analizar textos mediaticos y estrategias de persuasion',
+        keywords: ['medios', 'publicidad', 'propaganda', 'noticia', 'reportaje', 'estrategia persuasiva', 'multimodal', 'recurso visual', 'manipulacion', 'critica de medios'],
+        theoryFocus: [
+            'Analizar textos mediaticos evaluando propositos y estrategias de persuasion.',
+            'Evaluar efectos de recursos linguisticos y visuales.',
+            'Desarrollar lectura critica de prensa, publicidad y medios digitales.'
+        ],
+        procedures: [
+            'Identificar el proposito del texto mediatico.',
+            'Analizar recursos verbales y visuales.',
+            'Detectar sesgos y estrategias de manipulacion.'
+        ],
+        quizFocus: [
+            'propositos en medios',
+            'estrategias de persuasion',
+            'multimodalidad',
+            'lectura critica de prensa y publicidad'
+        ]
+    },
+    {
+        id: 'cap7_no_literarios',
+        chapterNumber: 7,
+        title: 'Textos no literarios para contextualizar (OA1-2, OA11)',
+        skill: 'Leer textos no literarios para enriquecer experiencia lectora',
+        keywords: ['no literario', 'articulo', 'biografia', 'cronica', 'contexto', 'experiencia humana', 'lectura habitual', 'recreacion'],
+        theoryFocus: [
+            'Leer habitualmente para aprender y recrearse, seleccionando textos segun preferencias.',
+            'Reflexionar sobre dimensiones de la experiencia humana a partir de lecturas.',
+            'Leer y comprender textos no literarios para contextualizar lecturas literarias.'
+        ],
+        procedures: [
+            'Seleccionar textos segun proposito y preferencia.',
+            'Vincular contenido del texto con experiencias propias o sociales.',
+            'Usar textos no literarios como contexto para obras literarias.'
+        ],
+        quizFocus: [
+            'comprension de textos no literarios',
+            'reflexion sobre experiencia humana',
+            'lectura como practica habitual',
+            'contextualizacion historico-cultural'
+        ]
+    },
+    {
+        id: 'cap8_escritura_explicativa',
+        chapterNumber: 8,
+        title: 'Escritura: textos explicativos (OA12-13)',
+        skill: 'Escribir textos explicativos con claridad y coherencia',
+        keywords: ['escritura', 'texto explicativo', 'explicacion', 'organizacion', 'coherencia', 'ejemplo', 'evidencia', 'investigacion previa', 'genero'],
+        theoryFocus: [
+            'Aplicar flexiblemente habilidades de escritura en nuevos generos, investigando caracteristicas.',
+            'Escribir textos explicativos con presentacion clara y organizacion coherente.',
+            'Incluir ejemplos y evidencias que sustenten la explicacion.'
+        ],
+        procedures: [
+            'Investigar caracteristicas del genero antes de escribir.',
+            'Organizar contenido en introduccion, desarrollo y cierre.',
+            'Incluir ejemplos concretos y evidencias.'
+        ],
+        quizFocus: [
+            'estructura del texto explicativo',
+            'organizacion coherente',
+            'uso de ejemplos y evidencias',
+            'caracteristicas de generos textuales'
+        ]
+    },
+    {
+        id: 'cap9_escritura_argumentativa',
+        chapterNumber: 9,
+        title: 'Escritura: ensayos persuasivos y proceso (OA14-18)',
+        skill: 'Planificar, escribir, revisar y editar ensayos argumentativos',
+        keywords: ['ensayo', 'persuasivo', 'hipotesis', 'evidencia', 'contraargumento', 'planificacion', 'revision', 'edicion', 'ortografia', 'puntuacion', 'estilo directo', 'estilo indirecto', 'frase nominal'],
+        theoryFocus: [
+            'Escribir ensayos persuasivos sobre temas literarios con hipotesis, evidencias y contraargumentos.',
+            'Planificar, escribir, revisar y editar adecuando registro, coherencia y correccion ortografica.',
+            'Usar consistentemente estilo directo/indirecto, frases nominales complejas y ortografia/puntuacion correctas.'
+        ],
+        procedures: [
+            'Planificar el texto: tesis, evidencias, contraargumentos.',
+            'Escribir, revisar y editar el texto en varias pasadas.',
+            'Aplicar reglas ortograficas, puntuacion y registro adecuado.'
+        ],
+        quizFocus: [
+            'estructura del ensayo persuasivo',
+            'uso de contraargumentos',
+            'proceso de escritura (planificar/revisar/editar)',
+            'ortografia y puntuacion'
+        ]
+    },
+    {
+        id: 'cap10_oralidad_investigacion',
+        chapterNumber: 10,
+        title: 'Comunicacion oral e investigacion (OA19-24)',
+        skill: 'Comprender y producir comunicacion oral, e investigar con fuentes confiables',
+        keywords: ['oralidad', 'exposicion', 'dialogo', 'debate', 'audiencia', 'recurso paralinguistico', 'fuente confiable', 'investigacion', 'delimitar tema', 'cita'],
+        theoryFocus: [
+            'Comprender y evaluar textos orales y audiovisuales (postura, contexto, persuasion).',
+            'Dialogar constructivamente y expresarse frente a audiencias con progresion tematica.',
+            'Realizar investigaciones delimitando temas, seleccionando fuentes confiables y comunicando hallazgos.'
+        ],
+        procedures: [
+            'Escuchar activamente: tomar notas, identificar tesis y argumentos.',
+            'Preparar exposiciones con apoyo visual y estructura clara.',
+            'Investigar delimitando tema, evaluando fuentes y citando correctamente.'
+        ],
+        quizFocus: [
+            'evaluacion de exposiciones orales',
+            'dialogo constructivo',
+            'recursos paralinguisticos y no verbales',
+            'investigacion con fuentes confiables'
         ]
     }
 ];

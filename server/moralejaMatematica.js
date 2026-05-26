@@ -266,187 +266,187 @@ const CHAPTERS = [
 ];
 
 // =====================================================================
-// CAPITULOS 2° MEDIO (Mineduc 2019)
+// CAPITULOS 2° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA MA2M 01-12)
 // =====================================================================
 const CHAPTERS_2M = [
     {
-        id: 'cap1_reales_irracionales',
+        id: 'cap1_calculo_reales_raices',
         chapterNumber: 1,
-        title: 'Numeros reales e irracionales',
-        skill: 'Distinguir y operar con numeros reales, racionales e irracionales',
-        keywords: ['reales', 'irracionales', 'racionales', 'recta real', 'pi', 'raiz dos', 'numeros reales', 'densidad', 'aproximacion'],
+        title: 'Calculos con numeros reales y raices (OA1)',
+        skill: 'Realizar calculos y estimaciones con numeros reales',
+        keywords: ['reales', 'raiz', 'raices', 'descomposicion', 'racionales', 'irracionales', 'aproximar', 'estimar', 'recta real'],
         theoryFocus: [
-            'distinguir numeros racionales e irracionales y ubicarlos en la recta real',
-            'operar con numeros reales y comparar magnitudes irracionales',
-            'analizar densidad de los reales y aproximaciones decimales'
+            'realizar calculos exactos y estimaciones con numeros reales',
+            'descomponer raices y combinar con numeros racionales',
+            'comparar y aproximar magnitudes irracionales en la recta real'
         ],
         quizFocus: [
-            'clasificacion de numeros reales',
-            'comparacion y orden en la recta',
-            'operatoria con irracionales',
-            'aproximaciones racionales de irracionales'
+            'descomposicion y combinacion de raices con racionales',
+            'estimaciones razonadas con reales',
+            'comparacion y orden de irracionales',
+            'resolucion de problemas con numeros reales'
         ]
     },
     {
-        id: 'cap2_raices_racionalizacion',
+        id: 'cap2_potencias_logaritmos',
         chapterNumber: 2,
-        title: 'Raices, radicacion y racionalizacion',
-        skill: 'Aplicar propiedades de radicacion y racionalizar denominadores',
-        keywords: ['raices', 'radicales', 'racionalizar', 'raiz enesima', 'radicando', 'indice', 'simplificar raices'],
+        title: 'Potencias, raices enesimas y logaritmos (OA2)',
+        skill: 'Relacionar potencias, raices enesimas y logaritmos',
+        keywords: ['potencias', 'raiz enesima', 'logaritmo', 'log', 'ln', 'cambio de base', 'exponente', 'propiedades', 'ecuacion logaritmica', 'ecuacion exponencial'],
         theoryFocus: [
-            'aplicar propiedades de raices enesimas: producto, cociente y potencia',
-            'simplificar, sumar y restar expresiones con radicales semejantes',
-            'racionalizar denominadores monomios y binomios'
+            'relacionar potencias con raices enesimas y logaritmos',
+            'aplicar propiedades de logaritmos: producto, cociente, potencia, cambio de base',
+            'resolver ecuaciones exponenciales y logaritmicas simples'
         ],
         quizFocus: [
-            'propiedades de radicacion',
-            'simplificacion de radicales',
-            'racionalizacion de denominadores',
-            'ecuaciones con radicales'
+            'conversion entre potencias, raices enesimas y logaritmos',
+            'propiedades de logaritmos',
+            'ecuaciones exponenciales y logaritmicas',
+            'aplicaciones en contexto'
         ]
     },
     {
-        id: 'cap3_notacion_cientifica',
+        id: 'cap3_funcion_cuadratica',
         chapterNumber: 3,
-        title: 'Notacion cientifica y orden de magnitud',
-        skill: 'Expresar y comparar magnitudes en notacion cientifica',
-        keywords: ['notacion cientifica', 'orden de magnitud', 'mantisa', 'exponente', 'potencias de diez', 'micro', 'nano', 'tera', 'mega'],
+        title: 'Funcion cuadratica (OA3)',
+        skill: 'Comprender la funcion cuadratica y representarla',
+        keywords: ['funcion cuadratica', 'parabola', 'vertice', 'eje de simetria', 'concavidad', 'ceros', 'ax2', 'grafico', 'puntos especiales'],
         theoryFocus: [
-            'expresar numeros muy grandes y muy pequenos en notacion cientifica',
-            'operar productos y cocientes en notacion cientifica',
-            'comparar ordenes de magnitud en contextos cientificos'
+            'reconocer la funcion cuadratica f(x)=ax^2+bx+c en contextos reales',
+            'representar funcion cuadratica en tablas y graficos (parabola)',
+            'determinar vertice, eje de simetria, ceros y puntos especiales'
         ],
         quizFocus: [
-            'conversion entre forma decimal y cientifica',
-            'operaciones en notacion cientifica',
-            'comparacion de ordenes de magnitud',
-            'aplicaciones en fisica y biologia'
-        ]
-    },
-    {
-        id: 'cap4_productos_factorizacion',
-        chapterNumber: 4,
-        title: 'Productos notables y factorizacion',
-        skill: 'Desarrollar productos notables y factorizar expresiones algebraicas',
-        keywords: ['productos notables', 'factorizacion', 'cuadrado de binomio', 'suma por diferencia', 'factor comun', 'trinomio', 'agrupacion'],
-        theoryFocus: [
-            'desarrollar cuadrado de binomio, suma por diferencia y cubo de binomio',
-            'factorizar por factor comun, agrupacion, trinomio y suma o diferencia de cubos',
-            'simplificar fracciones algebraicas con factorizaciones'
-        ],
-        quizFocus: [
-            'productos notables',
-            'factorizacion estrategica',
-            'simplificacion de fracciones algebraicas',
-            'modelacion algebraica'
-        ]
-    },
-    {
-        id: 'cap5_sistemas_2x2',
-        chapterNumber: 5,
-        title: 'Sistemas de ecuaciones lineales 2x2',
-        skill: 'Resolver sistemas 2x2 por sustitucion, igualacion y reduccion',
-        keywords: ['sistemas', 'ecuaciones', 'sustitucion', 'igualacion', 'reduccion', 'sistemas lineales', '2x2', 'compatible', 'incompatible'],
-        theoryFocus: [
-            'resolver sistemas 2x2 por sustitucion, igualacion y reduccion',
-            'interpretar graficamente sistemas compatibles, incompatibles e indeterminados',
-            'plantear sistemas a partir de problemas de contexto'
-        ],
-        quizFocus: [
-            'metodos de resolucion 2x2',
-            'interpretacion grafica',
-            'modelacion con sistemas',
-            'analisis de soluciones'
-        ]
-    },
-    {
-        id: 'cap6_funcion_cuadratica',
-        chapterNumber: 6,
-        title: 'Funcion cuadratica y parabola',
-        skill: 'Modelar y analizar funciones cuadraticas',
-        keywords: ['funcion cuadratica', 'parabola', 'vertice', 'eje de simetria', 'concavidad', 'discriminante', 'ceros', 'raices reales'],
-        theoryFocus: [
-            'analizar vertice, eje de simetria, concavidad e intersecciones de la parabola',
-            'resolver ecuaciones cuadraticas con formula general y discriminante',
-            'modelar fenomenos cuadraticos en fisica y economia'
-        ],
-        quizFocus: [
-            'vertice y eje',
-            'ceros y discriminante',
-            'analisis de graficos',
+            'identificacion de la funcion cuadratica en contexto',
+            'lectura e interpretacion de graficos (parabola)',
+            'vertice, eje de simetria y ceros',
             'modelacion con cuadraticas'
         ]
     },
     {
-        id: 'cap7_funcion_inversa_raiz',
-        chapterNumber: 7,
-        title: 'Funcion inversa y raiz cuadrada',
-        skill: 'Reconocer funcion inversa y propiedades de la funcion raiz cuadrada',
-        keywords: ['funcion inversa', 'funcion raiz', 'dominio', 'recorrido', 'biyectiva', 'composicion', 'raiz cuadrada'],
+        id: 'cap4_ecuaciones_cuadraticas',
+        chapterNumber: 4,
+        title: 'Ecuaciones cuadraticas (OA4)',
+        skill: 'Resolver ecuaciones cuadraticas por distintos metodos',
+        keywords: ['ecuacion cuadratica', 'factorizacion', 'completar cuadrado', 'formula general', 'discriminante', 'raices', 'soluciones'],
         theoryFocus: [
-            'identificar funciones invertibles, calcular y graficar inversas',
-            'analizar dominio, recorrido y simetria de funciones raiz cuadrada',
-            'relacionar funcion cuadratica y su inversa en el dominio adecuado'
+            'resolver ecuaciones cuadraticas (ax^2=b, (ax+b)^2=c, ax^2+bx=0, ax^2+bx+c=0)',
+            'aplicar factorizacion, completacion de cuadrado y formula general',
+            'analizar discriminante para clasificar soluciones'
+        ],
+        quizFocus: [
+            'resolucion por factorizacion',
+            'formula general y discriminante',
+            'completacion de cuadrado',
+            'aplicaciones a problemas'
+        ]
+    },
+    {
+        id: 'cap5_funcion_inversa',
+        chapterNumber: 5,
+        title: 'Funcion inversa (OA5)',
+        skill: 'Comprender la inversa de una funcion',
+        keywords: ['funcion inversa', 'biyectiva', 'reflexion', 'maquina de funciones', 'composicion', 'dominio', 'recorrido', 'simetria respecto a y=x'],
+        theoryFocus: [
+            'identificar funciones invertibles usando maquinas, tablas y graficos',
+            'calcular inversas de funciones lineales y cuadraticas (con restriccion de dominio)',
+            'interpretar la inversa como reflexion respecto a la recta y=x'
         ],
         quizFocus: [
             'calculo de funcion inversa',
-            'dominio y recorrido de la funcion raiz',
-            'graficos asociados',
-            'composicion de funciones'
+            'representacion grafica de la inversa',
+            'restriccion de dominio en funciones cuadraticas',
+            'composicion f(f^{-1}(x))=x'
         ]
     },
     {
-        id: 'cap8_semejanza_tales',
+        id: 'cap6_interes_compuesto',
+        chapterNumber: 6,
+        title: 'Cambio porcentual constante e interes compuesto (OA6)',
+        skill: 'Aplicar cambio porcentual constante en situaciones financieras',
+        keywords: ['interes compuesto', 'porcentaje', 'cambio porcentual', 'capitalizacion', 'tasa', 'credito', 'inversion', 'crecimiento exponencial', 'cae'],
+        theoryFocus: [
+            'identificar cambio porcentual constante como interes compuesto',
+            'representar interes compuesto en tablas, graficos y formulas',
+            'resolver problemas financieros cotidianos (creditos, inversiones, AFP)'
+        ],
+        quizFocus: [
+            'calculo de interes compuesto',
+            'comparacion interes simple vs compuesto',
+            'aplicaciones financieras cotidianas',
+            'crecimiento porcentual constante'
+        ]
+    },
+    {
+        id: 'cap7_area_volumen_esfera',
+        chapterNumber: 7,
+        title: 'Esfera: area superficial y volumen (OA7)',
+        skill: 'Desarrollar y aplicar formulas de la esfera',
+        keywords: ['esfera', 'area superficial', 'volumen', 'radio', 'casquete', '4 pi r2', 'volumen esfera'],
+        theoryFocus: [
+            'conjeturar y desarrollar formulas del area superficial y volumen de la esfera',
+            'representar esfera, secciones y casquetes',
+            'resolver problemas geometricos y de modelacion con esferas'
+        ],
+        quizFocus: [
+            'area superficial de la esfera',
+            'volumen de la esfera',
+            'problemas con esferas y casquetes',
+            'modelacion contextual'
+        ]
+    },
+    {
+        id: 'cap8_trigonometria',
         chapterNumber: 8,
-        title: 'Semejanza, homotecia y teorema de Tales',
-        skill: 'Aplicar semejanza y teorema de Tales en problemas geometricos',
-        keywords: ['semejanza', 'homotecia', 'tales', 'thales', 'razon de semejanza', 'figuras semejantes', 'criterios', 'proporcionalidad de segmentos'],
+        title: 'Razones trigonometricas (OA8)',
+        skill: 'Comprender razones trigonometricas en triangulos rectangulos',
+        keywords: ['trigonometria', 'seno', 'coseno', 'tangente', 'razones trigonometricas', 'triangulo rectangulo', 'angulo', 'semejanza', 'cateto', 'hipotenusa'],
         theoryFocus: [
-            'aplicar criterios de semejanza de triangulos (AA, LAL, LLL)',
-            'usar homotecia como transformacion que produce figuras semejantes',
-            'aplicar teorema de Tales en haces de paralelas y problemas de altura'
+            'relacionar razones trigonometricas (seno, coseno, tangente) con semejanza',
+            'explicar pictoricamente las razones en triangulos rectangulos',
+            'aplicar razones trigonometricas en resolucion de triangulos y problemas'
         ],
         quizFocus: [
-            'criterios de semejanza',
-            'teorema de Tales',
-            'homotecia',
-            'modelacion con figuras semejantes'
+            'calculo de seno, coseno y tangente',
+            'resolucion de triangulos rectangulos',
+            'aplicaciones (alturas, distancias)',
+            'identidades basicas'
         ]
     },
     {
-        id: 'cap9_cuerpos_geometricos',
+        id: 'cap9_vectores',
         chapterNumber: 9,
-        title: 'Cuerpos geometricos: area y volumen',
-        skill: 'Calcular area y volumen de prismas, piramides, cilindros, conos y esferas',
-        keywords: ['prisma', 'piramide', 'cilindro', 'cono', 'esfera', 'area total', 'volumen', 'apotema', 'generatriz'],
+        title: 'Vectores y proyecciones (OA9)',
+        skill: 'Aplicar trigonometria en composicion y descomposicion de vectores',
+        keywords: ['vector', 'vectores', 'componente', 'proyeccion', 'modulo', 'magnitud', 'direccion', 'sentido', 'descomposicion'],
         theoryFocus: [
-            'calcular area lateral y total de prismas, piramides, cilindros y conos',
-            'calcular volumen de cuerpos geometricos y aplicar en situaciones reales',
-            'relacionar formulas de area y volumen con secciones planas'
+            'representar vectores en el plano con modulo, direccion y sentido',
+            'componer y descomponer vectores usando razones trigonometricas',
+            'calcular proyecciones de vectores sobre ejes'
         ],
         quizFocus: [
-            'area de cuerpos geometricos',
-            'volumen de cuerpos geometricos',
-            'modelacion con solidos',
-            'comparacion volumen-area'
+            'composicion y descomposicion vectorial',
+            'proyecciones',
+            'modulo y direccion de un vector',
+            'aplicaciones a fuerza y velocidad'
         ]
     },
     {
-        id: 'cap10_probabilidad_estadistica',
+        id: 'cap10_probabilidad_combinatoria',
         chapterNumber: 10,
-        title: 'Probabilidad, variable aleatoria y estadistica',
-        skill: 'Analizar variable aleatoria, distribucion y medidas de dispersion',
-        keywords: ['variable aleatoria', 'distribucion', 'laplace', 'binomial', 'media', 'mediana', 'varianza', 'desviacion estandar', 'probabilidad'],
+        title: 'Variable aleatoria, combinatoria y probabilidad (OA10-12)',
+        skill: 'Comprender variable aleatoria, combinatoria y probabilidad',
+        keywords: ['variable aleatoria', 'distribucion', 'permutacion', 'combinatoria', 'factorial', 'probabilidad', 'laplace', 'medios de comunicacion'],
         theoryFocus: [
-            'definir variable aleatoria discreta y construir distribuciones de probabilidad',
-            'aplicar regla de Laplace y calcular probabilidades en experimentos compuestos',
-            'calcular e interpretar media, varianza y desviacion estandar como medidas de dispersion'
+            'comprender variables aleatorias finitas: definir, calcular probabilidades y graficar distribuciones',
+            'utilizar permutaciones y combinatoria para calcular probabilidades',
+            'analizar el rol de la probabilidad en medios y decisiones cotidianas'
         ],
         quizFocus: [
             'variable aleatoria y distribucion',
-            'probabilidad con regla de Laplace',
-            'medidas de dispersion',
-            'interpretacion de datos estadisticos'
+            'permutaciones y combinatoria',
+            'calculo de probabilidades compuestas',
+            'lectura critica de probabilidades en medios'
         ]
     }
 ];

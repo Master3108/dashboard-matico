@@ -192,151 +192,79 @@ const CHAPTERS = [
 ];
 
 // =====================================================================
-// CAPITULOS 2° MEDIO (Mineduc 2019)
+// CAPITULOS 2° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA CN2M 15-18)
 // =====================================================================
 const CHAPTERS_2M = [
     {
-        id: 'cap1_disoluciones',
+        id: 'cap1_soluciones',
         chapterNumber: 1,
-        title: 'Disoluciones quimicas y concentracion',
-        skill: 'Calcular concentracion y preparar disoluciones',
-        keywords: ['disolucion', 'solucion', 'soluto', 'solvente', 'concentracion', 'molaridad', 'molalidad', 'normalidad', 'porcentual', 'ppm', 'dilucion'],
+        title: 'Soluciones quimicas y concentracion (OA15)',
+        skill: 'Explicar propiedades de soluciones y calcular concentracion',
+        keywords: ['solucion', 'soluto', 'solvente', 'concentracion', 'molaridad', 'molalidad', 'porcentual', 'dilucion', 'estado fisico', 'solubilidad'],
         theoryFocus: [
-            'distinguir soluto, solvente y disolucion; tipos de disoluciones',
-            'calcular concentracion porcentual, molaridad, molalidad y normalidad',
-            'preparar diluciones y resolver problemas de mezclas con C1V1 = C2V2'
+            'explicar propiedades de soluciones segun estado fisico (solido, liquido, gas)',
+            'identificar soluto, solvente y tipos de soluciones',
+            'calcular concentracion: porcentual, molaridad, molalidad, partes por millon'
         ],
         quizFocus: [
-            'concentracion porcentual y ppm',
-            'molaridad, molalidad y normalidad',
-            'diluciones y mezclas',
-            'analisis de etiquetas de productos'
+            'tipos de soluciones segun estado fisico',
+            'calculo de molaridad, molalidad y porcentual',
+            'diluciones (C1V1=C2V2)',
+            'analisis de etiquetas y soluciones cotidianas'
         ]
     },
     {
         id: 'cap2_propiedades_coligativas',
         chapterNumber: 2,
-        title: 'Propiedades coligativas',
-        skill: 'Analizar propiedades coligativas y aplicaciones',
-        keywords: ['coligativa', 'presion de vapor', 'ebulloscopia', 'crioscopia', 'osmosis', 'presion osmotica', 'tonometria'],
+        title: 'Propiedades coligativas (OA16)',
+        skill: 'Investigar propiedades coligativas y sus aplicaciones',
+        keywords: ['coligativa', 'presion de vapor', 'ebulloscopia', 'crioscopia', 'osmosis', 'presion osmotica', 'investigacion experimental', 'aplicaciones industriales'],
         theoryFocus: [
-            'definir presion de vapor, descenso crioscopico y aumento ebulloscopico',
-            'calcular variaciones coligativas con formulas y constantes molales',
-            'aplicar presion osmotica a contextos biologicos y medicos'
+            'planificar investigacion experimental sobre propiedades coligativas',
+            'analizar descenso de presion de vapor, aumento ebulloscopico, descenso crioscopico y presion osmotica',
+            'evaluar aplicaciones en procesos cotidianos e industriales (anticongelantes, conservacion)'
         ],
         quizFocus: [
-            'presion de vapor y tonometria',
-            'descenso crioscopico y ebulloscopico',
-            'presion osmotica',
-            'aplicaciones biologicas y medicas'
+            'identificacion de propiedades coligativas',
+            'calculo de variaciones coligativas',
+            'aplicaciones industriales y biologicas',
+            'diseno de investigacion experimental'
         ]
     },
     {
-        id: 'cap3_acido_base_ph',
+        id: 'cap3_carbono_hidrocarburos',
         chapterNumber: 3,
-        title: 'Reacciones acido-base, pH y neutralizacion',
-        skill: 'Aplicar teorias acido-base y calcular pH',
-        keywords: ['acido', 'base', 'ph', 'poh', 'neutralizacion', 'arrhenius', 'bronsted', 'lewis', 'indicador', 'titulacion', 'valoracion'],
+        title: 'El carbono y los hidrocarburos (OA17)',
+        skill: 'Modelar propiedades del carbono y formacion de hidrocarburos',
+        keywords: ['carbono', 'hidrocarburo', 'alcano', 'alqueno', 'alquino', 'aromatico', 'tetravalencia', 'hibridacion', 'biomolecula', 'enlace covalente'],
         theoryFocus: [
-            'distinguir teorias de Arrhenius, Bronsted-Lowry y Lewis',
-            'calcular pH y pOH en soluciones acidas y basicas',
-            'resolver reacciones de neutralizacion y titulaciones acido-base'
+            'crear modelos del carbono que expliquen sus propiedades unicas (tetravalencia, hibridacion)',
+            'explicar la formacion de biomoleculas e hidrocarburos a partir del carbono',
+            'reconocer alcanos, alquenos, alquinos y compuestos aromaticos'
         ],
         quizFocus: [
-            'teorias acido-base',
-            'calculo de pH y pOH',
-            'neutralizacion y titulaciones',
-            'indicadores acido-base'
+            'propiedades del atomo de carbono',
+            'tipos de hidrocarburos (alcanos, alquenos, alquinos)',
+            'nomenclatura organica basica',
+            'biomoleculas como compuestos del carbono'
         ]
     },
     {
-        id: 'cap4_redox_electroquimica',
+        id: 'cap4_estereoquimica_isomeria',
         chapterNumber: 4,
-        title: 'Reacciones redox y electroquimica',
-        skill: 'Balancear redox y analizar celdas electroquimicas',
-        keywords: ['redox', 'oxidacion', 'reduccion', 'numero de oxidacion', 'pila', 'celda galvanica', 'electrolisis', 'voltaje', 'agente oxidante', 'agente reductor'],
+        title: 'Estereoquimica e isomeria (OA18)',
+        skill: 'Modelar estereoquimica e isomeria en compuestos organicos',
+        keywords: ['estereoquimica', 'isomeria', 'isomero', 'glucosa', 'quiralidad', 'enantiomero', 'cis', 'trans', 'estructural', 'geometrica'],
         theoryFocus: [
-            'identificar agente oxidante y reductor segun cambios en numero de oxidacion',
-            'balancear ecuaciones redox por metodo ion-electron',
-            'describir pilas galvanicas, electrolisis y aplicaciones industriales'
+            'desarrollar modelos que expliquen estereoquimica de compuestos organicos',
+            'distinguir tipos de isomeria (estructural, geometrica, optica) usando ejemplos como glucosa',
+            'relacionar configuracion espacial con propiedades quimicas y biologicas'
         ],
         quizFocus: [
-            'numeros de oxidacion',
-            'balance redox',
-            'pilas galvanicas y electrolisis',
-            'aplicaciones industriales'
-        ]
-    },
-    {
-        id: 'cap5_cinetica_equilibrio',
-        chapterNumber: 5,
-        title: 'Cinetica quimica y equilibrio',
-        skill: 'Analizar velocidad de reaccion y equilibrio quimico',
-        keywords: ['cinetica', 'velocidad de reaccion', 'catalizador', 'equilibrio quimico', 'le chatelier', 'kc', 'kp', 'reversible'],
-        theoryFocus: [
-            'analizar factores que afectan velocidad: concentracion, temperatura, catalizador, superficie',
-            'definir equilibrio quimico dinamico y constante de equilibrio',
-            'aplicar principio de Le Chatelier para predecir desplazamiento'
-        ],
-        quizFocus: [
-            'factores que afectan la velocidad',
-            'constante de equilibrio',
-            'principio de Le Chatelier',
-            'reacciones reversibles'
-        ]
-    },
-    {
-        id: 'cap6_polimeros',
-        chapterNumber: 6,
-        title: 'Polimeros sinteticos y naturales',
-        skill: 'Describir polimeros, polimerizacion y aplicaciones',
-        keywords: ['polimero', 'monomero', 'polimerizacion', 'plastico', 'caucho', 'nylon', 'celulosa', 'almidon', 'proteina', 'adn', 'biopolimero'],
-        theoryFocus: [
-            'distinguir polimeros naturales (celulosa, proteinas, ADN) y sinteticos (PE, PVC, nylon)',
-            'explicar polimerizacion por adicion y condensacion',
-            'evaluar aplicaciones tecnologicas y impacto ambiental de plasticos'
-        ],
-        quizFocus: [
-            'monomeros y polimeros',
-            'polimerizacion por adicion y condensacion',
-            'polimeros naturales y sinteticos',
-            'reciclaje y biopolimeros'
-        ]
-    },
-    {
-        id: 'cap7_organica_aplicada',
-        chapterNumber: 7,
-        title: 'Quimica organica aplicada',
-        skill: 'Relacionar quimica organica con farmacos, alimentos y materiales',
-        keywords: ['organica aplicada', 'farmaco', 'medicamento', 'alimento', 'cosmetico', 'aroma', 'sabor', 'grupo funcional', 'biomolecula'],
-        theoryFocus: [
-            'reconocer grupos funcionales en farmacos, alimentos y cosmeticos',
-            'analizar biomoleculas: lipidos, carbohidratos, proteinas',
-            'evaluar nuevos materiales: nanomateriales y materiales inteligentes'
-        ],
-        quizFocus: [
-            'grupos funcionales en productos cotidianos',
-            'biomoleculas',
-            'farmacos y medicamentos',
-            'nuevos materiales'
-        ]
-    },
-    {
-        id: 'cap8_quimica_ambiental',
-        chapterNumber: 8,
-        title: 'Quimica y medio ambiente',
-        skill: 'Evaluar contaminacion, quimica verde y sostenibilidad',
-        keywords: ['contaminacion', 'efecto invernadero', 'capa de ozono', 'lluvia acida', 'quimica verde', 'sostenible', 'ciclo del carbono', 'huella', 'reciclaje'],
-        theoryFocus: [
-            'analizar contaminantes atmosfericos, acuaticos y del suelo',
-            'explicar efecto invernadero, lluvia acida y agotamiento del ozono',
-            'introducir principios de quimica verde y sostenibilidad'
-        ],
-        quizFocus: [
-            'contaminacion ambiental',
-            'efecto invernadero y capa de ozono',
-            'quimica verde',
-            'ciclos biogeoquimicos'
+            'identificacion de isomeros estructurales',
+            'isomeria geometrica (cis/trans)',
+            'isomeria optica y quiralidad',
+            'aplicaciones (glucosa, farmacos)'
         ]
     }
 ];

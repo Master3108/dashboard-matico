@@ -224,182 +224,217 @@ const PHYSICS_SESSION_MAP = {
 };
 
 // =====================================================================
-// MAPS 2\u00b0 MEDIO (Bases Curriculares Mineduc 2019)
-// chapterId apunta al CHAPTERS_2M dentro de cada moralejaXxx.js
+// MAPS 2\u00b0 MEDIO \u2014 MINEDUC OFICIAL (Decreto 19/2019)
+// Mapeo session -> chapterId basado en OA oficiales de curriculumnacional.cl
 // =====================================================================
 
 const LANGUAGE_2M_SESSION_MAP = {
-    ...createRangeEntries(1, 12, {
-        chapterId: 'cap5_inferencia',
-        focus: 'inferir tono, vision de mundo y sentido global en narrativa romantica y realista'
+    ...createRangeEntries(1, 7, {
+        chapterId: 'cap1_narrativa',
+        focus: 'analizar narraciones: conflictos, personajes, estructura, perspectiva del narrador, simbolos y recursos literarios (cuento y novela latinoamericana)'
     }),
-    13: { chapterId: 'cap4_propositos_relaciones', focus: 'analizar discurso publico, tesis, argumentos y contraargumentos en prensa actual' },
-    14: { chapterId: 'cap5_inferencia',            focus: 'inferir vision de mundo y conflicto dramatico en teatro moderno y contemporaneo' },
-    15: { chapterId: 'cap4_propositos_relaciones', focus: 'analizar ensayo argumentativo, recursos retoricos y multimodalidad audiovisual' },
-    16: { chapterId: 'cap3_sintesis',              focus: 'integrar y sintetizar aprendizajes semestrales en clave PAES' },
-    17: { chapterId: 'cap4_propositos_relaciones', focus: 'reconocer estructura interna y funcion comunicativa de partes en discurso publico' },
-    18: { chapterId: 'cap5_inferencia',            focus: 'inferir cosmovision, simbolismo y carga ideologica en lirica contemporanea' },
-    19: { chapterId: 'cap5_inferencia',            focus: 'inferir evolucion psicologica y rol simbolico de personajes en novela' },
-    20: { chapterId: 'cap4_propositos_relaciones', focus: 'evaluar critica literaria, valoracion estetica y articulacion de argumentos' },
-    ...createRangeEntries(21, 32, {
-        chapterId: 'cap4_propositos_relaciones',
-        focus: 'analizar argumentacion formal, hecho vs opinion, falacias y debate ciudadano'
+    ...createRangeEntries(8, 11, {
+        chapterId: 'cap2_lirica',
+        focus: 'analizar poemas: simbolos, actitud del hablante, lenguaje figurado, repeticiones y caracteristicas del soneto'
     }),
-    ...createRangeEntries(33, 38, {
-        chapterId: 'cap5_inferencia',
-        focus: 'inferir sentidos literarios, intertextualidad, contexto y efectos de estilo'
+    ...createRangeEntries(12, 15, {
+        chapterId: 'cap3_drama',
+        focus: 'analizar textos dramaticos: conflicto, personajes, simbolos, atmosfera y elementos de puesta en escena'
     }),
-    39: { chapterId: 'cap4_propositos_relaciones', focus: 'interpretar poesia visual y experimental con relacion lenguaje verbal y disposicion grafica' },
-    40: { chapterId: 'cap4_propositos_relaciones', focus: 'leer narrativa grafica, comic y recursos multimodales con encuadre y secuencia' },
-    41: { chapterId: 'cap3_sintesis',              focus: 'condensar ideas y producir sintesis breves de textos complejos' },
-    42: { chapterId: 'cap4_propositos_relaciones', focus: 'organizar oralidad, intencion comunicativa y estrategias de exposicion publica' },
-    43: { chapterId: 'cap2_info_explicita',        focus: 'aplicar estrategia PAES de rastreo, localizacion y descarte con evidencia textual' },
-    44: { chapterId: 'cap2_info_explicita',        focus: 'resolver vocabulario contextual avanzado mediante sinonimos, parafrasis y contexto' },
-    45: { chapterId: 'cap5_inferencia',            focus: 'integrar habilidades PAES de inferencia, sintesis y justificacion en textos largos' },
-    46: { chapterId: 'cap3_sintesis',              focus: 'cerrar el proceso anual sintetizando aprendizajes y estrategias lectoras' }
+    ...createRangeEntries(16, 19, {
+        chapterId: 'cap4_siglo_oro',
+        focus: 'comprender la relevancia de obras del Siglo de Oro espanol considerando contexto historico-cultural'
+    }),
+    ...createRangeEntries(20, 25, {
+        chapterId: 'cap5_argumentacion',
+        focus: 'analizar y evaluar textos argumentativos (columnas, cartas, ensayos): tesis, recursos persuasivos y validez'
+    }),
+    ...createRangeEntries(26, 29, {
+        chapterId: 'cap6_medios_persuasion',
+        focus: 'analizar textos mediaticos: propositos, estrategias de persuasion y efectos de recursos linguisticos y visuales'
+    }),
+    ...createRangeEntries(30, 32, {
+        chapterId: 'cap7_no_literarios',
+        focus: 'leer textos no literarios para contextualizar lecturas literarias y comprender experiencia humana'
+    }),
+    ...createRangeEntries(33, 36, {
+        chapterId: 'cap8_escritura_explicativa',
+        focus: 'escribir textos explicativos con presentacion clara, organizacion coherente, ejemplos y evidencias'
+    }),
+    ...createRangeEntries(37, 41, {
+        chapterId: 'cap9_escritura_argumentativa',
+        focus: 'planificar, escribir, revisar y editar ensayos persuasivos: hipotesis, evidencias, contraargumentos y ortografia'
+    }),
+    ...createRangeEntries(42, 46, {
+        chapterId: 'cap10_oralidad_investigacion',
+        focus: 'comprender y producir comunicacion oral (dialogo, exposicion) y realizar investigacion con fuentes confiables'
+    })
 };
 
 const MATH_2M_SESSION_MAP = {
-    ...createRangeEntries(1, 5, {
-        chapterId: 'cap1_reales_irracionales',
-        focus: 'distinguir racionales e irracionales, ubicar en la recta real y operar con numeros reales'
+    ...createRangeEntries(1, 4, {
+        chapterId: 'cap1_calculo_reales_raices',
+        focus: 'realizar calculos y estimaciones con numeros reales, descomponer raices y combinar con racionales'
     }),
-    ...createRangeEntries(6, 9, {
-        chapterId: 'cap2_raices_racionalizacion',
-        focus: 'aplicar propiedades de raices enesimas, racionalizar denominadores y operar con radicales'
+    ...createRangeEntries(5, 9, {
+        chapterId: 'cap2_potencias_logaritmos',
+        focus: 'relacionar potencias, raices enesimas y logaritmos; aplicar propiedades y resolver ecuaciones'
     }),
-    ...createRangeEntries(10, 12, {
-        chapterId: 'cap3_notacion_cientifica',
-        focus: 'expresar y comparar magnitudes en notacion cientifica y estimar ordenes de magnitud'
+    ...createRangeEntries(10, 14, {
+        chapterId: 'cap3_funcion_cuadratica',
+        focus: 'comprender la funcion cuadratica f(x)=ax2+bx+c, su grafico, vertice, ceros y simetria'
     }),
-    ...createRangeEntries(13, 17, {
-        chapterId: 'cap4_productos_factorizacion',
-        focus: 'desarrollar productos notables y factorizar expresiones algebraicas con uso estrategico'
+    ...createRangeEntries(15, 18, {
+        chapterId: 'cap4_ecuaciones_cuadraticas',
+        focus: 'resolver ecuaciones cuadraticas por factorizacion, completacion de cuadrado y formula general'
     }),
-    ...createRangeEntries(18, 22, {
-        chapterId: 'cap5_sistemas_2x2',
-        focus: 'resolver sistemas lineales 2x2 por sustitucion, igualacion, reduccion y modelar problemas'
+    ...createRangeEntries(19, 22, {
+        chapterId: 'cap5_funcion_inversa',
+        focus: 'comprender la funcion inversa: maquinas, tablas, graficos en funciones lineales y cuadraticas'
     }),
-    ...createRangeEntries(23, 28, {
-        chapterId: 'cap6_funcion_cuadratica',
-        focus: 'modelar y analizar funciones cuadraticas: vertice, ceros, eje y concavidad de la parabola'
+    ...createRangeEntries(23, 26, {
+        chapterId: 'cap6_interes_compuesto',
+        focus: 'aplicar cambio porcentual constante e interes compuesto en situaciones financieras'
     }),
-    ...createRangeEntries(29, 31, {
-        chapterId: 'cap7_funcion_inversa_raiz',
-        focus: 'reconocer funcion inversa, funcion raiz cuadrada, dominio, recorrido y graficos asociados'
+    ...createRangeEntries(27, 30, {
+        chapterId: 'cap7_area_volumen_esfera',
+        focus: 'desarrollar formulas de area superficial y volumen de la esfera y resolver problemas'
     }),
-    ...createRangeEntries(32, 36, {
-        chapterId: 'cap8_semejanza_tales',
-        focus: 'aplicar semejanza, homotecia y teorema de Tales en figuras y resolucion de problemas'
+    ...createRangeEntries(31, 36, {
+        chapterId: 'cap8_trigonometria',
+        focus: 'comprender razones trigonometricas (seno, coseno, tangente) y aplicarlas en triangulos'
     }),
-    ...createRangeEntries(37, 41, {
-        chapterId: 'cap9_cuerpos_geometricos',
-        focus: 'calcular area y volumen de prismas, piramides, cilindros, conos y esferas en contexto'
+    ...createRangeEntries(37, 40, {
+        chapterId: 'cap9_vectores',
+        focus: 'aplicar trigonometria en composicion y descomposicion de vectores y proyecciones'
     }),
-    ...createRangeEntries(42, 46, {
-        chapterId: 'cap10_probabilidad_estadistica',
-        focus: 'analizar variable aleatoria, distribucion, regla de Laplace y medidas de dispersion'
+    ...createRangeEntries(41, 46, {
+        chapterId: 'cap10_probabilidad_combinatoria',
+        focus: 'comprender variables aleatorias, permutaciones, combinatoria y rol de la probabilidad en la sociedad'
     })
 };
 
 const PHYSICS_2M_SESSION_MAP = {
-    ...createRangeEntries(1, 9, {
-        chapterId: 'cap1_electricidad_cargas',
-        focus: 'explicar carga electrica, fuerza de Coulomb, corriente, voltaje y conduccion en materiales'
+    ...createRangeEntries(1, 8, {
+        chapterId: 'cap1_cinematica',
+        focus: 'analizar movimiento rectilineo uniforme y acelerado: posicion, velocidad, aceleracion y graficos'
     }),
-    ...createRangeEntries(10, 19, {
-        chapterId: 'cap2_circuitos_ohm',
-        focus: 'analizar circuitos en serie y paralelo aplicando ley de Ohm, potencia y consumo electrico'
+    ...createRangeEntries(9, 16, {
+        chapterId: 'cap2_leyes_newton',
+        focus: 'explicar efectos de fuerzas netas con leyes de Newton y diagramas de cuerpo libre'
     }),
-    ...createRangeEntries(20, 28, {
-        chapterId: 'cap3_magnetismo',
-        focus: 'describir campo magnetico, lineas de campo, fuerza sobre cargas y aplicaciones magneticas'
+    ...createRangeEntries(17, 23, {
+        chapterId: 'cap3_energia_mecanica',
+        focus: 'aplicar ley de conservacion de la energia mecanica, trabajo y potencia mecanica'
     }),
-    ...createRangeEntries(29, 37, {
-        chapterId: 'cap4_electromagnetismo',
-        focus: 'relacionar electricidad y magnetismo: induccion, motores, generadores y transformadores'
+    ...createRangeEntries(24, 30, {
+        chapterId: 'cap4_momentum_colisiones',
+        focus: 'analizar colisiones usando cantidad de movimiento, impulso y ley de conservacion del momentum'
     }),
-    ...createRangeEntries(38, 46, {
-        chapterId: 'cap5_calor_termodinamica',
-        focus: 'interpretar calor, temperatura, equilibrio termico, calor especifico y leyes termodinamicas'
+    ...createRangeEntries(31, 38, {
+        chapterId: 'cap5_universo_big_bang',
+        focus: 'comparar modelos geocentrico, heliocentrico y teoria del Big Bang en la evolucion del conocimiento'
+    }),
+    ...createRangeEntries(39, 46, {
+        chapterId: 'cap6_gravitacion_kepler',
+        focus: 'aplicar leyes de Kepler y gravitacion universal a mareas, orbitas y sondas espaciales'
     })
 };
 
 const CHEMISTRY_2M_SESSION_MAP = {
-    ...createRangeEntries(1, 6, {
-        chapterId: 'cap1_disoluciones',
-        focus: 'calcular concentracion porcentual, molaridad, molalidad, normalidad y preparar diluciones'
+    ...createRangeEntries(1, 12, {
+        chapterId: 'cap1_soluciones',
+        focus: 'explicar propiedades de soluciones segun estado fisico, componentes y concentracion; calcular molaridad, molalidad y porcentual'
     }),
-    ...createRangeEntries(7, 10, {
+    ...createRangeEntries(13, 22, {
         chapterId: 'cap2_propiedades_coligativas',
-        focus: 'analizar propiedades coligativas: presion de vapor, ebulloscopia, crioscopia y osmosis'
+        focus: 'planificar investigacion sobre propiedades coligativas: presion de vapor, ebulloscopia, crioscopia y osmosis'
     }),
-    ...createRangeEntries(11, 17, {
-        chapterId: 'cap3_acido_base_ph',
-        focus: 'aplicar teorias acido-base, calcular pH y resolver reacciones de neutralizacion e indicadores'
+    ...createRangeEntries(23, 34, {
+        chapterId: 'cap3_carbono_hidrocarburos',
+        focus: 'modelar las propiedades del carbono que permiten formar biomoleculas e hidrocarburos (alcanos, alquenos, alquinos, aromaticos)'
     }),
-    ...createRangeEntries(18, 24, {
-        chapterId: 'cap4_redox_electroquimica',
-        focus: 'identificar oxidacion-reduccion, balancear redox y describir pilas, celdas y electrolisis'
-    }),
-    ...createRangeEntries(25, 30, {
-        chapterId: 'cap5_cinetica_equilibrio',
-        focus: 'analizar velocidad de reaccion, factores y equilibrio quimico con principio de Le Chatelier'
-    }),
-    ...createRangeEntries(31, 35, {
-        chapterId: 'cap6_polimeros',
-        focus: 'describir polimeros sinteticos y naturales, polimerizacion y aplicaciones tecnologicas'
-    }),
-    ...createRangeEntries(36, 41, {
-        chapterId: 'cap7_organica_aplicada',
-        focus: 'relacionar quimica organica con farmacos, alimentos, cosmeticos y nuevos materiales'
-    }),
-    ...createRangeEntries(42, 46, {
-        chapterId: 'cap8_quimica_ambiental',
-        focus: 'evaluar contaminacion, quimica verde, ciclos biogeoquimicos y sostenibilidad ambiental'
+    ...createRangeEntries(35, 46, {
+        chapterId: 'cap4_estereoquimica_isomeria',
+        focus: 'desarrollar modelos que expliquen estereoquimica e isomeria en compuestos organicos como glucosa'
     })
 };
 
 const BIOLOGY_2M_SESSION_MAP = {
-    ...createRangeEntries(1, 5, {
-        chapterId: 'cap1_neurona_sinapsis',
-        focus: 'describir neurona, potencial de accion, sinapsis quimica y electrica, y neurotransmisores'
+    ...createRangeEntries(1, 6, {
+        chapterId: 'cap1_sistema_nervioso',
+        focus: 'explicar como el sistema nervioso coordina la adaptacion a estimulos; cuidados (sueno, drogas, prevencion de traumatismos)'
     }),
-    ...createRangeEntries(6, 9, {
-        chapterId: 'cap2_snc_snp_conducta',
-        focus: 'comparar sistema nervioso central y periferico, arcos reflejos y bases biologicas de la conducta'
+    ...createRangeEntries(7, 11, {
+        chapterId: 'cap2_hormonas',
+        focus: 'modelar regulacion de glicemia por hormonas pancreaticas y desarrollo de caracteres sexuales secundarios'
     }),
-    ...createRangeEntries(10, 13, {
-        chapterId: 'cap3_drogas_dano_cerebral',
-        focus: 'analizar efecto de drogas, alcohol y nicotina sobre el cerebro, adiccion y prevencion'
+    ...createRangeEntries(12, 17, {
+        chapterId: 'cap3_sexualidad_reproduccion',
+        focus: 'explicar sexualidad y reproduccion humanas considerando aspectos biologicos, sociales, afectivos y psicologicos'
     }),
-    ...createRangeEntries(14, 18, {
-        chapterId: 'cap4_endocrino_homeostasis',
-        focus: 'explicar hormonas, glandulas endocrinas, regulacion hormonal y mecanismos de homeostasis'
-    }),
-    ...createRangeEntries(19, 23, {
-        chapterId: 'cap5_inmune',
-        focus: 'distinguir inmunidad innata y adaptativa, vacunas, alergias y enfermedades autoinmunes'
+    ...createRangeEntries(18, 23, {
+        chapterId: 'cap4_fecundacion_embarazo',
+        focus: 'describir fecundacion, implantacion y desarrollo embrionario; responsabilidad parental, nutricion prenatal y lactancia'
     }),
     ...createRangeEntries(24, 28, {
-        chapterId: 'cap6_genetica_mendel',
-        focus: 'aplicar leyes de Mendel, cruzamientos monohibridos y dihibridos con tablas de Punnett'
+        chapterId: 'cap5_regulacion_fertilidad',
+        focus: 'evaluar metodos de regulacion de fertilidad e identificar elementos de paternidad y maternidad responsables'
     }),
-    ...createRangeEntries(29, 32, {
-        chapterId: 'cap7_herencia_sexo_mutaciones',
-        focus: 'analizar herencia ligada al sexo, pedigris, mutaciones y enfermedades geneticas'
+    ...createRangeEntries(29, 34, {
+        chapterId: 'cap6_mitosis_meiosis',
+        focus: 'investigar transmision genetica entre generaciones: mitosis, meiosis y anomalias celulares (cancer, trisomia)'
     }),
-    ...createRangeEntries(33, 37, {
-        chapterId: 'cap8_variabilidad_evolucion',
-        focus: 'integrar variabilidad genetica, seleccion natural, deriva y especiacion como motor evolutivo'
+    ...createRangeEntries(35, 40, {
+        chapterId: 'cap7_herencia_mendel',
+        focus: 'desarrollar explicacion cientifica sobre herencia genetica aplicando los principios de Mendel'
+    }),
+    ...createRangeEntries(41, 46, {
+        chapterId: 'cap8_manipulacion_genetica',
+        focus: 'investigar aplicaciones de manipulacion genetica en alimentos, farmacos y evaluar implicancias eticas y sociales'
+    })
+};
+
+const HISTORY_2M_SESSION_MAP = {
+    ...createRangeEntries(1, 5, {
+        chapterId: 'cap1_entreguerras_totalitarismos',
+        focus: 'relacionar transformaciones culturales de entreguerras con rupturas esteticas; analizar crisis del Estado liberal, totalitarismos y populismo'
+    }),
+    ...createRangeEntries(6, 10, {
+        chapterId: 'cap2_segunda_guerra_mundial',
+        focus: 'analizar Segunda Guerra Mundial: ideologias antagonicas, devastacion humana; evaluar consecuencias y creacion de la ONU'
+    }),
+    ...createRangeEntries(11, 13, {
+        chapterId: 'cap3_chile_crisis_parlamentaria',
+        focus: 'analizar crisis del periodo parlamentario chileno y la Constitucion de 1925'
+    }),
+    ...createRangeEntries(14, 18, {
+        chapterId: 'cap4_chile_industrializacion',
+        focus: 'analizar transformaciones post-1929 en Chile: industrializacion por sustitucion, CORFO, democratizacion y pobreza mid-siglo XX'
+    }),
+    ...createRangeEntries(19, 23, {
+        chapterId: 'cap5_guerra_fria',
+        focus: 'analizar Guerra Fria: confrontacion bipolar, transformaciones occidentales y auge del neoliberalismo al cierre'
+    }),
+    ...createRangeEntries(24, 27, {
+        chapterId: 'cap6_america_latina_dictaduras',
+        focus: 'caracterizar movilizacion social latinoamericana, revoluciones y dictaduras militares regionales'
+    }),
+    ...createRangeEntries(28, 31, {
+        chapterId: 'cap7_chile_60_70_reformas',
+        focus: 'analizar Chile en los 60 (reformas estructurales) y la crisis de inicios de los 70'
+    }),
+    ...createRangeEntries(32, 37, {
+        chapterId: 'cap8_dictadura_chilena',
+        focus: 'comparar interpretaciones del golpe de 1973; explicar dictadura militar, supresion de DDHH, modelo neoliberal y Constitucion de 1980'
     }),
     ...createRangeEntries(38, 41, {
-        chapterId: 'cap9_biotecnologia',
-        focus: 'evaluar biotecnologia: ADN recombinante, transgenicos, terapia genica y bioetica'
+        chapterId: 'cap9_transicion_democratica',
+        focus: 'explicar factores de recuperacion democratica en los 80, transicion y reformas constitucionales; sociedad post-democratizacion'
     }),
     ...createRangeEntries(42, 46, {
-        chapterId: 'cap10_salud_bienestar',
-        focus: 'relacionar alimentacion, actividad fisica, salud mental y prevencion de enfermedades cronicas'
+        chapterId: 'cap10_formacion_ciudadana',
+        focus: 'analizar formacion ciudadana: derechos humanos, Estado de derecho, desafios pendientes (pobreza, desigualdad) y diversidad'
     })
 };
 
@@ -423,7 +458,8 @@ const SESSION_MAPS_BY_GRADE = {
         MATEMATICA: MATH_2M_SESSION_MAP,
         BIOLOGIA: BIOLOGY_2M_SESSION_MAP,
         QUIMICA: CHEMISTRY_2M_SESSION_MAP,
-        FISICA: PHYSICS_2M_SESSION_MAP
+        FISICA: PHYSICS_2M_SESSION_MAP,
+        HISTORIA: HISTORY_2M_SESSION_MAP
     }
 };
 
@@ -441,7 +477,7 @@ export const resolveMoralejaSessionReference = ({ subject = '', session = 0, gra
 
     let sessionMap = null;
 
-    if (normalizedSubject.includes('LENGUAJE') || normalizedSubject.includes('LECTURA')) {
+    if (normalizedSubject.includes('LENGUAJE') || normalizedSubject.includes('LECTURA') || normalizedSubject.includes('COMPETENCIA_LECTORA')) {
         sessionMap = gradeMaps.LENGUAJE;
     } else if (normalizedSubject.includes('MATEMATICA')) {
         sessionMap = gradeMaps.MATEMATICA;
@@ -451,6 +487,8 @@ export const resolveMoralejaSessionReference = ({ subject = '', session = 0, gra
         sessionMap = gradeMaps.QUIMICA;
     } else if (normalizedSubject.includes('FISICA')) {
         sessionMap = gradeMaps.FISICA;
+    } else if (normalizedSubject.includes('HISTORIA')) {
+        sessionMap = gradeMaps.HISTORIA;
     }
 
     if (!sessionMap || !sessionMap[numericSession]) return null;
@@ -473,5 +511,6 @@ export {
     BIOLOGY_2M_SESSION_MAP,
     CHEMISTRY_2M_SESSION_MAP,
     PHYSICS_2M_SESSION_MAP,
+    HISTORY_2M_SESSION_MAP,
     normalizeGrade
 };

@@ -255,187 +255,151 @@ const CHAPTERS = [
 ];
 
 // =====================================================================
-// CAPITULOS 2° MEDIO (Mineduc 2019)
+// CAPITULOS 2° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA CN2M 01-08)
 // =====================================================================
 const CHAPTERS_2M = [
     {
-        id: 'cap1_neurona_sinapsis',
+        id: 'cap1_sistema_nervioso',
         chapterNumber: 1,
-        title: 'Neurona, sinapsis y sistema nervioso',
-        skill: 'Describir neurona, potencial de accion y sinapsis',
-        keywords: ['neurona', 'axon', 'dendrita', 'sinapsis', 'potencial de accion', 'neurotransmisor', 'mielina', 'soma', 'nervio'],
+        title: 'Sistema nervioso y autocuidado (OA1)',
+        skill: 'Explicar como el sistema nervioso coordina la adaptacion a estimulos',
+        keywords: ['sistema nervioso', 'neurona', 'estimulo', 'sinapsis', 'cerebro', 'sueno', 'droga', 'autocuidado', 'traumatismo', 'reflejo'],
         theoryFocus: [
-            'identificar partes de la neurona y su funcion',
-            'explicar potencial de accion, despolarizacion y repolarizacion',
-            'describir sinapsis quimica y electrica, y rol de neurotransmisores'
+            'explicar como el sistema nervioso coordina acciones para adaptarse a estimulos',
+            'analizar la importancia de cuidados (horas de sueno, no consumir drogas)',
+            'investigar prevencion de traumatismos y proteccion del sistema nervioso'
         ],
         quizFocus: [
-            'estructura de la neurona',
-            'potencial de accion',
-            'sinapsis quimica',
-            'neurotransmisores'
+            'coordinacion nerviosa frente a estimulos',
+            'rol del sueno y efectos de drogas en el cerebro',
+            'prevencion de traumatismos',
+            'autocuidado del sistema nervioso'
         ]
     },
     {
-        id: 'cap2_snc_snp_conducta',
+        id: 'cap2_hormonas',
         chapterNumber: 2,
-        title: 'SNC, SNP y conducta',
-        skill: 'Comparar sistemas nerviosos y bases biologicas de la conducta',
-        keywords: ['sistema nervioso central', 'sistema nervioso periferico', 'cerebro', 'medula espinal', 'arco reflejo', 'conducta', 'lobulo', 'cortex'],
+        title: 'Hormonas: glicemia y caracteres sexuales (OA2)',
+        skill: 'Modelar regulacion por hormonas pancreaticas y sexuales',
+        keywords: ['hormona', 'insulina', 'glucagon', 'glicemia', 'pancreas', 'hormonas sexuales', 'caracteres sexuales secundarios', 'testosterona', 'estrogeno', 'pubertad'],
         theoryFocus: [
-            'distinguir sistema nervioso central y periferico',
-            'analizar arco reflejo, vias aferentes y eferentes',
-            'relacionar areas cerebrales con funciones cognitivas y conductuales'
+            'crear modelos que expliquen la regulacion de glicemia por hormonas pancreaticas (insulina, glucagon)',
+            'modelar el desarrollo de caracteres sexuales secundarios mediante hormonas sexuales',
+            'relacionar funcionamiento hormonal con homeostasis y pubertad'
         ],
         quizFocus: [
-            'SNC y SNP',
-            'arcos reflejos',
-            'areas cerebrales y funciones',
-            'bases biologicas de la conducta'
+            'regulacion de glicemia (insulina vs glucagon)',
+            'hormonas sexuales y pubertad',
+            'caracteres sexuales secundarios',
+            'mecanismos de feedback hormonal'
         ]
     },
     {
-        id: 'cap3_drogas_dano_cerebral',
+        id: 'cap3_sexualidad_reproduccion',
         chapterNumber: 3,
-        title: 'Drogas, alcohol y dano cerebral',
-        skill: 'Analizar efecto de sustancias sobre el cerebro y conducta',
-        keywords: ['droga', 'alcohol', 'nicotina', 'estimulante', 'depresor', 'adiccion', 'tolerancia', 'dependencia', 'dano cerebral', 'cannabis', 'cocaina'],
+        title: 'Sexualidad y reproduccion humana (OA3)',
+        skill: 'Explicar sexualidad y reproduccion integrando aspectos biopsicosociales',
+        keywords: ['sexualidad', 'reproduccion', 'aspectos biologicos', 'afectivo', 'psicologico', 'responsabilidad individual', 'identidad', 'genero', 'orientacion'],
         theoryFocus: [
-            'clasificar drogas: estimulantes, depresoras, alucinogenas',
-            'explicar mecanismos de adiccion, tolerancia y dependencia',
-            'evaluar danos en el sistema nervioso y prevencion del consumo'
+            'explicar que sexualidad y reproduccion humanas integran aspectos biologicos, sociales, afectivos y psicologicos',
+            'analizar la dimension de responsabilidad individual en sexualidad',
+            'reflexionar sobre identidad, autocuidado y respeto en relaciones humanas'
         ],
         quizFocus: [
-            'tipos de drogas',
-            'mecanismos de adiccion',
-            'dano cerebral por consumo',
-            'prevencion y autocuidado'
+            'dimensiones de la sexualidad humana',
+            'responsabilidad individual',
+            'distincion sexualidad vs reproduccion',
+            'aspectos afectivos y psicologicos'
         ]
     },
     {
-        id: 'cap4_endocrino_homeostasis',
+        id: 'cap4_fecundacion_embarazo',
         chapterNumber: 4,
-        title: 'Sistema endocrino y homeostasis',
-        skill: 'Explicar hormonas y regulacion homeostatica',
-        keywords: ['hormona', 'glandula', 'endocrino', 'hipofisis', 'tiroides', 'suprarrenal', 'pancreas', 'insulina', 'homeostasis', 'glicemia', 'feedback'],
+        title: 'Fecundacion, embarazo y lactancia (OA4)',
+        skill: 'Describir fecundacion, embarazo y lactancia con responsabilidad parental',
+        keywords: ['fecundacion', 'implantacion', 'embarazo', 'desarrollo embrionario', 'feto', 'placenta', 'lactancia', 'nutricion prenatal', 'responsabilidad parental'],
         theoryFocus: [
-            'identificar glandulas endocrinas y sus hormonas principales',
-            'explicar mecanismos de regulacion por feedback negativo y positivo',
-            'analizar homeostasis: glicemia, temperatura, balance hidrico'
+            'describir fecundacion, implantacion y desarrollo embrionario',
+            'analizar la responsabilidad parental en nutricion prenatal',
+            'explicar la importancia de la lactancia materna'
         ],
         quizFocus: [
-            'glandulas y hormonas',
-            'mecanismos de feedback',
-            'homeostasis glucemica',
-            'enfermedades endocrinas'
+            'proceso de fecundacion e implantacion',
+            'etapas del desarrollo embrionario',
+            'nutricion prenatal',
+            'beneficios de la lactancia materna'
         ]
     },
     {
-        id: 'cap5_inmune',
+        id: 'cap5_regulacion_fertilidad',
         chapterNumber: 5,
-        title: 'Sistema inmune e inmunidad',
-        skill: 'Distinguir inmunidad innata, adaptativa y respuesta inmune',
-        keywords: ['inmune', 'inmunidad', 'anticuerpo', 'antigeno', 'linfocito', 'vacuna', 'alergia', 'autoinmune', 'fagocito', 'memoria inmune'],
+        title: 'Metodos de regulacion de la fertilidad (OA5)',
+        skill: 'Evaluar metodos de regulacion de la fertilidad',
+        keywords: ['anticonceptivo', 'metodo de barrera', 'metodo hormonal', 'diu', 'preservativo', 'fertilidad', 'planificacion familiar', 'paternidad responsable', 'its'],
         theoryFocus: [
-            'distinguir barreras defensivas, inmunidad innata y adaptativa',
-            'explicar accion de linfocitos B, T y memoria inmunologica',
-            'evaluar vacunas, alergias y enfermedades autoinmunes'
+            'explicar y evaluar metodos de regulacion de la fertilidad (barrera, hormonales, naturales, quirurgicos)',
+            'identificar elementos de paternidad y maternidad responsables',
+            'analizar prevencion de infecciones de transmision sexual (ITS)'
         ],
         quizFocus: [
-            'inmunidad innata vs adaptativa',
-            'linfocitos y anticuerpos',
-            'vacunas y memoria inmune',
-            'alergias y autoinmunidad'
+            'comparacion de metodos anticonceptivos',
+            'efectividad y limitaciones',
+            'paternidad y maternidad responsables',
+            'prevencion de ITS'
         ]
     },
     {
-        id: 'cap6_genetica_mendel',
+        id: 'cap6_mitosis_meiosis',
         chapterNumber: 6,
-        title: 'Genetica mendeliana',
-        skill: 'Aplicar leyes de Mendel y cruzamientos',
-        keywords: ['mendel', 'gen', 'alelo', 'genotipo', 'fenotipo', 'homocigoto', 'heterocigoto', 'dominante', 'recesivo', 'punnett', 'monohibrido', 'dihibrido'],
+        title: 'Mitosis, meiosis y anomalias celulares (OA6)',
+        skill: 'Investigar transmision genetica entre generaciones',
+        keywords: ['mitosis', 'meiosis', 'reproduccion celular', 'cancer', 'trisomia', 'cromosoma', 'sindrome de down', 'anomalia celular', 'ciclo celular'],
         theoryFocus: [
-            'aplicar primera y segunda ley de Mendel',
-            'resolver cruzamientos monohibridos y dihibridos con tablas de Punnett',
-            'distinguir herencia dominante, recesiva, codominancia e incompleta'
+            'investigar que el material genetico se transmite entre generaciones',
+            'comparar mitosis (reproduccion asexual) y meiosis (formacion de gametos)',
+            'analizar causas y consecuencias de anomalias celulares (cancer, trisomia 21)'
+        ],
+        quizFocus: [
+            'mitosis vs meiosis',
+            'transmision de material genetico',
+            'cancer como perdida de control celular',
+            'trisomia 21 (sindrome de Down)'
+        ]
+    },
+    {
+        id: 'cap7_herencia_mendel',
+        chapterNumber: 7,
+        title: 'Herencia genetica y leyes de Mendel (OA7)',
+        skill: 'Aplicar principios basicos de Mendel a la herencia',
+        keywords: ['mendel', 'gen', 'alelo', 'genotipo', 'fenotipo', 'dominante', 'recesivo', 'homocigoto', 'heterocigoto', 'punnett', 'cruzamiento'],
+        theoryFocus: [
+            'desarrollar explicacion cientifica sobre herencia genetica',
+            'aplicar primera (segregacion) y segunda (distribucion independiente) ley de Mendel',
+            'resolver cruzamientos monohibridos y dihibridos con tablas de Punnett'
         ],
         quizFocus: [
             'leyes de Mendel',
             'cruzamientos monohibridos y dihibridos',
-            'tablas de Punnett',
-            'codominancia e incompleta'
+            'genotipo vs fenotipo',
+            'tablas de Punnett'
         ]
     },
     {
-        id: 'cap7_herencia_sexo_mutaciones',
-        chapterNumber: 7,
-        title: 'Herencia ligada al sexo y mutaciones',
-        skill: 'Analizar herencia ligada al sexo, pedigris y mutaciones',
-        keywords: ['herencia ligada al sexo', 'cromosoma x', 'cromosoma y', 'daltonismo', 'hemofilia', 'pedigri', 'mutacion', 'cariotipo', 'sindrome', 'trisomia'],
-        theoryFocus: [
-            'analizar herencia ligada al cromosoma X (hemofilia, daltonismo)',
-            'leer e interpretar pedigris familiares',
-            'clasificar mutaciones puntuales y cromosomicas (sindrome de Down, Turner)'
-        ],
-        quizFocus: [
-            'herencia ligada al sexo',
-            'analisis de pedigris',
-            'tipos de mutaciones',
-            'enfermedades geneticas comunes'
-        ]
-    },
-    {
-        id: 'cap8_variabilidad_evolucion',
+        id: 'cap8_manipulacion_genetica',
         chapterNumber: 8,
-        title: 'Variabilidad genetica y evolucion',
-        skill: 'Integrar variabilidad, seleccion natural y especiacion',
-        keywords: ['variabilidad', 'evolucion', 'seleccion natural', 'deriva genetica', 'especiacion', 'adaptacion', 'darwin', 'aislamiento reproductivo'],
+        title: 'Manipulacion genetica y bioetica (OA8)',
+        skill: 'Investigar aplicaciones de manipulacion genetica y evaluar implicancias',
+        keywords: ['manipulacion genetica', 'transgenico', 'ogm', 'farmaco', 'insulina recombinante', 'crispr', 'bioetica', 'alimento modificado', 'terapia genica'],
         theoryFocus: [
-            'analizar fuentes de variabilidad genetica: mutacion y recombinacion',
-            'explicar seleccion natural, deriva y migracion como motores evolutivos',
-            'describir mecanismos de especiacion y aislamiento reproductivo'
+            'investigar aplicaciones de manipulacion genetica en alimentos, farmacos y otros campos',
+            'evaluar implicancias eticas y sociales de la biotecnologia',
+            'analizar casos: insulina recombinante, OGM, terapia genica'
         ],
         quizFocus: [
-            'fuentes de variabilidad',
-            'seleccion natural y deriva',
-            'especiacion',
-            'evidencias evolutivas'
-        ]
-    },
-    {
-        id: 'cap9_biotecnologia',
-        chapterNumber: 9,
-        title: 'Biotecnologia y aplicaciones',
-        skill: 'Evaluar biotecnologia moderna y bioetica',
-        keywords: ['biotecnologia', 'adn recombinante', 'transgenico', 'ogm', 'crispr', 'clonacion', 'terapia genica', 'bioetica', 'pcr'],
-        theoryFocus: [
-            'describir tecnicas: ADN recombinante, PCR, CRISPR, clonacion',
-            'evaluar aplicaciones en medicina, agricultura e industria',
-            'analizar dilemas bioeticos de la manipulacion genetica'
-        ],
-        quizFocus: [
-            'tecnicas biotecnologicas',
+            'aplicaciones de la manipulacion genetica',
             'transgenicos y OGM',
-            'terapia genica y CRISPR',
-            'bioetica'
-        ]
-    },
-    {
-        id: 'cap10_salud_bienestar',
-        chapterNumber: 10,
-        title: 'Salud, alimentacion y bienestar integral',
-        skill: 'Relacionar habitos saludables con prevencion de enfermedades',
-        keywords: ['salud', 'alimentacion', 'nutricion', 'ejercicio', 'sedentarismo', 'obesidad', 'diabetes', 'salud mental', 'prevencion', 'autocuidado'],
-        theoryFocus: [
-            'analizar pilares de salud: alimentacion, actividad fisica, sueno, salud mental',
-            'relacionar habitos con prevencion de enfermedades cronicas',
-            'evaluar factores de riesgo y promocion de bienestar integral'
-        ],
-        quizFocus: [
-            'alimentacion saludable',
-            'actividad fisica y sedentarismo',
-            'salud mental',
-            'prevencion de enfermedades cronicas'
+            'implicancias eticas y sociales',
+            'farmacos producidos por biotecnologia'
         ]
     }
 ];
