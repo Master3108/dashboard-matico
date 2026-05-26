@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-const DEFAULT_SUBJECTS = ['MATEMATICA', 'LENGUAJE', 'BIOLOGIA', 'QUIMICA', 'FISICA', 'HISTORIA'];
+// Nota: el código `COMPETENCIA_LECTORA` es el que está en la tabla `subjects`.
+// `LENGUAJE` NO es FK válida y rompe el insert silenciosamente.
+const SUBJECT_ALIASES = { LENGUAJE: 'COMPETENCIA_LECTORA', LECTURA: 'COMPETENCIA_LECTORA' };
+const DEFAULT_SUBJECTS = ['MATEMATICA', 'COMPETENCIA_LECTORA', 'BIOLOGIA', 'QUIMICA', 'FISICA', 'HISTORIA'];
 const DEFAULT_SESSIONS = 46;
 const DEFAULT_PHASE = '1';
 const DEFAULT_DELAY_MS = 900;
@@ -31,7 +34,8 @@ const parseArgs = () => {
             result.subjects = raw
                 .split(',')
                 .map((item) => item.trim().toUpperCase())
-                .filter(Boolean);
+                .filter(Boolean)
+                .map((item) => SUBJECT_ALIASES[item] || item);
         }
         if (arg === '--sessions') {
             const parsed = Number(args[i + 1] || DEFAULT_SESSIONS);
