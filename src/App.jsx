@@ -3395,6 +3395,39 @@ const App = () => {
         window.location.reload(); // Clean state reset
     };
 
+    // Cambiar curso (1medio <-> 2medio) — persiste en BD + actualiza currentUser
+    const [gradeChangePending, setGradeChangePending] = useState(false);
+    const handleChangeGrade = async (newGrade) => {
+        const normalized = String(newGrade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+        if (!currentUser?.user_id) return;
+        if (normalized === ACTIVE_GRADE) return;
+        const confirm = window.confirm(`¿Cambiar tu curso a ${normalized === '2medio' ? '2° medio' : '1° medio'}? Las teorías y quizzes se recalibrarán al nuevo nivel.`);
+        if (!confirm) return;
+        setGradeChangePending(true);
+        try {
+            const response = await authFetch('/webhook/MATICO', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accion: 'update_grade', user_id: currentUser.user_id, grade: normalized })
+            });
+            const data = await response.json();
+            if (!data?.success) throw new Error(data?.message || 'Error actualizando curso');
+            const updatedUser = { ...currentUser, grade: data.grade, current_grade: data.current_grade };
+            setCurrentUser(updatedUser);
+            localStorage.setItem('MATICO_USER', JSON.stringify(updatedUser));
+            // Limpiar caches locales que dependen del curso
+            localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
+            localStorage.removeItem('MATICO_QUIZ_PROGRESS');
+            alert(`✅ Curso cambiado a ${normalized === '2medio' ? '2° medio' : '1° medio'}. Refrescando...`);
+            window.location.reload();
+        } catch (err) {
+            console.error('[GRADE_CHANGE] Error:', err);
+            alert(`❌ No se pudo cambiar el curso: ${err.message}`);
+        } finally {
+            setGradeChangePending(false);
+        }
+    };
+
     // --- DATABASE INTEGRATION START ---
     // Use dynamic USER_ID if available, else null
     const USER_ID = currentUser ? currentUser.user_id : null;
@@ -7233,6 +7266,51 @@ ${finalData.capsule}`;
                                                     <span className="text-[10px] font-mono text-gray-500 break-all">{currentUser?.user_id}</span>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* CURSO / GRADO */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        🎓 Curso
+                                    </h4>
+                                    <div className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm">
+                                        <div className="flex flex-col gap-3">
+                                            <div className="text-[11px] text-gray-500 leading-snug">
+                                                Cambia tu curso. Las teorías y quizzes se recalibrarán al currículum Mineduc del nuevo nivel.
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    disabled={gradeChangePending || ACTIVE_GRADE === '1medio'}
+                                                    onClick={() => handleChangeGrade('1medio')}
+                                                    className={`py-3 rounded-xl border-2 font-bold transition-all text-sm ${
+                                                        ACTIVE_GRADE === '1medio'
+                                                            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md cursor-default'
+                                                            : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-blue-200 hover:bg-blue-50'
+                                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                >
+                                                    {ACTIVE_GRADE === '1medio' ? '✓ ' : ''}1° medio
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={gradeChangePending || ACTIVE_GRADE === '2medio'}
+                                                    onClick={() => handleChangeGrade('2medio')}
+                                                    className={`py-3 rounded-xl border-2 font-bold transition-all text-sm ${
+                                                        ACTIVE_GRADE === '2medio'
+                                                            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md cursor-default'
+                                                            : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-blue-200 hover:bg-blue-50'
+                                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                >
+                                                    {ACTIVE_GRADE === '2medio' ? '✓ ' : ''}2° medio
+                                                </button>
+                                            </div>
+                                            {gradeChangePending && (
+                                                <div className="text-[11px] text-blue-600 font-bold animate-pulse">
+                                                    Actualizando curso...
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

@@ -629,10 +629,23 @@ export const upsertRuntimeUser = async ({
     if (error) throw new Error(`upsertRuntimeUser: ${error.message}`);
 };
 
-/**
- * Map a profiles row to the legacy shape expected by index.js callers.
- * Legacy fields: token, pass, mail, nombre, celular, region, comuna, correo_apoderado
- */
+export const updateRuntimeUserGrade = async ({ user_id = '', grade = '1medio' } = {}) => {
+    if (!user_id) throw new Error('updateRuntimeUserGrade: user_id requerido');
+    const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .update({ current_grade: normalizedGrade, updated_at: new Date().toISOString() })
+        .eq('user_id', user_id)
+        .select()
+        .maybeSingle();
+
+    if (error) throw new Error(`updateRuntimeUserGrade: ${error.message}`);
+    if (!data) throw new Error('updateRuntimeUserGrade: usuario no encontrado');
+
+    return { user_id: data.user_id, current_grade: data.current_grade || normalizedGrade };
+};
+
 /**
  * Map a profiles row to the legacy shape expected by index.js callers.
  * Legacy fields: token, pass, mail, nombre, celular, region, comuna, correo_apoderado

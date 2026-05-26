@@ -56,6 +56,7 @@ import {
     updateRuntimeQuestionVisualRole,
     upsertRuntimeExamReminder,
     upsertRuntimeUser,
+    updateRuntimeUserGrade,
     createCalendarEvent,
     listCalendarEvents,
     updateCalendarEvent,
@@ -6151,6 +6152,24 @@ app.post('/webhook/MATICO', conditionalLoginLimiter, async (req, res) => {
         }
 
         // 2A. GENERAR TEORÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂA LÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡DICA
+        // 1B. CAMBIAR CURSO (update_grade) — requiere JWT
+        if (currentAction === 'update_grade') {
+            const targetUserId = req.user?.user_id || body.user_id;
+            if (!targetUserId) return res.status(400).json({ success: false, message: "user_id requerido" });
+            try {
+                const result = await updateRuntimeUserGrade({ user_id: targetUserId, grade: body.grade });
+                return res.json({
+                    success: true,
+                    user_id: result.user_id,
+                    grade: result.current_grade,
+                    current_grade: result.current_grade
+                });
+            } catch (error) {
+                console.error('[UPDATE_GRADE] Error:', error.message);
+                return res.status(500).json({ success: false, message: error.message });
+            }
+        }
+
         if (currentAction === 'start_route' || currentAction.toLowerCase().includes('teoria') || currentAction.toLowerCase().includes('teor')) {
             const tema = body.tema || body.topic || 'Matematica General';
             const theorySubject = body.subject || body.sujeto || body.materia || data?.subject || '';
