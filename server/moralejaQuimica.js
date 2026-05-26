@@ -8,7 +8,7 @@ const normalize = (value = '') => String(value || '')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
-const CHAPTERS = [
+const CHAPTERS_LEGACY_DISABLED = [
     {
         id: 'cap1_atomo',
         chapterNumber: 1,
@@ -188,6 +188,64 @@ const CHAPTERS = [
             'propiedades coligativas',
             'osmosis y presion osmotica'
         ]
+    }
+];
+
+// =====================================================================
+// CAPITULOS 1° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA CN1M 17-20)
+// =====================================================================
+const CHAPTERS = [
+    {
+        id: 'cap1_reacciones_cotidianas',
+        chapterNumber: 1,
+        title: 'Reacciones quimicas cotidianas (OA17)',
+        skill: 'Investigar reacciones cotidianas y variables que las afectan',
+        keywords: ['fermentacion', 'combustion', 'oxidacion', 'reaccion quimica', 'reactante', 'producto', 'indicador', 'temperatura', 'cocina'],
+        theoryFocus: [
+            'investigar reacciones quimicas cotidianas: fermentacion (pan, yogurt), combustion (cocinar), oxidacion (corrosion)',
+            'identificar indicadores de una reaccion quimica (cambio de color, gas, calor)',
+            'analizar variables que influyen: temperatura, concentracion, superficie de contacto'
+        ],
+        quizFocus: ['identificacion de reacciones cotidianas', 'indicadores de reaccion', 'variables que afectan reacciones', 'ejemplos de fermentacion/combustion/oxidacion']
+    },
+    {
+        id: 'cap2_conservacion_masa',
+        chapterNumber: 2,
+        title: 'Conservacion de atomos y masa en reacciones (OA18)',
+        skill: 'Modelar conservacion de masa y balancear ecuaciones',
+        keywords: ['ley de conservacion', 'lavoisier', 'balanceo', 'coeficiente estequiometrico', 'ecuacion quimica', 'masa molar', 'mol'],
+        theoryFocus: [
+            'desarrollar modelo que demuestre conservacion de atomos y masa en reacciones',
+            'balancear ecuaciones quimicas asignando coeficientes',
+            'aplicar ley de Lavoisier en situaciones experimentales'
+        ],
+        quizFocus: ['balance de ecuaciones', 'ley de conservacion de la masa', 'coeficientes estequiometricos', 'modelos atomicos en reacciones']
+    },
+    {
+        id: 'cap3_compuestos_nomenclatura',
+        chapterNumber: 3,
+        title: 'Compuestos binarios y ternarios: nomenclatura (OA19)',
+        skill: 'Explicar formacion de compuestos y aplicar nomenclatura',
+        keywords: ['compuesto binario', 'compuesto ternario', 'nomenclatura', 'oxido', 'hidroxido', 'acido', 'sal', 'numero de oxidacion', 'enlace ionico', 'enlace covalente'],
+        theoryFocus: [
+            'explicar formacion de compuestos binarios y ternarios considerando fuerzas electricas',
+            'aplicar nomenclatura tradicional, stock y sistematica',
+            'distinguir compuestos por su composicion (oxidos, hidroxidos, acidos, sales)'
+        ],
+        quizFocus: ['nomenclatura inorganica', 'formulacion de compuestos', 'numero de oxidacion', 'tipos de enlace']
+    },
+    {
+        id: 'cap4_estequiometria',
+        chapterNumber: 4,
+        title: 'Estequiometria: relaciones cuantitativas (OA20)',
+        skill: 'Calcular relaciones entre reactantes y productos',
+        keywords: ['estequiometria', 'mol', 'masa molar', 'reactivo limitante', 'reactivo en exceso', 'rendimiento', 'avogadro', 'relacion molar'],
+        theoryFocus: [
+            'establecer relaciones cuantitativas entre reactantes y productos',
+            'calcular cantidades en mol, masa y volumen usando relaciones molares',
+            'identificar reactivo limitante, en exceso y rendimiento de la reaccion'
+        ],
+        quizFocus: ['calculo estequiometrico', 'mol y numero de Avogadro', 'reactivo limitante', 'rendimiento porcentual']
     }
 ];
 

@@ -5824,7 +5824,6 @@ const buildTheoryUserPrompt = ({ topic = '', subject = '', session = 0, phase = 
             mode: 'theory',
             grade
         });
-        // moralejaHistoria solo retorna contexto para 2° medio; en 1° medio retorna null y caemos a prompt generico
         if (moralejaHistoriaContext) {
             segments.push(`[BASE MORALEJA HISTORIA]\n${moralejaHistoriaContext.theoryGuidance}`);
             segments.push('Cierra con una mini clave de analisis historico (fechas, actores, procesos) y un ejemplo tipo DEMRE/PAES.');

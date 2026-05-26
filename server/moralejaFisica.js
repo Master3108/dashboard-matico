@@ -8,7 +8,7 @@ const normalize = (value = '') => String(value || '')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
-const CHAPTERS = [
+const CHAPTERS_LEGACY_DISABLED = [
     {
         id: 'cap1_ondas_sonido',
         chapterNumber: 1,
@@ -98,6 +98,116 @@ const CHAPTERS = [
             'integracion de contenidos',
             'preguntas tipo cierre o ensayo'
         ]
+    }
+];
+
+// =====================================================================
+// CAPITULOS 1° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA CN1M 09-16)
+// =====================================================================
+const CHAPTERS = [
+    {
+        id: 'cap1_ondas',
+        chapterNumber: 1,
+        title: 'Ondas: modelo y transmision de energia (OA9)',
+        skill: 'Demostrar mediante modelos que las ondas transmiten energia',
+        keywords: ['onda', 'ondas', 'frecuencia', 'periodo', 'longitud de onda', 'amplitud', 'transversal', 'longitudinal', 'mecanica', 'electromagnetica'],
+        theoryFocus: [
+            'demostrar mediante modelos que las ondas transmiten energia',
+            'clasificar ondas: mecanicas/electromagneticas, transversales/longitudinales',
+            'relacionar amplitud, frecuencia, periodo y longitud de onda'
+        ],
+        quizFocus: ['caracteristicas de ondas', 'transmision de energia', 'clasificacion de ondas', 'calculo de frecuencia y periodo']
+    },
+    {
+        id: 'cap2_fenomenos_sonoros',
+        chapterNumber: 2,
+        title: 'Fenomenos sonoros: eco, resonancia, Doppler (OA10)',
+        skill: 'Explicar fenomenos sonoros y sus aplicaciones tecnologicas',
+        keywords: ['sonido', 'eco', 'resonancia', 'doppler', 'reverberacion', 'intensidad', 'tono', 'timbre', 'velocidad del sonido'],
+        theoryFocus: [
+            'explicar fenomenos sonoros: eco, resonancia y efecto Doppler',
+            'relacionar intensidad, tono y timbre con caracteristicas fisicas de la onda',
+            'evaluar aplicaciones tecnologicas: ecografia, sonar, ultrasonido'
+        ],
+        quizFocus: ['eco y reverberacion', 'efecto Doppler', 'resonancia', 'aplicaciones tecnologicas del sonido']
+    },
+    {
+        id: 'cap3_luz_optica',
+        chapterNumber: 3,
+        title: 'Luz: modelos ondulatorio y corpuscular (OA11)',
+        skill: 'Explicar fenomenos luminosos mediante modelos fisicos',
+        keywords: ['luz', 'ondulatorio', 'corpuscular', 'reflexion', 'refraccion', 'imagen', 'color', 'espectro', 'lente', 'espejo'],
+        theoryFocus: [
+            'explicar fenomenos luminosos mediante los modelos ondulatorio y corpuscular',
+            'describir formacion de imagenes en lentes y espejos',
+            'relacionar luz blanca con espectro de colores'
+        ],
+        quizFocus: ['reflexion y refraccion', 'formacion de imagenes', 'modelos ondulatorio vs corpuscular', 'colores y espectro']
+    },
+    {
+        id: 'cap4_oido_ojo_humano',
+        chapterNumber: 4,
+        title: 'Oido y ojo humano: espectros y correcciones (OA12)',
+        skill: 'Explorar funcionamiento sensorial y tecnologia correctiva',
+        keywords: ['oido', 'ojo', 'espectro audible', 'espectro visible', 'miopia', 'hipermetropia', 'astigmatismo', 'lente correctiva', 'sordera'],
+        theoryFocus: [
+            'explorar funcionamiento del oido humano y rango audible (20-20000 Hz)',
+            'explorar funcionamiento del ojo humano y espectro visible',
+            'analizar defectos visuales/auditivos y tecnologia correctiva (lentes, audifonos)'
+        ],
+        quizFocus: ['anatomia del oido', 'anatomia del ojo', 'defectos visuales y correcciones', 'rangos audibles y visibles']
+    },
+    {
+        id: 'cap5_sismos',
+        chapterNumber: 5,
+        title: 'Sismos: origen, propagacion y consecuencias (OA13)',
+        skill: 'Describir energia sismica, parametros y prevencion',
+        keywords: ['sismo', 'terremoto', 'onda p', 'onda s', 'hipocentro', 'epicentro', 'richter', 'mercalli', 'tectonica', 'falla'],
+        theoryFocus: [
+            'describir origen y propagacion de energia en sismos (ondas P, S, superficiales)',
+            'comprender parametros sismicos: magnitud, intensidad, hipocentro, epicentro',
+            'analizar consecuencias y prevencion ante sismos'
+        ],
+        quizFocus: ['tipos de ondas sismicas', 'escalas Richter y Mercalli', 'tectonica de placas', 'prevencion sismica']
+    },
+    {
+        id: 'cap6_tierra_luna_estaciones',
+        chapterNumber: 6,
+        title: 'Sistema Tierra-Luna y estaciones (OA14)',
+        skill: 'Modelar movimientos astronomicos del sistema solar',
+        keywords: ['tierra', 'luna', 'eclipse', 'mareas', 'estaciones', 'solsticio', 'equinoccio', 'rotacion', 'traslacion', 'inclinacion del eje'],
+        theoryFocus: [
+            'crear modelos sobre movimientos Tierra-Luna y estaciones del ano',
+            'explicar eclipses (solares, lunares) y mareas',
+            'relacionar inclinacion del eje terrestre con estaciones'
+        ],
+        quizFocus: ['movimientos Tierra-Luna', 'eclipses', 'mareas', 'estaciones del ano']
+    },
+    {
+        id: 'cap7_estructuras_cosmicas',
+        chapterNumber: 7,
+        title: 'Estructuras cosmicas: meteoros, estrellas, galaxias (OA15)',
+        skill: 'Describir y comparar estructuras cosmicas',
+        keywords: ['meteoro', 'asteroide', 'cometa', 'estrella', 'planeta', 'galaxia', 'via lactea', 'ano luz', 'nebulosa', 'sistema solar'],
+        theoryFocus: [
+            'describir estructuras cosmicas: meteoros, asteroides, cometas, estrellas',
+            'comparar tamanos y propiedades en escala astronomica (ano luz)',
+            'caracterizar galaxias (Via Lactea) y el sistema solar'
+        ],
+        quizFocus: ['clasificacion de objetos cosmicos', 'escalas astronomicas', 'sistema solar', 'galaxias']
+    },
+    {
+        id: 'cap8_astronomia_chile',
+        chapterNumber: 8,
+        title: 'Astronomia en Chile (OA16)',
+        skill: 'Investigar aportes astronomicos chilenos',
+        keywords: ['atacama', 'cerro paranal', 'alma', 'observatorio', 'telescopio', 'cielos oscuros', 'investigacion chilena', 'astronomos chilenos'],
+        theoryFocus: [
+            'investigar investigacion astronomica en Chile (ALMA, VLT, observatorio Paranal)',
+            'analizar ventajas climaticas del norte de Chile para astronomia',
+            'evaluar tecnologia y aportes cientificos nacionales'
+        ],
+        quizFocus: ['observatorios en Chile', 'ALMA y VLT', 'ventajas climaticas del Atacama', 'aportes astronomicos chilenos']
     }
 ];
 

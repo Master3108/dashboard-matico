@@ -8,7 +8,10 @@ const normalize = (value = '') => String(value || '')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
-const CHAPTERS = [
+// =====================================================================
+// CAPITULOS 1° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA MA1M 01-15)
+// =====================================================================
+const CHAPTERS_LEGACY_DISABLED = [
     {
         id: 'cap1_enteros',
         chapterNumber: 1,
@@ -262,6 +265,140 @@ const CHAPTERS = [
             'tecnicas de conteo',
             'probabilidad'
         ]
+    }
+];
+
+// CHAPTERS reales de 1° medio alineados a OA Mineduc oficial
+const CHAPTERS = [
+    {
+        id: 'cap1_racionales',
+        chapterNumber: 1,
+        title: 'Operaciones con numeros racionales (OA1)',
+        skill: 'Calcular operaciones con racionales en forma simbolica',
+        keywords: ['racionales', 'fraccion', 'decimal', 'periodico', 'operatoria', 'simbolico', 'suma', 'resta', 'producto', 'cociente'],
+        theoryFocus: [
+            'calcular operaciones (suma, resta, producto, cociente) con numeros racionales en forma simbolica',
+            'representar racionales como fracciones, decimales finitos y periodicos',
+            'aplicar reglas de operatoria con signos y conversiones entre representaciones'
+        ],
+        quizFocus: ['operatoria con fracciones', 'conversion fraccion-decimal', 'operatoria simbolica con racionales', 'planteamiento con racionales']
+    },
+    {
+        id: 'cap2_potencias_racional',
+        chapterNumber: 2,
+        title: 'Potencias de base racional y exponente entero (OA2)',
+        skill: 'Comprender potencias y aplicar propiedades',
+        keywords: ['potencia', 'base racional', 'exponente entero', 'propiedades de potencias', 'crecimiento', 'decrecimiento'],
+        theoryFocus: [
+            'comprender potencias de base racional y exponente entero (positivo, negativo y cero)',
+            'transferir propiedades: producto, cociente, potencia de potencia',
+            'relacionar potencias con cambios de cantidades y resolver problemas cotidianos'
+        ],
+        quizFocus: ['propiedades de potencias', 'potencias con exponente negativo', 'aplicaciones contextuales', 'comparacion de potencias']
+    },
+    {
+        id: 'cap3_productos_notables',
+        chapterNumber: 3,
+        title: 'Productos notables y factorizacion (OA3)',
+        skill: 'Desarrollar productos notables y factorizar',
+        keywords: ['producto notable', 'cuadrado de binomio', 'suma por diferencia', 'cubo de binomio', 'factorizacion', 'factor comun', 'trinomio'],
+        theoryFocus: [
+            'desarrollar productos notables de manera concreta, pictorica y simbolica',
+            'transformar productos en sumas usando cuadrado de binomio, suma por diferencia, cubo de binomio',
+            'aplicar productos notables a situaciones concretas y factorizar'
+        ],
+        quizFocus: ['productos notables', 'factorizacion estrategica', 'simplificacion algebraica', 'aplicaciones']
+    },
+    {
+        id: 'cap4_sistemas_2x2',
+        chapterNumber: 4,
+        title: 'Sistemas de ecuaciones lineales 2x2 (OA4)',
+        skill: 'Resolver sistemas 2x2 con representaciones graficas y simbolicas',
+        keywords: ['sistema', 'ecuaciones lineales', '2x2', 'sustitucion', 'igualacion', 'reduccion', 'grafico', 'plano cartesiano'],
+        theoryFocus: [
+            'resolver sistemas de ecuaciones lineales 2x2 mediante sustitucion, igualacion y reduccion',
+            'representar sistemas graficamente como interseccion de rectas en el plano',
+            'modelar y resolver problemas de la vida diaria con sistemas'
+        ],
+        quizFocus: ['metodos de resolucion 2x2', 'representacion grafica', 'modelacion con sistemas', 'analisis de soluciones']
+    },
+    {
+        id: 'cap5_funcion_lineal',
+        chapterNumber: 5,
+        title: 'Funcion lineal y afin (OA5)',
+        skill: 'Graficar relaciones lineales f(x,y)=ax+by',
+        keywords: ['funcion lineal', 'funcion afin', 'pendiente', 'recta', 'plano cartesiano', 'tabla de valores', 'relacion lineal'],
+        theoryFocus: [
+            'graficar relaciones lineales en dos variables f(x,y)=ax+by',
+            'crear tablas de valores y representar ecuaciones en el plano cartesiano',
+            'interpretar pendiente y puntos especiales de rectas'
+        ],
+        quizFocus: ['representacion grafica de la recta', 'pendiente y ordenada al origen', 'tabla de valores', 'modelacion lineal']
+    },
+    {
+        id: 'cap6_sector_circular',
+        chapterNumber: 6,
+        title: 'Sectores y segmentos circulares (OA6)',
+        skill: 'Calcular area y perimetro de sectores y segmentos',
+        keywords: ['sector circular', 'segmento circular', 'arco', 'angulo central', 'area', 'perimetro', 'circunferencia'],
+        theoryFocus: [
+            'desarrollar formulas para area y perimetro de sectores circulares a partir de angulos centrales',
+            'desarrollar formulas para segmentos circulares',
+            'aplicar a problemas geometricos contextuales'
+        ],
+        quizFocus: ['area de sector y segmento', 'perimetro y longitud de arco', 'angulos centrales', 'modelacion']
+    },
+    {
+        id: 'cap7_cono',
+        chapterNumber: 7,
+        title: 'Cono: area de superficie y volumen (OA7)',
+        skill: 'Formular y aplicar formulas del cono',
+        keywords: ['cono', 'area lateral', 'area total', 'volumen del cono', 'generatriz', 'altura', 'radio', 'red'],
+        theoryFocus: [
+            'formular y aplicar formulas para area de superficie y volumen del cono',
+            'experimentar con redes del cono y relacionar con cilindros',
+            'resolver problemas contextuales con conos'
+        ],
+        quizFocus: ['area lateral y total del cono', 'volumen del cono', 'modelacion con conos', 'comparacion con cilindro']
+    },
+    {
+        id: 'cap8_homotecia',
+        chapterNumber: 8,
+        title: 'Homotecia y vectores (OA8, OA11)',
+        skill: 'Comprender homotecia y representarla vectorialmente',
+        keywords: ['homotecia', 'razon de homotecia', 'centro', 'vector', 'producto por escalar', 'perspectiva', 'instrumentos opticos'],
+        theoryFocus: [
+            'comprender homotecia relacionandola con perspectiva e instrumentos opticos',
+            'representar homotecia de forma vectorial (producto de un vector por un escalar)',
+            'aplicar propiedades en construcciones'
+        ],
+        quizFocus: ['homotecia y razon', 'representacion vectorial', 'aplicaciones con instrumentos opticos', 'construcciones geometricas']
+    },
+    {
+        id: 'cap9_tales_semejanza',
+        chapterNumber: 9,
+        title: 'Teorema de Tales y semejanza (OA9, OA10)',
+        skill: 'Aplicar Tales y semejanza en problemas',
+        keywords: ['tales', 'thales', 'semejanza', 'proporcionalidad', 'modelo a escala', 'figuras semejantes', 'criterios de semejanza'],
+        theoryFocus: [
+            'desarrollar el teorema de Tales mediante propiedades de homotecia',
+            'aplicar criterios de semejanza para resolver problemas',
+            'aplicar semejanza y proporcionalidad a modelos a escala y situaciones cotidianas'
+        ],
+        quizFocus: ['teorema de Tales', 'criterios de semejanza', 'modelos a escala', 'problemas de proporcionalidad']
+    },
+    {
+        id: 'cap10_probabilidad_estadistica',
+        chapterNumber: 10,
+        title: 'Probabilidad y estadistica de dos variables (OA12-15)',
+        skill: 'Probabilidad aditiva/multiplicativa y comparacion de poblaciones',
+        keywords: ['tabla de doble entrada', 'nube de puntos', 'probabilidad aditiva', 'probabilidad multiplicativa', 'azar', 'galton', 'comparacion poblaciones'],
+        theoryFocus: [
+            'registrar distribuciones de dos caracteristicas en tablas de doble entrada y nubes de puntos',
+            'comparar poblaciones mediante graficos xy con nubes de puntos en dos colores',
+            'desarrollar reglas de probabilidad aditiva y multiplicativa; experimentar con tablas de Galton'
+        ],
+        quizFocus: ['tablas de doble entrada', 'nubes de puntos', 'probabilidad aditiva y multiplicativa', 'analisis de azar']
     }
 ];
 

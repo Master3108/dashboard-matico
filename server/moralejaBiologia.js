@@ -9,7 +9,7 @@ const normalize = (value = '') => String(value || '')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
-const CHAPTERS = [
+const CHAPTERS_LEGACY_DISABLED = [
     {
         id: 'cap1_metodo_cientifico',
         chapterNumber: 1,
@@ -251,6 +251,116 @@ const CHAPTERS = [
             'impacto antropogenico',
             'conservacion de la biodiversidad'
         ]
+    }
+];
+
+// =====================================================================
+// CAPITULOS 1° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA CN1M 01-08)
+// =====================================================================
+const CHAPTERS = [
+    {
+        id: 'cap1_fosiles',
+        chapterNumber: 1,
+        title: 'Fosiles y evidencias del pasado (OA1)',
+        skill: 'Explicar formacion de fosiles y su valor evolutivo',
+        keywords: ['fosil', 'fosiles', 'paleontologia', 'sedimentacion', 'estratigrafia', 'datacion', 'molde', 'permineralizacion', 'animal', 'planta'],
+        theoryFocus: [
+            'explicar como se forman los fosiles a partir de restos de animales y plantas',
+            'reconocer fosiles como evidencia del pasado biologico',
+            'analizar el rol de la paleontologia en la reconstruccion evolutiva'
+        ],
+        quizFocus: ['proceso de fosilizacion', 'tipos de fosiles', 'datacion y estratigrafia', 'fosiles como evidencia evolutiva']
+    },
+    {
+        id: 'cap2_diversidad_evolucion',
+        chapterNumber: 2,
+        title: 'Diversidad y teoria evolutiva (OA2)',
+        skill: 'Analizar evidencias evolutivas y seleccion natural',
+        keywords: ['evolucion', 'darwin', 'seleccion natural', 'estructura homologa', 'analoga', 'registro fosil', 'adaptacion', 'biodiversidad'],
+        theoryFocus: [
+            'analizar diversidad de organismos como resultado evolutivo',
+            'interpretar evidencias: registro fosil, estructuras homologas/analogas, ADN',
+            'aplicar teoria de seleccion natural de Darwin'
+        ],
+        quizFocus: ['evidencias evolutivas', 'estructuras homologas vs analogas', 'seleccion natural', 'aportes de Darwin']
+    },
+    {
+        id: 'cap3_taxonomia',
+        chapterNumber: 3,
+        title: 'Clasificacion taxonomica y parentesco (OA3)',
+        skill: 'Explicar criterios taxonomicos y relaciones de parentesco',
+        keywords: ['taxonomia', 'reino', 'filo', 'clase', 'orden', 'familia', 'genero', 'especie', 'linneo', 'cladistica', 'arbol filogenetico'],
+        theoryFocus: [
+            'explicar como se construye la clasificacion de organismos',
+            'aplicar criterios taxonomicos jerarquicos (reino, filo, clase, orden, familia, genero, especie)',
+            'identificar relaciones de parentesco mediante arboles filogeneticos'
+        ],
+        quizFocus: ['categorias taxonomicas', 'sistema de Linneo', 'arboles filogeneticos', 'reinos y dominios']
+    },
+    {
+        id: 'cap4_ecosistemas',
+        chapterNumber: 4,
+        title: 'Ecosistemas: organizacion e interacciones (OA4)',
+        skill: 'Investigar niveles de organizacion e interacciones biologicas',
+        keywords: ['ecosistema', 'comunidad', 'poblacion', 'individuo', 'biotopo', 'biocenosis', 'simbiosis', 'mutualismo', 'comensalismo', 'parasitismo', 'depredacion'],
+        theoryFocus: [
+            'investigar niveles de organizacion: individuo, poblacion, comunidad, ecosistema, bioma',
+            'analizar interacciones biologicas: simbiosis (mutualismo, comensalismo, parasitismo)',
+            'estudiar relaciones de competencia, depredacion y herbivoria'
+        ],
+        quizFocus: ['niveles de organizacion ecologica', 'tipos de interacciones biologicas', 'simbiosis', 'cadenas y redes troficas']
+    },
+    {
+        id: 'cap5_poblaciones',
+        chapterNumber: 5,
+        title: 'Dinamica poblacional (OA5)',
+        skill: 'Analizar factores que afectan poblaciones',
+        keywords: ['poblacion', 'densidad', 'natalidad', 'mortalidad', 'migracion', 'capacidad de carga', 'crecimiento exponencial', 'crecimiento logistico'],
+        theoryFocus: [
+            'analizar factores que afectan tamano de poblaciones (natalidad, mortalidad, migracion)',
+            'comprender curvas de crecimiento exponencial y logistico',
+            'predecir consecuencias de cambios poblacionales sobre el ecosistema'
+        ],
+        quizFocus: ['densidad poblacional', 'natalidad/mortalidad/migracion', 'curvas de crecimiento', 'capacidad de carga del ambiente']
+    },
+    {
+        id: 'cap6_ciclos_biogeoquimicos',
+        chapterNumber: 6,
+        title: 'Ciclos biogeoquimicos y flujo de energia (OA6)',
+        skill: 'Modelar ciclos de materia y flujo energetico',
+        keywords: ['ciclo del carbono', 'ciclo del nitrogeno', 'ciclo del agua', 'flujo de energia', 'bioacumulacion', 'biomagnificacion', 'contaminante'],
+        theoryFocus: [
+            'desarrollar modelos que expliquen ciclos biogeoquimicos (carbono, nitrogeno, agua)',
+            'analizar flujo de energia en cadenas y piramides troficas',
+            'evaluar bioacumulacion y biomagnificacion de contaminantes'
+        ],
+        quizFocus: ['ciclo del carbono', 'ciclo del nitrogeno', 'ciclo del agua', 'bioacumulacion en cadenas troficas']
+    },
+    {
+        id: 'cap7_fotosintesis_respiracion',
+        chapterNumber: 7,
+        title: 'Fotosintesis y respiracion celular (OA7)',
+        skill: 'Explicar rol energetico y de ciclo de materia',
+        keywords: ['fotosintesis', 'respiracion celular', 'clorofila', 'cloroplasto', 'mitocondria', 'glucosa', 'atp', 'oxigeno', 'co2'],
+        theoryFocus: [
+            'explicar el rol de la fotosintesis: captacion de energia solar y produccion de glucosa',
+            'explicar la respiracion celular: oxidacion de glucosa para producir ATP',
+            'relacionar fotosintesis y respiracion con flujo energetico y ciclo de materia'
+        ],
+        quizFocus: ['ecuacion de fotosintesis', 'ecuacion de respiracion celular', 'cloroplasto vs mitocondria', 'rol energetico de ATP']
+    },
+    {
+        id: 'cap8_impacto_humano',
+        chapterNumber: 8,
+        title: 'Impacto humano y sustentabilidad (OA8)',
+        skill: 'Evaluar efectos antropicos sobre ecosistemas y recursos',
+        keywords: ['impacto antropico', 'sustentabilidad', 'cambio climatico', 'deforestacion', 'contaminacion', 'extincion', 'recursos naturales', 'conservacion', 'huella ecologica'],
+        theoryFocus: [
+            'explicar efectos de acciones humanas sobre el equilibrio ecosistemico',
+            'analizar fenomenos naturales y su impacto en recursos (sismos, sequias, incendios)',
+            'evaluar estrategias de sustentabilidad y conservacion'
+        ],
+        quizFocus: ['impacto humano sobre ecosistemas', 'cambio climatico', 'extincion de especies', 'sustentabilidad y conservacion']
     }
 ];
 

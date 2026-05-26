@@ -16,12 +16,141 @@ const normalizeGradeKey = (value) => {
 };
 
 // =====================================================================
-// CAPITULOS 1° MEDIO (placeholder — el catalogo Mineduc 1° medio usa
-// los mismos contenidos de "siglo XX" que ahora estan correctamente
-// asignados a 2° medio. Mantener este array vacio significa que
-// 1° medio cae al fallback generico y no rompe nada).
+// CAPITULOS 1° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA HI1M 01-25)
+// Siglo XIX: Estado-nacion, industrializacion, ocupacion territorio chileno
 // =====================================================================
-const CHAPTERS = [];
+const CHAPTERS = [
+    {
+        id: 'cap1_ideas_republicanas',
+        chapterNumber: 1,
+        title: 'Ideas republicanas/liberales y Estado-nacion siglo XIX (OA1-3)',
+        skill: 'Explicar ideas republicanas, cultura burguesa y Estado-nacion',
+        keywords: ['republicanismo', 'liberalismo', 'cultura burguesa', 'estado-nacion', 'siglo xix', 'revolucion francesa', 'independencia americana', 'ilustracion'],
+        theoryFocus: [
+            'explicar ideas republicanas y liberales y sus transformaciones politicas y economicas',
+            'caracterizar la cultura burguesa, ideal de vida y valores del siglo XIX',
+            'analizar la reorganizacion geopolitica y surgimiento del Estado-nacion en America Latina y Europa'
+        ],
+        quizFocus: ['ideas republicanas y liberales', 'cultura burguesa siglo XIX', 'formacion del Estado-nacion', 'transformaciones politicas y economicas']
+    },
+    {
+        id: 'cap2_progreso_industrializacion',
+        chapterNumber: 2,
+        title: 'Progreso, industrializacion e imperialismo (OA4-6)',
+        skill: 'Analizar industrializacion y expansion imperial',
+        keywords: ['progreso indefinido', 'revolucion industrial', 'industrializacion', 'imperialismo', 'colonialismo', 'maquina de vapor', 'urbanizacion'],
+        theoryFocus: [
+            'reconocer la idea de progreso indefinido en desarrollo cientifico-tecnologico del siglo XIX',
+            'caracterizar la industrializacion y sus efectos sobre economia, poblacion y territorio',
+            'analizar el imperialismo europeo del siglo XIX y su impacto mundial'
+        ],
+        quizFocus: ['idea de progreso del siglo XIX', 'revolucion industrial y consecuencias', 'imperialismo europeo', 'colonialismo en Asia y Africa']
+    },
+    {
+        id: 'cap3_primera_guerra_mundial',
+        chapterNumber: 3,
+        title: 'Primera Guerra Mundial (OA7)',
+        skill: 'Analizar Primera Guerra Mundial y nuevo orden geopolitico',
+        keywords: ['primera guerra mundial', 'trincheras', 'sarajevo', 'tratado de versalles', 'sociedad de naciones', 'imperios centrales', 'aliados'],
+        theoryFocus: [
+            'analizar el impacto de la Primera Guerra Mundial en la sociedad civil',
+            'comprender el nuevo orden geopolitico post-1918',
+            'evaluar el Tratado de Versalles y la Sociedad de Naciones'
+        ],
+        quizFocus: ['causas de la Primera Guerra Mundial', 'desarrollo y trincheras', 'Tratado de Versalles', 'impacto en sociedad civil']
+    },
+    {
+        id: 'cap4_chile_republica_1833',
+        chapterNumber: 4,
+        title: 'Chile: formacion republica y Constitucion 1833 (OA8-9)',
+        skill: 'Analizar formacion republicana y orden conservador',
+        keywords: ['constitucion de 1833', 'portales', 'orden conservador', 'pelucones', 'pipiolos', 'republica chilena', 'autoritarismo'],
+        theoryFocus: [
+            'analizar la formacion de la republica de Chile y la Constitucion de 1833',
+            'caracterizar la consolidacion de la republica chilena',
+            'explicar el rol de Diego Portales en el orden conservador'
+        ],
+        quizFocus: ['Constitucion de 1833', 'rol de Portales', 'pelucones vs pipiolos', 'consolidacion republicana']
+    },
+    {
+        id: 'cap5_chile_salitre',
+        chapterNumber: 5,
+        title: 'Chile: industria del salitre y exportaciones (OA10-11, OA17)',
+        skill: 'Explicar insercion economica y opinion publica',
+        keywords: ['salitre', 'exportacion', 'tarapaca', 'antofagasta', 'oficina salitrera', 'opinion publica', 'prensa', 'educacion publica'],
+        theoryFocus: [
+            'explicar la insercion de Chile en industrializacion mundial via exportacion de recursos naturales',
+            'analizar el desarrollo de espacios de opinion publica y educacion',
+            'caracterizar transformaciones generadas por las riquezas del salitre'
+        ],
+        quizFocus: ['ciclo del salitre', 'exportaciones chilenas siglo XIX', 'opinion publica y educacion', 'transformacion social por la riqueza salitrera']
+    },
+    {
+        id: 'cap6_ocupacion_territorio',
+        chapterNumber: 6,
+        title: 'Ocupacion del territorio chileno (OA12-15)',
+        skill: 'Describir ocupacion territorial y Guerra del Pacifico',
+        keywords: ['valdivia', 'llanquihue', 'chiloe', 'magallanes', 'araucania', 'mapuche', 'guerra del pacifico', 'tratado de ancon', 'territorio nacional'],
+        theoryFocus: [
+            'describir procesos de exploracion y reconocimiento del territorio nacional',
+            'describir ocupacion de Valdivia, Llanquihue, Chiloe y Magallanes',
+            'explicar ocupacion de la Araucania y su impacto en la sociedad mapuche; analizar Guerra del Pacifico'
+        ],
+        quizFocus: ['ocupacion territorial chilena', 'pacificacion de la Araucania', 'Guerra del Pacifico (1879-1884)', 'consecuencias territoriales']
+    },
+    {
+        id: 'cap7_parlamentarismo_cuestion_social',
+        chapterNumber: 7,
+        title: 'Parlamentarismo y cuestion social (OA16, OA18, OA23)',
+        skill: 'Analizar parlamentarismo y respuestas a la cuestion social',
+        keywords: ['parlamentarismo', 'cuestion social', 'huelga', 'obrero', 'anarquismo', 'socialismo', 'mutual', 'sindicato', 'recoleta', 'matanza'],
+        theoryFocus: [
+            'analizar el orden politico liberal y parlamentario de la segunda mitad del siglo XIX',
+            'analizar transformaciones de la sociedad en el cambio de siglo y la cuestion social',
+            'explicar respuestas politicas (liberalismo, socialismo, anarquismo)'
+        ],
+        quizFocus: ['parlamentarismo chileno', 'cuestion social', 'movimiento obrero', 'respuestas politicas']
+    },
+    {
+        id: 'cap8_economia_geografia',
+        chapterNumber: 8,
+        title: 'Economia: escasez, mercado, finanzas, consumo (OA19-22)',
+        skill: 'Explicar fundamentos economicos y consumo responsable',
+        keywords: ['escasez', 'necesidades', 'mercado', 'oferta', 'demanda', 'inversion', 'ahorro', 'banco', 'consumo informado', 'finanzas personales'],
+        theoryFocus: [
+            'explicar el problema economico de escasez y necesidades ilimitadas',
+            'explicar funcionamiento del mercado y factores que lo alteran',
+            'caracterizar instrumentos financieros y evaluar consumo informado y responsable'
+        ],
+        quizFocus: ['escasez y necesidades', 'oferta y demanda', 'instrumentos financieros (ahorro, inversion)', 'consumo responsable']
+    },
+    {
+        id: 'cap9_pueblos_indigenas',
+        chapterNumber: 9,
+        title: 'Pueblos indigenas: convivencia y conflicto (OA24)',
+        skill: 'Evaluar relaciones con pueblos indigenas en Chile',
+        keywords: ['mapuche', 'aymara', 'rapa nui', 'pueblos originarios', 'interculturalidad', 'reduccion', 'reconocimiento constitucional', 'derechos indigenas'],
+        theoryFocus: [
+            'evaluar relaciones de conflicto y convivencia con pueblos indigenas en Chile',
+            'analizar consecuencias historicas de la pacificacion y las reducciones',
+            'caracterizar la diversidad cultural y el reconocimiento de pueblos originarios hoy'
+        ],
+        quizFocus: ['pueblos originarios de Chile', 'pacificacion y reducciones', 'derechos indigenas actuales', 'interculturalidad']
+    },
+    {
+        id: 'cap10_industria_medioambiente',
+        chapterNumber: 10,
+        title: 'Industrializacion y medio ambiente (OA25)',
+        skill: 'Analizar impacto industrial sobre medio ambiente',
+        keywords: ['industrializacion', 'medio ambiente', 'contaminacion', 'desarrollo sostenible', 'recursos naturales', 'huella ecologica'],
+        theoryFocus: [
+            'analizar el impacto de la industrializacion en el medio ambiente',
+            'evaluar el concepto de desarrollo sostenible',
+            'relacionar uso de recursos naturales con consecuencias ambientales'
+        ],
+        quizFocus: ['impacto ambiental de la industrializacion', 'desarrollo sostenible', 'uso de recursos naturales', 'huella ecologica']
+    }
+];
 
 // =====================================================================
 // CAPITULOS 2° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA HI2M 01-25)
@@ -211,6 +340,7 @@ const CHAPTERS_2M = [
 
 const CHAPTERS_BY_ID = Object.fromEntries(CHAPTERS.map((chapter) => [chapter.id, chapter]));
 const CHAPTERS_BY_ID_2M = Object.fromEntries(CHAPTERS_2M.map((chapter) => [chapter.id, chapter]));
+const fallbackChapter = CHAPTERS[0];
 const fallbackChapter2M = CHAPTERS_2M[0];
 
 const scoreChapter = (chapter, normalizedTopic) => chapter.keywords.reduce((score, keyword) => {
@@ -223,11 +353,9 @@ export const resolveMoralejaHistoriaContext = ({ topic = '', session = 0, phase 
     const normalizedPhase = normalize(phase);
     const gradeKey = normalizeGradeKey(grade);
     const is2M = gradeKey === '2medio';
-
-    // Solo hay CHAPTERS para 2° medio; en 1° medio no hay catalogo aun
-    if (!is2M) {
-        return null;
-    }
+    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
 
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'HISTORIA',
@@ -235,15 +363,15 @@ export const resolveMoralejaHistoriaContext = ({ topic = '', session = 0, phase 
         grade: gradeKey
     });
 
-    let bestChapter = fallbackChapter2M;
+    let bestChapter = fallbackForGrade;
     let bestScore = -1;
     let resolutionMode = 'fallback';
 
-    if (sessionReference?.chapterId && CHAPTERS_BY_ID_2M[sessionReference.chapterId]) {
-        bestChapter = CHAPTERS_BY_ID_2M[sessionReference.chapterId];
+    if (sessionReference?.chapterId && chaptersByIdForGrade[sessionReference.chapterId]) {
+        bestChapter = chaptersByIdForGrade[sessionReference.chapterId];
         resolutionMode = 'session_map';
     } else {
-        for (const chapter of CHAPTERS_2M) {
+        for (const chapter of chaptersForGrade) {
             const score = scoreChapter(chapter, normalizedTopic);
             if (score > bestScore) {
                 bestScore = score;

@@ -7,7 +7,7 @@ const normalize = (value = '') => String(value || '')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
-const CHAPTERS = [
+const CHAPTERS_LEGACY_DISABLED = [
     {
         id: 'cap1_coherencia_cohesion',
         chapterNumber: 1,
@@ -117,6 +117,193 @@ const CHAPTERS = [
             'conclusiones implicitas',
             'proyeccion de sentido global'
         ]
+    }
+];
+
+// =====================================================================
+// CAPITULOS 1° MEDIO — MINEDUC OFICIAL (Decreto 19/2019, OA LE1M 01-24)
+// 4 ejes: Lectura, Escritura, Comunicacion Oral, Investigacion
+// =====================================================================
+const CHAPTERS = [
+    {
+        id: 'cap1_narrativa',
+        chapterNumber: 1,
+        title: 'Lectura literaria: narrativa (conflicto, personajes, simbolos) (OA3)',
+        skill: 'Analizar narraciones con perspectiva narrativa y simbolos',
+        keywords: ['narrador', 'cuento', 'novela', 'conflicto', 'personaje', 'perspectiva narrativa', 'simbolo', 'creencias', 'estructura'],
+        theoryFocus: [
+            'Analizar narraciones considerando conflictos, personajes, perspectiva narrativa, simbolos y creencias presentes.',
+            'Reconocer el tipo de narrador (omnisciente, protagonista, testigo) y su perspectiva.',
+            'Construir interpretacion con evidencia textual.'
+        ],
+        procedures: [
+            'Identificar conflicto central y personajes.',
+            'Reconocer el tipo de narrador y su perspectiva.',
+            'Sustentar interpretaciones con evidencia textual.'
+        ],
+        quizFocus: ['analisis de conflicto y personajes', 'tipo de narrador', 'simbolos y creencias', 'estructura narrativa']
+    },
+    {
+        id: 'cap2_lirica',
+        chapterNumber: 2,
+        title: 'Lectura literaria: poesia (lenguaje figurado) (OA4)',
+        skill: 'Analizar poemas con simbolos y lenguaje figurado',
+        keywords: ['poesia', 'hablante lirico', 'simbolo', 'lenguaje figurado', 'metafora', 'rima', 'verso', 'estrofa', 'figura literaria'],
+        theoryFocus: [
+            'Analizar poemas considerando simbolos, actitud del hablante, lenguaje figurado.',
+            'Reconocer relaciones formales (rima, ritmo, estructura).',
+            'Interpretar el sentido global del poema.'
+        ],
+        procedures: [
+            'Identificar al hablante lirico y su actitud.',
+            'Reconocer figuras literarias (metafora, simil, personificacion).',
+            'Analizar relacion entre forma poetica y contenido.'
+        ],
+        quizFocus: ['figuras literarias', 'actitud del hablante', 'simbolos en poesia', 'estructura del poema']
+    },
+    {
+        id: 'cap3_drama_tragedia',
+        chapterNumber: 3,
+        title: 'Lectura literaria: drama y tragedia clasica (OA5-6)',
+        skill: 'Analizar textos dramaticos y vision de mundo en tragedias',
+        keywords: ['drama', 'tragedia', 'teatro', 'sofocles', 'edipo', 'antigona', 'conflicto dramatico', 'puesta en escena', 'acotacion', 'dialogo'],
+        theoryFocus: [
+            'Analizar textos dramaticos: conflicto, personajes, simbolos y atmosfera.',
+            'Comprender la vision de mundo expresada en tragedias clasicas (griegas).',
+            'Reconocer elementos de puesta en escena.'
+        ],
+        procedures: [
+            'Identificar conflicto dramatico central.',
+            'Analizar funcion de acotaciones y dialogos.',
+            'Reconocer caracteristicas de la tragedia clasica.'
+        ],
+        quizFocus: ['conflicto tragico', 'estructura del drama', 'tragedia clasica (Sofocles, etc.)', 'puesta en escena']
+    },
+    {
+        id: 'cap4_romanticismo',
+        chapterNumber: 4,
+        title: 'Romanticismo: contexto y obras (OA7)',
+        skill: 'Comprender relevancia historico-cultural del Romanticismo',
+        keywords: ['romanticismo', 'goethe', 'becquer', 'rosalia de castro', 'naturaleza', 'subjetividad', 'libertad', 'siglo xix', 'sentimientos'],
+        theoryFocus: [
+            'Comprender la relevancia del Romanticismo en sus caracteristicas y contexto historico.',
+            'Reconocer autores representativos (Goethe, Becquer, Espronceda).',
+            'Identificar temas romanticos: naturaleza, subjetividad, libertad, lo sublime.'
+        ],
+        procedures: [
+            'Contextualizar la obra en el siglo XIX europeo.',
+            'Identificar elementos romanticos en textos.',
+            'Relacionar contexto historico con vision de mundo.'
+        ],
+        quizFocus: ['caracteristicas del Romanticismo', 'autores romanticos', 'temas centrales', 'contexto historico-cultural']
+    },
+    {
+        id: 'cap5_argumentacion',
+        chapterNumber: 5,
+        title: 'Argumentacion: tesis, argumentos, hechos vs opiniones (OA9)',
+        skill: 'Analizar textos argumentativos y estrategias retoricas',
+        keywords: ['argumentacion', 'tesis', 'argumento', 'hecho', 'opinion', 'columna', 'ensayo', 'estrategia retorica', 'persuasion'],
+        theoryFocus: [
+            'Analizar textos argumentativos: evaluar tesis y argumentos.',
+            'Distinguir hechos de opiniones.',
+            'Reconocer estrategias retoricas y su efectividad.'
+        ],
+        procedures: [
+            'Identificar tesis central.',
+            'Mapear argumentos a favor y en contra.',
+            'Detectar hechos verificables vs opiniones subjetivas.'
+        ],
+        quizFocus: ['identificacion de tesis', 'tipos de argumentos', 'hecho vs opinion', 'estrategias retoricas']
+    },
+    {
+        id: 'cap6_medios_persuasion',
+        chapterNumber: 6,
+        title: 'Textos mediaticos y estrategias persuasivas (OA10)',
+        skill: 'Analizar medios y recursos no linguisticos',
+        keywords: ['medios', 'publicidad', 'propaganda', 'noticia', 'imagen', 'recurso visual', 'estrategia persuasiva', 'veracidad', 'manipulacion'],
+        theoryFocus: [
+            'Analizar textos mediaticos evaluando propositos y estrategias persuasivas.',
+            'Evaluar veracidad de la informacion entregada.',
+            'Analizar efectos de recursos no linguisticos (imagen, sonido, color).'
+        ],
+        procedures: [
+            'Identificar proposito del texto mediatico.',
+            'Analizar recursos verbales y visuales.',
+            'Evaluar veracidad y deteccion de sesgos.'
+        ],
+        quizFocus: ['propositos en medios', 'estrategias de persuasion', 'recursos no linguisticos', 'lectura critica']
+    },
+    {
+        id: 'cap7_no_literarios',
+        chapterNumber: 7,
+        title: 'Textos no literarios para contextualizar (OA1-2, OA8, OA11)',
+        skill: 'Leer textos no literarios y formular interpretaciones',
+        keywords: ['no literario', 'articulo', 'biografia', 'cronica', 'experiencia humana', 'interpretacion', 'critica', 'contexto', 'lectura recreativa'],
+        theoryFocus: [
+            'Leer habitualmente para aprender y recrearse seleccionando textos segun preferencias.',
+            'Reflexionar sobre dimensiones de la experiencia humana.',
+            'Formular interpretaciones coherentes con punto de vista personal y critica sustentada.'
+        ],
+        procedures: [
+            'Seleccionar textos no literarios pertinentes al contexto literario.',
+            'Conectar texto con experiencia humana.',
+            'Sustentar interpretaciones con evidencia.'
+        ],
+        quizFocus: ['comprension de textos no literarios', 'reflexion sobre experiencia humana', 'interpretacion fundamentada', 'lectura habitual']
+    },
+    {
+        id: 'cap8_escritura_explicativa',
+        chapterNumber: 8,
+        title: 'Escritura: textos explicativos (OA12-13, OA17)',
+        skill: 'Escribir textos explicativos con organizacion tematica',
+        keywords: ['escritura', 'texto explicativo', 'organizacion tematica', 'recurso grafico', 'correferencia lexica', 'metafora', 'metonimia'],
+        theoryFocus: [
+            'Aplicar habilidades de escritura como medio de expresion personal en nuevos generos.',
+            'Escribir textos explicativos con presentacion clara, organizacion tematica y recursos graficos.',
+            'Usar correferencia lexica compleja (metafora, metonimia).'
+        ],
+        procedures: [
+            'Investigar caracteristicas del genero antes de escribir.',
+            'Organizar contenido con jerarquia clara.',
+            'Aplicar recursos de correferencia para evitar repeticiones.'
+        ],
+        quizFocus: ['estructura del texto explicativo', 'organizacion tematica', 'recursos graficos', 'correferencia lexica']
+    },
+    {
+        id: 'cap9_escritura_persuasiva',
+        chapterNumber: 9,
+        title: 'Escritura: ensayos persuasivos y proceso (OA14-16, OA18)',
+        skill: 'Planificar, escribir, revisar y editar ensayos persuasivos',
+        keywords: ['ensayo', 'persuasivo', 'hipotesis', 'evidencia', 'conclusion', 'planificacion', 'revision', 'edicion', 'ortografia', 'puntuacion', 'estilo directo', 'estilo indirecto'],
+        theoryFocus: [
+            'Escribir ensayos persuasivos con hipotesis, evidencias y conclusiones.',
+            'Planificar, escribir, revisar y editar adecuando coherencia y correccion ortografica.',
+            'Usar estilo directo/indirecto y aplicar reglas ortograficas y de puntuacion.'
+        ],
+        procedures: [
+            'Planificar: hipotesis, evidencias, contraargumentos.',
+            'Escribir, revisar y editar en multiples pasadas.',
+            'Aplicar reglas ortograficas, de puntuacion y estilos directo/indirecto.'
+        ],
+        quizFocus: ['estructura del ensayo persuasivo', 'proceso de escritura', 'ortografia y puntuacion', 'estilo directo vs indirecto']
+    },
+    {
+        id: 'cap10_oralidad_investigacion',
+        chapterNumber: 10,
+        title: 'Comunicacion oral e investigacion (OA19-24)',
+        skill: 'Comprender y producir comunicacion oral; investigar con fuentes',
+        keywords: ['oralidad', 'exposicion', 'dialogo', 'discurso argumentativo', 'audiencia', 'paralinguistico', 'investigacion', 'fuente confiable', 'jerarquizacion'],
+        theoryFocus: [
+            'Comprender y evaluar textos orales/audiovisuales (postura, relevancia, contexto).',
+            'Resumir discursos argumentativos y dialogar constructivamente.',
+            'Realizar investigaciones delimitando temas, evaluando fuentes y jerarquizando informacion.'
+        ],
+        procedures: [
+            'Escuchar activamente: identificar tesis, argumentos, postura.',
+            'Preparar exposiciones con materiales visuales y progresion tematica.',
+            'Investigar con fuentes confiables y comunicar hallazgos.'
+        ],
+        quizFocus: ['evaluacion de textos orales', 'resumen de discursos argumentativos', 'recursos paralinguisticos', 'investigacion con fuentes confiables']
     }
 ];
 
