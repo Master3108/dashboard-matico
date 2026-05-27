@@ -1994,9 +1994,24 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                         <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-[#7C3AED] text-white uppercase">
                                                             {kind}
                                                         </span>
-                                                        <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-white text-gray-500 uppercase">
-                                                            {item.type}
-                                                        </span>
+                                                        {/* Badge claro segun notebook_kind cuando es cuaderno_ocr; sino fallback al type tecnico */}
+                                                        {item.type === 'cuaderno_ocr' && item.notebook_kind === 'correccion_error' ? (
+                                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-orange-100 text-orange-800 border border-orange-300 uppercase">
+                                                                🔄 Corrección de error
+                                                            </span>
+                                                        ) : item.type === 'cuaderno_ocr' && item.notebook_kind === 'teoria_ludica' ? (
+                                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase">
+                                                                📘 Copia teoría lúdica
+                                                            </span>
+                                                        ) : item.type === 'cuaderno_ocr' ? (
+                                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-blue-100 text-blue-800 border border-blue-300 uppercase">
+                                                                📷 Cuaderno OCR
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-white text-gray-500 uppercase">
+                                                                {item.type}
+                                                            </span>
+                                                        )}
                                                         {item.subject && (
                                                             <span className="text-[10px] font-bold text-gray-500">{item.subject}</span>
                                                         )}

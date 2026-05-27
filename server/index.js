@@ -9760,30 +9760,45 @@ app.get('/api/parent/student-history', async (req, res) => {
                 has_evidence: true,
                 activity_group_id: `evidence|${normalizeSubject(row.metadata?.subject || '')}|${dateOnly(row.created_at)}`
             })),
-            ...ocrRows.map(row => ({
-                id: `ocr-${row.id || row.submission_id || row.created_at}`,
-                source: 'notebook_ocr',
-                type: 'cuaderno_ocr',
-                title: row.topic || 'Cuaderno transcrito',
-                subject: row.subject || '',
-                date: row.created_at,
-                status: row.quiz_ready ? 'quiz listo' : 'revisar',
-                score: row.interpretation_score,
-                score_percent: row.interpretation_score,
-                detail: row.ocr_text || row.feedback || '',
-                ocr_text: row.ocr_text || '',
-                image_url: row.public_url && (!row.image_available_until || new Date(row.image_available_until).getTime() > Date.now()) ? row.public_url : '',
-                evidence_summary: `Cuaderno OCR${row.interpretation_score != null ? ` ${row.interpretation_score}%` : ''}`,
-                has_evidence: Boolean(row.public_url || row.ocr_text),
-                activity_group_id: `notebook|${normalizeSubject(row.subject || '')}|${dateOnly(row.created_at)}`,
-                metadata: {
-                    ...(row.metadata || {}),
-                    feedback: row.feedback || '',
-                    detected_concepts: row.detected_concepts || row.metadata?.detected_concepts || [],
-                    missing_concepts: row.missing_concepts || row.metadata?.missing_concepts || [],
-                    quiz_ready: Boolean(row.quiz_ready)
-                }
-            })),
+            ...ocrRows.map(row => {
+                // Detectar tipo de cuaderno por el topic (misma logica que isCorrectionFlow del backend)
+                const topicLower = String(row.topic || '').toLowerCase();
+                const isCorrection = /correcci[oó]n|error/i.test(topicLower);
+                const isTheoryCopy = /teoria|teor[ií]a l[uú]dica|copia teoria|copiar teoria/i.test(topicLower);
+                const notebookKind = isCorrection
+                    ? 'correccion_error'
+                    : (isTheoryCopy ? 'teoria_ludica' : 'evidencia_general');
+                const notebookKindLabel = notebookKind === 'correccion_error'
+                    ? 'Corrección de error'
+                    : (notebookKind === 'teoria_ludica' ? 'Copia teoría lúdica' : 'Evidencia');
+                return {
+                    id: `ocr-${row.id || row.submission_id || row.created_at}`,
+                    source: 'notebook_ocr',
+                    type: 'cuaderno_ocr',
+                    notebook_kind: notebookKind,
+                    notebook_kind_label: notebookKindLabel,
+                    title: row.topic || 'Cuaderno transcrito',
+                    subject: row.subject || '',
+                    date: row.created_at,
+                    status: row.quiz_ready ? 'quiz listo' : 'revisar',
+                    score: row.interpretation_score,
+                    score_percent: row.interpretation_score,
+                    detail: row.ocr_text || row.feedback || '',
+                    ocr_text: row.ocr_text || '',
+                    image_url: row.public_url && (!row.image_available_until || new Date(row.image_available_until).getTime() > Date.now()) ? row.public_url : '',
+                    evidence_summary: `${notebookKindLabel}${row.interpretation_score != null ? ` ${row.interpretation_score}%` : ''}`,
+                    has_evidence: Boolean(row.public_url || row.ocr_text),
+                    activity_group_id: `notebook|${normalizeSubject(row.subject || '')}|${dateOnly(row.created_at)}`,
+                    metadata: {
+                        ...(row.metadata || {}),
+                        notebook_kind: notebookKind,
+                        feedback: row.feedback || '',
+                        detected_concepts: row.detected_concepts || row.metadata?.detected_concepts || [],
+                        missing_concepts: row.missing_concepts || row.metadata?.missing_concepts || [],
+                        quiz_ready: Boolean(row.quiz_ready)
+                    }
+                };
+            }),
             ...reportRows.map(row => ({
                 id: `report-${row.report_id || row.created_at}`,
                 source: 'daily_report',
