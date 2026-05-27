@@ -9761,16 +9761,26 @@ app.get('/api/parent/student-history', async (req, res) => {
                 activity_group_id: `evidence|${normalizeSubject(row.metadata?.subject || '')}|${dateOnly(row.created_at)}`
             })),
             ...ocrRows.map(row => {
-                // Detectar tipo de cuaderno por el topic (misma logica que isCorrectionFlow del backend)
-                const topicLower = String(row.topic || '').toLowerCase();
+                // Detectar tipo de cuaderno por patrones del topic.
+                // Patrones observados en notebook_ocr_records reales:
+                //   "Corrección Error"           -> correccion_error
+                //   "Sesión N: <tema>"           -> teoria_ludica (flujo CuadernoMission)
+                //   "Teoría lúdica..."           -> teoria_ludica
+                //   cualquier otro topic libre   -> evidencia_general (foto suelta)
+                const topicRaw = String(row.topic || '').trim();
+                const topicLower = topicRaw.toLowerCase();
                 const isCorrection = /correcci[oó]n|error/i.test(topicLower);
-                const isTheoryCopy = /teoria|teor[ií]a l[uú]dica|copia teoria|copiar teoria/i.test(topicLower);
+                const isTheoryCopy = !isCorrection && (
+                    /^sesi[oó]n\s*\d+/i.test(topicRaw) ||      // "Sesión 6: ..."
+                    /teor[ií]a|teoria l[uú]dica/i.test(topicLower) ||  // menciones explicitas
+                    /copia(r)? teor[ií]a/i.test(topicLower)
+                );
                 const notebookKind = isCorrection
                     ? 'correccion_error'
                     : (isTheoryCopy ? 'teoria_ludica' : 'evidencia_general');
                 const notebookKindLabel = notebookKind === 'correccion_error'
                     ? 'Corrección de error'
-                    : (notebookKind === 'teoria_ludica' ? 'Copia teoría lúdica' : 'Evidencia');
+                    : (notebookKind === 'teoria_ludica' ? 'Copia teoría lúdica' : 'Foto de cuaderno');
                 return {
                     id: `ocr-${row.id || row.submission_id || row.created_at}`,
                     source: 'notebook_ocr',

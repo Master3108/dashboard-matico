@@ -2005,7 +2005,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                                                             </span>
                                                         ) : item.type === 'cuaderno_ocr' ? (
                                                             <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-blue-100 text-blue-800 border border-blue-300 uppercase">
-                                                                📷 Cuaderno OCR
+                                                                📷 Foto de cuaderno
                                                             </span>
                                                         ) : (
                                                             <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-white text-gray-500 uppercase">
