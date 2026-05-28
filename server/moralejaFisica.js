@@ -334,10 +334,98 @@ const scoreChapter = (chapter, normalizedTopic) => chapter.keywords.reduce((scor
     return normalizedTopic.includes(keyword) ? score + 1 : score;
 }, 0);
 
+// =====================================================================
+// CAPITULOS 3° MEDIO — Fisica Diferenciado HC (Decreto 193/2019, OA CN-FISI-3y4-OAC-01 a 06)
+// =====================================================================
+const CHAPTERS_3M = [
+    {
+        id: 'cap1_cambio_climatico_fisica',
+        chapterNumber: 1,
+        title: 'Cambio climatico global desde la fisica (OA1)',
+        skill: 'Analizar el cambio climatico con base en datos cientificos historicos y actuales',
+        keywords: ['cambio climatico', 'calentamiento global', 'efecto invernadero', 'gases efecto invernadero', 'co2', 'temperatura global', 'datos historicos', 'evidencia cientifica', 'atmosfera'],
+        theoryFocus: [
+            'analizar el fenomeno del cambio climatico global usando datos cientificos actuales e historicos',
+            'explicar el rol fisico del efecto invernadero y los gases de efecto invernadero',
+            'evaluar causas, consecuencias y posibles soluciones desde la perspectiva de la fisica'
+        ],
+        quizFocus: ['efecto invernadero', 'datos de cambio climatico', 'causas fisicas del calentamiento global', 'consecuencias y mitigacion']
+    },
+    {
+        id: 'cap2_origen_universo',
+        chapterNumber: 2,
+        title: 'Origen y evolucion del universo (OA2)',
+        skill: 'Comprender las explicaciones cientificas sobre el origen y evolucion del universo',
+        keywords: ['big bang', 'universo', 'cosmologia', 'expansion universo', 'radiacion de fondo', 'galaxias', 'estrellas', 'nebulosas', 'evolucion estelar', 'hubble'],
+        theoryFocus: [
+            'comprender la teoria del Big Bang y la expansion del universo basado en estudio historiografico',
+            'analizar el desarrollo historico del conocimiento sobre el origen del universo',
+            'explicar la formacion de estrellas, galaxias y elementos quimicos en el universo'
+        ],
+        quizFocus: ['teoria del Big Bang', 'expansion del universo', 'formacion de galaxias y estrellas', 'evidencias del origen del universo']
+    },
+    {
+        id: 'cap3_movimiento_fuerza_central',
+        chapterNumber: 3,
+        title: 'Movimiento bajo fuerza central (OA3)',
+        skill: 'Analizar el movimiento de cuerpos bajo la accion de una fuerza central',
+        keywords: ['fuerza central', 'movimiento circular', 'orbita', 'gravitacion', 'aceleracion centripeta', 'satelite', 'luna', 'planetas', 'kepler', 'newton gravitacion'],
+        theoryFocus: [
+            'aplicar la mecanica clasica al movimiento de cuerpos bajo fuerza central en situaciones cotidianas',
+            'analizar fenomenos naturales que involucran movimiento bajo fuerza central',
+            'relacionar fuerza gravitacional con movimiento orbital en contextos reales'
+        ],
+        quizFocus: ['fuerza centripeta y gravitacional', 'orbitas planetarias', 'leyes de Kepler', 'aplicaciones del movimiento circular']
+    },
+    {
+        id: 'cap4_fisica_moderna',
+        chapterNumber: 4,
+        title: 'Fisica moderna: relatividad y mecanica cuantica (OA4)',
+        skill: 'Evaluar la contribucion de la fisica moderna a la comprension de la realidad y la tecnologia',
+        keywords: ['fisica moderna', 'relatividad', 'cuantica', 'mecanica cuantica', 'einstein', 'planck', 'efecto fotoelectrico', 'dualidad onda-particula', 'laser', 'semiconductor', 'gps'],
+        theoryFocus: [
+            'evaluar la contribucion de la relatividad y la mecanica cuantica como teorias estructuradoras',
+            'analizar como la fisica moderna ha transformado la comprension de la realidad',
+            'relacionar fisica moderna con aplicaciones tecnologicas actuales (laser, semiconductores, GPS)'
+        ],
+        quizFocus: ['relatividad especial y general', 'mecanica cuantica basica', 'aplicaciones tecnologicas', 'impacto en la comprension del universo']
+    },
+    {
+        id: 'cap5_fluidos_electromagnetismo_termodinamica',
+        chapterNumber: 5,
+        title: 'Fluidos, electromagnetismo y termodinamica en sistemas naturales (OA5)',
+        skill: 'Aplicar fisica para entender oceanos, atmosfera y corteza terrestre',
+        keywords: ['fluidos', 'electromagnetismo', 'termodinamica', 'presion', 'campo electrico', 'campo magnetico', 'temperatura', 'calor', 'atmosfera', 'oceanos', 'corteza terrestre', 'suelo'],
+        theoryFocus: [
+            'aplicar mecanica de fluidos para explicar fenomenos en oceanos y atmosfera',
+            'usar electromagnetismo y termodinamica para comprender procesos en interior de la tierra y suelos',
+            'relacionar conocimientos fisicos integrados con procesos naturales complejos'
+        ],
+        quizFocus: ['mecanica de fluidos en sistemas naturales', 'electromagnetismo en la tierra', 'termodinamica y clima', 'aplicaciones fisicas al ambiente']
+    },
+    {
+        id: 'cap6_fisica_integrada',
+        chapterNumber: 6,
+        title: 'Fisica integrada con otras ciencias (OA6)',
+        skill: 'Valorar la integracion de la fisica con otras ciencias para resolver problemas contemporaneos',
+        keywords: ['interdisciplinariedad', 'biofisica', 'fisica quimica', 'etica cientifica', 'desafios contemporaneos', 'medioambiente', 'tecnologia', 'implicancias sociales'],
+        theoryFocus: [
+            'reconocer la integracion de la fisica con quimica, biologia y matematica para resolver problemas',
+            'analizar como la fisica contribuye a desafios contemporaneos (cambio climatico, energia, salud)',
+            'evaluar implicancias eticas, sociales y ambientales del desarrollo fisico-tecnologico'
+        ],
+        quizFocus: ['integracion interdisciplinaria', 'desafios contemporaneos y fisica', 'etica y tecnologia', 'impacto social de la fisica']
+    }
+];
+
+const fallbackChapter3M = CHAPTERS_3M[0];
+const CHAPTERS_BY_ID_3M = Object.fromEntries(CHAPTERS_3M.map((chapter) => [chapter.id, chapter]));
+
 const normalizeGradeKey = (value) => {
     const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
     if (!raw) return '1medio';
     if (raw === '2medio' || raw === '2m' || raw === '2°medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    if (raw === '3medio' || raw === '3m' || raw === '3°medio' || raw === 'tercero' || raw === 'terceromedio') return '3medio';
     return '1medio';
 };
 
@@ -347,9 +435,10 @@ export const resolveMoralejaFisicaContext = ({ topic = '', session = 0, phase = 
     const normalizedPhase = normalize(phase);
     const gradeKey = normalizeGradeKey(grade);
     const is2M = gradeKey === '2medio';
-    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
-    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
-    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
+    const is3M = gradeKey === '3medio';
+    const chaptersForGrade = is3M ? CHAPTERS_3M : is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is3M ? CHAPTERS_BY_ID_3M : is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is3M ? fallbackChapter3M : is2M ? fallbackChapter2M : fallbackChapter;
 
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'FISICA',

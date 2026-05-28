@@ -549,10 +549,128 @@ const CHAPTERS_BY_ID = Object.fromEntries(CHAPTERS.map((chapter) => [chapter.id,
 const fallbackChapter2M = CHAPTERS_2M[4];
 const CHAPTERS_BY_ID_2M = Object.fromEntries(CHAPTERS_2M.map((chapter) => [chapter.id, chapter]));
 
+// =====================================================================
+// CAPITULOS 3° MEDIO — Lengua y Literatura Plan Comun FG (OA FG-LELI-3M-OAC-01 a 09)
+// =====================================================================
+const CHAPTERS_3M = [
+    {
+        id: 'cap1_interpretacion_literaria',
+        chapterNumber: 1,
+        title: 'Interpretacion literaria y efecto estetico (OA1-2)',
+        skill: 'Formular interpretaciones literarias y evaluar el efecto estetico',
+        keywords: ['interpretacion', 'literaria', 'recursos literarios', 'narrador', 'personajes', 'topicos', 'figuras literarias', 'intertextualidad', 'efecto estetico', 'obra literaria', 'lectura'],
+        theoryFocus: [
+            'formular interpretaciones literarias considerando recursos del texto y relaciones intertextuales',
+            'evaluar el efecto estetico analizando como los recursos literarios construyen significado',
+            'reflexionar sobre como la obra dialoga con experiencias personales y problemas del ser humano'
+        ],
+        procedures: [
+            'Leer la obra considerando recursos literarios (narrador, personajes, figuras literarias).',
+            'Identificar relaciones intertextuales con otras obras y referentes culturales.',
+            'Formular interpretaciones fundamentadas en evidencias del texto.'
+        ],
+        quizFocus: ['recursos literarios', 'intertextualidad', 'efecto estetico', 'interpretacion fundamentada de obras']
+    },
+    {
+        id: 'cap2_discurso_no_literario',
+        chapterNumber: 2,
+        title: 'Analisis critico del discurso no literario (OA3)',
+        skill: 'Analizar criticamente textos no literarios en diversos formatos',
+        keywords: ['discurso no literario', 'audiovisual', 'oral', 'escrito', 'contexto sociocultural', 'estrategias argumentativas', 'veracidad', 'genero discursivo', 'critica'],
+        theoryFocus: [
+            'analizar criticamente discurso no literario oral, escrito y audiovisual considerando contexto sociocultural',
+            'evaluar la calidad de los argumentos, estrategias retorias y la veracidad de la informacion',
+            'distinguir hechos de opiniones y reconocer tecnicas de persuasion'
+        ],
+        procedures: [
+            'Identificar el tipo de discurso y su contexto sociocultural.',
+            'Analizar la estructura argumentativa y estrategias retorias.',
+            'Evaluar la veracidad de la informacion con criterios criticos.'
+        ],
+        quizFocus: ['analisis de textos no literarios', 'estrategias argumentativas', 'veracidad de la informacion', 'contexto sociocultural']
+    },
+    {
+        id: 'cap3_discurso_digital',
+        chapterNumber: 3,
+        title: 'Discurso digital y recursos linguisticos (OA4-5)',
+        skill: 'Analizar discurso digital y sus recursos linguisticos y no linguisticos',
+        keywords: ['discurso digital', 'post', 'tweet', 'meme', 'redes sociales', 'comunidades digitales', 'etica digital', 'acoso', 'desinformacion', 'recursos linguisticos', 'recursos no linguisticos'],
+        theoryFocus: [
+            'analizar discursos digitales en comunidades en linea considerando etica y responsabilidad',
+            'evaluar problemas eticos de la participacion digital: acoso, difusion de informacion, discriminacion',
+            'reconocer el impacto de recursos linguisticos y no linguisticos en la construccion del sentido'
+        ],
+        procedures: [
+            'Identificar el genero digital y sus caracteristicas especificas.',
+            'Analizar como el enunciador se posiciona y construye su rol.',
+            'Evaluar implicancias eticas del contenido y su difusion.'
+        ],
+        quizFocus: ['analisis de discurso digital', 'etica en redes sociales', 'recursos linguisticos digitales', 'posicionamiento del enunciador']
+    },
+    {
+        id: 'cap4_produccion_textos',
+        chapterNumber: 4,
+        title: 'Produccion de textos: proceso y recursos (OA6-7)',
+        skill: 'Producir textos coherentes adecuados al genero, proposito y audiencia',
+        keywords: ['produccion de textos', 'escritura', 'proceso escritura', 'coherencia', 'cohesion', 'genero discursivo', 'audiencia', 'recursos linguisticos', 'proposito comunicativo'],
+        theoryFocus: [
+            'aplicar un proceso de escritura: planificacion, escritura, revision y edicion con proposito claro',
+            'adecuar el texto al genero discursivo, tema y audiencia especifica',
+            'emplear recursos linguisticos y no linguisticos estrategicamente en la produccion textual'
+        ],
+        procedures: [
+            'Planificar el texto: definir proposito, genero y audiencia.',
+            'Escribir y revisar aplicando coherencia, cohesion y registro adecuado.',
+            'Editar considerando recursos linguisticos estrategicos.'
+        ],
+        quizFocus: ['proceso de escritura', 'adecuacion al genero y audiencia', 'coherencia y cohesion', 'recursos linguisticos en produccion']
+    },
+    {
+        id: 'cap5_dialogo_argumentativo',
+        chapterNumber: 5,
+        title: 'Dialogo argumentativo (OA8)',
+        skill: 'Argumentar con evidencias y evaluar razonamientos en el dialogo',
+        keywords: ['dialogo argumentativo', 'argumentacion', 'evidencia', 'razonamiento', 'contraargumento', 'falacias', 'debate', 'evaluacion argumentos', 'tesis', 'etica del dialogo'],
+        theoryFocus: [
+            'participar en dialogos argumentativos aportando evidencia y razonamiento fundamentado',
+            'evaluar criticamente los razonamientos de otros participantes identificando falacias',
+            'aplicar principios eticos del dialogo: respeto, escucha y construccion colaborativa'
+        ],
+        procedures: [
+            'Formular una tesis clara con evidencias que la respalden.',
+            'Evaluar los argumentos ajenos con criterios logicos y eticos.',
+            'Identificar falacias y contraargumentar con respeto.'
+        ],
+        quizFocus: ['estructura del argumento', 'evaluacion de razonamientos', 'falacias logicas', 'etica del dialogo argumentativo']
+    },
+    {
+        id: 'cap6_investigacion_academica',
+        chapterNumber: 6,
+        title: 'Investigacion academica y comunicacion etica (OA9)',
+        skill: 'Investigar con fuentes confiables y comunicar hallazgos con rigor etico',
+        keywords: ['investigacion', 'fuentes confiables', 'citas', 'citacion', 'plagio', 'etica comunicativa', 'referencias', 'bibliografia', 'confiabilidad', 'informe academico'],
+        theoryFocus: [
+            'planificar y realizar investigaciones usando fuentes confiables y diversas',
+            'citar correctamente y respetar la propiedad intelectual evitando el plagio',
+            'comunicar hallazgos con rigor, claridad y responsabilidad etica'
+        ],
+        procedures: [
+            'Seleccionar fuentes evaluando su confiabilidad y pertinencia.',
+            'Citar y referenciar segun normas (APA u otras) sin plagiar.',
+            'Comunicar hallazgos con precision y responsabilidad etica.'
+        ],
+        quizFocus: ['busqueda y evaluacion de fuentes', 'citacion y referencias bibliograficas', 'etica en la investigacion', 'comunicacion academica']
+    }
+];
+
+const fallbackChapter3M = CHAPTERS_3M[0];
+const CHAPTERS_BY_ID_3M = Object.fromEntries(CHAPTERS_3M.map((chapter) => [chapter.id, chapter]));
+
 const normalizeGradeKey = (value) => {
     const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
     if (!raw) return '1medio';
     if (raw === '2medio' || raw === '2m' || raw === '2°medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    if (raw === '3medio' || raw === '3m' || raw === '3°medio' || raw === 'tercero' || raw === 'terceromedio') return '3medio';
     return '1medio';
 };
 
@@ -568,9 +686,10 @@ export const resolveMoralejaContext = ({ topic = '', session = 0, phase = '', mo
     const normalizedPhase = normalize(phase);
     const gradeKey = normalizeGradeKey(grade);
     const is2M = gradeKey === '2medio';
-    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
-    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
-    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
+    const is3M = gradeKey === '3medio';
+    const chaptersForGrade = is3M ? CHAPTERS_3M : is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is3M ? CHAPTERS_BY_ID_3M : is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is3M ? fallbackChapter3M : is2M ? fallbackChapter2M : fallbackChapter;
 
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'LENGUAJE',

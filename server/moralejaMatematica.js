@@ -588,10 +588,71 @@ const CHAPTERS_2M = [
     }
 ];
 
+// =====================================================================
+// CAPITULOS 3° MEDIO — MINEDUC OFICIAL (Decreto 193/2019, Plan Comun FG)
+// OA1: Numeros complejos | OA2: Estadistica/Prob.cond | OA3: Exp/Log | OA4: Geometria circunferencia
+// =====================================================================
+const CHAPTERS_3M = [
+    {
+        id: 'cap1_numeros_complejos',
+        chapterNumber: 1,
+        title: 'Numeros complejos (OA1)',
+        skill: 'Operar con numeros complejos en forma binomica',
+        keywords: ['complejo', 'numeros complejos', 'forma binomica', 'parte real', 'parte imaginaria', 'modulo', 'conjugado', 'imaginario', 'i', 'raiz cuadrada negativa'],
+        theoryFocus: [
+            'comprender la forma binomica a+bi de los numeros complejos y su representacion',
+            'realizar operaciones de adicion, sustraccion, multiplicacion y division con complejos',
+            'aplicar representaciones pictorica, simbolica y tecnologica en operaciones con complejos'
+        ],
+        quizFocus: ['operaciones con numeros complejos', 'forma binomica', 'modulo y conjugado', 'aplicaciones de complejos']
+    },
+    {
+        id: 'cap2_funcion_exp_log',
+        chapterNumber: 2,
+        title: 'Funciones exponencial y logaritmica (OA3)',
+        skill: 'Aplicar modelos exponenciales y logaritmicos a fenomenos reales',
+        keywords: ['funcion exponencial', 'funcion logaritmica', 'crecimiento exponencial', 'decrecimiento', 'log', 'ln', 'base', 'grafico', 'modelos matematicos', 'inversa'],
+        theoryFocus: [
+            'aplicar funciones exponenciales para modelar crecimiento y decrecimiento en contextos reales',
+            'relacionar funcion exponencial con funcion logaritmica como funciones inversas',
+            'utilizar herramientas digitales para graficar y analizar estas funciones'
+        ],
+        quizFocus: ['graficos de funciones exponenciales', 'modelos de crecimiento y decrecimiento', 'propiedades logaritmicas', 'resolucion de ecuaciones exponenciales y logaritmicas']
+    },
+    {
+        id: 'cap3_geometria_circunferencia',
+        chapterNumber: 3,
+        title: 'Geometria euclidiana en la circunferencia (OA4)',
+        skill: 'Resolver problemas con relaciones metricas en la circunferencia',
+        keywords: ['circunferencia', 'angulo inscrito', 'angulo central', 'arco', 'cuerda', 'secante', 'tangente', 'potencia de punto', 'relaciones metricas', 'tales', 'geometria euclidiana'],
+        theoryFocus: [
+            'comprender relaciones metricas entre angulos, arcos, cuerdas y secantes en la circunferencia',
+            'aplicar el teorema de las cuerdas y de las secantes en problemas geometricos',
+            'usar metodos manuales y tecnologicos para resolver problemas de geometria euclidiana'
+        ],
+        quizFocus: ['relaciones angulos y arcos', 'teorema de cuerdas', 'secantes y tangentes', 'problemas de geometria euclidiana']
+    },
+    {
+        id: 'cap4_estadistica_probabilidad_cond',
+        chapterNumber: 4,
+        title: 'Estadistica y probabilidad condicional (OA2)',
+        skill: 'Tomar decisiones basadas en datos estadisticos y probabilidades condicionales',
+        keywords: ['estadistica', 'probabilidad condicional', 'dispersion', 'varianza', 'desviacion estandar', 'bayes', 'decision', 'incertidumbre', 'medidas de dispersion', 'laplace', 'distribucion'],
+        theoryFocus: [
+            'analizar datos estadisticos con medidas de dispersion (varianza, desviacion estandar)',
+            'calcular probabilidades condicionales y aplicar regla de Bayes en situaciones reales',
+            'tomar decisiones informadas en situaciones de incertidumbre usando estadistica y probabilidad'
+        ],
+        quizFocus: ['medidas de dispersion', 'probabilidad condicional', 'regla de Bayes', 'toma de decisiones con datos estadisticos']
+    }
+];
+
 const fallbackChapter = CHAPTERS[0];
 const CHAPTERS_BY_ID = Object.fromEntries(CHAPTERS.map((chapter) => [chapter.id, chapter]));
 const fallbackChapter2M = CHAPTERS_2M[0];
 const CHAPTERS_BY_ID_2M = Object.fromEntries(CHAPTERS_2M.map((chapter) => [chapter.id, chapter]));
+const fallbackChapter3M = CHAPTERS_3M[0];
+const CHAPTERS_BY_ID_3M = Object.fromEntries(CHAPTERS_3M.map((chapter) => [chapter.id, chapter]));
 
 const scoreChapter = (chapter, normalizedTopic) => chapter.keywords.reduce((score, keyword) => {
     return normalizedTopic.includes(keyword) ? score + 1 : score;
@@ -601,6 +662,7 @@ const normalizeGradeKey = (value) => {
     const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
     if (!raw) return '1medio';
     if (raw === '2medio' || raw === '2m' || raw === '2°medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    if (raw === '3medio' || raw === '3m' || raw === '3°medio' || raw === 'tercero' || raw === 'terceromedio') return '3medio';
     return '1medio';
 };
 
@@ -610,9 +672,10 @@ export const resolveMoralejaMatematicaContext = ({ topic = '', session = 0, phas
     const normalizedPhase = normalize(phase);
     const gradeKey = normalizeGradeKey(grade);
     const is2M = gradeKey === '2medio';
-    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
-    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
-    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
+    const is3M = gradeKey === '3medio';
+    const chaptersForGrade = is3M ? CHAPTERS_3M : is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is3M ? CHAPTERS_BY_ID_3M : is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is3M ? fallbackChapter3M : is2M ? fallbackChapter2M : fallbackChapter;
 
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'MATEMATICA',

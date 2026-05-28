@@ -446,10 +446,187 @@ const HISTORY_2M_SESSION_MAP = {
     })
 };
 
+// =====================================================================
+// MAPS 3\u00b0 MEDIO \u2014 MINEDUC OFICIAL (Decreto 193/2019)
+// Plan comun: Matematica, Lenguaje, Historia (Ed. Ciudadana)
+// Diferenciado HC: Fisica, Quimica, Biologia Celular y Molecular
+// =====================================================================
+
+const MATH_3M_SESSION_MAP = {
+    ...createRangeEntries(1, 10, {
+        chapterId: 'cap1_numeros_complejos',
+        focus: 'operar con numeros complejos en forma binomica: adicion, sustraccion, multiplicacion y division'
+    }),
+    ...createRangeEntries(11, 21, {
+        chapterId: 'cap2_funcion_exp_log',
+        focus: 'aplicar modelos de funciones exponenciales y logaritmicas a fenomenos de crecimiento y decrecimiento'
+    }),
+    ...createRangeEntries(22, 32, {
+        chapterId: 'cap3_geometria_circunferencia',
+        focus: 'resolver problemas de geometria euclidiana con relaciones metricas entre angulos, arcos, cuerdas y secantes'
+    }),
+    ...createRangeEntries(33, 46, {
+        chapterId: 'cap4_estadistica_probabilidad_cond',
+        focus: 'tomar decisiones en situaciones de incertidumbre usando medidas de dispersion y probabilidades condicionales'
+    })
+};
+
+const LANGUAGE_3M_SESSION_MAP = {
+    ...createRangeEntries(1, 10, {
+        chapterId: 'cap1_interpretacion_literaria',
+        focus: 'formular interpretaciones literarias considerando recursos, intertextualidad y efecto estetico'
+    }),
+    ...createRangeEntries(11, 16, {
+        chapterId: 'cap2_discurso_no_literario',
+        focus: 'analizar criticamente discurso no literario oral, escrito y audiovisual considerando contexto sociocultural'
+    }),
+    ...createRangeEntries(17, 22, {
+        chapterId: 'cap3_discurso_digital',
+        focus: 'analizar discurso digital en comunidades en linea evaluando etica, recursos linguisticos y posicionamiento'
+    }),
+    ...createRangeEntries(23, 30, {
+        chapterId: 'cap4_produccion_textos',
+        focus: 'producir textos coherentes aplicando proceso de escritura adecuado al genero, proposito y audiencia'
+    }),
+    ...createRangeEntries(31, 36, {
+        chapterId: 'cap5_dialogo_argumentativo',
+        focus: 'participar en dialogos argumentativos usando evidencias y evaluando criticamente razonamientos ajenos'
+    }),
+    ...createRangeEntries(37, 46, {
+        chapterId: 'cap6_investigacion_academica',
+        focus: 'investigar con fuentes confiables y comunicar hallazgos con rigor etico'
+    })
+};
+
+const PHYSICS_3M_SESSION_MAP = {
+    ...createRangeEntries(1, 7, {
+        chapterId: 'cap1_cambio_climatico_fisica',
+        focus: 'analizar el cambio climatico global con base en datos cientificos historicos y actuales desde la fisica'
+    }),
+    ...createRangeEntries(8, 14, {
+        chapterId: 'cap2_origen_universo',
+        focus: 'comprender explicaciones cientificas sobre el origen y evolucion del universo mediante estudio historiografico'
+    }),
+    ...createRangeEntries(15, 22, {
+        chapterId: 'cap3_movimiento_fuerza_central',
+        focus: 'analizar movimiento de cuerpos bajo fuerza central en situaciones cotidianas aplicando mecanica clasica'
+    }),
+    ...createRangeEntries(23, 30, {
+        chapterId: 'cap4_fisica_moderna',
+        focus: 'evaluar contribucion de relatividad y mecanica cuantica a la comprension de la realidad y tecnologia'
+    }),
+    ...createRangeEntries(31, 40, {
+        chapterId: 'cap5_fluidos_electromagnetismo_termodinamica',
+        focus: 'aplicar fluidos, electromagnetismo y termodinamica para comprender oceanos, atmosfera y corteza terrestre'
+    }),
+    ...createRangeEntries(41, 46, {
+        chapterId: 'cap6_fisica_integrada',
+        focus: 'valorar integracion de la fisica con otras ciencias para analizar desafios contemporaneos con perspectiva etica'
+    })
+};
+
+const CHEMISTRY_3M_SESSION_MAP = {
+    ...createRangeEntries(1, 6, {
+        chapterId: 'cap1_nanoquimica_polimeros',
+        focus: 'evaluar nanoquimica y polimeros: aplicaciones ambientales, medicas, agricolas e industriales'
+    }),
+    ...createRangeEntries(7, 13, {
+        chapterId: 'cap2_acido_base_redox_polimerizacion',
+        focus: 'explicar fenomenos acido-base, oxidacion-reduccion y polimerizacion en sistemas naturales y tecnologicos'
+    }),
+    ...createRangeEntries(14, 21, {
+        chapterId: 'cap3_termoquimica_cinetica',
+        focus: 'argumentar como termodinamica y cinetica quimica explican el funcionamiento de sistemas naturales'
+    }),
+    ...createRangeEntries(22, 29, {
+        chapterId: 'cap4_cambio_climatico_biogeoquimica',
+        focus: 'explicar efectos del cambio climatico sobre ciclos biogeoquimicos y equilibrios quimicos en oceanos y atmosfera'
+    }),
+    ...createRangeEntries(30, 36, {
+        chapterId: 'cap5_contaminantes_quimicos',
+        focus: 'analizar origen, rutas de exposicion y efectos de contaminantes quimicos en sistemas naturales'
+    }),
+    ...createRangeEntries(37, 41, {
+        chapterId: 'cap6_quimica_sostenibilidad',
+        focus: 'evaluar contribucion de la quimica verde en prevencion y mitigacion del cambio climatico'
+    }),
+    ...createRangeEntries(42, 46, {
+        chapterId: 'cap7_quimica_integrada',
+        focus: 'valorar integracion de la quimica con otras ciencias para analizar problemas actuales con implicancias eticas'
+    })
+};
+
+const BIOLOGY_3M_SESSION_MAP = {
+    ...createRangeEntries(1, 5, {
+        chapterId: 'cap1_historia_bio_molecular',
+        focus: 'investigar el desarrollo historico de la biologia celular y molecular y su relacion con quimica, fisica y matematica'
+    }),
+    ...createRangeEntries(6, 14, {
+        chapterId: 'cap2_estructura_celula_biomoleculas',
+        focus: 'explicar estructura y organizacion celular basada en biomoleculas, membranas y organelos'
+    }),
+    ...createRangeEntries(15, 22, {
+        chapterId: 'cap3_dogma_central',
+        focus: 'analizar el dogma central ADN\u2192ARN\u2192proteinas y el flujo de informacion genetica'
+    }),
+    ...createRangeEntries(23, 30, {
+        chapterId: 'cap4_regulacion_genica_cancer',
+        focus: 'describir regulacion genica, diferenciacion celular, envejecimiento y cancer'
+    }),
+    ...createRangeEntries(31, 36, {
+        chapterId: 'cap5_proteinas_enzimas_motilidad',
+        focus: 'explicar funciones de proteinas en actividad enzimatica, canales ionicos y motilidad celular'
+    }),
+    ...createRangeEntries(37, 40, {
+        chapterId: 'cap6_ciencia_chilena_cts',
+        focus: 'analizar desarrollo cientifico en biologia celular y molecular en Chile y la relacion ciencia-tecnologia-sociedad'
+    }),
+    ...createRangeEntries(41, 46, {
+        chapterId: 'cap7_biotecnologia_etica',
+        focus: 'analizar aplicaciones biotecnologicas (CRISPR, celulas madre, transgenicos) y evaluar implicancias eticas'
+    })
+};
+
+const HISTORY_3M_SESSION_MAP = {
+    ...createRangeEntries(1, 6, {
+        chapterId: 'cap1_democracia_ciudadania',
+        focus: 'identificar fundamentos de la democracia y ciudadania: libertades fundamentales y deberes del Estado'
+    }),
+    ...createRangeEntries(7, 11, {
+        chapterId: 'cap2_sistema_judicial',
+        focus: 'investigar mecanismos de acceso a la justicia y la estructura del poder judicial chileno'
+    }),
+    ...createRangeEntries(12, 16, {
+        chapterId: 'cap3_riesgos_democracia',
+        focus: 'reflexionar sobre riesgos para la democracia: apatia, desigualdad, corrupcion y narcotrafico'
+    }),
+    ...createRangeEntries(17, 22, {
+        chapterId: 'cap4_estado_mercado',
+        focus: 'evaluar relacion Estado-mercado: salarios, tributacion, comercio justo y sostenibilidad'
+    }),
+    ...createRangeEntries(23, 28, {
+        chapterId: 'cap5_derechos_humanos',
+        focus: 'promover reconocimiento y defensa de DDHH: universalidad, indivisibilidad y no discriminacion'
+    }),
+    ...createRangeEntries(29, 34, {
+        chapterId: 'cap6_participacion_bien_comun',
+        focus: 'reflexionar sobre participacion ciudadana y bien comun desde perspectivas republicana, liberal y comunitaria'
+    }),
+    ...createRangeEntries(35, 41, {
+        chapterId: 'cap7_territorio_justicia_social',
+        focus: 'distinguir relaciones politicas, economicas y socioculturales del territorio y proponer justicia social y ambiental'
+    }),
+    ...createRangeEntries(42, 46, {
+        chapterId: 'cap8_democracia_escolar',
+        focus: 'participar en ejercicios democraticos escolares reconociendo la necesidad de organizar la vida comunitaria'
+    })
+};
+
 const normalizeGrade = (value) => {
     const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
     if (!raw) return '1medio';
     if (raw === '2medio' || raw === '2m' || raw === '2\u00b0medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    if (raw === '3medio' || raw === '3m' || raw === '3\u00b0medio' || raw === 'tercero' || raw === 'terceromedio') return '3medio';
     return '1medio';
 };
 
@@ -469,6 +646,14 @@ const SESSION_MAPS_BY_GRADE = {
         QUIMICA: CHEMISTRY_2M_SESSION_MAP,
         FISICA: PHYSICS_2M_SESSION_MAP,
         HISTORIA: HISTORY_2M_SESSION_MAP
+    },
+    '3medio': {
+        LENGUAJE: LANGUAGE_3M_SESSION_MAP,
+        MATEMATICA: MATH_3M_SESSION_MAP,
+        BIOLOGIA: BIOLOGY_3M_SESSION_MAP,
+        QUIMICA: CHEMISTRY_3M_SESSION_MAP,
+        FISICA: PHYSICS_3M_SESSION_MAP,
+        HISTORIA: HISTORY_3M_SESSION_MAP
     }
 };
 
@@ -522,5 +707,11 @@ export {
     CHEMISTRY_2M_SESSION_MAP,
     PHYSICS_2M_SESSION_MAP,
     HISTORY_2M_SESSION_MAP,
+    LANGUAGE_3M_SESSION_MAP,
+    MATH_3M_SESSION_MAP,
+    BIOLOGY_3M_SESSION_MAP,
+    CHEMISTRY_3M_SESSION_MAP,
+    PHYSICS_3M_SESSION_MAP,
+    HISTORY_3M_SESSION_MAP,
     normalizeGrade
 };

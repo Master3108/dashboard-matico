@@ -12,6 +12,7 @@ const normalizeGradeKey = (value) => {
     const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
     if (!raw) return '1medio';
     if (raw === '2medio' || raw === '2m' || raw === '2°medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    if (raw === '3medio' || raw === '3m' || raw === '3°medio' || raw === 'tercero' || raw === 'terceromedio') return '3medio';
     return '1medio';
 };
 
@@ -343,6 +344,119 @@ const CHAPTERS_BY_ID_2M = Object.fromEntries(CHAPTERS_2M.map((chapter) => [chapt
 const fallbackChapter = CHAPTERS[0];
 const fallbackChapter2M = CHAPTERS_2M[0];
 
+// =====================================================================
+// CAPITULOS 3° MEDIO — Educacion Ciudadana Plan Comun (OA FG-ECIU-3M-OAC-01 a 08)
+// =====================================================================
+const CHAPTERS_3M = [
+    {
+        id: 'cap1_democracia_ciudadania',
+        chapterNumber: 1,
+        title: 'Democracia, ciudadania y libertades fundamentales (OA1)',
+        skill: 'Identificar fundamentos de la democracia y libertades ciudadanas',
+        keywords: ['democracia', 'ciudadania', 'libertades', 'derechos', 'estado', 'constitucion', 'sufragio', 'soberania', 'representacion', 'division de poderes', 'contrato social'],
+        theoryFocus: [
+            'identificar los fundamentos de la democracia y los tipos de ciudadania',
+            'reconocer las libertades fundamentales y sus implicancias para los deberes del Estado',
+            'analizar el contrato social y las relaciones entre ciudadanos y Estado democratico'
+        ],
+        quizFocus: ['fundamentos de la democracia', 'libertades fundamentales', 'deberes del Estado', 'derechos ciudadanos']
+    },
+    {
+        id: 'cap2_sistema_judicial',
+        chapterNumber: 2,
+        title: 'Sistema judicial y acceso a la justicia (OA2)',
+        skill: 'Investigar mecanismos de acceso a la justicia y el sistema judicial chileno',
+        keywords: ['sistema judicial', 'poder judicial', 'tribunal', 'acceso justicia', 'contraloria', 'recurso de amparo', 'recurso de proteccion', 'garantias procesales', 'ministerio publico'],
+        theoryFocus: [
+            'investigar mecanismos de acceso a la justicia en Chile a traves de casos de interes publico',
+            'comprender la estructura del poder judicial y sus funciones en el Estado de derecho',
+            'analizar garantias procesales y mecanismos de proteccion de derechos en Chile'
+        ],
+        quizFocus: ['estructura del poder judicial', 'recursos de proteccion y amparo', 'acceso a la justicia', 'garantias procesales']
+    },
+    {
+        id: 'cap3_riesgos_democracia',
+        chapterNumber: 3,
+        title: 'Riesgos para la democracia (OA3)',
+        skill: 'Reflexionar sobre amenazas para la democracia en Chile y el mundo',
+        keywords: ['apatia politica', 'populismo', 'corrupcion', 'narcotrafico', 'violencia', 'desigualdad', 'polarizacion', 'desinformacion', 'autoritarismo', 'riesgos democracia', 'fake news'],
+        theoryFocus: [
+            'reflexionar sobre los riesgos para la democracia en Chile y el mundo contemporaneo',
+            'analizar fenomenos como la apatia politica, la corrupcion y la polarizacion social',
+            'evaluar el rol de la ciudadania activa para sostener la democracia'
+        ],
+        quizFocus: ['riesgos para la democracia', 'apatia politica', 'corrupcion y transparencia', 'ciudadania activa']
+    },
+    {
+        id: 'cap4_estado_mercado',
+        chapterNumber: 4,
+        title: 'Estado, mercado y justicia economica (OA4)',
+        skill: 'Evaluar la relacion Estado-mercado considerando justicia economica y sostenibilidad',
+        keywords: ['estado', 'mercado', 'salario', 'tributacion', 'impuesto', 'comercio justo', 'desigualdad economica', 'productividad', 'sostenibilidad', 'riqueza', 'pobreza', 'gini'],
+        theoryFocus: [
+            'evaluar la relacion entre Estado y mercado en el contexto chileno y global',
+            'analizar temas de salarios justos, productividad, tributacion y comercio justo',
+            'considerar la sostenibilidad y distribucion de la riqueza como criterios de justicia economica'
+        ],
+        quizFocus: ['relacion Estado-mercado', 'politicas tributarias', 'desigualdad economica', 'comercio justo y sostenibilidad']
+    },
+    {
+        id: 'cap5_derechos_humanos',
+        chapterNumber: 5,
+        title: 'Derechos humanos: universalidad e indivisibilidad (OA5)',
+        skill: 'Promover el reconocimiento y defensa de los derechos humanos',
+        keywords: ['derechos humanos', 'ddhh', 'universalidad', 'indivisibilidad', 'no discriminacion', 'violaciones ddhh', 'ddhh chile', 'convenios internacionales', 'onu', 'dignidad humana'],
+        theoryFocus: [
+            'promover el reconocimiento y defensa de los derechos humanos en la vida cotidiana',
+            'comprender la universalidad, indivisibilidad y principio de no discriminacion de los DDHH',
+            'analizar el sistema internacional de proteccion de derechos humanos'
+        ],
+        quizFocus: ['Declaracion Universal DDHH', 'principios de universalidad e indivisibilidad', 'no discriminacion', 'sistema internacional de proteccion']
+    },
+    {
+        id: 'cap6_participacion_bien_comun',
+        chapterNumber: 6,
+        title: 'Participacion ciudadana y bien comun (OA6)',
+        skill: 'Reflexionar sobre formas de participacion y su contribucion al bien comun',
+        keywords: ['participacion ciudadana', 'bien comun', 'republicanismo', 'liberalismo', 'comunitarismo', 'voto', 'movimientos sociales', 'sociedad civil', 'voluntariado', 'plebiscito'],
+        theoryFocus: [
+            'reflexionar sobre distintas formas de participacion ciudadana y su impacto en el bien comun',
+            'analizar perspectivas filosoficas del bien comun: republicanismo, liberalismo y comunitarismo',
+            'evaluar mecanismos formales e informales de participacion en democracia'
+        ],
+        quizFocus: ['formas de participacion ciudadana', 'republicanismo vs liberalismo', 'bien comun', 'movimientos sociales y participacion']
+    },
+    {
+        id: 'cap7_territorio_justicia_social',
+        chapterNumber: 7,
+        title: 'Territorio, justicia social y ambiental (OA7)',
+        skill: 'Distinguir relaciones politicas, economicas y socioculturales del territorio',
+        keywords: ['territorio', 'justicia social', 'justicia ambiental', 'geopolitica', 'recursos naturales', 'pueblos indigenas', 'descentralizacion', 'escala local regional global', 'ordenamiento territorial'],
+        theoryFocus: [
+            'distinguir relaciones politicas, economicas y socioculturales que configuran el territorio a distintas escalas',
+            'analizar desigualdades territoriales y proponer alternativas de justicia social y ambiental',
+            'relacionar problemas territoriales con la distribucion de recursos y el ejercicio del poder'
+        ],
+        quizFocus: ['relaciones territoriales', 'justicia social y ambiental', 'desigualdades territoriales', 'propuestas de justicia territorial']
+    },
+    {
+        id: 'cap8_democracia_escolar',
+        chapterNumber: 8,
+        title: 'Democracia escolar y convivencia comunitaria (OA8)',
+        skill: 'Participar en ejercicios democraticos escolares y construir convivencia sana',
+        keywords: ['democracia escolar', 'consejo de curso', 'centro de alumnos', 'convivencia', 'derechos y deberes', 'resolucion de conflictos', 'libertades fundamentales', 'comunidad escolar'],
+        theoryFocus: [
+            'participar activamente en ejercicios democraticos escolares reconociendo su valor civico',
+            'reconocer la importancia de organizar la vida comunitaria para una sana convivencia',
+            'aplicar principios democraticos en la resolucion de conflictos y la toma de decisiones'
+        ],
+        quizFocus: ['democracia escolar', 'convivencia y resolucion de conflictos', 'derechos y deberes estudiantiles', 'participacion comunitaria']
+    }
+];
+
+const CHAPTERS_BY_ID_3M = Object.fromEntries(CHAPTERS_3M.map((chapter) => [chapter.id, chapter]));
+const fallbackChapter3M = CHAPTERS_3M[0];
+
 const scoreChapter = (chapter, normalizedTopic) => chapter.keywords.reduce((score, keyword) => {
     return normalizedTopic.includes(keyword) ? score + 1 : score;
 }, 0);
@@ -353,9 +467,10 @@ export const resolveMoralejaHistoriaContext = ({ topic = '', session = 0, phase 
     const normalizedPhase = normalize(phase);
     const gradeKey = normalizeGradeKey(grade);
     const is2M = gradeKey === '2medio';
-    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
-    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
-    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
+    const is3M = gradeKey === '3medio';
+    const chaptersForGrade = is3M ? CHAPTERS_3M : is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is3M ? CHAPTERS_BY_ID_3M : is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is3M ? fallbackChapter3M : is2M ? fallbackChapter2M : fallbackChapter;
 
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'HISTORIA',

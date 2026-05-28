@@ -332,10 +332,111 @@ const CHAPTERS_BY_ID = Object.fromEntries(CHAPTERS.map((chapter) => [chapter.id,
 const fallbackChapter2M = CHAPTERS_2M[0];
 const CHAPTERS_BY_ID_2M = Object.fromEntries(CHAPTERS_2M.map((chapter) => [chapter.id, chapter]));
 
+// =====================================================================
+// CAPITULOS 3° MEDIO — Quimica Diferenciado HC (OA CN-QUIM-3y4-OAC-01 a 07)
+// =====================================================================
+const CHAPTERS_3M = [
+    {
+        id: 'cap1_nanoquimica_polimeros',
+        chapterNumber: 1,
+        title: 'Nanoquimica y polimeros (OA1)',
+        skill: 'Evaluar nanoquimica y polimeros en aplicaciones ambientales, medicas e industriales',
+        keywords: ['nanoquimica', 'nanoparticulas', 'nanomateriales', 'polimero', 'polimerizacion', 'plastico', 'biopolimero', 'nanomedicina', 'quimica polimeros'],
+        theoryFocus: [
+            'evaluar el desarrollo cientifico y tecnologico de la nanoquimica y quimica de polimeros',
+            'analizar aplicaciones en campos ambiental, medico, agricola e industrial',
+            'considerar consecuencias sociales, eticas y ambientales de estos avances'
+        ],
+        quizFocus: ['nanoquimica y nanoparticulas', 'polimeros naturales y sinteticos', 'aplicaciones ambientales y medicas', 'implicancias eticas']
+    },
+    {
+        id: 'cap2_acido_base_redox_polimerizacion',
+        chapterNumber: 2,
+        title: 'Acido-base, redox y polimerizacion (OA2)',
+        skill: 'Explicar reacciones acido-base, redox y polimerizacion en sistemas naturales',
+        keywords: ['acido', 'base', 'ph', 'redox', 'oxidacion', 'reduccion', 'agente oxidante', 'agente reductor', 'polimerizacion', 'despolimerizacion', 'neutralizacion', 'bronsted', 'lewis'],
+        theoryFocus: [
+            'explicar fenomenos acido-base mediante teorias de Bronsted-Lowry y Lewis con investigaciones',
+            'analizar reacciones de oxidacion-reduccion (redox) en sistemas naturales y tecnologicos',
+            'describir reacciones de polimerizacion y despolimerizacion con ejemplos cotidianos'
+        ],
+        quizFocus: ['teoria acido-base', 'calculo de pH', 'reacciones redox', 'polimerizacion y despolimerizacion']
+    },
+    {
+        id: 'cap3_termoquimica_cinetica',
+        chapterNumber: 3,
+        title: 'Termoquimica y cinetica quimica (OA3)',
+        skill: 'Argumentar como termodinamica y cinetica explican sistemas naturales',
+        keywords: ['termoquimica', 'cinetica', 'entalpia', 'exotermico', 'endotermico', 'velocidad reaccion', 'catalizador', 'energia activacion', 'equilibrio', 'hess'],
+        theoryFocus: [
+            'argumentar como la termodinamica quimica explica el funcionamiento de sistemas naturales',
+            'analizar la cinetica quimica: velocidad de reaccion, factores influyentes y catalizadores',
+            'relacionar cambios entalpicos con procesos biologicos, geologicos y climaticos'
+        ],
+        quizFocus: ['calculo de entalpia y ley de Hess', 'velocidad de reaccion', 'catalizadores y energia de activacion', 'aplicaciones en sistemas naturales']
+    },
+    {
+        id: 'cap4_cambio_climatico_biogeoquimica',
+        chapterNumber: 4,
+        title: 'Cambio climatico y ciclos biogeoquimicos (OA4)',
+        skill: 'Explicar efectos del cambio climatico sobre ciclos biogeoquimicos y equilibrios quimicos',
+        keywords: ['cambio climatico', 'ciclo biogeoquimico', 'ciclo del carbono', 'ciclo del nitrogeno', 'acidificacion oceanos', 'equilibrio quimico', 'co2', 'metano', 'efecto invernadero'],
+        theoryFocus: [
+            'explicar efectos del cambio climatico en ciclos biogeoquimicos del carbono, nitrogeno y agua',
+            'analizar la acidificacion de los oceanos como consecuencia del aumento de CO2 atmosferico',
+            'evaluar consecuencias para el bienestar humano y el desarrollo sostenible'
+        ],
+        quizFocus: ['ciclos biogeoquimicos', 'acidificacion de oceanos', 'equilibrio quimico y cambio climatico', 'consecuencias ambientales y sociales']
+    },
+    {
+        id: 'cap5_contaminantes_quimicos',
+        chapterNumber: 5,
+        title: 'Contaminantes quimicos en sistemas naturales (OA5)',
+        skill: 'Analizar origen, exposicion y efectos de contaminantes quimicos',
+        keywords: ['contaminante', 'contaminacion', 'toxicologia', 'plaguicida', 'metales pesados', 'petroleo', 'derrame', 'persistente', 'bioacumulacion', 'biomagnificacion', 'pops'],
+        theoryFocus: [
+            'analizar origen, rutas de exposicion y efectos de contaminantes quimicos en sistemas naturales',
+            'evaluar propiedades fisicoquimicas de contaminantes: persistencia, bioacumulacion y toxicidad',
+            'distinguir contaminantes organicos persistentes, metales pesados y plaguicidas'
+        ],
+        quizFocus: ['tipos de contaminantes quimicos', 'bioacumulacion y biomagnificacion', 'rutas de exposicion', 'efectos en servicios ecosistemicos']
+    },
+    {
+        id: 'cap6_quimica_sostenibilidad',
+        chapterNumber: 6,
+        title: 'Quimica verde y sostenibilidad (OA6)',
+        skill: 'Evaluar la contribucion de la quimica en la prevencion y mitigacion del cambio climatico',
+        keywords: ['quimica verde', 'sostenibilidad', 'energia renovable', 'captura carbono', 'biodegradable', 'economia circular', 'eficiencia energetica', 'celdas combustible'],
+        theoryFocus: [
+            'evaluar la contribucion de la quimica en prevencion y mitigacion de efectos del cambio climatico',
+            'analizar principios de quimica verde: reducir, reutilizar, reciclar y diseno sostenible',
+            'relacionar quimica con soluciones para energias renovables y economia circular'
+        ],
+        quizFocus: ['principios de quimica verde', 'energia renovable y quimica', 'captura de carbono', 'aplicaciones sostenibles']
+    },
+    {
+        id: 'cap7_quimica_integrada',
+        chapterNumber: 7,
+        title: 'Quimica integrada con otras ciencias (OA7)',
+        skill: 'Valorar la integracion de la quimica con otras ciencias para analizar problemas actuales',
+        keywords: ['interdisciplinariedad', 'bioquimica', 'quimica ambiental', 'quimica clinica', 'etica', 'sociedad', 'innovacion', 'investigacion quimica'],
+        theoryFocus: [
+            'valorar la integracion de la quimica con biologia, fisica y matematica',
+            'analizar como la quimica contribuye a resolver problemas contemporaneos de salud y ambiente',
+            'considerar implicancias eticas, sociales y ambientales de la investigacion quimica'
+        ],
+        quizFocus: ['integracion quimica con otras ciencias', 'quimica en salud y ambiente', 'etica en ciencia', 'desafios contemporaneos']
+    }
+];
+
+const fallbackChapter3M = CHAPTERS_3M[0];
+const CHAPTERS_BY_ID_3M = Object.fromEntries(CHAPTERS_3M.map((chapter) => [chapter.id, chapter]));
+
 const normalizeGradeKey = (value) => {
     const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
     if (!raw) return '1medio';
     if (raw === '2medio' || raw === '2m' || raw === '2°medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    if (raw === '3medio' || raw === '3m' || raw === '3°medio' || raw === 'tercero' || raw === 'terceromedio') return '3medio';
     return '1medio';
 };
 
@@ -349,9 +450,10 @@ export const resolveMoralejaQuimicaContext = ({ topic = '', session = 0, phase =
     const normalizedPhase = normalize(phase);
     const gradeKey = normalizeGradeKey(grade);
     const is2M = gradeKey === '2medio';
-    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
-    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
-    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
+    const is3M = gradeKey === '3medio';
+    const chaptersForGrade = is3M ? CHAPTERS_3M : is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is3M ? CHAPTERS_BY_ID_3M : is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is3M ? fallbackChapter3M : is2M ? fallbackChapter2M : fallbackChapter;
 
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'QUIMICA',

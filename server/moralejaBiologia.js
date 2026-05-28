@@ -519,10 +519,111 @@ const CHAPTERS_BY_ID = Object.fromEntries(CHAPTERS.map((chapter) => [chapter.id,
 const fallbackChapter2M = CHAPTERS_2M[0];
 const CHAPTERS_BY_ID_2M = Object.fromEntries(CHAPTERS_2M.map((chapter) => [chapter.id, chapter]));
 
+// =====================================================================
+// CAPITULOS 3° MEDIO — Biologia Celular y Molecular Diferenciado HC (OA CN-BCMO-3y4-OAC-01 a 07)
+// =====================================================================
+const CHAPTERS_3M = [
+    {
+        id: 'cap1_historia_bio_molecular',
+        chapterNumber: 1,
+        title: 'Historia de la biologia celular y molecular (OA1)',
+        skill: 'Investigar el desarrollo historico de la biologia celular y molecular',
+        keywords: ['biologia celular', 'biologia molecular', 'historia ciencia', 'microscopio', 'watson', 'crick', 'franklin', 'teoria celular', 'robert hooke', 'van leeuwenhoek'],
+        theoryFocus: [
+            'investigar el desarrollo historico del conocimiento en biologia celular y molecular',
+            'comprender la relacion de la biologia molecular con quimica, fisica y matematica',
+            'valorar los aportes de cientificos clave en el descubrimiento del ADN y la estructura celular'
+        ],
+        quizFocus: ['historia de la biologia molecular', 'descubrimiento de la estructura del ADN', 'teoria celular', 'relacion interdisciplinaria']
+    },
+    {
+        id: 'cap2_estructura_celula_biomoleculas',
+        chapterNumber: 2,
+        title: 'Estructura y funcion celular: biomoleculas y organelos (OA2)',
+        skill: 'Explicar la estructura celular basada en biomoleculas, membranas y organelos',
+        keywords: ['celula', 'biomolecula', 'organelo', 'membrana celular', 'nucleo', 'mitocondria', 'ribosoma', 'reticulo endoplasmatico', 'proteina', 'lipido', 'carbohidrato', 'procariota', 'eucariota', 'metabolismo'],
+        theoryFocus: [
+            'explicar la estructura y organizacion celular basada en biomoleculas, membranas y organelos',
+            'describir los procesos de metabolismo, motilidad y comunicacion celular',
+            'relacionar estructura y funcion de cada organelo con la continuidad y evolucion de la vida'
+        ],
+        quizFocus: ['organelos y sus funciones', 'biomoleculas: proteinas, lipidos, carbohidratos y ADN', 'membrana celular', 'celula procariota vs eucariota']
+    },
+    {
+        id: 'cap3_dogma_central',
+        chapterNumber: 3,
+        title: 'Dogma central de la biologia molecular: ADN → ARN → proteinas (OA3)',
+        skill: 'Analizar el dogma central y el flujo de informacion genetica',
+        keywords: ['dogma central', 'adn', 'arn', 'proteina', 'replicacion', 'transcripcion', 'traduccion', 'codon', 'aminoacido', 'mrna', 'trna', 'rrna', 'ribosoma', 'gen', 'informacion genetica'],
+        theoryFocus: [
+            'explicar el dogma central: replicacion del ADN, transcripcion al ARN y traduccion a proteinas',
+            'describir el flujo de informacion genetica desde el ADN al ARN y a las proteinas',
+            'analizar criticamente el significado biologico del dogma central de la biologia molecular'
+        ],
+        quizFocus: ['replicacion del ADN', 'transcripcion y tipos de ARN', 'traduccion y sintesis proteica', 'codigo genetico']
+    },
+    {
+        id: 'cap4_regulacion_genica_cancer',
+        chapterNumber: 4,
+        title: 'Regulacion genica, diferenciacion celular y cancer (OA4)',
+        skill: 'Describir mecanismos de regulacion genica y su relacion con enfermedades',
+        keywords: ['regulacion genica', 'diferenciacion celular', 'cancer', 'oncogen', 'apoptosis', 'proliferacion celular', 'estimulo ambiental', 'envejecimiento', 'tumor', 'mutacion', 'epigenetica'],
+        theoryFocus: [
+            'describir mecanismos de regulacion genica y su relacion con diferenciacion y proliferacion celular',
+            'explicar como estimulos ambientales influyen en la expresion genica',
+            'relacionar alteraciones en la regulacion genica con el cancer y el envejecimiento'
+        ],
+        quizFocus: ['regulacion genica', 'diferenciacion celular', 'mecanismos del cancer', 'apoptosis y proliferacion']
+    },
+    {
+        id: 'cap5_proteinas_enzimas_motilidad',
+        chapterNumber: 5,
+        title: 'Proteinas, enzimas y motilidad celular (OA5)',
+        skill: 'Explicar funciones de proteinas en procesos celulares clave',
+        keywords: ['proteina', 'enzima', 'catalizador', 'sustrato', 'motilidad', 'contraccion muscular', 'canal ionico', 'receptor', 'actina', 'miosina', 'conformacion proteica'],
+        theoryFocus: [
+            'explicar la actividad enzimatica y las relaciones entre estructuras y funciones de proteinas',
+            'describir el flujo de iones a traves de membranas a traves de canales proteicos',
+            'relacionar cambios conformacionales de proteinas con motilidad celular y contraccion muscular'
+        ],
+        quizFocus: ['estructura y funcion de enzimas', 'canales ionicos y membranas', 'motilidad celular', 'contraccion muscular a nivel molecular']
+    },
+    {
+        id: 'cap6_ciencia_chilena_cts',
+        chapterNumber: 6,
+        title: 'Ciencia chilena y relacion ciencia-tecnologia-sociedad (OA6)',
+        skill: 'Analizar el desarrollo cientifico en biologia en Chile y su impacto social',
+        keywords: ['ciencia chile', 'investigacion chilena', 'innovacion', 'tecnologia sociedad', 'cts', 'politica cientifica', 'genomica', 'neurociencia', 'desarrollo sostenible', 'fondecyt'],
+        theoryFocus: [
+            'analizar el desarrollo del conocimiento de biologia celular y molecular en Chile y el mundo',
+            'reconocer distintas lineas de investigacion biologica activas en Chile',
+            'evaluar la relacion entre ciencia, tecnologia y sociedad en el contexto biologico actual'
+        ],
+        quizFocus: ['investigacion biologica en Chile', 'relacion ciencia-tecnologia-sociedad', 'politica cientifica', 'lineas de investigacion biologica']
+    },
+    {
+        id: 'cap7_biotecnologia_etica',
+        chapterNumber: 7,
+        title: 'Biotecnologia: CRISPR, celulas madre y transgenicos (OA7)',
+        skill: 'Analizar aplicaciones biotecnologicas y evaluar sus implicancias eticas',
+        keywords: ['biotecnologia', 'crispr', 'edicion genetica', 'celulas madre', 'transgenico', 'ogm', 'clonacion', 'terapia genica', 'etica', 'bioetica', 'pcr', 'cancer terapia'],
+        theoryFocus: [
+            'analizar aplicaciones biotecnologicas: tratamientos para el cancer, celulas madre y organismos transgenicos',
+            'evaluar el potencial y los riesgos de la edicion genomica con CRISPR',
+            'discutir implicancias eticas, sociales y legales de las biotecnologias modernas'
+        ],
+        quizFocus: ['CRISPR y edicion genomica', 'celulas madre y diferenciacion', 'organismos transgenicos y OGM', 'etica en biotecnologia']
+    }
+];
+
+const fallbackChapter3M = CHAPTERS_3M[0];
+const CHAPTERS_BY_ID_3M = Object.fromEntries(CHAPTERS_3M.map((chapter) => [chapter.id, chapter]));
+
 const normalizeGradeKey = (value) => {
     const raw = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
     if (!raw) return '1medio';
     if (raw === '2medio' || raw === '2m' || raw === '2°medio' || raw === 'segundo' || raw === 'segundomedio') return '2medio';
+    if (raw === '3medio' || raw === '3m' || raw === '3°medio' || raw === 'tercero' || raw === 'terceromedio') return '3medio';
     return '1medio';
 };
 
@@ -536,9 +637,10 @@ export const resolveMoralejaBiologiaContext = ({ topic = '', session = 0, phase 
     const normalizedPhase = normalize(phase);
     const gradeKey = normalizeGradeKey(grade);
     const is2M = gradeKey === '2medio';
-    const chaptersForGrade = is2M ? CHAPTERS_2M : CHAPTERS;
-    const chaptersByIdForGrade = is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
-    const fallbackForGrade = is2M ? fallbackChapter2M : fallbackChapter;
+    const is3M = gradeKey === '3medio';
+    const chaptersForGrade = is3M ? CHAPTERS_3M : is2M ? CHAPTERS_2M : CHAPTERS;
+    const chaptersByIdForGrade = is3M ? CHAPTERS_BY_ID_3M : is2M ? CHAPTERS_BY_ID_2M : CHAPTERS_BY_ID;
+    const fallbackForGrade = is3M ? fallbackChapter3M : is2M ? fallbackChapter2M : fallbackChapter;
 
     const sessionReference = resolveMoralejaSessionReference({
         subject: 'BIOLOGIA',
