@@ -16,6 +16,8 @@ import EvidenceIntake, { DEFAULT_MAX_EVIDENCE } from './components/EvidenceIntak
 import VoiceAgentChat from './components/VoiceAgentChat';
 import JarvisAssistant from './components/JarvisAssistant';
 import PhoneCaptureNotifier from './components/PhoneCaptureNotifier';
+import AlarmScreen from './components/AlarmScreen';
+import { getAlarmService } from './services/AlarmService';
 import {
     BookOpen,
     Brain,
@@ -3470,6 +3472,66 @@ const App = () => {
     const [agentTestLoading, setAgentTestLoading] = useState(false);
     const agentTestEndRef = useRef(null);
     const [showTrainingVoice, setShowTrainingVoice] = useState(false);
+
+    // =====================================================================
+    // ALARM SYSTEM STATE
+    // =====================================================================
+    const [activeAlarm, setActiveAlarm] = useState(null); // { digest, config }
+    const alarmServiceRef = useRef(null);
+
+    // Iniciar servicio de alarmas cuando el usuario está logueado
+    useEffect(() => {
+        if (!currentUser?.user_id) return;
+
+        const service = getAlarmService();
+        alarmServiceRef.current = service;
+
+        service.start(currentUser.user_id, (digest, config) => {
+            setActiveAlarm({ digest, config });
+        });
+
+        // Setup defaults si es primera vez (fire-and-forget)
+        if (currentUser.role === 'apoderado' || currentUser.role === 'estudiante') {
+            authFetch(`/api/alarms/config?user_id=${currentUser.user_id}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && (!data.alarms || data.alarms.length === 0)) {
+                        // Primera vez: crear alarmas por defecto
+                        const parentId = currentUser.role === 'apoderado' ? currentUser.user_id : currentUser.parent_user_id;
+                        const studentId = currentUser.role === 'estudiante' ? currentUser.user_id : null;
+                        if (parentId && studentId) {
+                            authFetch('/api/alarms/setup-defaults', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ parent_user_id: parentId, student_user_id: studentId }),
+                            }).then(() => service.reload()).catch(() => {});
+                        }
+                    }
+                })
+                .catch(() => {});
+        }
+
+        return () => service.stop();
+    }, [currentUser?.user_id]);
+
+    const handleAlarmDismiss = () => {
+        if (activeAlarm?.config?.alarm_id) {
+            // Registrar acción
+            authFetch(`/api/alarms/action/${activeAlarm.digest?.history_id || 'unknown'}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action_taken: 'dismissed' }),
+            }).catch(() => {});
+        }
+        setActiveAlarm(null);
+    };
+
+    const handleAlarmSnooze = (minutes) => {
+        if (activeAlarm?.config?.alarm_id && alarmServiceRef.current) {
+            alarmServiceRef.current.snooze(activeAlarm.config.alarm_id, minutes);
+        }
+        setActiveAlarm(null);
+    };
 
     const sendAgentTestMessage = async () => {
         const msg = agentTestInput.trim();
@@ -7705,6 +7767,23 @@ ${finalData.capsule}`;
                     trainingMode={true}
                     onCalendarChanged={() => {}}
                     onClose={() => { setShowTrainingVoice(false); fetchAgentTraining(); }}
+                />
+            )}
+
+            {/* ALARM SCREEN — se muestra sobre todo */}
+            {activeAlarm && (
+                <AlarmScreen
+                    digest={activeAlarm.digest}
+                    alarmConfig={activeAlarm.config}
+                    onDismiss={handleAlarmDismiss}
+                    onSnooze={handleAlarmSnooze}
+                    onOpenDetail={() => {
+                        handleAlarmDismiss();
+                        // Navegar al dashboard si es apoderado, o a la materia si es estudiante
+                        if (activeAlarm.digest?.alarm_type === 'student_reminder' && activeAlarm.digest?.priority_subjects?.[0]) {
+                            setCurrentSubject(activeAlarm.digest.priority_subjects[0]);
+                        }
+                    }}
                 />
             )}
         </div>

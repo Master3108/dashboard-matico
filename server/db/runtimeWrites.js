@@ -1151,3 +1151,338 @@ export async function getChildProgressSummary(child_user_id, limit = 50) {
     if (error) return [];
     return data || [];
 }
+
+// =====================================================================
+// ALARM CONFIG — Sistema de alarmas Matico
+// =====================================================================
+
+export async function getAlarmConfigs(user_id) {
+    const { data, error } = await supabase
+        .from('alarm_config')
+        .select('*')
+        .eq('user_id', user_id)
+        .eq('enabled', true)
+        .order('hour', { ascending: true });
+    if (error) return [];
+    return data || [];
+}
+
+export async function upsertAlarmConfig({
+    alarm_id, user_id, student_user_id, role, alarm_type,
+    hour, minute, days_active, subjects_monitor, stale_threshold_days, sound, enabled
+}) {
+    const row = {
+        user_id, student_user_id, role, alarm_type,
+        hour, minute,
+        days_active: JSON.stringify(days_active || ['lun','mar','mie','jue','vie']),
+        subjects_monitor: JSON.stringify(subjects_monitor || []),
+        stale_threshold_days: stale_threshold_days || 3,
+        sound: sound || 'urgente',
+        enabled: enabled !== false,
+        updated_at: new Date().toISOString()
+    };
+
+    if (alarm_id) {
+        const { data, error } = await supabase
+            .from('alarm_config')
+            .update(row)
+            .eq('alarm_id', alarm_id)
+            .select()
+            .single();
+        if (error) throw new Error(`upsertAlarmConfig update: ${error.message}`);
+        return data;
+    } else {
+        const { data, error } = await supabase
+            .from('alarm_config')
+            .insert(row)
+            .select()
+            .single();
+        if (error) throw new Error(`upsertAlarmConfig insert: ${error.message}`);
+        return data;
+    }
+}
+
+export async function deleteAlarmConfig(alarm_id) {
+    const { error } = await supabase
+        .from('alarm_config')
+        .delete()
+        .eq('alarm_id', alarm_id);
+    if (error) throw new Error(`deleteAlarmConfig: ${error.message}`);
+    return { success: true };
+}
+
+export async function recordAlarmFired({ alarm_id, user_id, alarm_type, digest_data }) {
+    const { data, error } = await supabase
+        .from('alarm_history')
+        .insert({ alarm_id, user_id, alarm_type, digest_data: JSON.stringify(digest_data) })
+        .select()
+        .single();
+    if (error) throw new Error(`recordAlarmFired: ${error.message}`);
+    return data;
+}
+
+export async function updateAlarmAction(history_id, action_taken) {
+    const { error } = await supabase
+        .from('alarm_history')
+        .update({ action_taken })
+        .eq('history_id', history_id);
+    if (error) throw new Error(`updateAlarmAction: ${error.message}`);
+    return { success: true };
+}
+
+// =====================================================================
+// ALARM DIGEST — Datos inteligentes para cada tipo de alarma
+// =====================================================================
+
+/**
+ * Genera el digest para alarma de APODERADO 13:30 (parent_alert)
+ * - Eventos próximos (7 días)
+ * - Materias sin estudiar (stale)
+ * - Resumen rápido de actividad reciente
+ */
+export async function getParentAlertDigest(student_user_id, stale_threshold_days = 3) {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const in7days = new Date(now.getTime() + 7 * 86400000).toISOString().split('T')[0];
+    const staleCutoff = new Date(now.getTime() - stale_threshold_days * 86400000).toISOString();
+
+    // 1. Eventos próximos (pruebas, trabajos, etc.)
+    const { data: events } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('student_user_id', student_user_id)
+        .gte('event_date', todayStr)
+        .lte('event_date', in7days)
+        .in('event_type', ['prueba', 'trabajo', 'examen', 'tarea', 'ensayo'])
+        .order('event_date', { ascending: true })
+        .limit(10);
+
+    // 2. Última actividad por materia (para detectar stale)
+    const { data: recentProgress } = await supabase
+        .from('progress_log')
+        .select('subject, created_at, activity_type, score')
+        .eq('user_id', student_user_id)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+    // Calcular última actividad real por materia
+    const ALL_SUBJECTS = ['MATEMATICA', 'LENGUAJE', 'COMPETENCIA_LECTORA', 'FISICA', 'QUIMICA', 'BIOLOGIA', 'HISTORIA'];
+    const REAL_ACTIVITIES = ['quiz', 'study_session', 'cuaderno', 'ensayo', 'oracle_exam', 'interactive_quiz'];
+    const lastActivityBySubject = {};
+
+    for (const subject of ALL_SUBJECTS) {
+        const variants = [subject, subject.toLowerCase(), subject.charAt(0) + subject.slice(1).toLowerCase()];
+        // Buscar con/sin acento
+        if (subject === 'FISICA') variants.push('FÍSICA', 'Física', 'física');
+        if (subject === 'QUIMICA') variants.push('QUÍMICA', 'Química', 'química');
+        if (subject === 'BIOLOGIA') variants.push('BIOLOGÍA', 'Biología', 'biología');
+        if (subject === 'HISTORIA') variants.push('Historia', 'historia');
+
+        const match = (recentProgress || []).find(p =>
+            variants.includes(p.subject) && REAL_ACTIVITIES.includes(p.activity_type)
+        );
+        lastActivityBySubject[subject] = match ? match.created_at : null;
+    }
+
+    // Materias sin estudiar
+    const staleSubjects = [];
+    for (const [subject, lastDate] of Object.entries(lastActivityBySubject)) {
+        if (!lastDate) {
+            staleSubjects.push({ subject, days_inactive: 999, never_studied: true });
+        } else if (new Date(lastDate) < new Date(staleCutoff)) {
+            const daysInactive = Math.floor((now - new Date(lastDate)) / 86400000);
+            staleSubjects.push({ subject, days_inactive: daysInactive, last_activity: lastDate });
+        }
+    }
+    staleSubjects.sort((a, b) => b.days_inactive - a.days_inactive);
+
+    // 3. Actividad de los últimos 3 días (resumen rápido)
+    const threeDaysAgo = new Date(now.getTime() - 3 * 86400000).toISOString();
+    const recentReal = (recentProgress || []).filter(p =>
+        REAL_ACTIVITIES.includes(p.activity_type) && p.created_at >= threeDaysAgo
+    );
+
+    return {
+        alarm_type: 'parent_alert',
+        student_user_id,
+        generated_at: now.toISOString(),
+        upcoming_events: events || [],
+        stale_subjects: staleSubjects,
+        recent_activity_count: recentReal.length,
+        recent_activity_subjects: [...new Set(recentReal.map(p => p.subject))],
+    };
+}
+
+/**
+ * Genera el digest para alarma de ESTUDIANTE 17:00 (student_reminder)
+ * - Eventos próximos (3 días)
+ * - Materias prioritarias para hoy
+ * - Misiones pendientes
+ */
+export async function getStudentReminderDigest(student_user_id, stale_threshold_days = 3) {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const in3days = new Date(now.getTime() + 3 * 86400000).toISOString().split('T')[0];
+    const staleCutoff = new Date(now.getTime() - stale_threshold_days * 86400000).toISOString();
+
+    // 1. Eventos próximos (3 días)
+    const { data: events } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('student_user_id', student_user_id)
+        .gte('event_date', todayStr)
+        .lte('event_date', in3days)
+        .order('event_date', { ascending: true })
+        .limit(10);
+
+    // 2. Materias que necesita estudiar hoy (basado en eventos + stale)
+    const { data: recentProgress } = await supabase
+        .from('progress_log')
+        .select('subject, created_at, activity_type')
+        .eq('user_id', student_user_id)
+        .gte('created_at', staleCutoff)
+        .limit(100);
+
+    const REAL_ACTIVITIES = ['quiz', 'study_session', 'cuaderno', 'ensayo', 'oracle_exam', 'interactive_quiz'];
+    const recentSubjects = new Set(
+        (recentProgress || [])
+            .filter(p => REAL_ACTIVITIES.includes(p.activity_type))
+            .map(p => (p.subject || '').toUpperCase())
+    );
+
+    // Materias de eventos próximos que NO ha estudiado recientemente
+    const eventSubjects = [...new Set((events || []).map(e => (e.subject || '').toUpperCase()).filter(Boolean))];
+    const prioritySubjects = eventSubjects.filter(s => !recentSubjects.has(s));
+
+    // 3. Actividad de hoy
+    const todayStart = todayStr + 'T00:00:00';
+    const { data: todayActivity } = await supabase
+        .from('progress_log')
+        .select('subject, activity_type, score')
+        .eq('user_id', student_user_id)
+        .gte('created_at', todayStart)
+        .limit(50);
+
+    const studiedToday = (todayActivity || []).filter(p => REAL_ACTIVITIES.includes(p.activity_type));
+
+    return {
+        alarm_type: 'student_reminder',
+        student_user_id,
+        generated_at: now.toISOString(),
+        upcoming_events: events || [],
+        priority_subjects: prioritySubjects,
+        event_subjects: eventSubjects,
+        studied_today: studiedToday.length > 0,
+        studied_today_subjects: [...new Set(studiedToday.map(p => p.subject))],
+    };
+}
+
+/**
+ * Genera el digest para alarma de APODERADO 21:00 (parent_report)
+ * - Actividad del día completa
+ * - Cuaderno subido sí/no
+ * - Quizzes del día (nota, fuente)
+ * - Teoría lúdica completada
+ * - Tiempo total estudiado
+ * - Racha
+ */
+export async function getParentReportDigest(student_user_id) {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const todayStart = todayStr + 'T00:00:00';
+    const yesterdayStart = new Date(now.getTime() - 86400000).toISOString().split('T')[0] + 'T00:00:00';
+
+    // 1. Toda la actividad de HOY
+    const { data: todayProgress } = await supabase
+        .from('progress_log')
+        .select('*')
+        .eq('user_id', student_user_id)
+        .gte('created_at', todayStart)
+        .order('created_at', { ascending: true });
+
+    // 2. Sesiones de estudio de hoy (para tiempo total)
+    const { data: todaySessions } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('student_user_id', student_user_id)
+        .gte('start_time', todayStart);
+
+    const totalMinutes = (todaySessions || []).reduce((sum, s) => sum + (s.total_minutes || 0), 0);
+
+    // 3. Clasificar actividad del día
+    const REAL_ACTIVITIES = ['quiz', 'study_session', 'cuaderno', 'ensayo', 'oracle_exam', 'interactive_quiz'];
+    const activities = todayProgress || [];
+
+    const quizzes = activities.filter(p => ['quiz', 'interactive_quiz', 'oracle_exam'].includes(p.activity_type));
+    const cuadernoUploads = activities.filter(p => p.activity_type === 'cuaderno' || p.activity_type === 'evidence_upload');
+    const theoryLudica = activities.filter(p => p.activity_type === 'teoria_ludica' || p.activity_type === 'theory');
+
+    // Quiz detail: nota, materia, fuente
+    const quizDetails = quizzes.map(q => ({
+        subject: q.subject,
+        score: q.score,
+        correct: q.correct_answers,
+        wrong: q.wrong_answers,
+        total: q.total_questions,
+        source: q.source || (q.activity_type === 'oracle_exam' ? 'cuaderno' : 'banco_ia'),
+        activity_type: q.activity_type
+    }));
+
+    // Cuaderno subido por materia
+    const cuadernoBySubject = {};
+    for (const c of cuadernoUploads) {
+        cuadernoBySubject[c.subject || 'general'] = true;
+    }
+
+    // 4. Racha (días consecutivos con actividad real)
+    const { data: last30 } = await supabase
+        .from('progress_log')
+        .select('created_at, activity_type')
+        .eq('user_id', student_user_id)
+        .gte('created_at', new Date(now.getTime() - 30 * 86400000).toISOString())
+        .order('created_at', { ascending: false });
+
+    let streak = 0;
+    const checkedDates = new Set();
+    const realLast30 = (last30 || []).filter(p => REAL_ACTIVITIES.includes(p.activity_type));
+    for (const p of realLast30) {
+        const d = p.created_at.split('T')[0];
+        checkedDates.add(d);
+    }
+    // Contar días consecutivos hacia atrás desde hoy
+    for (let i = 0; i < 30; i++) {
+        const checkDate = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
+        if (checkedDates.has(checkDate)) {
+            streak++;
+        } else if (i > 0) {
+            break; // Se rompe la racha
+        }
+    }
+
+    // 5. Comparación con ayer
+    const { data: yesterdayProgress } = await supabase
+        .from('progress_log')
+        .select('activity_type')
+        .eq('user_id', student_user_id)
+        .gte('created_at', yesterdayStart)
+        .lt('created_at', todayStart);
+
+    const yesterdayReal = (yesterdayProgress || []).filter(p => REAL_ACTIVITIES.includes(p.activity_type));
+    const todayReal = activities.filter(p => REAL_ACTIVITIES.includes(p.activity_type));
+
+    return {
+        alarm_type: 'parent_report',
+        student_user_id,
+        generated_at: now.toISOString(),
+        total_study_minutes: totalMinutes,
+        quizzes: quizDetails,
+        cuaderno_uploaded: cuadernoBySubject,
+        theory_ludica_completed: theoryLudica.length > 0,
+        theory_ludica_count: theoryLudica.length,
+        total_activities_today: todayReal.length,
+        total_activities_yesterday: yesterdayReal.length,
+        trend: todayReal.length > yesterdayReal.length ? 'up' : todayReal.length < yesterdayReal.length ? 'down' : 'same',
+        streak,
+        subjects_studied_today: [...new Set(todayReal.map(p => p.subject).filter(Boolean))],
+    };
+}

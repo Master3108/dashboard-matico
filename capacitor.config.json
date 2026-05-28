@@ -8,5 +8,12 @@
     "allowNavigation": [
       "srv1048418.hstgr.cloud"
     ]
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_launcher",
+      "iconColor": "#3B82F6",
+      "sound": "default"
+    }
   }
 }

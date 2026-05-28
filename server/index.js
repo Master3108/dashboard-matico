@@ -71,7 +71,15 @@ import {
     addStudyMilestone,
     endStudySession,
     getStudySessions,
-    getActiveStudySession
+    getActiveStudySession,
+    getAlarmConfigs,
+    upsertAlarmConfig,
+    deleteAlarmConfig,
+    recordAlarmFired,
+    updateAlarmAction,
+    getParentAlertDigest,
+    getStudentReminderDigest,
+    getParentReportDigest
 } from './db/runtimeWrites.js';
 
 dotenv.config();
@@ -11905,6 +11913,132 @@ app.post('/api/capture/cancel', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error('[CAPTURE] Cancel error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// =====================================================================
+// ALARM SYSTEM — Alarmas inteligentes Matico
+// =====================================================================
+
+// GET /api/alarms/config — Obtener alarmas configuradas del usuario
+app.get('/api/alarms/config', async (req, res) => {
+    try {
+        const user_id = req.query.user_id || req.user?.user_id;
+        if (!user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+        const configs = await getAlarmConfigs(user_id);
+        res.json({ success: true, alarms: configs });
+    } catch (err) {
+        console.error('[ALARM] Config GET error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/alarms/config — Crear o actualizar alarma
+app.post('/api/alarms/config', async (req, res) => {
+    try {
+        const config = req.body;
+        if (!config.user_id) return res.status(400).json({ success: false, error: 'Falta user_id' });
+        if (!config.alarm_type) return res.status(400).json({ success: false, error: 'Falta alarm_type' });
+        const result = await upsertAlarmConfig(config);
+        res.json({ success: true, alarm: result });
+    } catch (err) {
+        console.error('[ALARM] Config POST error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// DELETE /api/alarms/config/:alarm_id — Eliminar alarma
+app.delete('/api/alarms/config/:alarm_id', async (req, res) => {
+    try {
+        await deleteAlarmConfig(req.params.alarm_id);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[ALARM] Config DELETE error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/alarms/setup-defaults — Crear las 3 alarmas por defecto para un par apoderado+estudiante
+app.post('/api/alarms/setup-defaults', async (req, res) => {
+    try {
+        const { parent_user_id, student_user_id } = req.body;
+        if (!parent_user_id || !student_user_id) {
+            return res.status(400).json({ success: false, error: 'Falta parent_user_id o student_user_id' });
+        }
+
+        const defaults = [
+            { user_id: parent_user_id, student_user_id, role: 'apoderado', alarm_type: 'parent_alert', hour: 13, minute: 30, sound: 'urgente' },
+            { user_id: student_user_id, student_user_id, role: 'estudiante', alarm_type: 'student_reminder', hour: 17, minute: 0, sound: 'alegre' },
+            { user_id: parent_user_id, student_user_id, role: 'apoderado', alarm_type: 'parent_report', hour: 21, minute: 0, sound: 'suave' },
+        ];
+
+        const results = [];
+        for (const cfg of defaults) {
+            results.push(await upsertAlarmConfig(cfg));
+        }
+        res.json({ success: true, alarms: results });
+    } catch (err) {
+        console.error('[ALARM] Setup defaults error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/alarms/digest — Generar mensaje inteligente para una alarma
+app.get('/api/alarms/digest', async (req, res) => {
+    try {
+        const { alarm_type, student_user_id, stale_threshold_days } = req.query;
+        if (!alarm_type || !student_user_id) {
+            return res.status(400).json({ success: false, error: 'Falta alarm_type o student_user_id' });
+        }
+
+        let digest;
+        const threshold = parseInt(stale_threshold_days) || 3;
+
+        switch (alarm_type) {
+            case 'parent_alert':
+                digest = await getParentAlertDigest(student_user_id, threshold);
+                break;
+            case 'student_reminder':
+                digest = await getStudentReminderDigest(student_user_id, threshold);
+                break;
+            case 'parent_report':
+                digest = await getParentReportDigest(student_user_id);
+                break;
+            default:
+                return res.status(400).json({ success: false, error: `Tipo inválido: ${alarm_type}` });
+        }
+
+        res.json({ success: true, digest });
+    } catch (err) {
+        console.error('[ALARM] Digest error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/alarms/fired — Registrar que una alarma fue disparada
+app.post('/api/alarms/fired', async (req, res) => {
+    try {
+        const { alarm_id, user_id, alarm_type, digest_data } = req.body;
+        if (!user_id || !alarm_type) {
+            return res.status(400).json({ success: false, error: 'Falta user_id o alarm_type' });
+        }
+        const record = await recordAlarmFired({ alarm_id, user_id, alarm_type, digest_data });
+        res.json({ success: true, record });
+    } catch (err) {
+        console.error('[ALARM] Fired error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// PUT /api/alarms/action/:history_id — Registrar acción del usuario sobre la alarma
+app.put('/api/alarms/action/:history_id', async (req, res) => {
+    try {
+        const { action_taken } = req.body;
+        await updateAlarmAction(req.params.history_id, action_taken);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[ALARM] Action error:', err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
