@@ -117,31 +117,22 @@ const LoginPage = ({ onLogin }) => {
 
                             <div className="space-y-1">
                                 <label className="text-sm font-bold text-gray-600 ml-1">Curso</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData({ ...formData, grade: '1medio' })}
-                                        className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold transition-all ${
-                                            formData.grade === '1medio'
-                                                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
-                                                : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200'
-                                        }`}
-                                    >
-                                        <GraduationCap className="w-5 h-5" />
-                                        1° medio
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData({ ...formData, grade: '2medio' })}
-                                        className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold transition-all ${
-                                            formData.grade === '2medio'
-                                                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
-                                                : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200'
-                                        }`}
-                                    >
-                                        <GraduationCap className="w-5 h-5" />
-                                        2° medio
-                                    </button>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['1medio', '2medio', '3medio'].map((g) => (
+                                        <button
+                                            key={g}
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, grade: g })}
+                                            className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold transition-all text-sm ${
+                                                formData.grade === g
+                                                    ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
+                                                    : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200'
+                                            }`}
+                                        >
+                                            <GraduationCap className="w-4 h-4" />
+                                            {g.replace('medio', '° medio')}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         </>

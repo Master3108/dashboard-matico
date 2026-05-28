@@ -224,7 +224,8 @@ export const createRuntimeQuestionBankQuestion = async ({
 } = {}) => {
     const question_id = generateId('QB');
     const optionsJsonb = typeof options === 'object' ? options : { A: '', B: '', C: '', D: '' };
-    const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+    const _g = String(grade || '').trim().toLowerCase();
+    const normalizedGrade = _g === '3medio' ? '3medio' : _g === '2medio' ? '2medio' : '1medio';
 
     const row = {
         question_id,
@@ -267,7 +268,8 @@ export const listRuntimeQuestionBankRowsForAdmin = async ({
     let query = supabase.from('question_bank').select('*');
 
     if (grade) {
-        const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+        const _g = String(grade || '').trim().toLowerCase();
+    const normalizedGrade = _g === '3medio' ? '3medio' : _g === '2medio' ? '2medio' : '1medio';
         query = query.eq('grade', normalizedGrade);
     }
     if (subject) query = query.eq('subject', subject);
@@ -410,7 +412,8 @@ export const updateRuntimeExistingQuestionWithImage = async ({
 // =====================================================================
 
 export const findRuntimeTheoryLudicaByKey = async ({ subject = '', session = '', phase = '', grade = '1medio' } = {}) => {
-    const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+    const _g = String(grade || '').trim().toLowerCase();
+    const normalizedGrade = _g === '3medio' ? '3medio' : _g === '2medio' ? '2medio' : '1medio';
     const { data, error } = await supabase
         .from('theory_ludica_bank')
         .select('*')
@@ -489,7 +492,8 @@ export const appendRuntimeTheoryLudica = async ({
     supportImage = null,
     grade = '1medio'
 } = {}) => {
-    const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+    const _g = String(grade || '').trim().toLowerCase();
+    const normalizedGrade = _g === '3medio' ? '3medio' : _g === '2medio' ? '2medio' : '1medio';
     const { data, error } = await supabase
         .from('theory_ludica_bank')
         .insert({
@@ -631,7 +635,8 @@ export const upsertRuntimeUser = async ({
 
 export const updateRuntimeUserGrade = async ({ user_id = '', grade = '1medio' } = {}) => {
     if (!user_id) throw new Error('updateRuntimeUserGrade: user_id requerido');
-    const normalizedGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+    const g = String(grade || '').trim().toLowerCase();
+    const normalizedGrade = g === '3medio' ? '3medio' : g === '2medio' ? '2medio' : '1medio';
 
     const { data, error } = await supabase
         .from('profiles')

@@ -6107,7 +6107,8 @@ app.post('/webhook/MATICO', conditionalLoginLimiter, async (req, res) => {
         // 1. LOGIN / REGISTER
         if (currentAction === 'login' || currentAction === 'register') {
             const { email, password, name, phone, region, commune, correo_apoderado, grade } = body;
-            const normalizedRegisterGrade = String(grade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+            const rg = String(grade || '').trim().toLowerCase();
+            const normalizedRegisterGrade = rg === '3medio' ? '3medio' : rg === '2medio' ? '2medio' : '1medio';
 
             const user = await getRuntimeUserByEmail(email);
 

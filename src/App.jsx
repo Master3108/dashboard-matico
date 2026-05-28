@@ -3400,10 +3400,12 @@ const App = () => {
     // Cambiar curso (1medio <-> 2medio) — persiste en BD + actualiza currentUser
     const [gradeChangePending, setGradeChangePending] = useState(false);
     const handleChangeGrade = async (newGrade) => {
-        const normalized = String(newGrade || '').trim().toLowerCase() === '2medio' ? '2medio' : '1medio';
+        const g = String(newGrade || '').trim().toLowerCase();
+        const normalized = g === '3medio' ? '3medio' : g === '2medio' ? '2medio' : '1medio';
+        const gradeLabels = { '1medio': '1° medio', '2medio': '2° medio', '3medio': '3° medio' };
         if (!currentUser?.user_id) return;
         if (normalized === ACTIVE_GRADE) return;
-        const confirm = window.confirm(`¿Cambiar tu curso a ${normalized === '2medio' ? '2° medio' : '1° medio'}? Las teorías y quizzes se recalibrarán al nuevo nivel.`);
+        const confirm = window.confirm(`¿Cambiar tu curso a ${gradeLabels[normalized]}? Las teorías y quizzes se recalibrarán al nuevo nivel.`);
         if (!confirm) return;
         setGradeChangePending(true);
         try {
@@ -3420,7 +3422,7 @@ const App = () => {
             // Limpiar caches locales que dependen del curso
             localStorage.removeItem('MATICO_COMPLETED_SESSIONS');
             localStorage.removeItem('MATICO_QUIZ_PROGRESS');
-            alert(`✅ Curso cambiado a ${normalized === '2medio' ? '2° medio' : '1° medio'}. Refrescando...`);
+            alert(`✅ Curso cambiado a ${gradeLabels[normalized]}. Refrescando...`);
             window.location.reload();
         } catch (err) {
             console.error('[GRADE_CHANGE] Error:', err);
@@ -7342,31 +7344,22 @@ ${finalData.capsule}`;
                                             <div className="text-[11px] text-gray-500 leading-snug">
                                                 Cambia tu curso. Las teorías y quizzes se recalibrarán al currículum Mineduc del nuevo nivel.
                                             </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button
-                                                    type="button"
-                                                    disabled={gradeChangePending || ACTIVE_GRADE === '1medio'}
-                                                    onClick={() => handleChangeGrade('1medio')}
-                                                    className={`py-3 rounded-xl border-2 font-bold transition-all text-sm ${
-                                                        ACTIVE_GRADE === '1medio'
-                                                            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md cursor-default'
-                                                            : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-blue-200 hover:bg-blue-50'
-                                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                >
-                                                    {ACTIVE_GRADE === '1medio' ? '✓ ' : ''}1° medio
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    disabled={gradeChangePending || ACTIVE_GRADE === '2medio'}
-                                                    onClick={() => handleChangeGrade('2medio')}
-                                                    className={`py-3 rounded-xl border-2 font-bold transition-all text-sm ${
-                                                        ACTIVE_GRADE === '2medio'
-                                                            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md cursor-default'
-                                                            : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-blue-200 hover:bg-blue-50'
-                                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                >
-                                                    {ACTIVE_GRADE === '2medio' ? '✓ ' : ''}2° medio
-                                                </button>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {['1medio', '2medio', '3medio'].map((g) => (
+                                                    <button
+                                                        key={g}
+                                                        type="button"
+                                                        disabled={gradeChangePending || ACTIVE_GRADE === g}
+                                                        onClick={() => handleChangeGrade(g)}
+                                                        className={`py-3 rounded-xl border-2 font-bold transition-all text-sm ${
+                                                            ACTIVE_GRADE === g
+                                                                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md cursor-default'
+                                                                : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-blue-200 hover:bg-blue-50'
+                                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                    >
+                                                        {ACTIVE_GRADE === g ? '✓ ' : ''}{g.replace('medio', '° medio')}
+                                                    </button>
+                                                ))}
                                             </div>
                                             {gradeChangePending && (
                                                 <div className="text-[11px] text-blue-600 font-bold animate-pulse">

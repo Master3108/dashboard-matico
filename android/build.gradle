@@ -22,6 +22,18 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    // Forzar Java 17 en todos los módulos (incluido capacitor-local-notifications)
+    afterEvaluate {
+        if (it.hasProperty('android')) {
+            android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+        }
+    }
 }
 
 task clean(type: Delete) {
