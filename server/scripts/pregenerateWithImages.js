@@ -106,19 +106,19 @@ const SUBJECT_CONFIG = {
         code: 'MAT',
         displayName: 'Matematica',
         temperature: 0.35,
-        resolveContext: ({ session, topic, phase }) => resolveMoralejaMatematicaContext({ session, topic, phase, mode: 'quiz' })
+        resolveContext: ({ session, topic, phase, grade }) => resolveMoralejaMatematicaContext({ session, topic, phase, grade, mode: 'quiz' })
     },
     COMPETENCIA_LECTORA: {
         code: 'LEN',
         displayName: 'Lenguaje y Comunicacion',
         temperature: 0.45,
-        resolveContext: ({ session, topic, phase }) => resolveMoralejaContext({ session, topic, phase, mode: 'quiz' })
+        resolveContext: ({ session, topic, phase, grade }) => resolveMoralejaContext({ session, topic, phase, grade, mode: 'quiz' })
     },
     FISICA: {
         code: 'FIS',
         displayName: 'Fisica',
         temperature: 0.4,
-        resolveContext: ({ session, topic, phase }) => resolveMoralejaFisicaContext({ session, topic, phase, mode: 'quiz' })
+        resolveContext: ({ session, topic, phase, grade }) => resolveMoralejaFisicaContext({ session, topic, phase, grade, mode: 'quiz' })
     },
     QUIMICA: {
         code: 'QUI',
@@ -168,10 +168,11 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const mimeExt = (mime = '') => ({ 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp' })[mime] || '.png';
 
 // ─── Supabase queries ──────────────────────────────────────────────
-const countExistingQuestions = async (subject, session, phase) => {
+const countExistingQuestions = async (subject, session, phase, grade) => {
     const { count, error } = await supabase
         .from('question_bank')
         .select('*', { count: 'exact', head: true })
+        .eq('grade', grade)
         .eq('subject', subject)
         .eq('session', Number(session))
         .eq('phase', Number(phase))
@@ -180,10 +181,11 @@ const countExistingQuestions = async (subject, session, phase) => {
     return count || 0;
 };
 
-const countExistingImages = async (subject, session, phase) => {
+const countExistingImages = async (subject, session, phase, grade) => {
     const { count, error } = await supabase
         .from('question_bank')
         .select('*', { count: 'exact', head: true })
+        .eq('grade', grade)
         .eq('subject', subject)
         .eq('session', Number(session))
         .eq('phase', Number(phase))
@@ -193,10 +195,11 @@ const countExistingImages = async (subject, session, phase) => {
     return count || 0;
 };
 
-const fetchQuestionsWithoutImage = async (subject, session, phase) => {
+const fetchQuestionsWithoutImage = async (subject, session, phase, grade) => {
     const { data, error } = await supabase
         .from('question_bank')
         .select('question_id, subject, session, phase, slot, proposal_index, level_name, topic, question, options, correct_answer, explanation')
+        .eq('grade', grade)
         .eq('subject', subject)
         .eq('session', Number(session))
         .eq('phase', Number(phase))
@@ -340,14 +343,15 @@ const scoreQuestionsForImage = async (subject, subjectDisplay, questions) => {
 };
 
 // ─── AI: Generate questions with image scoring ─────────────────────
-const generatePhaseQuestions = async ({ subject, subjectConfig, session, phase, levelName, count = 15 }) => {
-    const sessionRef = resolveMoralejaSessionReference({ subject, session });
-    const ctx = subjectConfig.resolveContext({ session, topic: sessionRef?.focus || '', phase: levelName });
+const generatePhaseQuestions = async ({ subject, subjectConfig, session, phase, levelName, count = 15, grade = '1medio' }) => {
+    const sessionRef = resolveMoralejaSessionReference({ subject, session, grade });
+    const ctx = subjectConfig.resolveContext({ session, topic: sessionRef?.focus || '', phase: levelName, grade });
     const topic = sessionRef?.focus || ctx?.skill || ctx?.chapterLabel || '';
     const guidance = ctx?.quizGuidance || '';
 
+    const gradeLabel = grade === '3medio' ? '3 medio' : grade === '2medio' ? '2 medio' : '1 medio';
     const systemPrompt = [
-        `Eres Matico, profesor experto en ${subjectConfig.displayName} del curriculum chileno de 1 medio.`,
+        `Eres Matico, profesor experto en ${subjectConfig.displayName} del curriculum chileno de ${gradeLabel}.`,
         `Genera EXACTAMENTE ${count} preguntas de seleccion multiple (4 alternativas A/B/C/D) para esta sesion y fase.`,
         'Para CADA pregunta evalua si se beneficia de una imagen o diagrama.',
         'NO fuerces imagenes: calculo numerico abstracto, definiciones verbales → NO necesitan imagen.',
@@ -461,6 +465,8 @@ const main = async () => {
     const subjectConfig = SUBJECT_CONFIG[subject];
     if (!subjectConfig) throw new Error(`Asignatura no soportada: ${subject}. Usa MATEMATICA, COMPETENCIA_LECTORA, FISICA, QUIMICA, BIOLOGIA o HISTORIA.`);
 
+    const gradeRaw = String(args.grade || '1medio').toLowerCase().trim();
+    const grade = gradeRaw === '3medio' ? '3medio' : gradeRaw === '2medio' ? '2medio' : '1medio';
     const fromSession = Math.max(1, Number(args.from || 1));
     const toSession = Math.max(fromSession, Number(args.to || 46));
     const phaseFilter = args.phase ? Number(args.phase) : null;
@@ -480,6 +486,7 @@ const main = async () => {
     console.log(`  pregenerateWithImages — ${isRetrofit ? 'RETROFIT' : 'GENERATE'}`);
     console.log('═══════════════════════════════════════════════════');
     console.log(`Materia:      ${subject} (${subjectConfig.displayName})`);
+    console.log(`Grado:        ${grade}`);
     console.log(`Sesiones:     ${fromSession}-${toSession}`);
     console.log(`Fases:        ${phases.map(p => p.phase).join(', ')}`);
     console.log(`AI texto:     ${AI_PROVIDER} → ${AI_MODEL}`);
@@ -502,7 +509,7 @@ const main = async () => {
             try {
                 if (isRetrofit) {
                     // ── RETROFIT: score existing questions, generate images for top candidates ──
-                    const existingImgs = await countExistingImages(subject, session, phaseConfig.phase);
+                    const existingImgs = await countExistingImages(subject, session, phaseConfig.phase, grade);
                     const remaining = Math.max(0, imageCap - existingImgs);
 
                     if (remaining === 0) {
@@ -510,7 +517,7 @@ const main = async () => {
                         continue;
                     }
 
-                    const rows = await fetchQuestionsWithoutImage(subject, session, phaseConfig.phase);
+                    const rows = await fetchQuestionsWithoutImage(subject, session, phaseConfig.phase, grade);
                     if (!rows.length) {
                         console.log(`${label} — sin preguntas sin imagen, skip`);
                         continue;
@@ -560,7 +567,7 @@ const main = async () => {
 
                 } else {
                     // ── GENERATE: create new questions with scoring, then images ──
-                    const existingCount = await countExistingQuestions(subject, session, phaseConfig.phase);
+                    const existingCount = await countExistingQuestions(subject, session, phaseConfig.phase, grade);
                     const target = DEFAULT_SLOTS_PER_PHASE * DEFAULT_PROPOSALS_PER_SLOT; // 45
                     if (existingCount >= target) {
                         console.log(`${label} — ya tiene ${existingCount}/${target} preguntas, skip`);
@@ -575,7 +582,8 @@ const main = async () => {
                                 subject, subjectConfig, session,
                                 phase: phaseConfig.phase,
                                 levelName: phaseConfig.levelName,
-                                count: target
+                                count: target,
+                                grade
                             });
                             if (items.length > 0) break;
                         } catch (err) {
@@ -599,7 +607,7 @@ const main = async () => {
                             const question_id = generateId('QB');
                             const { error } = await supabase.from('question_bank').insert({
                                 question_id,
-                                grade: '1medio',
+                                grade,
                                 subject,
                                 session: Number(session),
                                 phase: Number(phaseConfig.phase),
@@ -626,7 +634,7 @@ const main = async () => {
 
                     // Now generate images for top candidates
                     if (imageProvider !== 'skip') {
-                        const existingImgs = await countExistingImages(subject, session, phaseConfig.phase);
+                        const existingImgs = await countExistingImages(subject, session, phaseConfig.phase, grade);
                         const imgRemaining = Math.max(0, imageCap - existingImgs);
                         const imgCandidates = items
                             .filter(q => q.image_score >= minImageScore && q.image_prompt && q._question_id)
