@@ -3535,6 +3535,38 @@ const App = () => {
         setActiveAlarm(null);
     };
 
+    // Probar alarma al instante (sin esperar a la hora programada)
+    const [alarmTestLoading, setAlarmTestLoading] = useState(false);
+    const handleTestAlarm = async (alarmType = null) => {
+        if (alarmTestLoading) return;
+        setAlarmTestLoading(true);
+        try {
+            // Elegir tipo según rol si no se especifica
+            const type = alarmType || (currentUser?.role === 'apoderado' ? 'parent_alert' : 'student_reminder');
+            // student_user_id: si es estudiante usa el suyo; si es apoderado intenta el hijo vinculado
+            const studentId = currentUser?.role === 'estudiante'
+                ? currentUser.user_id
+                : (currentUser?.student_user_id || currentUser?.linked_student_id || currentUser?.user_id);
+
+            const res = await authFetch(
+                `/api/alarms/digest?alarm_type=${type}&student_user_id=${studentId}&stale_threshold_days=3`
+            );
+            const data = await res.json();
+            if (data.success && data.digest) {
+                setActiveAlarm({
+                    digest: data.digest,
+                    config: { alarm_id: 'test', alarm_type: type, sound: 'urgente', student_user_id: studentId },
+                });
+            } else {
+                alert('No se pudo generar la alarma de prueba: ' + (data.message || 'sin datos'));
+            }
+        } catch (err) {
+            alert('Error al probar la alarma: ' + err.message);
+        } finally {
+            setAlarmTestLoading(false);
+        }
+    };
+
     const sendAgentTestMessage = async () => {
         const msg = agentTestInput.trim();
         if (!msg || agentTestLoading) return;
@@ -7415,6 +7447,40 @@ ${finalData.capsule}`;
                                                 />
                                                 <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500 shadow-inner"></div>
                                             </label>
+                                        </div>
+
+                                        {/* PROBAR ALARMA AHORA */}
+                                        <div className="pt-3 border-t border-gray-100">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter block mb-2">Probar alarma ahora</span>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <button
+                                                    type="button"
+                                                    disabled={alarmTestLoading}
+                                                    onClick={() => handleTestAlarm('parent_alert')}
+                                                    className="py-2.5 rounded-xl border-2 border-red-100 bg-red-50 text-red-600 text-[11px] font-bold hover:bg-red-100 transition-all disabled:opacity-50"
+                                                >
+                                                    🔴 Alerta mamá
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={alarmTestLoading}
+                                                    onClick={() => handleTestAlarm('student_reminder')}
+                                                    className="py-2.5 rounded-xl border-2 border-blue-100 bg-blue-50 text-blue-600 text-[11px] font-bold hover:bg-blue-100 transition-all disabled:opacity-50"
+                                                >
+                                                    🔵 Estudiar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={alarmTestLoading}
+                                                    onClick={() => handleTestAlarm('parent_report')}
+                                                    className="py-2.5 rounded-xl border-2 border-purple-100 bg-purple-50 text-purple-600 text-[11px] font-bold hover:bg-purple-100 transition-all disabled:opacity-50"
+                                                >
+                                                    🟣 Reporte
+                                                </button>
+                                            </div>
+                                            {alarmTestLoading && (
+                                                <div className="text-[10px] text-blue-600 font-bold animate-pulse mt-2">Generando alarma de prueba...</div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
