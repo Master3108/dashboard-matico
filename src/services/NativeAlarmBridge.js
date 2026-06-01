@@ -44,22 +44,25 @@ export function isNativeMode() {
 }
 
 /**
- * Programa alarmas nativas para hoy y mañana basado en la configuración
+ * Programa alarmas nativas RECURRENTES (semanales) basado en la configuración.
+ *
+ * Usa schedule repetitivo del plugin (schedule.on + repeats), una notificación
+ * por cada día activo de cada alarma. Así suenan todas las semanas sin depender
+ * de que el usuario abra la app, y sobreviven reinicios del teléfono.
+ *
  * @param {Array} alarms - Array de alarm configs del API
  */
+// Capacitor LocalNotifications usa weekday 1=domingo ... 7=sábado
+const WEEKDAY_MAP = { dom: 1, lun: 2, mar: 3, mie: 4, jue: 5, vie: 6, sab: 7 };
+
 export async function scheduleNativeAlarms(alarms) {
     if (!isNative || !LocalNotifications) return;
 
-    // Cancelar todas las notificaciones pendientes primero
+    // Cancelar todas las notificaciones pendientes primero (evita duplicados al re-programar)
     const pending = await LocalNotifications.getPending();
     if (pending.notifications.length > 0) {
         await LocalNotifications.cancel({ notifications: pending.notifications });
     }
-
-    const now = new Date();
-    const dayNames = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'];
-    const todayDay = dayNames[now.getDay()];
-    const tomorrowDay = dayNames[(now.getDay() + 1) % 7];
 
     const notifications = [];
     let notifId = 1;
@@ -71,28 +74,22 @@ export async function scheduleNativeAlarms(alarms) {
             ? JSON.parse(alarm.days_active)
             : alarm.days_active || ['lun', 'mar', 'mie', 'jue', 'vie'];
 
-        // Programar para hoy si aplica y aún no pasó la hora
-        if (daysActive.includes(todayDay)) {
-            const todayAt = new Date(now);
-            todayAt.setHours(alarm.hour, alarm.minute, 0, 0);
+        // Una notificación recurrente por cada día activo
+        for (const dayKey of daysActive) {
+            const weekday = WEEKDAY_MAP[dayKey];
+            if (!weekday) continue;
 
-            if (todayAt > now) {
-                notifications.push(buildNotification(notifId++, alarm, todayAt));
-            }
-        }
-
-        // Programar para mañana si aplica
-        if (daysActive.includes(tomorrowDay)) {
-            const tomorrowAt = new Date(now);
-            tomorrowAt.setDate(tomorrowAt.getDate() + 1);
-            tomorrowAt.setHours(alarm.hour, alarm.minute, 0, 0);
-            notifications.push(buildNotification(notifId++, alarm, tomorrowAt));
+            notifications.push(buildNotification(notifId++, alarm, {
+                on: { weekday, hour: alarm.hour, minute: alarm.minute },
+                repeats: true,
+                allowWhileIdle: true,
+            }));
         }
     }
 
     if (notifications.length > 0) {
         await LocalNotifications.schedule({ notifications });
-        console.log(`[NativeAlarmBridge] Scheduled ${notifications.length} native alarms`);
+        console.log(`[NativeAlarmBridge] Scheduled ${notifications.length} recurring native alarms`);
     }
 }
 
@@ -105,7 +102,10 @@ export async function scheduleNativeSnooze(alarm, minutes = 5) {
     const snoozeAt = new Date(Date.now() + minutes * 60 * 1000);
 
     await LocalNotifications.schedule({
-        notifications: [buildNotification(9000 + Math.floor(Math.random() * 1000), alarm, snoozeAt)]
+        notifications: [buildNotification(9000 + Math.floor(Math.random() * 1000), alarm, {
+            at: snoozeAt,
+            allowWhileIdle: true,
+        })]
     });
 
     console.log(`[NativeAlarmBridge] Snooze scheduled for ${minutes}min`);
@@ -150,12 +150,12 @@ const ALARM_BODIES = {
     parent_report: 'Mira el resumen de actividades de hoy',
 };
 
-function buildNotification(id, alarm, scheduleAt) {
+function buildNotification(id, alarm, schedule) {
     return {
         id,
         title: ALARM_TITLES[alarm.alarm_type] || 'Alarma Matico',
         body: ALARM_BODIES[alarm.alarm_type] || 'Tienes una alarma pendiente',
-        schedule: { at: scheduleAt, allowWhileIdle: true },
+        schedule,
         sound: 'default',
         channelId: 'matico-alarms',
         extra: {
