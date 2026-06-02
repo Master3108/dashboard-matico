@@ -73,6 +73,7 @@ import {
     getStudySessions,
     getActiveStudySession,
     getAlarmConfigs,
+    getAlarmConfigsManage,
     upsertAlarmConfig,
     deleteAlarmConfig,
     recordAlarmFired,
@@ -9054,6 +9055,60 @@ Responde SOLO con JSON válido, sin markdown:
     }
 });
 
+// POST /api/calendar/edit-events — Aplica una instruccion en lenguaje natural a una lista
+// de eventos AUN NO creados (paso de revision), devolviendo los eventos modificados.
+app.post('/api/calendar/edit-events', async (req, res) => {
+    try {
+        const { events, instruction } = req.body;
+        if (!Array.isArray(events) || events.length === 0) {
+            return res.status(400).json({ success: false, error: 'No hay eventos para modificar' });
+        }
+        if (!instruction || !String(instruction).trim()) {
+            return res.status(400).json({ success: false, error: 'Falta la instruccion' });
+        }
+
+        const client = agentTextClient;
+        if (!client) return res.status(500).json({ success: false, error: 'No hay cliente de IA configurado' });
+
+        const today = new Date().toISOString().split('T')[0];
+        const systemPrompt = `Eres un asistente que EDITA una lista de eventos escolares en formato JSON segun la instruccion del usuario.
+Reglas:
+- Devuelve la MISMA cantidad de eventos y en el mismo orden, salvo que la instruccion pida explicitamente agregar o quitar.
+- Conserva todos los campos existentes (title, event_type, subject, event_date, start_time, end_time, description, confidence).
+- Cambia SOLO lo que la instruccion indique (ej: agregar un nombre al titulo, cambiar materia, ajustar fecha/hora, etc.).
+- Fecha de hoy: ${today}. Formato de fecha: YYYY-MM-DD.
+- Responde SOLO con JSON valido, sin markdown, con la forma: {"events":[...]}`;
+
+        const userPrompt = `Eventos actuales:\n${JSON.stringify(events, null, 2)}\n\nInstruccion del usuario:\n"${String(instruction).trim()}"\n\nDevuelve el JSON con los eventos modificados.`;
+
+        const completion = await client.chat.completions.create({
+            model: AI_MODELS.fast,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.2
+        });
+
+        const raw = completion.choices?.[0]?.message?.content || '{}';
+        let parsed;
+        try {
+            parsed = JSON.parse(raw);
+        } catch {
+            const match = raw.match(/\{[\s\S]*\}/);
+            parsed = match ? JSON.parse(match[0]) : { events: [] };
+        }
+        const edited = Array.isArray(parsed.events) ? parsed.events : [];
+        if (edited.length === 0) {
+            return res.json({ success: false, error: 'No pude aplicar el cambio. Intenta de otra forma.' });
+        }
+        res.json({ success: true, events: edited });
+    } catch (err) {
+        console.error('[CALENDAR] edit-events error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 app.post('/api/calendar/dedupe', async (req, res) => {
     try {
         const { user_id, role = 'estudiante', from_date, to_date, dry_run } = req.body;
@@ -11931,6 +11986,19 @@ app.get('/api/alarms/config', async (req, res) => {
         res.json({ success: true, alarms: configs });
     } catch (err) {
         console.error('[ALARM] Config GET error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/alarms/manage — Todas las alarmas (incl. desactivadas) del par apoderado+estudiante
+app.get('/api/alarms/manage', async (req, res) => {
+    try {
+        const { parent_user_id, student_user_id } = req.query;
+        if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
+        const alarms = await getAlarmConfigsManage(parent_user_id, student_user_id);
+        res.json({ success: true, alarms });
+    } catch (err) {
+        console.error('[ALARM] Manage GET error:', err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });

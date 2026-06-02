@@ -55,6 +55,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
     const [isProcessing, setIsProcessing] = useState(false);
     const [lastCreatedEvent, setLastCreatedEvent] = useState(null);
     const [eventReviews, setEventReviews] = useState({});
+    const [activeReviewId, setActiveReviewId] = useState(null); // revision pendiente que se puede editar por chat
 
     // Native screen capture state
     const [nativeCaptureSupported, setNativeCaptureSupported] = useState(false);
@@ -132,6 +133,7 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
         setImagePreviews([]);
         setLastCreatedEvent(null);
         setEventReviews({});
+        setActiveReviewId(null);
     }, [isOpen, intent, studentName]);
 
     useEffect(() => {
@@ -217,12 +219,46 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
             selected: true
         }));
         setEventReviews(prev => ({ ...prev, [reviewId]: items }));
+        setActiveReviewId(reviewId); // habilita editar estos eventos por chat antes de confirmar
         setMessages(prev => [...prev, {
             id: reviewId,
             type: 'event-review',
             reviewId,
             timestamp: new Date()
         }]);
+    };
+
+    // Aplica una instruccion en lenguaje natural a los eventos pendientes (sin crearlos aun).
+    const editPendingEvents = async (instruction) => {
+        const reviewId = activeReviewId;
+        const prevItems = eventReviews[reviewId] || [];
+        const current = prevItems.map(({ reviewItemId, selected, ...event }) => event);
+        try {
+            const res = await authFetch('/api/calendar/edit-events', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ events: current, instruction })
+            });
+            const data = await res.json();
+            setMessages(prev => prev.filter(m => m.id !== 'processing'));
+            if (data.success && Array.isArray(data.events) && data.events.length > 0) {
+                const newItems = data.events.map((event, index) => ({
+                    ...event,
+                    reviewItemId: `${reviewId}-${index}`,
+                    selected: prevItems[index] ? prevItems[index].selected : true
+                }));
+                setEventReviews(prev => ({ ...prev, [reviewId]: newItems }));
+                addBotMessage('Listo, apliqué el cambio. Revisa la lista actualizada y confirma cuando quieras.');
+            } else {
+                addBotMessage(`No pude aplicar el cambio. ${data.error || 'Intenta decirlo de otra forma.'}`);
+            }
+        } catch (err) {
+            setMessages(prev => prev.filter(m => m.id !== 'processing'));
+            addBotMessage('Hubo un error al aplicar el cambio. Intenta de nuevo.');
+            console.error('[CHAT-EVENT] edit error:', err);
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const toggleReviewItem = (reviewId, reviewItemId) => {
@@ -241,6 +277,8 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
             return;
         }
 
+        // Esta revisión ya se confirma; deja de ser editable por chat.
+        if (activeReviewId === reviewId) setActiveReviewId(null);
         setIsProcessing(true);
         setMessages(prev => [...prev, { id: 'processing', type: 'processing', timestamp: new Date() }]);
 
@@ -494,6 +532,14 @@ const ChatEventCreator = ({ isOpen, onClose, userId, userRole, studentUserId, st
             type: 'processing',
             timestamp: new Date()
         }]);
+
+        // EDICION por chat: si escribió texto, no adjuntó imágenes y hay eventos pendientes
+        // en revisión, interpretamos el texto como una instrucción para MODIFICAR esos eventos
+        // (ej: "agrégale Dominga a los títulos") en vez de buscar eventos nuevos.
+        if (userText && userImages.length === 0 && activeReviewId && (eventReviews[activeReviewId] || []).length > 0) {
+            await editPendingEvents(userText);
+            return;
+        }
 
         try {
             const formData = new FormData();

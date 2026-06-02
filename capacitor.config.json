@@ -3,10 +3,10 @@
   "appName": "Matico",
   "webDir": "dist",
   "server": {
-    "url": "https://srv1048418.hstgr.cloud",
+    "url": "https://matiko.atikodigital.cl",
     "cleartext": false,
     "allowNavigation": [
-      "srv1048418.hstgr.cloud"
+      "matiko.atikodigital.cl"
     ]
   },
   "plugins": {

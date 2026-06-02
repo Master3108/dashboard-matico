@@ -3992,6 +3992,7 @@ const App = () => {
     const [theoryTitle, _setTheoryTitle] = useState("");
     const [showTheoryNotebookMission, setShowTheoryNotebookMission] = useState(false);
     const [isTheoryNotebookMandatory, setIsTheoryNotebookMandatory] = useState(false);
+    const [pendingOracleExam, setPendingOracleExam] = useState(null); // Examen Oráculo esperando cuaderno obligatorio
     const [pendingQuizQuestions, setPendingQuizQuestions] = useState([]); // Preguntas esperando después de la teoría
     const [missedSessionAlert, setMissedSessionAlert] = useState(null); // Alerta de "Ponerse al día"
     const [showPrepExamSetup, setShowPrepExamSetup] = useState(false);
@@ -4566,12 +4567,8 @@ const App = () => {
         setShowOraclePrepModal(false);
         setIsPrepExamMode(true);
         setQuizQuestions(normalizedQuestions);
-        setShowInteractiveQuiz(true);
 
-        // STUDY TIMER: Iniciar para Oracle/Prep
-        const oracleStudySession = await startStudyTimer('oracle', subject);
-        await addStudyMilestone('oracle_quiz_iniciado', oracleStudySession);
-
+        // Mostrar la teoría/guía del Oráculo como contenido a copiar en el cuaderno
         if (payload.practice_guide) {
             setAiContent(payload.practice_guide);
         }
@@ -4582,13 +4579,40 @@ const App = () => {
         prepExamNextBatchPromiseRef.current = null;
         prepExamBackgroundLoadRef.current = totalBatches > 1;
 
-        await saveProgress('prep_exam_started', {
+        // CUADERNO OBLIGATORIO también para el Oráculo: primero copiar la teoría al
+        // cuaderno físico, y solo al completarlo se lanza el quiz (launchPendingOracleQuiz).
+        setPendingOracleExam({
             subject,
-            grade: ACTIVE_GRADE,
-            session: String(session),
-            selected_sessions: String(session),
+            session,
             topic,
-            question_count: questionCount,
+            questionCount,
+            practiceGuide: payload.practice_guide || ''
+        });
+        setIsTheoryNotebookMandatory(true);
+        setShowTheoryNotebookMission(true);
+    };
+
+    // Lanza el quiz del Oráculo DESPUÉS de que se complete el cuaderno obligatorio
+    const launchPendingOracleQuiz = async () => {
+        const pending = pendingOracleExam;
+        if (!pending) return;
+
+        setShowTheoryNotebookMission(false);
+        setIsTheoryNotebookMandatory(false);
+        setPendingOracleExam(null);
+        setShowInteractiveQuiz(true);
+
+        // STUDY TIMER: Iniciar para Oracle/Prep
+        const oracleStudySession = await startStudyTimer('oracle', pending.subject);
+        await addStudyMilestone('oracle_quiz_iniciado', oracleStudySession);
+
+        await saveProgress('prep_exam_started', {
+            subject: pending.subject,
+            grade: ACTIVE_GRADE,
+            session: String(pending.session),
+            selected_sessions: String(pending.session),
+            topic: pending.topic,
+            question_count: pending.questionCount,
             source_mode: 'oracle_notebook',
             xp_reward: 0
         });
@@ -6081,6 +6105,12 @@ SALIDA REQUERIDA (JSON ESTRICTO):
     };
 
     const handleTheoryNotebookComplete = async () => {
+        // Caso Oráculo: lanzar el quiz del Oráculo tras completar el cuaderno
+        if (pendingOracleExam) {
+            await addStudyMilestone('cuaderno_completado');
+            await launchPendingOracleQuiz();
+            return;
+        }
         setShowTheoryNotebookMission(false);
         setIsTheoryNotebookMandatory(false);
         await addStudyMilestone('cuaderno_completado');
@@ -6091,6 +6121,13 @@ SALIDA REQUERIDA (JSON ESTRICTO):
     // NO marca completado, NO inicia quiz. Mantiene mandatory para que al volver a "Iniciar quiz"
     // se le exija el cuaderno otra vez.
     const handleTheoryNotebookBack = () => {
+        // Caso Oráculo: no hay teoría previa que reabrir; cancelar la misión.
+        if (pendingOracleExam) {
+            setShowTheoryNotebookMission(false);
+            setIsTheoryNotebookMandatory(false);
+            setPendingOracleExam(null);
+            return;
+        }
         setShowTheoryNotebookMission(false);
         setShowTheoryModal(true);
     };
@@ -6691,11 +6728,15 @@ ${finalData.capsule}`;
 
                 {showTheoryNotebookMission && (
                     <CuadernoMission
-                        sessionId={TODAYS_SESSION.session}
+                        sessionId={pendingOracleExam ? pendingOracleExam.session : TODAYS_SESSION.session}
                         phase={currentQuizPhase}
-                        subject={currentSubject}
-                        topic={theoryTitle || TODAYS_SUBJECT.oa_title || 'Teoría lúdica'}
-                        readingContent={theoryContent || aiContent || TODAYS_SESSION.readingContent || ''}
+                        subject={pendingOracleExam ? pendingOracleExam.subject : currentSubject}
+                        topic={pendingOracleExam
+                            ? (pendingOracleExam.topic || 'Teoría del Oráculo')
+                            : (theoryTitle || TODAYS_SUBJECT.oa_title || 'Teoría lúdica')}
+                        readingContent={pendingOracleExam
+                            ? (pendingOracleExam.practiceGuide || aiContent || '')
+                            : (theoryContent || aiContent || TODAYS_SESSION.readingContent || '')}
                         onComplete={handleTheoryNotebookComplete}
                         onSkip={handleTheoryNotebookBack}
                         userEmail={currentUser?.email}

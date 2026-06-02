@@ -460,16 +460,25 @@ public class MaticoScreenCaptureService extends Service {
         return params;
     }
 
-    // Estado A: muestra la pill "Captura pantalla", oculta el prompt.
+    // Estado A: muestra la pill "Captura pantalla", oculta el prompt. Restaura el marco.
     private void showCaptureBubble() {
+        if (frameOverlayView != null) frameOverlayView.setVisibility(View.VISIBLE);
         if (captureBubbleView != null) captureBubbleView.setVisibility(View.VISIBLE);
         if (promptOverlayView != null) promptOverlayView.setVisibility(View.GONE);
     }
 
-    // Estado B: muestra el prompt "Otra / Finalizar", oculta la pill.
+    // Estado B: muestra el prompt "Otra / Finalizar", oculta la pill. Restaura el marco.
     private void showPostCapturePrompt() {
+        if (frameOverlayView != null) frameOverlayView.setVisibility(View.VISIBLE);
         if (captureBubbleView != null) captureBubbleView.setVisibility(View.GONE);
         if (promptOverlayView != null) promptOverlayView.setVisibility(View.VISIBLE);
+    }
+
+    // Restaura el overlay (marco + pill) tras un intento de captura fallido.
+    private void restoreOverlayAfterCapture() {
+        if (frameOverlayView != null) frameOverlayView.setVisibility(View.VISIBLE);
+        if (captureBubbleView != null) captureBubbleView.setVisibility(View.VISIBLE);
+        if (promptOverlayView != null) promptOverlayView.setVisibility(View.GONE);
     }
 
     // Handler del boton "Finalizar" en el prompt.
@@ -613,23 +622,32 @@ public class MaticoScreenCaptureService extends Service {
             return;
         }
 
-        // Intento 1: drenar cualquier frame ya en el buffer.
-        Image existing = null;
+        // 1. Ocultar marco + pill + prompt para que NO aparezcan en la captura.
+        mainHandler.post(() -> {
+            if (frameOverlayView != null) frameOverlayView.setVisibility(View.INVISIBLE);
+            if (captureBubbleView != null) captureBubbleView.setVisibility(View.INVISIBLE);
+            if (promptOverlayView != null) promptOverlayView.setVisibility(View.INVISIBLE);
+        });
+
+        // 2. Esperar a que el mirror renderice un frame limpio (sin overlay) y capturarlo.
+        mainHandler.postDelayed(() -> grabCleanFrame(returnToApp), 160);
+    }
+
+    // Captura el primer frame LIMPIO (sin overlay) tras ocultar la burbuja.
+    private void grabCleanFrame(boolean returnToApp) {
+        if (imageReader == null || width <= 0 || height <= 0) {
+            restoreOverlayAfterCapture();
+            return;
+        }
+
+        // Descartar cualquier frame viejo que aun tenga el overlay visible.
         try {
-            existing = imageReader.acquireLatestImage();
+            Image stale = imageReader.acquireLatestImage();
+            if (stale != null) stale.close();
         } catch (Exception ignored) {
             // no-op
         }
-        if (existing != null) {
-            boolean ok = processImageAndStore(existing);
-            try { existing.close(); } catch (Exception ignored) {}
-            if (ok) {
-                onCaptureStored(returnToApp);
-                return;
-            }
-        }
 
-        // Intento 2: esperar el proximo frame con listener.
         AtomicBoolean done = new AtomicBoolean(false);
         imageReader.setOnImageAvailableListener(reader -> {
             if (done.get()) return;
@@ -641,10 +659,13 @@ public class MaticoScreenCaptureService extends Service {
                 done.set(true);
                 if (ok) {
                     onCaptureStored(returnToApp);
+                } else {
+                    mainHandler.post(MaticoScreenCaptureService.this::restoreOverlayAfterCapture);
                 }
             } catch (Exception e) {
                 done.set(true);
-                Log.e("MaticoCaptureService", "captureNow ERROR " + e.getClass().getSimpleName(), e);
+                Log.e("MaticoCaptureService", "grabCleanFrame ERROR " + e.getClass().getSimpleName(), e);
+                mainHandler.post(MaticoScreenCaptureService.this::restoreOverlayAfterCapture);
             } finally {
                 if (image != null) image.close();
                 if (done.get() && imageReader != null) {
@@ -653,12 +674,26 @@ public class MaticoScreenCaptureService extends Service {
             }
         }, mainHandler);
 
+        // Fallback: si la pantalla esta estatica y no llega un frame nuevo, usar el ultimo disponible.
         mainHandler.postDelayed(() -> {
             if (done.compareAndSet(false, true) && imageReader != null) {
                 imageReader.setOnImageAvailableListener(null, null);
-                toast("Matico: no llego el frame (3s). Mueve la pantalla e intenta de nuevo.");
+                Image fallback = null;
+                try {
+                    fallback = imageReader.acquireLatestImage();
+                    if (fallback != null && processImageAndStore(fallback)) {
+                        onCaptureStored(returnToApp);
+                    } else {
+                        mainHandler.post(MaticoScreenCaptureService.this::restoreOverlayAfterCapture);
+                        toast("Matico: no llego el frame. Intenta de nuevo.");
+                    }
+                } catch (Exception ignored) {
+                    mainHandler.post(MaticoScreenCaptureService.this::restoreOverlayAfterCapture);
+                } finally {
+                    if (fallback != null) fallback.close();
+                }
             }
-        }, 3000);
+        }, 1500);
     }
 
     // Hook ejecutado tras guardar una captura: muestra el prompt "Otra / Finalizar".

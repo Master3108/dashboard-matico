@@ -1172,6 +1172,23 @@ export async function getAlarmConfigs(user_id) {
     return data || [];
 }
 
+/**
+ * Trae TODAS las alarmas del par apoderado+estudiante (incluidas las desactivadas).
+ * Para la pantalla de configuración/edición de alarmas.
+ */
+export async function getAlarmConfigsManage(parent_user_id, student_user_id) {
+    const ids = [parent_user_id, student_user_id].filter(Boolean);
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase
+        .from('alarm_config')
+        .select('*')
+        .in('user_id', ids)
+        .eq('student_user_id', student_user_id)
+        .order('hour', { ascending: true });
+    if (error) return [];
+    return data || [];
+}
+
 export async function upsertAlarmConfig({
     alarm_id, user_id, student_user_id, role, alarm_type,
     hour, minute, days_active, subjects_monitor, stale_threshold_days, sound, enabled

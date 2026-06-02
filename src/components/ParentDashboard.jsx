@@ -9,6 +9,7 @@ import {
 import ChatEventCreator from './ChatEventCreator';
 import CalendarView from './CalendarView';
 import JarvisAssistant from './JarvisAssistant';
+import AlarmSettings from './AlarmSettings';
 
 const EVENT_TYPE_CONFIG = {
     prueba: { label: 'Prueba', color: '#EF4444', bg: '#FEF2F2', emoji: '📝' },
@@ -536,7 +537,10 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
             date: getStudyDate(session),
             duration_minutes: Number(session.total_minutes || 0)
         }));
-    const summaryHistoryActivityItems = historyItems.filter(item =>
+    // IMPORTANTE: filtrar desde summaryHistoryItems (ya filtrado por fecha + materia)
+    // para que buenas/malas/total respeten el rango seleccionado igual que los minutos.
+    // Antes usaba historyItems (todo el historial) -> los conteos no cuadraban con "Hoy".
+    const summaryHistoryActivityItems = summaryHistoryItems.filter(item =>
         !['calendar', 'reminder', 'daily_report', 'study', 'study_alert'].includes(String(item.source || '')) &&
         !['stale_subject', 'alert', 'study_alert'].includes(String(item.type || '')) &&
         String(item.type || '') !== 'reporte_diario' &&
@@ -1102,6 +1106,7 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                         { key: 'calendario', label: 'Calendario', icon: Calendar },
                         { key: 'antecedentes', label: 'Antecedentes', icon: FileText },
                         { key: 'progreso', label: 'Progreso', icon: TrendingUp },
+                        { key: 'alarmas', label: 'Alarmas', icon: Bell },
                     ].map(tab => {
                         const Icon = tab.icon;
                         return (
@@ -2267,6 +2272,11 @@ const ParentDashboard = ({ currentUser, onLogout, isAdmin = false, onSwitchToAdm
                             </div>
                         )}
                     </div>
+                )}
+
+                {/* ALARMAS */}
+                {activeTab === 'alarmas' && (
+                    <AlarmSettings currentUser={currentUser} selectedChild={selectedChild} />
                 )}
             </div>
 
