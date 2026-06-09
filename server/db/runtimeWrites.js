@@ -1217,7 +1217,7 @@ export async function getStudentProgressDetail(student_user_id, { days = 30 } = 
     const since = new Date(Date.now() - days * 86400000).toISOString();
     const { data: events, error } = await supabase
         .from('progress_log')
-        .select('subject, session, phase, level_name, event_type, score, correct_answers, wrong_answers, total_questions, xp, created_at')
+        .select('subject, session, phase, level_name, event_type, score, correct_answers, wrong_answers, total_questions, xp, topic, weakness, improvement_plan, wrong_question_details, created_at')
         .eq('user_id', student_user_id)
         .gte('created_at', since)
         .order('created_at', { ascending: true })
@@ -1235,12 +1235,16 @@ export async function getStudentProgressDetail(student_user_id, { days = 30 } = 
         if (!bySubject[subj][sess]) bySubject[subj][sess] = {};
         if (!bySubject[subj][sess][phase]) bySubject[subj][sess][phase] = {
             level_name: null,
+            topic: null,                  // tema concreto de la sesion (de progress_log.topic)
             theory_started: false, theory_completed: false,
             cuaderno_completed: false,
             prep_exam_started: 0, prep_exam_completed: false, prep_exam_reviewed: false,
             best_score: null, last_score: null,
             questions_answered: 0, questions_total: 0,
             xp_earned: 0,
+            improvement_plan: null,       // ultima recomendacion IA
+            weakness: null,               // ultima debilidad detectada
+            wrong_topics: [],             // temas donde fallo (agregados)
             first_activity_at: null, last_activity_at: null,
             events_count: 0
         };
@@ -1249,6 +1253,9 @@ export async function getStudentProgressDetail(student_user_id, { days = 30 } = 
         if (!cell.first_activity_at) cell.first_activity_at = ev.created_at;
         cell.last_activity_at = ev.created_at;
         if (ev.level_name && !cell.level_name) cell.level_name = ev.level_name;
+        if (ev.topic && !cell.topic) cell.topic = ev.topic; // primer topic visto
+        if (ev.improvement_plan) cell.improvement_plan = ev.improvement_plan;
+        if (ev.weakness) cell.weakness = ev.weakness;
         if (ev.xp) cell.xp_earned += Number(ev.xp) || 0;
         switch (ev.event_type) {
             case 'theory_started': cell.theory_started = true; break;
@@ -1292,6 +1299,7 @@ export async function getStudentProgressDetail(student_user_id, { days = 30 } = 
                 return {
                     phase: Number(pNum),
                     level_name: d.level_name || PHASE_LABELS[Number(pNum)] || null,
+                    topic: d.topic,
                     status,
                     theory: { started: d.theory_started, completed: d.theory_completed },
                     cuaderno: { completed: d.cuaderno_completed },
@@ -1306,6 +1314,8 @@ export async function getStudentProgressDetail(student_user_id, { days = 30 } = 
                     },
                     next_action,
                     xp_earned: d.xp_earned,
+                    improvement_plan: d.improvement_plan,
+                    weakness: d.weakness,
                     first_activity_at: d.first_activity_at,
                     last_activity_at: d.last_activity_at,
                     events_count: d.events_count
@@ -1341,6 +1351,135 @@ export async function getStudentProgressDetail(student_user_id, { days = 30 } = 
         days,
         generated_at: new Date().toISOString()
     };
+}
+
+// =====================================================================
+// TIMELINE — eventos enriquecidos para el padre (cuando, que, donde, puntaje)
+// =====================================================================
+export async function getStudentTimeline(student_user_id, { days = 14, limit = 200 } = {}) {
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const { data, error } = await supabase
+        .from('progress_log')
+        .select('id, created_at, event_type, subject, session, phase, level_name, topic, score, xp, correct_answers, wrong_answers, total_questions, improvement_plan, weakness')
+        .eq('user_id', student_user_id)
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+    if (error) throw new Error(`getStudentTimeline: ${error.message}`);
+    return data || [];
+}
+
+// =====================================================================
+// WEAKNESSES — donde le cuesta a Matias (temas/materias con menos %)
+// =====================================================================
+export async function getStudentWeaknesses(student_user_id, { days = 30 } = {}) {
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const { data, error } = await supabase
+        .from('progress_log')
+        .select('subject, topic, score, correct_answers, total_questions, wrong_answers, wrong_question_details, weakness, created_at')
+        .eq('user_id', student_user_id)
+        .gte('created_at', since)
+        .in('event_type', ['prep_exam_completed', 'prep_exam_reviewed', 'phase_completed', 'session_completed'])
+        .limit(500);
+    if (error) throw new Error(`getStudentWeaknesses: ${error.message}`);
+
+    // Agregar por (subject, topic): % aciertos promedio
+    const bySubjectTopic = {};
+    for (const r of (data || [])) {
+        const key = `${(r.subject || 'OTROS').toUpperCase()}|${r.topic || 'GENERAL'}`;
+        if (!bySubjectTopic[key]) bySubjectTopic[key] = {
+            subject: r.subject, topic: r.topic,
+            attempts: 0, total_correct: 0, total_questions: 0,
+            last_score: null, last_at: null, last_weakness: null
+        };
+        const cell = bySubjectTopic[key];
+        cell.attempts++;
+        cell.total_correct += Number(r.correct_answers || 0);
+        cell.total_questions += Number(r.total_questions || 0);
+        if (!cell.last_at || r.created_at > cell.last_at) {
+            cell.last_at = r.created_at;
+            cell.last_score = r.score;
+            cell.last_weakness = r.weakness || cell.last_weakness;
+        }
+    }
+
+    const rows = Object.values(bySubjectTopic).map(c => ({
+        ...c,
+        pct: c.total_questions > 0 ? Math.round(100 * c.total_correct / c.total_questions) : null
+    }));
+
+    // Ordenar por % ascendente (peor primero) — esos son los focos a mejorar
+    const weakest = rows.filter(r => r.pct != null && r.pct < 70).sort((a, b) => a.pct - b.pct).slice(0, 10);
+    const strongest = rows.filter(r => r.pct != null && r.pct >= 90).sort((a, b) => b.pct - a.pct).slice(0, 5);
+
+    return { weakest, strongest, total_topics: rows.length };
+}
+
+// =====================================================================
+// NOTEBOOK ACTIVITY — fotos del cuaderno con OCR (notebook_ocr_records)
+// =====================================================================
+export async function getStudentNotebookActivity(student_user_id, { days = 30, limit = 30 } = {}) {
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const { data, error } = await supabase
+        .from('notebook_ocr_records')
+        .select('id, subject, page_count, interpretation_score, ocr_text, created_at')
+        .eq('user_id', student_user_id)
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+    if (error) throw new Error(`getStudentNotebookActivity: ${error.message}`);
+    const records = (data || []).map(r => ({
+        id: r.id,
+        subject: r.subject,
+        page_count: r.page_count,
+        score: r.interpretation_score,
+        excerpt: String(r.ocr_text || '').slice(0, 200),
+        created_at: r.created_at
+    }));
+    // Agregado por materia
+    const bySubject = {};
+    for (const r of records) {
+        const key = (r.subject || 'GENERAL').toUpperCase();
+        if (!bySubject[key]) bySubject[key] = { subject: key, count: 0, pages: 0, avg_score: 0, scores: [], last_at: null };
+        bySubject[key].count++;
+        bySubject[key].pages += Number(r.page_count || 0);
+        if (r.score != null) bySubject[key].scores.push(Number(r.score));
+        if (!bySubject[key].last_at || r.created_at > bySubject[key].last_at) bySubject[key].last_at = r.created_at;
+    }
+    for (const s of Object.values(bySubject)) {
+        s.avg_score = s.scores.length ? Math.round(s.scores.reduce((a, b) => a + b, 0) / s.scores.length) : null;
+        delete s.scores;
+    }
+    return { records, by_subject: bySubject, total: records.length };
+}
+
+// =====================================================================
+// DAILY TREND — daily_reports ultimos N dias (para grafico)
+// =====================================================================
+export async function getStudentDailyTrend(student_user_id, { days = 14 } = {}) {
+    const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    const { data, error } = await supabase
+        .from('daily_reports')
+        .select('report_date, studied_today, total_minutes, quiz_total, quiz_correct, quiz_wrong, notebook_count, status')
+        .eq('student_user_id', student_user_id)
+        .gte('report_date', since)
+        .order('report_date', { ascending: false });
+    if (error) throw new Error(`getStudentDailyTrend: ${error.message}`);
+    return data || [];
+}
+
+// =====================================================================
+// ADAPTIVE INSIGHTS — perfil adaptativo (recomendaciones, sesiones debiles/fuertes)
+// =====================================================================
+export async function getStudentAdaptiveInsights(student_user_id, { limit = 20 } = {}) {
+    const { data, error } = await supabase
+        .from('adaptive_profile_log')
+        .select('*')
+        .or(`user_id.eq.${student_user_id}`)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+    if (error) return { items: [], error: error.message };
+    return { items: data || [] };
 }
 
 // =====================================================================

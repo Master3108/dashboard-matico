@@ -83,7 +83,12 @@ import {
     getParentReportDigest,
     getStudentProgressDetail,
     writeProgressEvent,
-    writeProgressBatch
+    writeProgressBatch,
+    getStudentTimeline,
+    getStudentWeaknesses,
+    getStudentNotebookActivity,
+    getStudentDailyTrend,
+    getStudentAdaptiveInsights
 } from './db/runtimeWrites.js';
 
 dotenv.config();
@@ -10283,6 +10288,88 @@ app.post('/api/telemetry/batch', async (req, res) => {
         const result = await writeProgressBatch(events);
         res.json({ success: true, ...result });
     } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Snapshot COMPLETO del estudiante — TODA la info en una sola llamada
+// Devuelve: perfil + live overview + timeline + weaknesses + notebook + trend + adaptive
+app.get('/api/parent/student-full-snapshot', async (req, res) => {
+    try {
+        const { student_user_id, days, timeline_limit } = req.query;
+        if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
+        const daysWindow = Number(days) || 30;
+        const tlLimit = Number(timeline_limit) || 200;
+
+        const [
+            studentProfile,
+            todayReport,
+            activeSession,
+            detail,
+            timeline,
+            weaknesses,
+            notebook,
+            trend,
+            adaptive
+        ] = await Promise.all([
+            getProfileByAnyId(student_user_id).catch(() => null),
+            buildDailyReportForStudent({ student_user_id, report_date: dateOnlyInSantiago(), send: false }).catch(e => ({ error: e.message })),
+            getActiveStudySession(student_user_id).catch(() => null),
+            getStudentProgressDetail(student_user_id, { days: daysWindow }).catch(e => ({ subjects: {}, error: e.message })),
+            getStudentTimeline(student_user_id, { days: Math.min(daysWindow, 14), limit: tlLimit }).catch(e => []),
+            getStudentWeaknesses(student_user_id, { days: daysWindow }).catch(e => ({ weakest: [], strongest: [] })),
+            getStudentNotebookActivity(student_user_id, { days: daysWindow }).catch(e => ({ records: [], by_subject: {}, total: 0 })),
+            getStudentDailyTrend(student_user_id, { days: 14 }).catch(e => []),
+            getStudentAdaptiveInsights(student_user_id, { limit: 20 }).catch(e => ({ items: [] }))
+        ]);
+
+        // In-progress derivado del detail (igual que live-overview)
+        const inProgress = [];
+        for (const [subject, sessions] of Object.entries(detail.subjects || {})) {
+            for (const sess of sessions) {
+                const pendingPhases = (sess.phases || []).filter(p => p.status !== 'completed' && p.status !== 'not_started');
+                if (pendingPhases.length === 0) continue;
+                pendingPhases.sort((a, b) => String(b.last_activity_at || '').localeCompare(String(a.last_activity_at || '')));
+                const top = pendingPhases[0];
+                inProgress.push({
+                    subject, session: sess.session, phase: top.phase, level_name: top.level_name,
+                    topic: top.topic, status: top.status, next_action: top.next_action,
+                    questions_answered: top.quiz?.questions_answered || 0,
+                    questions_total: top.quiz?.questions_total || 15,
+                    improvement_plan: top.improvement_plan, weakness: top.weakness,
+                    last_activity_at: top.last_activity_at
+                });
+            }
+        }
+        inProgress.sort((a, b) => String(b.last_activity_at || '').localeCompare(String(a.last_activity_at || '')));
+
+        res.json({
+            success: true,
+            student: studentProfile ? {
+                user_id: studentProfile.user_id,
+                name: studentProfile.display_name || studentProfile.nombre,
+                email: studentProfile.email || studentProfile.mail,
+                grade: studentProfile.current_grade
+            } : null,
+            today: todayReport,
+            active_session: activeSession,
+            in_progress: inProgress.slice(0, 12),
+            detail_by_subject: detail.subjects || {},
+            timeline,
+            weaknesses,
+            notebook,
+            daily_trend: trend,
+            adaptive,
+            stats: {
+                total_events: (detail.total_events || 0),
+                timeline_size: timeline.length,
+                weakest_topics: weaknesses.weakest?.length || 0,
+                notebook_pages: notebook.total || 0
+            },
+            generated_at: new Date().toISOString()
+        });
+    } catch (err) {
+        console.error('[FULL_SNAPSHOT] Error:', err.message);
         res.status(500).json({ success: false, error: err.message });
     }
 });
