@@ -1282,14 +1282,21 @@ export async function getParentAlertDigest(student_user_id, stale_threshold_days
     // 2. Última actividad por materia (para detectar stale)
     const { data: recentProgress } = await supabase
         .from('progress_log')
-        .select('subject, created_at, activity_type, score')
+        .select('subject, created_at, event_type, score')
         .eq('user_id', student_user_id)
         .order('created_at', { ascending: false })
         .limit(200);
 
     // Calcular última actividad real por materia
     const ALL_SUBJECTS = ['MATEMATICA', 'LENGUAJE', 'COMPETENCIA_LECTORA', 'FISICA', 'QUIMICA', 'BIOLOGIA', 'HISTORIA'];
-    const REAL_ACTIVITIES = ['quiz', 'study_session', 'cuaderno', 'ensayo', 'oracle_exam', 'interactive_quiz'];
+    const REAL_ACTIVITIES = [
+        // event_type reales escritos por la app
+        'prep_exam_started', 'prep_exam_completed', 'prep_exam_reviewed',
+        'theory_started', 'theory_completed',
+        'cuaderno_completed', 'evidence_upload',
+        // legacy / nombres usados en algunas rutas viejas
+        'quiz', 'interactive_quiz', 'oracle_exam', 'ensayo', 'study_session', 'cuaderno'
+    ];
     const lastActivityBySubject = {};
 
     for (const subject of ALL_SUBJECTS) {
@@ -1301,7 +1308,7 @@ export async function getParentAlertDigest(student_user_id, stale_threshold_days
         if (subject === 'HISTORIA') variants.push('Historia', 'historia');
 
         const match = (recentProgress || []).find(p =>
-            variants.includes(p.subject) && REAL_ACTIVITIES.includes(p.activity_type)
+            variants.includes(p.subject) && REAL_ACTIVITIES.includes(p.event_type)
         );
         lastActivityBySubject[subject] = match ? match.created_at : null;
     }
@@ -1321,7 +1328,7 @@ export async function getParentAlertDigest(student_user_id, stale_threshold_days
     // 3. Actividad de los últimos 3 días (resumen rápido)
     const threeDaysAgo = new Date(now.getTime() - 3 * 86400000).toISOString();
     const recentReal = (recentProgress || []).filter(p =>
-        REAL_ACTIVITIES.includes(p.activity_type) && p.created_at >= threeDaysAgo
+        REAL_ACTIVITIES.includes(p.event_type) && p.created_at >= threeDaysAgo
     );
 
     return {
@@ -1360,15 +1367,22 @@ export async function getStudentReminderDigest(student_user_id, stale_threshold_
     // 2. Materias que necesita estudiar hoy (basado en eventos + stale)
     const { data: recentProgress } = await supabase
         .from('progress_log')
-        .select('subject, created_at, activity_type')
+        .select('subject, created_at, event_type')
         .eq('user_id', student_user_id)
         .gte('created_at', staleCutoff)
         .limit(100);
 
-    const REAL_ACTIVITIES = ['quiz', 'study_session', 'cuaderno', 'ensayo', 'oracle_exam', 'interactive_quiz'];
+    const REAL_ACTIVITIES = [
+        // event_type reales escritos por la app
+        'prep_exam_started', 'prep_exam_completed', 'prep_exam_reviewed',
+        'theory_started', 'theory_completed',
+        'cuaderno_completed', 'evidence_upload',
+        // legacy / nombres usados en algunas rutas viejas
+        'quiz', 'interactive_quiz', 'oracle_exam', 'ensayo', 'study_session', 'cuaderno'
+    ];
     const recentSubjects = new Set(
         (recentProgress || [])
-            .filter(p => REAL_ACTIVITIES.includes(p.activity_type))
+            .filter(p => REAL_ACTIVITIES.includes(p.event_type))
             .map(p => (p.subject || '').toUpperCase())
     );
 
@@ -1380,12 +1394,12 @@ export async function getStudentReminderDigest(student_user_id, stale_threshold_
     const todayStart = todayStr + 'T00:00:00';
     const { data: todayActivity } = await supabase
         .from('progress_log')
-        .select('subject, activity_type, score')
+        .select('subject, event_type, score')
         .eq('user_id', student_user_id)
         .gte('created_at', todayStart)
         .limit(50);
 
-    const studiedToday = (todayActivity || []).filter(p => REAL_ACTIVITIES.includes(p.activity_type));
+    const studiedToday = (todayActivity || []).filter(p => REAL_ACTIVITIES.includes(p.event_type));
 
     return {
         alarm_type: 'student_reminder',
@@ -1432,12 +1446,19 @@ export async function getParentReportDigest(student_user_id) {
     const totalMinutes = (todaySessions || []).reduce((sum, s) => sum + (s.total_minutes || 0), 0);
 
     // 3. Clasificar actividad del día
-    const REAL_ACTIVITIES = ['quiz', 'study_session', 'cuaderno', 'ensayo', 'oracle_exam', 'interactive_quiz'];
+    const REAL_ACTIVITIES = [
+        // event_type reales escritos por la app
+        'prep_exam_started', 'prep_exam_completed', 'prep_exam_reviewed',
+        'theory_started', 'theory_completed',
+        'cuaderno_completed', 'evidence_upload',
+        // legacy / nombres usados en algunas rutas viejas
+        'quiz', 'interactive_quiz', 'oracle_exam', 'ensayo', 'study_session', 'cuaderno'
+    ];
     const activities = todayProgress || [];
 
-    const quizzes = activities.filter(p => ['quiz', 'interactive_quiz', 'oracle_exam'].includes(p.activity_type));
-    const cuadernoUploads = activities.filter(p => p.activity_type === 'cuaderno' || p.activity_type === 'evidence_upload');
-    const theoryLudica = activities.filter(p => p.activity_type === 'teoria_ludica' || p.activity_type === 'theory');
+    const quizzes = activities.filter(p => ['quiz', 'interactive_quiz', 'oracle_exam', 'prep_exam_started', 'prep_exam_completed', 'prep_exam_reviewed'].includes(p.event_type));
+    const cuadernoUploads = activities.filter(p => ['cuaderno', 'cuaderno_completed', 'evidence_upload'].includes(p.event_type));
+    const theoryLudica = activities.filter(p => ['theory_started', 'theory_completed', 'teoria_ludica', 'theory'].includes(p.event_type));
 
     // Quiz detail: nota, materia, fuente
     const quizDetails = quizzes.map(q => ({
@@ -1446,8 +1467,8 @@ export async function getParentReportDigest(student_user_id) {
         correct: q.correct_answers,
         wrong: q.wrong_answers,
         total: q.total_questions,
-        source: q.source || (q.activity_type === 'oracle_exam' ? 'cuaderno' : 'banco_ia'),
-        activity_type: q.activity_type
+        source: q.source || (q.event_type === 'oracle_exam' ? 'cuaderno' : (String(q.event_type || '').startsWith('prep_exam') ? 'banco_ia' : 'banco_ia')),
+        event_type: q.event_type
     }));
 
     // Cuaderno subido por materia
@@ -1459,14 +1480,14 @@ export async function getParentReportDigest(student_user_id) {
     // 4. Racha (días consecutivos con actividad real)
     const { data: last30 } = await supabase
         .from('progress_log')
-        .select('created_at, activity_type')
+        .select('created_at, event_type')
         .eq('user_id', student_user_id)
         .gte('created_at', new Date(now.getTime() - 30 * 86400000).toISOString())
         .order('created_at', { ascending: false });
 
     let streak = 0;
     const checkedDates = new Set();
-    const realLast30 = (last30 || []).filter(p => REAL_ACTIVITIES.includes(p.activity_type));
+    const realLast30 = (last30 || []).filter(p => REAL_ACTIVITIES.includes(p.event_type));
     for (const p of realLast30) {
         const d = p.created_at.split('T')[0];
         checkedDates.add(d);
@@ -1484,13 +1505,13 @@ export async function getParentReportDigest(student_user_id) {
     // 5. Comparación con ayer
     const { data: yesterdayProgress } = await supabase
         .from('progress_log')
-        .select('activity_type')
+        .select('event_type')
         .eq('user_id', student_user_id)
         .gte('created_at', yesterdayStart)
         .lt('created_at', todayStart);
 
-    const yesterdayReal = (yesterdayProgress || []).filter(p => REAL_ACTIVITIES.includes(p.activity_type));
-    const todayReal = activities.filter(p => REAL_ACTIVITIES.includes(p.activity_type));
+    const yesterdayReal = (yesterdayProgress || []).filter(p => REAL_ACTIVITIES.includes(p.event_type));
+    const todayReal = activities.filter(p => REAL_ACTIVITIES.includes(p.event_type));
 
     return {
         alarm_type: 'parent_report',
