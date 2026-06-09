@@ -80,7 +80,10 @@ import {
     updateAlarmAction,
     getParentAlertDigest,
     getStudentReminderDigest,
-    getParentReportDigest
+    getParentReportDigest,
+    getStudentProgressDetail,
+    writeProgressEvent,
+    writeProgressBatch
 } from './db/runtimeWrites.js';
 
 dotenv.config();
@@ -9992,31 +9995,60 @@ app.post('/api/study-sessions/start', async (req, res) => {
         const { student_user_id, subject, session_number, type } = req.body;
         if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
 
-        // Check if there's already an active session
+        // Check if there's already an active session.
+        // Política: NO cerrar al cambiar de materia. Una sesión = bloque continuo de estudio
+        // hasta que haya idle > 30min, ahí se cierra y se abre una nueva.
         const active = await getActiveStudySession(student_user_id);
         if (active) {
             const activeType = String(active.type || '').toLowerCase();
             const requestedType = String(type || 'daily').toLowerCase();
             const activeSubject = String(active.subject || '').trim().toUpperCase();
             const requestedSubject = String(subject || '').trim().toUpperCase();
-            const shouldReplaceActive =
-                (activeType === 'app_entry' && requestedType !== 'app_entry') ||
-                (requestedType !== 'app_entry' && requestedSubject && activeSubject && activeSubject !== requestedSubject);
 
-            if (!shouldReplaceActive) {
+            // Caso 1: tipo app_entry siendo reemplazado por algo real → cerrar y crear nueva (preserva tipo)
+            const replaceForEntry = (activeType === 'app_entry' && requestedType !== 'app_entry');
+
+            // Caso 2: stale por inactividad (>30 min sin milestones nuevos)
+            const milestonesArr = Array.isArray(active.milestones) ? active.milestones : [];
+            const lastActivityAt = milestonesArr.length
+                ? new Date(milestonesArr[milestonesArr.length - 1].at || active.start_time)
+                : new Date(active.start_time);
+            const idleMinutes = Math.floor((Date.now() - lastActivityAt.getTime()) / 60000);
+            const isStale = idleMinutes > 30;
+
+            if (replaceForEntry || isStale) {
+                try {
+                    await endStudySession(active.session_id);
+                    console.log(`[STUDY] Sesion cerrada (${isStale ? 'stale ' + idleMinutes + 'min idle' : 'app_entry replace'}): ${active.session_id}`);
+                } catch (closeErr) {
+                    console.warn('[STUDY] No se pudo cerrar sesion activa anterior:', closeErr.message);
+                }
+            } else {
+                // Reutilizar la sesion activa, registrando milestone si hay cambio de contexto
+                if (requestedSubject && activeSubject && activeSubject !== requestedSubject) {
+                    try {
+                        await addStudyMilestone(active.session_id, {
+                            name: 'subject_changed',
+                            from_subject: activeSubject,
+                            to_subject: requestedSubject,
+                            session_number: session_number || null
+                        });
+                    } catch (e) { /* noop */ }
+                } else {
+                    try {
+                        await addStudyMilestone(active.session_id, {
+                            name: 'study_resumed',
+                            subject: requestedSubject || activeSubject,
+                            session_number: session_number || null
+                        });
+                    } catch (e) { /* noop */ }
+                }
                 return res.json({ success: true, session: active, already_active: true });
-            }
-
-            try {
-                await endStudySession(active.session_id);
-                console.log(`[STUDY] Sesión activa cerrada por cambio real: ${active.session_id} (${activeType}/${activeSubject})`);
-            } catch (closeErr) {
-                console.warn('[STUDY] No se pudo cerrar sesión activa anterior:', closeErr.message);
             }
         }
 
         const session = await createStudySession({ student_user_id, subject, session_number, type });
-        console.log(`[STUDY] Sesión iniciada: ${session.session_id} para ${student_user_id} (${type}/${subject})`);
+        console.log(`[STUDY] Sesion iniciada: ${session.session_id} para ${student_user_id} (${type}/${subject})`);
         res.json({ success: true, session });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -10106,71 +10138,113 @@ async function deriveStudySessionsFromProgress(student_user_id, from_date, to_da
     try {
         let query = supabase
             .from('progress_log')
-            .select('created_at, subject, event_type, session')
+            .select('id, created_at, subject, event_type, session, phase, score, correct_answers, total_questions, xp, level_name, topic')
             .eq('user_id', student_user_id)
             .order('created_at', { ascending: true });
 
         if (from_date) query = query.gte('created_at', from_date);
         if (to_date) query = query.lte('created_at', to_date);
 
-        const { data: rows, error } = await query.limit(2000);
+        const { data: rows, error } = await query.limit(5000);
         if (error || !rows?.length) return [];
 
-        // Agrupar por día LOCAL (Chile UTC-4) + subject
+        // Día LOCAL Chile (UTC-4)
         const toChileDate = (utcStr) => {
             const d = new Date(utcStr);
-            // Chile = UTC-4 (simplificado, no considera horario verano)
             d.setHours(d.getHours() - 4);
             return d.toISOString().substring(0, 10);
         };
-        const dayGroups = {};
+
+        const GAP_MS = 30 * 60 * 1000;   // 30 min idle → nueva sesion
+        const MAX_SESSION_MIN = 240;     // cap 4h (sanity)
+
+        // Agrupar por DIA solamente (no por subject) — la sesion es un bloque continuo de estudio
+        const byDay = {};
         for (const row of rows) {
             if (!row.created_at) continue;
             const day = toChileDate(row.created_at);
-            const key = `${day}|${row.subject || 'GENERAL'}`;
-            if (!dayGroups[key]) dayGroups[key] = { day, subject: row.subject || 'GENERAL', timestamps: [], events: [] };
-            dayGroups[key].timestamps.push(new Date(row.created_at).getTime());
-            dayGroups[key].events.push(row.event_type);
+            (byDay[day] = byDay[day] || []).push(row);
         }
 
-        // Convertir cada grupo a sesiones segmentadas por gaps de 30 min
-        const GAP_MS = 30 * 60 * 1000; // 30 min gap = nueva sesión
-        const MAX_SESSION_MIN = 90; // cap por sesión
+        const QUIZ_DONE = ['prep_exam_completed', 'oracle_exam', 'quiz_completed', 'session_completed', 'prep_exam_reviewed'];
+        const QUIZ_TRY  = ['prep_exam_started', 'quiz_started'];
+        const THEORY    = ['theory_started', 'theory_completed', 'teoria_ludica', 'theory'];
+        const CUADERNO  = ['cuaderno_completed', 'cuaderno', 'evidence_upload'];
+
         const sessions = [];
-        for (const [key, group] of Object.entries(dayGroups)) {
-            const sorted = group.timestamps.sort((a, b) => a - b);
-            // Segmentar: si hay gap > 30 min entre eventos, cortar
-            const segments = [[sorted[0]]];
-            for (let i = 1; i < sorted.length; i++) {
-                if (sorted[i] - sorted[i - 1] > GAP_MS) {
-                    segments.push([sorted[i]]);
+        for (const [day, dayRows] of Object.entries(byDay)) {
+            dayRows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            // Segmentar por gap > 30 min
+            const segments = [[dayRows[0]]];
+            for (let i = 1; i < dayRows.length; i++) {
+                const prevT = new Date(dayRows[i - 1].created_at).getTime();
+                const currT = new Date(dayRows[i].created_at).getTime();
+                if (currT - prevT > GAP_MS) {
+                    segments.push([dayRows[i]]);
                 } else {
-                    segments[segments.length - 1].push(sorted[i]);
+                    segments[segments.length - 1].push(dayRows[i]);
                 }
             }
 
-            const hasCompletion = group.events.some(e =>
-                e === 'session_completed' || e === 'prep_exam_completed' || e === 'prep_exam_reviewed'
-            );
-
             for (let si = 0; si < segments.length; si++) {
                 const seg = segments[si];
-                const first = seg[0];
-                const last = seg[seg.length - 1];
-                let durationMs = last - first;
-                if (seg.length === 1) durationMs = 5 * 60 * 1000;
-                const totalMinutes = Math.max(2, Math.min(MAX_SESSION_MIN, Math.round(durationMs / 60000)));
+                const firstT = new Date(seg[0].created_at).getTime();
+                const lastT = new Date(seg[seg.length - 1].created_at).getTime();
+                let durationMs = lastT - firstT;
+                if (seg.length === 1) durationMs = 3 * 60 * 1000; // estimacion para evento unico
+                const totalMinutes = Math.max(1, Math.min(MAX_SESSION_MIN, Math.round(durationMs / 60000)));
+
+                const subjectsTouched = [...new Set(seg.map(r => r.subject).filter(Boolean))];
+                const dominantSubject = subjectsTouched[0] || 'GENERAL';
+
+                // Milestones detallados — un step por evento del progress_log
+                const stepMilestones = seg.map(r => ({
+                    name: r.event_type,
+                    at: r.created_at,
+                    subject: r.subject || null,
+                    session: r.session || null,
+                    phase: r.phase || null,
+                    level_name: r.level_name || null,
+                    topic: r.topic || null,
+                    score: r.score ?? null,
+                    correct: r.correct_answers ?? null,
+                    total: r.total_questions ?? null,
+                    xp: r.xp ?? null
+                }));
+
+                const events = seg.map(r => r.event_type);
+                const hasTheory   = events.some(e => THEORY.includes(e));
+                const hasCuaderno = events.some(e => CUADERNO.includes(e));
+                const hasQuizDone = events.some(e => QUIZ_DONE.includes(e));
+                const hasQuizTry  = events.some(e => QUIZ_TRY.includes(e));
+
+                let status;
+                if (hasQuizDone) status = 'completed';
+                else if (hasQuizTry || hasTheory || hasCuaderno) status = 'in_progress';
+                else status = 'minimal';
 
                 sessions.push({
-                    id: `derived-${key}-s${si}`,
+                    id: `derived-${day}-s${si}`,
                     student_user_id,
-                    subject: group.subject,
+                    subject: dominantSubject,
+                    subjects_touched: subjectsTouched,
                     type: 'derived',
-                    status: 'completed',
-                    start_time: new Date(first).toISOString(),
-                    end_time: new Date(last).toISOString(),
+                    status,
+                    start_time: new Date(firstT).toISOString(),
+                    end_time: new Date(lastT).toISOString(),
                     total_minutes: totalMinutes,
-                    milestones: { activities: seg.length, has_completion: hasCompletion },
+                    milestones: stepMilestones, // array — formato igual al de sesiones reales
+                    summary: {
+                        steps: seg.length,
+                        has_theory: hasTheory,
+                        has_cuaderno: hasCuaderno,
+                        has_quiz_attempt: hasQuizTry,
+                        has_quiz_completed: hasQuizDone,
+                        // legacy compat
+                        activities: seg.length,
+                        has_completion: hasQuizDone
+                    },
                     derived: true
                 });
             }
@@ -10182,6 +10256,100 @@ async function deriveStudySessionsFromProgress(student_user_id, from_date, to_da
         return [];
     }
 }
+
+// ============================================================
+// TELEMETRIA — clicks/eventos granulares desde el cliente
+// ============================================================
+// POST /api/telemetry/event  → un solo evento
+// Body: { user_id, event_type, ...campos opcionales (subject, session, phase, ...) }
+app.post('/api/telemetry/event', async (req, res) => {
+    try {
+        const body = req.body || {};
+        if (!body.user_id || !body.event_type) {
+            return res.status(400).json({ success: false, error: 'Falta user_id o event_type' });
+        }
+        const result = await writeProgressEvent(body);
+        res.json({ success: true, ...result });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/telemetry/batch  → varios eventos a la vez (mejor para bursts de clicks)
+// Body: { events: [{ user_id, event_type, ... }, ...] }  (max 200)
+app.post('/api/telemetry/batch', async (req, res) => {
+    try {
+        const events = Array.isArray(req.body?.events) ? req.body.events.slice(0, 200) : [];
+        const result = await writeProgressBatch(events);
+        res.json({ success: true, ...result });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Vista unificada EN VIVO para el dashboard del apoderado:
+// resumen del dia + sesion activa ahora + sesiones en progreso con pendientes
+app.get('/api/parent/live-overview', async (req, res) => {
+    try {
+        const { student_user_id, days } = req.query;
+        if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
+        const daysWindow = Number(days) || 30;
+
+        const [todayReport, activeSession, detail] = await Promise.all([
+            buildDailyReportForStudent({ student_user_id, report_date: dateOnlyInSantiago(), send: false }).catch(e => ({ error: e.message })),
+            getActiveStudySession(student_user_id).catch(() => null),
+            getStudentProgressDetail(student_user_id, { days: daysWindow }).catch(e => ({ subjects: {}, error: e.message }))
+        ]);
+
+        // Filtrar sesiones EN PROGRESO (no completadas) para la tarjeta de pendientes
+        const inProgress = [];
+        for (const [subject, sessions] of Object.entries(detail.subjects || {})) {
+            for (const sess of sessions) {
+                const pendingPhases = (sess.phases || []).filter(p => p.status !== 'completed' && p.status !== 'not_started');
+                if (pendingPhases.length === 0) continue;
+                pendingPhases.sort((a, b) => String(b.last_activity_at || '').localeCompare(String(a.last_activity_at || '')));
+                const top = pendingPhases[0];
+                inProgress.push({
+                    subject,
+                    session: sess.session,
+                    phase: top.phase,
+                    level_name: top.level_name,
+                    status: top.status,
+                    next_action: top.next_action,
+                    questions_answered: top.quiz?.questions_answered || 0,
+                    questions_total: top.quiz?.questions_total || 15,
+                    last_activity_at: top.last_activity_at,
+                    session_quiz_progress: sess.quiz_progress
+                });
+            }
+        }
+        inProgress.sort((a, b) => String(b.last_activity_at || '').localeCompare(String(a.last_activity_at || '')));
+
+        res.json({
+            success: true,
+            today: todayReport,
+            active_session: activeSession,
+            in_progress: inProgress.slice(0, 12),
+            detail_by_subject: detail.subjects || {},
+            generated_at: new Date().toISOString()
+        });
+    } catch (err) {
+        console.error('[LIVE_OVERVIEW] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Detalle de progreso por subject/session/phase — qué hizo y qué le falta
+app.get('/api/parent/student-progress-detail', async (req, res) => {
+    try {
+        const { student_user_id, days } = req.query;
+        if (!student_user_id) return res.status(400).json({ success: false, error: 'Falta student_user_id' });
+        const detail = await getStudentProgressDetail(student_user_id, { days: Number(days) || 30 });
+        res.json({ success: true, ...detail });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 
 // Sesión activa actual
 app.get('/api/study-sessions/active', async (req, res) => {

@@ -1074,15 +1074,20 @@ export async function createStudySession({ student_user_id, subject, session_num
     return data;
 }
 
-export async function addStudyMilestone(session_id, milestone_name) {
+export async function addStudyMilestone(session_id, milestone) {
     const { data: session } = await supabase
         .from('study_sessions')
-        .select('milestones,start_time')
+        .select('milestones,start_time,subject')
         .eq('session_id', session_id)
         .single();
 
     const milestones = session?.milestones || [];
-    milestones.push({ name: milestone_name, at: new Date().toISOString() });
+    const now = new Date().toISOString();
+    // Acepta string (legacy) u objeto enriquecido { name, subject, session, phase, score, ... }
+    const entry = (typeof milestone === 'string' || milestone == null)
+        ? { name: String(milestone || 'milestone'), at: now }
+        : { name: milestone.name || milestone.event_type || 'milestone', at: now, ...milestone };
+    milestones.push(entry);
     const startedAt = session?.start_time ? new Date(session.start_time) : null;
     const total_minutes = startedAt
         ? Math.max(1, Math.round((Date.now() - startedAt.getTime()) / 60000))
@@ -1093,7 +1098,7 @@ export async function addStudyMilestone(session_id, milestone_name) {
         .update({ milestones, total_minutes })
         .eq('session_id', session_id);
     if (error) throw new Error(`addStudyMilestone: ${error.message}`);
-    return { success: true };
+    return { success: true, milestone: entry, total_minutes };
 }
 
 export async function endStudySession(session_id) {
@@ -1141,6 +1146,201 @@ export async function getActiveStudySession(student_user_id) {
         .limit(1)
         .maybeSingle();
     return data || null;
+}
+
+// =====================================================================
+// TELEMETRIA — escribir evento(s) granular(es) a progress_log
+// =====================================================================
+// event_type canonicos esperados desde el frontend:
+//   Teoria: theory_started, theory_scroll, theory_completed, theory_closed
+//   Cuaderno: cuaderno_opened, cuaderno_photo_added, cuaderno_completed
+//   Quiz: prep_exam_started, quiz_question_answered, prep_exam_completed,
+//         prep_exam_reviewed, quiz_phase_completed
+//   Navegacion: page_view, modal_open, modal_close, tab_changed
+//   Sesion: app_opened, app_closed, study_resumed
+//   Voz/Agente: agent_chat, agent_voice_started, agent_voice_ended
+//   Cualquier otro string es valido — solo recomendamos usar snake_case.
+export async function writeProgressEvent({
+    user_id, user_email = null, grade = null,
+    subject = null, session = null, phase = null,
+    event_type, score = null, xp = null, topic = null,
+    total_questions = null, correct_answers = null, wrong_answers = null,
+    level_name = null, sub_level = null, source_mode = null,
+    batch_index = null, batch_size = null
+}) {
+    if (!user_id || !event_type) throw new Error('writeProgressEvent: faltan user_id o event_type');
+    const row = {
+        user_id, user_email, grade,
+        subject, session, phase,
+        event_type, score, xp, topic,
+        total_questions, correct_answers, wrong_answers,
+        level_name, sub_level, source_mode,
+        batch_index, batch_size,
+        created_at: new Date().toISOString()
+    };
+    // Limpiar nulls (Supabase los acepta pero ahorramos espacio)
+    Object.keys(row).forEach(k => row[k] === null && delete row[k]);
+    const { data, error } = await supabase.from('progress_log').insert(row).select('id').single();
+    if (error) throw new Error(`writeProgressEvent: ${error.message}`);
+    return { id: data?.id, event_type, at: row.created_at };
+}
+
+export async function writeProgressBatch(events = []) {
+    if (!Array.isArray(events) || events.length === 0) return { inserted: 0 };
+    const now = new Date();
+    const rows = events.map((e, i) => {
+        if (!e?.user_id || !e?.event_type) return null;
+        const row = {
+            user_id: e.user_id, user_email: e.user_email || null, grade: e.grade || null,
+            subject: e.subject || null, session: e.session ?? null, phase: e.phase ?? null,
+            event_type: e.event_type, score: e.score ?? null, xp: e.xp ?? null, topic: e.topic || null,
+            total_questions: e.total_questions ?? null, correct_answers: e.correct_answers ?? null,
+            wrong_answers: e.wrong_answers ?? null, level_name: e.level_name || null,
+            sub_level: e.sub_level || null, source_mode: e.source_mode || null,
+            batch_index: e.batch_index ?? null, batch_size: e.batch_size ?? null,
+            // Si el cliente trae timestamp lo usamos, si no, distribuimos ms para preservar orden
+            created_at: e.at || e.created_at || new Date(now.getTime() + i).toISOString()
+        };
+        Object.keys(row).forEach(k => row[k] === null && delete row[k]);
+        return row;
+    }).filter(Boolean);
+    if (!rows.length) return { inserted: 0, skipped: events.length };
+    const { error } = await supabase.from('progress_log').insert(rows);
+    if (error) throw new Error(`writeProgressBatch: ${error.message}`);
+    return { inserted: rows.length, skipped: events.length - rows.length };
+}
+
+// =====================================================================
+// STUDENT PROGRESS DETAIL — por subject/session/phase, qué hizo y qué falta
+// =====================================================================
+export async function getStudentProgressDetail(student_user_id, { days = 30 } = {}) {
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const { data: events, error } = await supabase
+        .from('progress_log')
+        .select('subject, session, phase, level_name, event_type, score, correct_answers, wrong_answers, total_questions, xp, created_at')
+        .eq('user_id', student_user_id)
+        .gte('created_at', since)
+        .order('created_at', { ascending: true })
+        .limit(5000);
+    if (error) throw new Error(`getStudentProgressDetail: ${error.message}`);
+    if (!events?.length) return { subjects: {}, total_events: 0, days };
+
+    // Agrupar por subject -> session -> phase
+    const bySubject = {};
+    for (const ev of events) {
+        const subj = String(ev.subject || 'OTROS').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const sess = Number(ev.session) || 0;
+        const phase = Number(ev.phase) || 0;
+        if (!bySubject[subj]) bySubject[subj] = {};
+        if (!bySubject[subj][sess]) bySubject[subj][sess] = {};
+        if (!bySubject[subj][sess][phase]) bySubject[subj][sess][phase] = {
+            level_name: null,
+            theory_started: false, theory_completed: false,
+            cuaderno_completed: false,
+            prep_exam_started: 0, prep_exam_completed: false, prep_exam_reviewed: false,
+            best_score: null, last_score: null,
+            questions_answered: 0, questions_total: 0,
+            xp_earned: 0,
+            first_activity_at: null, last_activity_at: null,
+            events_count: 0
+        };
+        const cell = bySubject[subj][sess][phase];
+        cell.events_count++;
+        if (!cell.first_activity_at) cell.first_activity_at = ev.created_at;
+        cell.last_activity_at = ev.created_at;
+        if (ev.level_name && !cell.level_name) cell.level_name = ev.level_name;
+        if (ev.xp) cell.xp_earned += Number(ev.xp) || 0;
+        switch (ev.event_type) {
+            case 'theory_started': cell.theory_started = true; break;
+            case 'theory_completed': cell.theory_completed = true; cell.theory_started = true; break;
+            case 'cuaderno_completed': cell.cuaderno_completed = true; break;
+            case 'prep_exam_started': cell.prep_exam_started++; break;
+            case 'prep_exam_completed':
+                cell.prep_exam_completed = true;
+                cell.last_score = ev.score;
+                if (cell.best_score == null || (ev.score != null && ev.score > cell.best_score)) cell.best_score = ev.score;
+                cell.questions_answered = Math.max(cell.questions_answered, Number(ev.correct_answers || 0));
+                cell.questions_total = Math.max(cell.questions_total, Number(ev.total_questions || 0));
+                break;
+            case 'prep_exam_reviewed': cell.prep_exam_reviewed = true; break;
+        }
+    }
+
+    // Transformar a estructura util para el dashboard
+    const PHASE_LABELS = { 1: 'BASICO', 2: 'INTERMEDIO', 3: 'AVANZADO' };
+    const subjects = {};
+    for (const [subj, sessions] of Object.entries(bySubject)) {
+        const sessionList = [];
+        for (const [sessNum, phases] of Object.entries(sessions)) {
+            const phaseList = Object.entries(phases).map(([pNum, d]) => {
+                let status;
+                if (d.prep_exam_completed) status = 'completed';
+                else if (d.prep_exam_started > 0) status = 'quiz_in_progress';
+                else if (d.cuaderno_completed) status = 'ready_for_quiz';
+                else if (d.theory_completed) status = 'ready_for_cuaderno';
+                else if (d.theory_started) status = 'reading_theory';
+                else status = 'not_started';
+
+                let next_action;
+                if (status === 'completed') next_action = null;
+                else if (!d.theory_started) next_action = 'Abrir teoria ludica';
+                else if (!d.theory_completed) next_action = 'Terminar teoria';
+                else if (!d.cuaderno_completed) next_action = 'Subir foto del cuaderno';
+                else if (!d.prep_exam_started) next_action = 'Empezar quiz';
+                else next_action = `Terminar quiz (${d.questions_answered}/${d.questions_total || 15} preguntas)`;
+
+                return {
+                    phase: Number(pNum),
+                    level_name: d.level_name || PHASE_LABELS[Number(pNum)] || null,
+                    status,
+                    theory: { started: d.theory_started, completed: d.theory_completed },
+                    cuaderno: { completed: d.cuaderno_completed },
+                    quiz: {
+                        attempts: d.prep_exam_started,
+                        completed: d.prep_exam_completed,
+                        reviewed: d.prep_exam_reviewed,
+                        questions_answered: d.questions_answered,
+                        questions_total: d.questions_total || 15,
+                        last_score: d.last_score,
+                        best_score: d.best_score
+                    },
+                    next_action,
+                    xp_earned: d.xp_earned,
+                    first_activity_at: d.first_activity_at,
+                    last_activity_at: d.last_activity_at,
+                    events_count: d.events_count
+                };
+            }).sort((a, b) => a.phase - b.phase);
+
+            // Estado global de la sesion
+            const sessLastAt = phaseList.reduce((max, p) => max > (p.last_activity_at || '') ? max : (p.last_activity_at || ''), '');
+            const allCompleted = phaseList.length === 3 && phaseList.every(p => p.status === 'completed');
+            const someCompleted = phaseList.some(p => p.status === 'completed');
+            const someStarted = phaseList.some(p => p.status !== 'not_started');
+            const sessionStatus = allCompleted ? 'completed' : (someStarted ? 'in_progress' : 'not_started');
+
+            // Total preguntas hechas vs target (45 = 3 fases * 15)
+            const totalDone = phaseList.reduce((s, p) => s + (p.quiz.questions_answered || 0), 0);
+            const totalTarget = phaseList.reduce((s, p) => s + (p.quiz.questions_total || 15), 0) || 45;
+
+            sessionList.push({
+                session: Number(sessNum),
+                status: sessionStatus,
+                phases: phaseList,
+                quiz_progress: { done: totalDone, target: totalTarget, pct: Math.round(100 * totalDone / totalTarget) },
+                last_activity_at: sessLastAt
+            });
+        }
+        sessionList.sort((a, b) => String(b.last_activity_at).localeCompare(String(a.last_activity_at)));
+        subjects[subj] = sessionList;
+    }
+
+    return {
+        subjects,
+        total_events: events.length,
+        days,
+        generated_at: new Date().toISOString()
+    };
 }
 
 // =====================================================================
