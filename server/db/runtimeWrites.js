@@ -1149,6 +1149,64 @@ export async function getActiveStudySession(student_user_id) {
 }
 
 // =====================================================================
+// RAG — busqueda semantica sobre theory_ludica_bank / question_bank /
+// notebook_ocr_records / progress_log usando pgvector + funciones match_*
+// =====================================================================
+// scope: 'theory' | 'questions' | 'notebook' | 'progress' | 'all'
+// filters: { grade, subject, session, user_id, days_back }
+export async function ragSearch({
+    queryEmbedding,
+    scope = 'all',
+    match_threshold = 0.50,
+    match_count = 5,
+    filters = {}
+}) {
+    if (!Array.isArray(queryEmbedding) || queryEmbedding.length !== 1536) {
+        throw new Error('queryEmbedding debe ser array de 1536 floats');
+    }
+    const results = {};
+    const calls = [];
+
+    if (scope === 'theory' || scope === 'all') {
+        calls.push(supabase.rpc('match_theory_ludica', {
+            query_embedding: queryEmbedding,
+            match_threshold, match_count,
+            filter_grade: filters.grade || null,
+            filter_subject: filters.subject || null
+        }).then(({ data, error }) => { results.theory = error ? { error: error.message } : (data || []); }));
+    }
+    if (scope === 'questions' || scope === 'all') {
+        calls.push(supabase.rpc('match_question_bank', {
+            query_embedding: queryEmbedding,
+            match_threshold, match_count,
+            filter_grade: filters.grade || null,
+            filter_subject: filters.subject || null,
+            filter_session: filters.session ?? null
+        }).then(({ data, error }) => { results.questions = error ? { error: error.message } : (data || []); }));
+    }
+    if ((scope === 'notebook' || scope === 'all') && filters.user_id) {
+        calls.push(supabase.rpc('match_notebook_ocr', {
+            query_embedding: queryEmbedding,
+            filter_user_id: filters.user_id,
+            match_threshold, match_count,
+            filter_subject: filters.subject || null,
+            days_back: filters.days_back || 90
+        }).then(({ data, error }) => { results.notebook = error ? { error: error.message } : (data || []); }));
+    }
+    if ((scope === 'progress' || scope === 'all') && filters.user_id) {
+        calls.push(supabase.rpc('match_progress_log', {
+            query_embedding: queryEmbedding,
+            filter_user_id: filters.user_id,
+            match_threshold, match_count,
+            days_back: filters.days_back || 30
+        }).then(({ data, error }) => { results.progress = error ? { error: error.message } : (data || []); }));
+    }
+
+    await Promise.all(calls);
+    return results;
+}
+
+// =====================================================================
 // TELEMETRIA — escribir evento(s) granular(es) a progress_log
 // =====================================================================
 // event_type canonicos esperados desde el frontend:

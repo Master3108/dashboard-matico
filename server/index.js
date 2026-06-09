@@ -88,7 +88,8 @@ import {
     getStudentWeaknesses,
     getStudentNotebookActivity,
     getStudentDailyTrend,
-    getStudentAdaptiveInsights
+    getStudentAdaptiveInsights,
+    ragSearch
 } from './db/runtimeWrites.js';
 
 dotenv.config();
@@ -10263,6 +10264,42 @@ async function deriveStudySessionsFromProgress(student_user_id, from_date, to_da
 }
 
 // ============================================================
+// RAG — busqueda semantica para el agente (y para el dashboard)
+// ============================================================
+// POST /api/rag/search
+// Body: { query, scope?, match_threshold?, match_count?, filters? }
+//   scope: 'theory' | 'questions' | 'notebook' | 'progress' | 'all' (default 'all')
+//   filters: { grade, subject, session, user_id, days_back }
+// Devuelve: { theory:[], questions:[], notebook:[], progress:[] } con similarity
+app.post('/api/rag/search', async (req, res) => {
+    try {
+        const { query, scope = 'all', match_threshold = 0.50, match_count = 5, filters = {} } = req.body || {};
+        if (!query || typeof query !== 'string') {
+            return res.status(400).json({ success: false, error: 'Falta query (string)' });
+        }
+        // 1) Embeber la query
+        const embedModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
+        const embedRes = await openai.embeddings.create({ model: embedModel, input: query });
+        const queryEmbedding = embedRes.data?.[0]?.embedding;
+        if (!queryEmbedding) return res.status(500).json({ success: false, error: 'Embedding vacio' });
+
+        // 2) Ejecutar match_*
+        const results = await ragSearch({
+            queryEmbedding,
+            scope,
+            match_threshold: Math.max(0, Math.min(1, Number(match_threshold) || 0.50)),
+            match_count: Math.max(1, Math.min(20, Number(match_count) || 5)),
+            filters
+        });
+
+        res.json({ success: true, query, scope, results, model: embedModel });
+    } catch (err) {
+        console.error('[RAG_SEARCH] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ============================================================
 // TELEMETRIA — clicks/eventos granulares desde el cliente
 // ============================================================
 // POST /api/telemetry/event  → un solo evento
@@ -10597,6 +10634,25 @@ const AGENT_TOOLS = [
             }
         }
     },
+    {
+        type: 'function',
+        function: {
+            name: 'rag_search',
+            description: 'Busqueda SEMANTICA por significado en la base de conocimiento de Matico (teoria ludica, banco de preguntas, cuaderno OCR del alumno, historial de progreso). Usar cuando el estudiante/apoderado pregunte algo conceptual ("explicame que es la entalpia", "ayudame con tales", "que escribio el alumno sobre la celula"). Devuelve los pasajes mas relevantes con similarity score.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: { type: 'string', description: 'Pregunta o concepto a buscar (lenguaje natural). Ej: "ecuaciones de segundo grado con factorizacion"' },
+                    scope: { type: 'string', enum: ['theory', 'questions', 'notebook', 'progress', 'all'], description: 'Sobre que buscar. theory=teoria ludica, questions=banco preguntas, notebook=lo que escribio el alumno, progress=su historial. Default all.' },
+                    student_id: { type: 'string', description: 'Necesario si scope incluye notebook o progress (para filtrar al alumno).' },
+                    subject: { type: 'string', description: 'Filtrar por materia (opcional)' },
+                    grade: { type: 'string', description: 'Filtrar por grado (1medio/2medio/3medio)' },
+                    match_count: { type: 'number', description: 'Cuantos resultados devolver por scope (default 5, max 20)' }
+                },
+                required: ['query']
+            }
+        }
+    },
     // === CRUD TOOLS — full agent autonomy ===
     {
         type: 'function',
@@ -10902,6 +10958,31 @@ async function executeAgentTool(name, args) {
             const { data } = await supabase.from('calendar_events').select('subject, title, event_date, event_type, description')
                 .eq('student_user_id', sid).gte('event_date', todayChile).order('event_date', { ascending: true }).limit(20);
             return (data || []).map(e => ({ subject: e.subject, title: e.title, date: e.event_date, type: e.event_type, description: e.description }));
+        }
+        case 'rag_search': {
+            const query = String(args.query || '').trim();
+            if (!query) return { error: 'Falta query' };
+            const scope = args.scope || 'all';
+            const match_count = Math.max(1, Math.min(20, Number(args.match_count) || 5));
+            const filters = {
+                subject: args.subject || null,
+                grade: args.grade || null,
+                user_id: args.student_id || sid || null,
+                days_back: 90
+            };
+            const embedModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
+            const embedRes = await openai.embeddings.create({ model: embedModel, input: query });
+            const queryEmbedding = embedRes.data?.[0]?.embedding;
+            if (!queryEmbedding) return { error: 'embedding vacio' };
+            const results = await ragSearch({ queryEmbedding, scope, match_threshold: 0.45, match_count, filters });
+            // Resumen compacto para que el agente lo use sin gastar tokens en JSON crudo
+            return {
+                query, scope,
+                theory: (results.theory || []).map(r => ({ subject: r.subject, session: r.session, phase: r.phase, topic: r.topic, excerpt: String(r.theory_markdown || '').slice(0, 400), similarity: r.similarity })),
+                questions: (results.questions || []).map(r => ({ subject: r.subject, session: r.session, phase: r.phase, topic: r.topic, question: r.question, correct: r.correct_answer, explanation: String(r.explanation || '').slice(0, 250), similarity: r.similarity })),
+                notebook: (results.notebook || []).map(r => ({ subject: r.subject, topic: r.topic, excerpt: String(r.ocr_text || '').slice(0, 300), score: r.interpretation_score, when: r.created_at, similarity: r.similarity })),
+                progress: (results.progress || []).map(r => ({ subject: r.subject, event: r.event_type, topic: r.topic, weakness: r.weakness, improvement: r.improvement_plan, when: r.created_at, similarity: r.similarity }))
+            };
         }
         case 'get_inactive_subjects': {
             const threshold = Number(args.threshold_days) || 5;
