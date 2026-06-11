@@ -5852,7 +5852,19 @@ const App = () => {
         const serverSessionCompleted = Number(serverProgress?.last_completed_session || 0) >= currentSessionNumber;
         const localSessionCompleted = readStoredList(completedSessionsStorageKey)
             .includes(`${currentSubject}_${currentSessionNumber}`);
-        const sessionCompleted = serverSessionCompleted || localSessionCompleted;
+        // Si el admin reposiciono al alumno a esta sesion (current_session_in_progress = N),
+        // eso SIEMPRE gana sobre 'completada' — la sesion fue reabierta a proposito.
+        const serverSaysInProgressHere = serverSessionInProgress === currentSessionNumber && serverSessionInProgress > 0;
+        const sessionCompleted = (serverSessionCompleted || localSessionCompleted) && !serverSaysInProgressHere;
+        // Cuando admin reposiciona, limpiar el flag local cacheado para esta sesion
+        if (serverSaysInProgressHere && localSessionCompleted) {
+            try {
+                const list = readStoredList(completedSessionsStorageKey).filter(
+                    (s) => s !== `${currentSubject}_${currentSessionNumber}`
+                );
+                localStorage.setItem(completedSessionsStorageKey, JSON.stringify(list));
+            } catch { /* noop */ }
+        }
 
         let currentPhase = Math.min(3, Math.max(1, Number(localProgress.currentPhase || 1)));
         if (!sessionCompleted && serverSessionInProgress === currentSessionNumber && serverPhaseCompleted > 0) {
