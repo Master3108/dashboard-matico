@@ -380,7 +380,9 @@ const mapModelForProvider = (requestedModel, provider) => {
 
 const aiChatCompletionsCreate = async (params) => {
     let lastErr = null;
+    let lastErrProvider = null;
     const tried = [];
+    // PASO 1: orden normal — saltar los marcados caidos
     for (const p of PROVIDER_PREFERENCE_ORDER) {
         if (!isProviderHealthy(p.name)) { tried.push(p.name + ':skipped-down'); continue; }
         const adjustedParams = { ...params, model: mapModelForProvider(params.model, p) };
@@ -389,20 +391,45 @@ const aiChatCompletionsCreate = async (params) => {
             if (tried.length > 0) console.log(`[AI_FALLBACK] ${p.name} respondio tras intentos: ${tried.join(', ')}`);
             return result;
         } catch (err) {
-            lastErr = err;
+            lastErr = err; lastErrProvider = p.name;
             if (isFatalProviderError(err)) {
                 markProviderDown(p.name, err.message || `status ${err?.status}`);
                 tried.push(`${p.name}:fatal(${err?.status || '?'})`);
-                continue; // probar siguiente proveedor
+                continue;
             }
-            // Error transitorio (timeout, 5xx, network) → no quemar al proveedor, devolver el error
             tried.push(`${p.name}:transient(${err?.status || err?.code || 'unknown'})`);
             throw err;
         }
     }
-    const err = new Error(`AI_FALLBACK: todos los proveedores fallaron (tried: ${tried.join(', ')})`);
-    err.cause = lastErr;
-    throw err;
+    // PASO 2 (CIRCUIT HALF-OPEN): si todos quedaron caidos, igual intentar UNO (el preferido).
+    // Si el saldo/cuota fue recargado mientras tanto, esto lo destraba sin esperar 30min.
+    if (PROVIDER_PREFERENCE_ORDER.length > 0) {
+        const p = PROVIDER_PREFERENCE_ORDER[0];
+        console.warn(`[AI_FALLBACK] todos marcados caidos → reintentando ${p.name} en modo half-open`);
+        const adjustedParams = { ...params, model: mapModelForProvider(params.model, p) };
+        try {
+            const result = await p.client.chat.completions.create(adjustedParams);
+            console.log(`[AI_FALLBACK] half-open exito → ${p.name} se reactiva`);
+            PROVIDER_HEALTH.delete(p.name); // proveedor revivio
+            return result;
+        } catch (err) {
+            lastErr = err; lastErrProvider = p.name;
+            if (isFatalProviderError(err)) markProviderDown(p.name, err.message || `status ${err?.status}`);
+            tried.push(`${p.name}:half-open-fail(${err?.status || '?'})`);
+        }
+    }
+    // Devolver el error REAL del ultimo intento, no un generico — el cliente necesita saber
+    // si es 429/402 (sin saldo) vs otra cosa.
+    if (lastErr) {
+        const status = lastErr?.status || 500;
+        const realMsg = lastErr?.error?.message || lastErr?.message || 'AI provider failure';
+        const err = new Error(`[AI:${lastErrProvider}] ${realMsg} | fallback tried: ${tried.join(', ')}`);
+        err.status = status;
+        err.providerError = { provider: lastErrProvider, status, message: realMsg };
+        err.cause = lastErr;
+        throw err;
+    }
+    throw new Error('AI_FALLBACK: no hay proveedores disponibles (revisa env keys)');
 };
 
 // Cliente "primario" para embeddings/images/audio (solo OpenAI los soporta).
