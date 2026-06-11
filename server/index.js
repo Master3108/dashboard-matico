@@ -335,9 +335,15 @@ const AI_PROVIDERS_AVAILABLE = (() => {
 })();
 
 const PROVIDER_PREFERENCE_ORDER = (() => {
-    const preferred = FORCED_AI_PROVIDER || AI_PROVIDER;
+    // Orden por defecto: OpenAI siempre primero (mas estable), luego DeepSeek, luego Kimi.
+    // Si el env AI_PROVIDER esta seteado, ese sube al frente.
+    const DEFAULT_ORDER = ['openai', 'deepseek', 'kimi'];
+    const preferred = FORCED_AI_PROVIDER || DEFAULT_ORDER[0];
+    const rank = new Map();
+    rank.set(preferred, 0);
+    DEFAULT_ORDER.filter(n => n !== preferred).forEach((n, i) => rank.set(n, i + 1));
     const sorted = [...AI_PROVIDERS_AVAILABLE].sort((a, b) =>
-        (a.name === preferred ? -1 : b.name === preferred ? 1 : 0)
+        (rank.get(a.name) ?? 99) - (rank.get(b.name) ?? 99)
     );
     console.log(`[AI_FALLBACK] Proveedores disponibles: ${sorted.map(p => p.name).join(' → ')}`);
     return sorted;
