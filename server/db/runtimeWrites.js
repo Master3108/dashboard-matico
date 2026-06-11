@@ -1225,6 +1225,90 @@ export async function endStudySession(session_id) {
     return data;
 }
 
+// AUTO-CIERRE de sesiones idle (sin actividad por mas de N min).
+// Usa el ULTIMO milestone como end_time (no now()) para que el total_minutes
+// refleje el tiempo real estudiado, no el wall-clock de la sesion abandonada.
+// Pensado para correr periodicamente (cron 15 min) y limpiar zombis.
+export async function autoCloseIdleSessions({ idleMinutes = 90 } = {}) {
+    const nowMs = Date.now();
+    const cutoffMs = nowMs - idleMinutes * 60000;
+
+    // Paginar por si hay muchas
+    const { data: openSessions, error } = await supabase
+        .from('study_sessions')
+        .select('session_id, start_time, milestones, paused_ms_total, last_paused_at, subject, student_user_id')
+        .is('end_time', null)
+        .limit(500);
+    if (error) throw new Error(`autoCloseIdleSessions select: ${error.message}`);
+
+    const results = { scanned: (openSessions || []).length, closed: 0, closures: [], errors: [] };
+    for (const s of openSessions || []) {
+        try {
+            // Calcular timestamp de la ultima actividad real
+            const milestones = Array.isArray(s.milestones) ? s.milestones : [];
+            const milestoneTimes = milestones
+                .map(m => m?.at)
+                .filter(Boolean)
+                .map(at => new Date(at).getTime())
+                .filter(t => Number.isFinite(t));
+            const lastMilestoneMs = milestoneTimes.length ? Math.max(...milestoneTimes) : null;
+            const startMs = new Date(s.start_time).getTime();
+            const lastActivityMs = lastMilestoneMs ?? startMs;
+
+            if (lastActivityMs >= cutoffMs) continue; // sigue activa, saltar
+
+            // Cerrar usando lastActivityMs como end_time
+            const endDate = new Date(lastActivityMs);
+            // Si hay pausa abierta, cerrar la pausa primero
+            let pausedTotal = Number(s.paused_ms_total || 0);
+            const finalMilestones = [...milestones];
+            if (s.last_paused_at) {
+                const lp = new Date(s.last_paused_at).getTime();
+                if (Number.isFinite(lp) && lp < endDate.getTime()) {
+                    pausedTotal += Math.max(0, endDate.getTime() - lp);
+                }
+            }
+            const synthetic = { ...s, paused_ms_total: pausedTotal, last_paused_at: null };
+            const total_minutes = computeActiveMinutes(synthetic, endDate.getTime());
+            finalMilestones.push({
+                name: 'auto_closed_idle',
+                at: new Date(nowMs).toISOString(),
+                reason: `idle_>${idleMinutes}min`,
+                end_time_used: endDate.toISOString(),
+                idle_minutes: Math.round((nowMs - lastActivityMs) / 60000)
+            });
+
+            const { error: upErr } = await supabase
+                .from('study_sessions')
+                .update({
+                    end_time: endDate.toISOString(),
+                    total_minutes,
+                    confirmed_minutes: total_minutes,
+                    paused_ms_total: pausedTotal,
+                    last_paused_at: null,
+                    pause_reason: null,
+                    milestones: finalMilestones
+                })
+                .eq('session_id', s.session_id);
+            if (upErr) {
+                results.errors.push({ session_id: s.session_id, error: upErr.message });
+                continue;
+            }
+            results.closed++;
+            results.closures.push({
+                session_id: s.session_id,
+                student: s.student_user_id,
+                subject: s.subject,
+                idle_min: Math.round((nowMs - lastActivityMs) / 60000),
+                final_minutes: total_minutes
+            });
+        } catch (err) {
+            results.errors.push({ session_id: s.session_id, error: err.message });
+        }
+    }
+    return results;
+}
+
 export async function getStudySessions(student_user_id, from_date = null, to_date = null) {
     let query = supabase
         .from('study_sessions')

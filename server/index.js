@@ -74,6 +74,7 @@ import {
     getActiveStudySession,
     pauseStudySession,
     resumeStudySession,
+    autoCloseIdleSessions,
     getAlarmConfigs,
     getAlarmConfigsManage,
     upsertAlarmConfig,
@@ -8808,6 +8809,34 @@ cron.schedule('15 3 * * *', async () => {
         console.error('[CRON_NOTEBOOK] Error limpiando cuadernos:', error.message);
     }
 }, { timezone: 'America/Santiago' });
+
+// Cada 15 min: cerrar sesiones de estudio que llevan > 90 min sin actividad.
+// Setea end_time al ULTIMO milestone (no a now()) para que total_minutes refleje
+// tiempo real estudiado y no la sesion zombie de 14 dias.
+cron.schedule('*/15 * * * *', async () => {
+    try {
+        const result = await autoCloseIdleSessions({ idleMinutes: 90 });
+        if (result.closed > 0) {
+            console.log(`[CRON_STUDY_IDLE] Cerradas ${result.closed} de ${result.scanned} sesiones zombi. Ejemplo: ${JSON.stringify(result.closures.slice(0, 3))}`);
+        }
+        if (result.errors?.length) {
+            console.warn(`[CRON_STUDY_IDLE] Errores: ${result.errors.length}`);
+        }
+    } catch (err) {
+        console.error('[CRON_STUDY_IDLE] Error:', err.message);
+    }
+}, { timezone: 'America/Santiago' });
+
+// Endpoint admin manual para forzar la limpieza (util para testear o emergencia)
+app.post('/api/admin/auto-close-idle', async (req, res) => {
+    try {
+        const idleMinutes = Math.max(15, Math.min(1440, Number(req.body?.idle_minutes) || 90));
+        const result = await autoCloseIdleSessions({ idleMinutes });
+        res.json({ success: true, idle_threshold_minutes: idleMinutes, ...result });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 
 // =====================================================================
 // CALENDARIO / EVENTOS
