@@ -1074,20 +1074,26 @@ export async function createStudySession({ student_user_id, subject, session_num
     return data;
 }
 
+// Cap absoluto por sesion: si el alumno deja todo abierto 5h, no le contamos
+// mas que esto (defensa final contra fraude/olvido). Se aplica en TODOS los
+// calculos de minutos activos para no inflar el dashboard mientras la sesion
+// esta viva.
+const SESSION_CAP_MINUTES = 90;
+
 // Calcula minutos activos = wall-clock - paused_ms_total, descontando si esta
-// pausada ahora (resta lo que va corrido desde last_paused_at).
+// pausada ahora (resta lo que va corrido desde last_paused_at). Aplica cap.
 const computeActiveMinutes = (session, nowMs = Date.now()) => {
     if (!session?.start_time) return 1;
     const start = new Date(session.start_time).getTime();
     const wallMs = Math.max(0, nowMs - start);
     let pausedMs = Number(session.paused_ms_total || 0);
     if (session.last_paused_at) {
-        // pausa abierta: agregar el tramo desde last_paused_at hasta nowMs
         const lastPaused = new Date(session.last_paused_at).getTime();
         if (Number.isFinite(lastPaused)) pausedMs += Math.max(0, nowMs - lastPaused);
     }
     const activeMs = Math.max(0, wallMs - pausedMs);
-    return Math.max(1, Math.round(activeMs / 60000));
+    const minutes = Math.round(activeMs / 60000);
+    return Math.max(1, Math.min(SESSION_CAP_MINUTES, minutes));
 };
 
 export async function addStudyMilestone(session_id, milestone) {
@@ -1177,10 +1183,6 @@ export async function resumeStudySession(session_id) {
     if (error) throw new Error(`resumeStudySession: ${error.message}`);
     return { success: true, paused_for_ms: pausedFor, paused_ms_total: newPausedTotal, total_minutes };
 }
-
-// Cap absoluto por sesion: si el alumno deja todo abierto 5h, no le contamos
-// mas que esto (defensa final contra fraude/olvido).
-const SESSION_CAP_MINUTES = 90;
 
 export async function endStudySession(session_id) {
     const { data: session } = await supabase
