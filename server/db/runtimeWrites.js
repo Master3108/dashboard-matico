@@ -1074,48 +1074,148 @@ export async function createStudySession({ student_user_id, subject, session_num
     return data;
 }
 
+// Calcula minutos activos = wall-clock - paused_ms_total, descontando si esta
+// pausada ahora (resta lo que va corrido desde last_paused_at).
+const computeActiveMinutes = (session, nowMs = Date.now()) => {
+    if (!session?.start_time) return 1;
+    const start = new Date(session.start_time).getTime();
+    const wallMs = Math.max(0, nowMs - start);
+    let pausedMs = Number(session.paused_ms_total || 0);
+    if (session.last_paused_at) {
+        // pausa abierta: agregar el tramo desde last_paused_at hasta nowMs
+        const lastPaused = new Date(session.last_paused_at).getTime();
+        if (Number.isFinite(lastPaused)) pausedMs += Math.max(0, nowMs - lastPaused);
+    }
+    const activeMs = Math.max(0, wallMs - pausedMs);
+    return Math.max(1, Math.round(activeMs / 60000));
+};
+
 export async function addStudyMilestone(session_id, milestone) {
     const { data: session } = await supabase
         .from('study_sessions')
-        .select('milestones,start_time,subject')
+        .select('milestones,start_time,subject,paused_ms_total,last_paused_at')
         .eq('session_id', session_id)
         .single();
 
     const milestones = session?.milestones || [];
     const now = new Date().toISOString();
-    // Acepta string (legacy) u objeto enriquecido { name, subject, session, phase, score, ... }
     const entry = (typeof milestone === 'string' || milestone == null)
         ? { name: String(milestone || 'milestone'), at: now }
         : { name: milestone.name || milestone.event_type || 'milestone', at: now, ...milestone };
     milestones.push(entry);
-    const startedAt = session?.start_time ? new Date(session.start_time) : null;
-    const total_minutes = startedAt
-        ? Math.max(1, Math.round((Date.now() - startedAt.getTime()) / 60000))
-        : 1;
+
+    const total_minutes = computeActiveMinutes(session);
 
     const { error } = await supabase
         .from('study_sessions')
-        .update({ milestones, total_minutes })
+        .update({ milestones, total_minutes, confirmed_minutes: total_minutes })
         .eq('session_id', session_id);
     if (error) throw new Error(`addStudyMilestone: ${error.message}`);
     return { success: true, milestone: entry, total_minutes };
 }
 
+// PAUSAR sesion activa (page hidden / window blur). Idempotente: si ya esta
+// pausada no abre otra pausa.
+export async function pauseStudySession(session_id, { reason = 'visibility_hidden' } = {}) {
+    const { data: session } = await supabase
+        .from('study_sessions')
+        .select('milestones, last_paused_at, paused_ms_total, start_time')
+        .eq('session_id', session_id)
+        .maybeSingle();
+    if (!session) return { success: false, error: 'session_not_found' };
+    if (session.last_paused_at) {
+        // ya esta pausada — devolver estado
+        return { success: true, already_paused: true, last_paused_at: session.last_paused_at };
+    }
+    const now = new Date().toISOString();
+    const milestones = Array.isArray(session.milestones) ? session.milestones : [];
+    milestones.push({ name: 'paused', at: now, reason });
+
+    const { error } = await supabase
+        .from('study_sessions')
+        .update({ last_paused_at: now, pause_reason: reason, milestones })
+        .eq('session_id', session_id);
+    if (error) throw new Error(`pauseStudySession: ${error.message}`);
+    return { success: true, paused_at: now };
+}
+
+// REANUDAR sesion pausada. Acumula el tramo en paused_ms_total y recalcula
+// total_minutes/confirmed_minutes.
+export async function resumeStudySession(session_id) {
+    const { data: session } = await supabase
+        .from('study_sessions')
+        .select('milestones, last_paused_at, paused_ms_total, start_time')
+        .eq('session_id', session_id)
+        .maybeSingle();
+    if (!session) return { success: false, error: 'session_not_found' };
+    if (!session.last_paused_at) {
+        return { success: true, already_active: true };
+    }
+    const now = new Date();
+    const pausedFor = Math.max(0, now.getTime() - new Date(session.last_paused_at).getTime());
+    const newPausedTotal = Number(session.paused_ms_total || 0) + pausedFor;
+    const milestones = Array.isArray(session.milestones) ? session.milestones : [];
+    milestones.push({ name: 'resumed', at: now.toISOString(), paused_ms: pausedFor });
+
+    // Recalcular minutos activos (sin la pausa abierta porque la cerramos ahora)
+    const total_minutes = computeActiveMinutes(
+        { ...session, paused_ms_total: newPausedTotal, last_paused_at: null },
+        now.getTime()
+    );
+
+    const { error } = await supabase
+        .from('study_sessions')
+        .update({
+            last_paused_at: null,
+            pause_reason: null,
+            paused_ms_total: newPausedTotal,
+            milestones,
+            total_minutes,
+            confirmed_minutes: total_minutes
+        })
+        .eq('session_id', session_id);
+    if (error) throw new Error(`resumeStudySession: ${error.message}`);
+    return { success: true, paused_for_ms: pausedFor, paused_ms_total: newPausedTotal, total_minutes };
+}
+
+// Cap absoluto por sesion: si el alumno deja todo abierto 5h, no le contamos
+// mas que esto (defensa final contra fraude/olvido).
+const SESSION_CAP_MINUTES = 90;
+
 export async function endStudySession(session_id) {
     const { data: session } = await supabase
         .from('study_sessions')
-        .select('start_time')
+        .select('start_time, paused_ms_total, last_paused_at, milestones')
         .eq('session_id', session_id)
         .single();
-
     if (!session) throw new Error('Session not found');
-    const start = new Date(session.start_time);
-    const end = new Date();
-    const total_minutes = Math.max(1, Math.round((end - start) / 60000));
+
+    // Si la sesion estaba pausada cuando se termina, cerrar la pausa primero
+    let pausedTotal = Number(session.paused_ms_total || 0);
+    const milestones = Array.isArray(session.milestones) ? session.milestones : [];
+    const endDate = new Date();
+    if (session.last_paused_at) {
+        const pausedFor = Math.max(0, endDate.getTime() - new Date(session.last_paused_at).getTime());
+        pausedTotal += pausedFor;
+        milestones.push({ name: 'resumed_on_end', at: endDate.toISOString(), paused_ms: pausedFor });
+    }
+    // Recomputar minutos activos
+    const synthetic = { ...session, paused_ms_total: pausedTotal, last_paused_at: null };
+    const activeMin = computeActiveMinutes(synthetic, endDate.getTime());
+    const total_minutes = Math.max(1, Math.min(SESSION_CAP_MINUTES, activeMin));
+    const confirmed_minutes = total_minutes; // por ahora son iguales; los caps por fase vienen en una iteracion siguiente
 
     const { data, error } = await supabase
         .from('study_sessions')
-        .update({ end_time: end.toISOString(), total_minutes })
+        .update({
+            end_time: endDate.toISOString(),
+            total_minutes,
+            confirmed_minutes,
+            paused_ms_total: pausedTotal,
+            last_paused_at: null,
+            pause_reason: null,
+            milestones
+        })
         .eq('session_id', session_id)
         .select()
         .single();

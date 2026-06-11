@@ -3953,17 +3953,51 @@ const App = () => {
             } catch (_) {}
         };
 
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'hidden') closeSession();
+        // Pausa la sesion (page hidden / window blur). NO la cierra — la idea es
+        // que el contador no siga corriendo si Matias se va a otra pestana, pero
+        // si vuelve, retomemos la sesion donde quedo.
+        const pauseSession = (reason) => {
+            const sessionId = openedSession?.session_id || activeStudySession?.session_id;
+            if (!sessionId) return;
+            try {
+                authFetch('/api/study-sessions/pause', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId, reason: reason || 'visibility_hidden' }),
+                    keepalive: true
+                }).catch(() => {});
+            } catch (_) {}
+        };
+        const resumeSession = () => {
+            const sessionId = openedSession?.session_id || activeStudySession?.session_id;
+            if (!sessionId) return;
+            try {
+                authFetch('/api/study-sessions/resume', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                }).catch(() => {});
+            } catch (_) {}
         };
 
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') pauseSession('visibility_hidden');
+            else if (document.visibilityState === 'visible') resumeSession();
+        };
+        const handleWindowBlur = () => pauseSession('window_blur');
+        const handleWindowFocus = () => resumeSession();
+
         window.addEventListener('beforeunload', closeSession);
+        window.addEventListener('blur', handleWindowBlur);
+        window.addEventListener('focus', handleWindowFocus);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             cancelled = true;
             if (heartbeatId) clearInterval(heartbeatId);
             window.removeEventListener('beforeunload', closeSession);
+            window.removeEventListener('blur', handleWindowBlur);
+            window.removeEventListener('focus', handleWindowFocus);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             closeSession();
         };

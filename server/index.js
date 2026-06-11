@@ -72,6 +72,8 @@ import {
     endStudySession,
     getStudySessions,
     getActiveStudySession,
+    pauseStudySession,
+    resumeStudySession,
     getAlarmConfigs,
     getAlarmConfigsManage,
     upsertAlarmConfig,
@@ -10193,6 +10195,30 @@ app.post('/api/study-sessions/start', async (req, res) => {
         const session = await createStudySession({ student_user_id, subject, session_number, type });
         console.log(`[STUDY] Sesion iniciada: ${session.session_id} para ${student_user_id} (${type}/${subject})`);
         res.json({ success: true, session });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Pausar sesion (page hidden / window blur)
+app.post('/api/study-sessions/pause', async (req, res) => {
+    try {
+        const { session_id, reason } = req.body || {};
+        if (!session_id) return res.status(400).json({ success: false, error: 'Falta session_id' });
+        const result = await pauseStudySession(session_id, { reason: String(reason || 'visibility_hidden').slice(0, 60) });
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Reanudar sesion pausada
+app.post('/api/study-sessions/resume', async (req, res) => {
+    try {
+        const { session_id } = req.body || {};
+        if (!session_id) return res.status(400).json({ success: false, error: 'Falta session_id' });
+        const result = await resumeStudySession(session_id);
+        res.json(result);
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
