@@ -307,9 +307,113 @@ const NANO_BANANA_B64_PATH = String(process.env.NANO_BANANA_RESPONSE_B64_PATH ||
 const NANO_BANANA_URL_PATH = String(process.env.NANO_BANANA_RESPONSE_URL_PATH || 'data.0.url').trim();
 const NANO_BANANA_MIME_PATH = String(process.env.NANO_BANANA_RESPONSE_MIME_PATH || 'data.0.mime_type').trim();
 
-const openai = new OpenAI({
-    apiKey: AI_API_KEY,
-    baseURL: AI_BASE_URL
+// ============================================================
+// AI FALLBACK — multi-proveedor con auto-deteccion de caidas
+// Si OpenAI/DeepSeek/Kimi falla con 401/402/403/429 → marca al proveedor
+// caido por 30 min y reintenta con el siguiente. Transparente para todo el
+// codigo: sigue siendo `openai.chat.completions.create(...)`.
+// ============================================================
+const AI_PROVIDERS_AVAILABLE = (() => {
+    const list = [];
+    if (process.env.OPENAI_API_KEY) list.push({
+        name: 'openai',
+        client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1' }),
+        models: { fast: process.env.OPENAI_FAST_MODEL || 'gpt-4.1-mini', thinking: process.env.OPENAI_THINKING_MODEL || 'gpt-4.1' }
+    });
+    if (process.env.DEEPSEEK_API_KEY) list.push({
+        name: 'deepseek',
+        client: new OpenAI({ apiKey: process.env.DEEPSEEK_API_KEY, baseURL: 'https://api.deepseek.com/v1' }),
+        models: { fast: 'deepseek-chat', thinking: 'deepseek-chat' }
+    });
+    const kimiKey = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY;
+    if (kimiKey) list.push({
+        name: 'kimi',
+        client: new OpenAI({ apiKey: kimiKey, baseURL: process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1' }),
+        models: { fast: process.env.KIMI_FAST_MODEL || 'kimi-k2-turbo-preview', thinking: process.env.KIMI_THINKING_MODEL || 'kimi-k2-thinking-preview' }
+    });
+    return list;
+})();
+
+const PROVIDER_PREFERENCE_ORDER = (() => {
+    const preferred = FORCED_AI_PROVIDER || AI_PROVIDER;
+    const sorted = [...AI_PROVIDERS_AVAILABLE].sort((a, b) =>
+        (a.name === preferred ? -1 : b.name === preferred ? 1 : 0)
+    );
+    console.log(`[AI_FALLBACK] Proveedores disponibles: ${sorted.map(p => p.name).join(' → ')}`);
+    return sorted;
+})();
+
+const PROVIDER_HEALTH = new Map(); // name -> { down_until, last_reason }
+const FAILURE_TTL_MS = 30 * 60 * 1000; // 30 min antes de reintentar provider caido
+const isProviderHealthy = (name) => {
+    const h = PROVIDER_HEALTH.get(name);
+    if (!h) return true;
+    if (h.down_until && Date.now() < h.down_until) return false;
+    return true;
+};
+const markProviderDown = (name, reason) => {
+    PROVIDER_HEALTH.set(name, { down_until: Date.now() + FAILURE_TTL_MS, last_reason: reason });
+    console.warn(`[AI_FALLBACK] ${name} marcado caido por ${FAILURE_TTL_MS / 60000}min: ${String(reason || '').slice(0, 120)}`);
+};
+const isFatalProviderError = (err) => {
+    const status = err?.status || err?.response?.status || err?.statusCode;
+    if ([401, 402, 403].includes(Number(status))) return true;
+    const msg = String(err?.message || err?.error?.message || '').toLowerCase();
+    return /insufficient.balance|invalid.authentication|invalid.api.key|api.key.is.invalid|exceeded.your.current.quota|account.is.not.active/.test(msg);
+};
+const mapModelForProvider = (requestedModel, provider) => {
+    if (provider.name === 'openai') return requestedModel; // OpenAI usa lo solicitado
+    const r = String(requestedModel || '').toLowerCase();
+    // Para deepseek/kimi: si pidieron un modelo de OpenAI (gpt-*), mapear a su 'fast'
+    if (r.includes('gpt-')) return provider.models.fast;
+    // Si pidieron deepseek-* / kimi-* y el provider coincide, respetar
+    if (r.includes('deepseek') && provider.name === 'deepseek') return requestedModel;
+    if (r.includes('kimi') || r.includes('moonshot')) return provider.name === 'kimi' ? requestedModel : provider.models.fast;
+    return provider.models.fast;
+};
+
+const aiChatCompletionsCreate = async (params) => {
+    let lastErr = null;
+    const tried = [];
+    for (const p of PROVIDER_PREFERENCE_ORDER) {
+        if (!isProviderHealthy(p.name)) { tried.push(p.name + ':skipped-down'); continue; }
+        const adjustedParams = { ...params, model: mapModelForProvider(params.model, p) };
+        try {
+            const result = await p.client.chat.completions.create(adjustedParams);
+            if (tried.length > 0) console.log(`[AI_FALLBACK] ${p.name} respondio tras intentos: ${tried.join(', ')}`);
+            return result;
+        } catch (err) {
+            lastErr = err;
+            if (isFatalProviderError(err)) {
+                markProviderDown(p.name, err.message || `status ${err?.status}`);
+                tried.push(`${p.name}:fatal(${err?.status || '?'})`);
+                continue; // probar siguiente proveedor
+            }
+            // Error transitorio (timeout, 5xx, network) → no quemar al proveedor, devolver el error
+            tried.push(`${p.name}:transient(${err?.status || err?.code || 'unknown'})`);
+            throw err;
+        }
+    }
+    const err = new Error(`AI_FALLBACK: todos los proveedores fallaron (tried: ${tried.join(', ')})`);
+    err.cause = lastErr;
+    throw err;
+};
+
+// Cliente "primario" para embeddings/images/audio (solo OpenAI los soporta).
+// Si no hay OPENAI_API_KEY, intenta con AI_API_KEY (que puede no funcionar pero no es bloqueante a la importacion).
+const PRIMARY_OPENAI_CLIENT = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || AI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+});
+
+// El "openai" exportado al resto del codigo: chat.completions.create con fallback,
+// embeddings/images/audio van directo al cliente primario.
+const openai = new Proxy({}, {
+    get(_target, prop) {
+        if (prop === 'chat') return { completions: { create: aiChatCompletionsCreate } };
+        // embeddings, images, audio, beta, etc. -> cliente primario
+        return PRIMARY_OPENAI_CLIENT[prop];
+    }
 });
 
 const kimiVisionClient = KIMI_API_KEY
