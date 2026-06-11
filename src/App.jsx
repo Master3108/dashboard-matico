@@ -17,6 +17,7 @@ import VoiceAgentChat from './components/VoiceAgentChat';
 import JarvisAssistant from './components/JarvisAssistant';
 import PhoneCaptureNotifier from './components/PhoneCaptureNotifier';
 import AlarmScreen from './components/AlarmScreen';
+import PresenceCheckModal from './components/PresenceCheckModal';
 import { getAlarmService } from './services/AlarmService';
 import {
     BookOpen,
@@ -3835,6 +3836,65 @@ const App = () => {
 
     // STUDY SESSION TRACKING (hora de estudio)
     const [activeStudySession, setActiveStudySession] = useState(null);
+
+    // Modal "¿Sigues ahí?" cuando lleva ~25 min sin tocar nada
+    const [presenceCheckOpen, setPresenceCheckOpen] = useState(false);
+
+    // Hook de inactividad: arma un timer que se resetea con cualquier evento
+    // del usuario (mousemove, click, key, touch, scroll). Si pasan 25 min sin
+    // eventos -> abre el modal. Solo para estudiantes con sesion activa.
+    useEffect(() => {
+        if (!USER_ID || currentUser?.role === 'apoderado') return undefined;
+        const INACTIVITY_MS = 25 * 60 * 1000;
+        let timerId = null;
+        const resetTimer = () => {
+            if (timerId) clearTimeout(timerId);
+            timerId = setTimeout(() => setPresenceCheckOpen(true), INACTIVITY_MS);
+        };
+        const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'pointerdown'];
+        const handler = () => {
+            // Si el modal esta abierto y el usuario interactua afuera no lo cerramos
+            // automaticamente (debe tocar el boton); solo reseteamos el timer.
+            resetTimer();
+        };
+        events.forEach((e) => window.addEventListener(e, handler, { passive: true }));
+        resetTimer();
+        return () => {
+            if (timerId) clearTimeout(timerId);
+            events.forEach((e) => window.removeEventListener(e, handler));
+        };
+    }, [USER_ID, currentUser?.role]);
+
+    // Handlers del modal — interactuan con la sesion activa
+    const handlePresenceConfirm = async () => {
+        setPresenceCheckOpen(false);
+        const sid = activeStudySession?.session_id;
+        if (!sid) return;
+        try {
+            await authFetch('/api/study-sessions/milestone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sid, milestone: 'presence_confirmed' })
+            });
+        } catch { /* noop */ }
+    };
+    const handlePresenceTimeout = async () => {
+        setPresenceCheckOpen(false);
+        const sid = activeStudySession?.session_id;
+        if (!sid) return;
+        try {
+            await authFetch('/api/study-sessions/pause', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sid, reason: 'presence_check_timeout' })
+            });
+            await authFetch('/api/study-sessions/milestone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sid, milestone: 'presence_unconfirmed' })
+            });
+        } catch { /* noop */ }
+    };
 
     const startStudyTimer = async (type = 'daily', subjectOverride = null) => {
         const requestedSubject = subjectOverride || currentSubject;
@@ -7932,6 +7992,14 @@ ${finalData.capsule}`;
                     }}
                 />
             )}
+
+            {/* Modal "¿Sigues ahí?" — anti-fraude de minutos */}
+            <PresenceCheckModal
+                open={presenceCheckOpen}
+                autoCloseSeconds={60}
+                onConfirm={handlePresenceConfirm}
+                onTimeout={handlePresenceTimeout}
+            />
         </div>
     );
 };
