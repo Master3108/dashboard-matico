@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
@@ -259,20 +259,20 @@ const AI_BASE_URL = AI_PROVIDER === 'kimi'
 const AI_MODELS = {
     fast: AI_PROVIDER === 'kimi'
         ? (process.env.KIMI_FAST_MODEL || 'kimi-k2-turbo-preview')
-        : (AI_PROVIDER === 'openai' ? (process.env.OPENAI_FAST_MODEL || 'gpt-4.1-mini') : 'deepseek-chat'),
+        : (AI_PROVIDER === 'openai' ? (process.env.OPENAI_FAST_MODEL || 'gpt-4o-mini') : 'deepseek-chat'),
     thinking: AI_PROVIDER === 'kimi'
         ? (process.env.KIMI_THINKING_MODEL || 'kimi-k2-thinking-preview')
-        : (AI_PROVIDER === 'openai' ? (process.env.OPENAI_THINKING_MODEL || 'gpt-4.1') : 'deepseek-chat')
+        : (AI_PROVIDER === 'openai' ? (process.env.OPENAI_THINKING_MODEL || 'gpt-4o') : 'deepseek-chat')
 };
 const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '';
 const KIMI_BASE_URL = process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1';
 const NOTEBOOK_VISION_MODEL = process.env.KIMI_VISION_MODEL || process.env.KIMI_FAST_MODEL || 'kimi-k2.5';
-const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini';
+const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || 'gpt-4o-mini';
 const OPENAI_DIRECT_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_IMAGE_API_KEY = process.env.OPENAI_IMAGE_API_KEY || OPENAI_DIRECT_API_KEY || AI_API_KEY || '';
 const OPENAI_IMAGE_BASE_URL = process.env.OPENAI_IMAGE_BASE_URL || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1';
-const GEMINI_IMAGE_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+const GEMINI_IMAGE_API_KEY = process.env.GEMINI_IMAGE_API_KEY || process.env.GOOGLE_API_KEY || '';
 const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.0-flash-preview-image-generation';
 const GEMINI_IMAGE_PROXY_TOKEN = process.env.GEMINI_IMAGE_PROXY_TOKEN || '';
 
@@ -321,7 +321,7 @@ const AI_PROVIDERS_AVAILABLE = (() => {
     if (process.env.OPENAI_API_KEY) list.push({
         name: 'openai',
         client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1' }),
-        models: { fast: process.env.OPENAI_FAST_MODEL || 'gpt-4.1-mini', thinking: process.env.OPENAI_THINKING_MODEL || 'gpt-4.1' }
+        models: { fast: process.env.OPENAI_FAST_MODEL || 'gpt-4o-mini', thinking: process.env.OPENAI_THINKING_MODEL || 'gpt-4o' }
     });
     if (process.env.DEEPSEEK_API_KEY) list.push({
         name: 'deepseek',
@@ -401,7 +401,8 @@ const aiChatCompletionsCreate = async (params) => {
                 continue;
             }
             tried.push(`${p.name}:transient(${err?.status || err?.code || 'unknown'})`);
-            throw err;
+            console.warn(`[AI_FALLBACK] ${p.name} fallo (${err.message}). Intentando siguiente proveedor...`);
+            continue;
         }
     }
     // PASO 2 (CIRCUIT HALF-OPEN): si todos quedaron caidos, igual intentar UNO (el preferido).
@@ -6214,6 +6215,60 @@ const createRequestTimingTrace = (flowName, meta = {}) => {
     return { mark, finish, requestId };
 };
 
+const getPrepExamFallbackQuestions = async (batchAssignments, subject, grade = '1medio') => {
+    const fallbackQuestions = [];
+    for (let i = 0; i < batchAssignments.length; i++) {
+        const assigned = batchAssignments[i];
+        let q = null;
+        try {
+            const rows = await listRuntimeQuestionBankRowsForAdmin({
+                subject: normalizeSheetText(subject).toUpperCase(),
+                session: Number(assigned.session) || 0,
+                limit: 10,
+                grade
+            });
+            if (rows && rows.length > 0) {
+                const picked = rows[Math.floor(Math.random() * rows.length)];
+                q = {
+                    question: picked.question,
+                    options: picked.options || {
+                        A: picked.option_a || 'Opción A',
+                        B: picked.option_b || 'Opción B',
+                        C: picked.option_c || 'Opción C',
+                        D: picked.option_d || 'Opción D'
+                    },
+                    correct_answer: (picked.correctAnswer || picked.correct_answer || 'A').toUpperCase(),
+                    explanation: picked.explanation || `Pregunta del banco de estudio para ${assigned.topic || subject}.`,
+                    source_session: Number(assigned.session) || 0,
+                    source_topic: assigned.topic || '',
+                    source_mode: 'question_bank_fallback'
+                };
+            }
+        } catch (e) {
+            console.warn('[PREP_EXAM_FALLBACK] Error buscando en question_bank:', e.message);
+        }
+
+        if (!q) {
+            q = {
+                question: `¿Cuál de los siguientes conceptos es fundamental al estudiar el tema "${assigned.topic || subject}" en la sesión ${assigned.session}?`,
+                options: {
+                    A: `Comprender los principios y propiedades clave de ${assigned.topic || subject}.`,
+                    B: `Memorizar datos sin aplicar el razonamiento.`,
+                    C: `Ignorar los pasos previos del procedimiento.`,
+                    D: `Aplicar conceptos de una materia no relacionada.`
+                },
+                correct_answer: 'A',
+                explanation: `Para dominar ${assigned.topic || subject}, es esencial comprender sus principios y aplicaciones prácticas.`,
+                source_session: Number(assigned.session) || 0,
+                source_topic: assigned.topic || '',
+                source_mode: 'resilient_fallback'
+            };
+        }
+        fallbackQuestions.push(q);
+    }
+    return fallbackQuestions;
+};
+
 // ========================================================================
 // ENDPOINTS
 // ========================================================================
@@ -6580,36 +6635,61 @@ ${batchInstructions}
                 assigned_questions: batchAssignments.length
             });
 
-            const comp = await openai.chat.completions.create({
-                model: AI_MODELS.fast,
-                messages: [
-                    { role: 'system', content: systemMsg },
-                    { role: 'user', content: batchPrompt }
-                ],
-                response_format: { type: 'json_object' },
-                temperature: aiTemperature
-            });
-            timingTrace.mark('openai_completed', {
-                model: AI_MODELS.fast
-            });
+            let normalizedQuestions = [];
+            try {
+                const comp = await openai.chat.completions.create({
+                    model: AI_MODELS.fast,
+                    messages: [
+                        { role: 'system', content: systemMsg },
+                        { role: 'user', content: batchPrompt }
+                    ],
+                    response_format: { type: 'json_object' },
+                    temperature: aiTemperature
+                });
+                timingTrace.mark('openai_completed', {
+                    model: AI_MODELS.fast
+                });
 
-            const parsed = JSON.parse(comp.choices[0].message.content);
-            const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
-            timingTrace.mark('response_parsed', {
-                raw_questions: questions.length
-            });
+                const content = comp.choices[0]?.message?.content || '{}';
+                let parsed = {};
+                try {
+                    parsed = JSON.parse(content);
+                } catch {
+                    const match = content.match(/({[\s\S]*})|(\[[\s\S]*\])/);
+                    if (match) {
+                        try { parsed = JSON.parse(match[0]); } catch {}
+                    }
+                }
+                const rawQuestions = Array.isArray(parsed)
+                    ? parsed
+                    : (Array.isArray(parsed.questions)
+                        ? parsed.questions
+                        : (Array.isArray(parsed.preguntas)
+                            ? parsed.preguntas
+                            : (Array.isArray(parsed.data) ? parsed.data : [])));
 
-            const normalizedQuestions = questions.map((question, index) => {
-                const assigned = batchAssignments[index] || batchAssignments[0];
-                return {
-                    question: question.question,
-                    options: question.options || {},
-                    correct_answer: (question.correct_answer || 'A').toUpperCase(),
-                    explanation: question.explanation || 'ExplicaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n no disponible.',
-                    source_session: Number(question.source_session) || assigned.session,
-                    source_topic: question.source_topic || assigned.topic
-                };
-            }).filter(question => question.question);
+                normalizedQuestions = rawQuestions.map((question, index) => {
+                    const assigned = batchAssignments[index] || batchAssignments[0];
+                    return {
+                        question: question.question || question.pregunta || '',
+                        options: question.options || question.opciones || {},
+                        correct_answer: String(question.correct_answer || question.respuesta_correcta || 'A').trim().toUpperCase(),
+                        explanation: question.explanation || question.explicacion || 'Explicación no disponible.',
+                        source_session: Number(question.source_session) || assigned.session,
+                        source_topic: question.source_topic || assigned.topic
+                    };
+                }).filter(question => question.question && Object.keys(question.options || {}).length >= 2);
+            } catch (aiErr) {
+                console.error('[PREP_EXAM_BATCH] Error en llamada AI:', aiErr.message);
+                timingTrace.mark('ai_failed', { error: aiErr.message });
+            }
+
+            // Fallback al question bank si la IA falló o devolvió preguntas vacías
+            if (!normalizedQuestions.length) {
+                console.warn('[PREP_EXAM_BATCH] Sin preguntas desde IA, usando fallback de banco...');
+                normalizedQuestions = await getPrepExamFallbackQuestions(batchAssignments, subject, requestGrade);
+            }
+
             timingTrace.mark('questions_normalized', {
                 question_count: normalizedQuestions.length
             });

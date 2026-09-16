@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { authFetch } from './utils/authFetch';
 import MathRenderer from './components/MathRenderer';
 import InteractiveQuiz from './components/InteractiveQuiz';
@@ -4525,14 +4525,25 @@ const App = () => {
             prepExamDiagnostics.begin('Procesando respuesta de la primera tanda');
             const text = await response.text();
             const parsed = parseN8NResponse(text);
-            const firstBatchQuestions = (parsed.questions || []).map((question, index) => ({
+            if (parsed.error) {
+                throw new Error(parsed.error);
+            }
+            const rawBatchQuestions = Array.isArray(parsed)
+                ? parsed
+                : (Array.isArray(parsed?.questions)
+                    ? parsed.questions
+                    : (Array.isArray(parsed?.preguntas)
+                        ? parsed.preguntas
+                        : (Array.isArray(parsed?.data) ? parsed.data : [])));
+
+            const firstBatchQuestions = rawBatchQuestions.map((question, index) => ({
                 ...question,
                 source_session: Number(question.source_session) || selectedDetails[index % selectedDetails.length]?.session || sortedSessions[0],
                 source_topic: question.source_topic || selectedDetails.find(item => item.session === Number(question.source_session))?.topic || selectedDetails[index % selectedDetails.length]?.topic || ''
             }));
 
             if (!firstBatchQuestions.length) {
-                throw new Error('La IA no devolvió preguntas válidas para la primera tanda.');
+                throw new Error(parsed?.message || 'La IA no devolvió preguntas válidas para la primera tanda.');
             }
 
             prepExamDiagnostics.finish({
@@ -4772,7 +4783,15 @@ const App = () => {
         }
 
         prepExamBatchRef.current += 1;
-        const nextQuestions = (parsed?.questions || []).map((question, index) => ({
+        const rawNextQuestions = Array.isArray(parsed)
+            ? parsed
+            : (Array.isArray(parsed?.questions)
+                ? parsed.questions
+                : (Array.isArray(parsed?.preguntas)
+                    ? parsed.preguntas
+                    : (Array.isArray(parsed?.data) ? parsed.data : [])));
+
+        const nextQuestions = rawNextQuestions.map((question, index) => ({
             ...question,
             source_session: Number(question.source_session) || prepExamConfig.sessions[index % prepExamConfig.sessions.length],
             source_topic: question.source_topic || prepExamConfig.sessionDetails.find(item => item.session === Number(question.source_session))?.topic || ''
