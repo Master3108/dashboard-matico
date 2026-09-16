@@ -43,14 +43,20 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // ══════════════════════════════════════════════════════════════════════
-// PROVEEDOR TEXTO: DeepSeek preferido, fallback a Kimi, fallback a OpenAI
+// PROVEEDOR TEXTO: Gemini (gratis) preferido, fallback a DeepSeek / Kimi / OpenAI
 // ══════════════════════════════════════════════════════════════════════
+const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
 const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || '';
 const KIMI_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '';
 const OPENAI_TEXT_KEY = process.env.OPENAI_API_KEY || '';
 
 let TEXT_PROVIDER, TEXT_KEY, TEXT_URL, DEEPSEEK_MODEL;
-if (DEEPSEEK_KEY) {
+if (GEMINI_KEY) {
+    TEXT_PROVIDER = 'gemini';
+    TEXT_KEY = GEMINI_KEY;
+    TEXT_URL = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/';
+    DEEPSEEK_MODEL = process.env.GEMINI_FAST_MODEL || 'gemini-3.5-flash';
+} else if (DEEPSEEK_KEY) {
     TEXT_PROVIDER = 'deepseek';
     TEXT_KEY = DEEPSEEK_KEY;
     TEXT_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
@@ -64,9 +70,9 @@ if (DEEPSEEK_KEY) {
     TEXT_PROVIDER = 'openai';
     TEXT_KEY = OPENAI_TEXT_KEY;
     TEXT_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-    DEEPSEEK_MODEL = process.env.OPENAI_FAST_MODEL || 'gpt-4.1-mini';
+    DEEPSEEK_MODEL = process.env.OPENAI_FAST_MODEL || 'gpt-4o-mini';
 } else {
-    throw new Error('[pregen3m] Falta DEEPSEEK_API_KEY, KIMI_API_KEY o OPENAI_API_KEY en .env');
+    throw new Error('[pregen3m] Falta GEMINI_API_KEY, DEEPSEEK_API_KEY, KIMI_API_KEY o OPENAI_API_KEY en .env');
 }
 const textAI = new OpenAI({ apiKey: TEXT_KEY, baseURL: TEXT_URL });
 

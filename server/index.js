@@ -318,6 +318,12 @@ const NANO_BANANA_MIME_PATH = String(process.env.NANO_BANANA_RESPONSE_MIME_PATH 
 // ============================================================
 const AI_PROVIDERS_AVAILABLE = (() => {
     const list = [];
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (geminiKey) list.push({
+        name: 'gemini',
+        client: new OpenAI({ apiKey: geminiKey, baseURL: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/' }),
+        models: { fast: process.env.GEMINI_FAST_MODEL || 'gemini-3.5-flash', thinking: process.env.GEMINI_THINKING_MODEL || 'gemini-3.6-flash' }
+    });
     if (process.env.OPENAI_API_KEY) list.push({
         name: 'openai',
         client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1' }),
@@ -338,9 +344,9 @@ const AI_PROVIDERS_AVAILABLE = (() => {
 })();
 
 const PROVIDER_PREFERENCE_ORDER = (() => {
-    // Orden por defecto: OpenAI siempre primero (mas estable), luego DeepSeek, luego Kimi.
+    // Orden por defecto: Gemini (gratuito) si esta configurado, luego OpenAI, luego DeepSeek, luego Kimi.
     // Si el env AI_PROVIDER esta seteado, ese sube al frente.
-    const DEFAULT_ORDER = ['openai', 'deepseek', 'kimi'];
+    const DEFAULT_ORDER = ['gemini', 'openai', 'deepseek', 'kimi'];
     const preferred = FORCED_AI_PROVIDER || DEFAULT_ORDER[0];
     const rank = new Map();
     rank.set(preferred, 0);

@@ -60,27 +60,34 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ─── AI text provider (Kimi → OpenAI → DeepSeek) ──────────────────
+// ─── AI text provider (Gemini → Kimi → OpenAI → DeepSeek) ──────────────────
 const FORCED_AI_PROVIDER = String(process.env.AI_PROVIDER || '').trim().toLowerCase();
 const AI_PROVIDER = FORCED_AI_PROVIDER || (
-    (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi'
-        : (process.env.OPENAI_API_KEY ? 'openai' : 'deepseek')
+    process.env.GEMINI_API_KEY ? 'gemini'
+        : ((process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY) ? 'kimi'
+            : (process.env.OPENAI_API_KEY ? 'openai' : 'deepseek'))
 );
-const AI_API_KEY = AI_PROVIDER === 'kimi'
-    ? (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '')
-    : (AI_PROVIDER === 'openai'
-        ? (process.env.OPENAI_API_KEY || '')
-        : (process.env.DEEPSEEK_API_KEY || ''));
-const AI_BASE_URL = AI_PROVIDER === 'kimi'
-    ? (process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1')
-    : (AI_PROVIDER === 'openai'
-        ? (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1')
-        : (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1'));
-const AI_MODEL = AI_PROVIDER === 'kimi'
-    ? (process.env.KIMI_FAST_MODEL || 'kimi-k2-turbo-preview')
-    : (AI_PROVIDER === 'openai'
-        ? (process.env.OPENAI_FAST_MODEL || 'gpt-4.1-mini')
-        : (process.env.DEEPSEEK_FAST_MODEL || 'deepseek-chat'));
+const AI_API_KEY = AI_PROVIDER === 'gemini'
+    ? (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '')
+    : (AI_PROVIDER === 'kimi'
+        ? (process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '')
+        : (AI_PROVIDER === 'openai'
+            ? (process.env.OPENAI_API_KEY || '')
+            : (process.env.DEEPSEEK_API_KEY || '')));
+const AI_BASE_URL = AI_PROVIDER === 'gemini'
+    ? (process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/')
+    : (AI_PROVIDER === 'kimi'
+        ? (process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1')
+        : (AI_PROVIDER === 'openai'
+            ? (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1')
+            : (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1')));
+const AI_MODEL = AI_PROVIDER === 'gemini'
+    ? (process.env.GEMINI_FAST_MODEL || 'gemini-3.5-flash')
+    : (AI_PROVIDER === 'kimi'
+        ? (process.env.KIMI_FAST_MODEL || 'kimi-k2-turbo-preview')
+        : (AI_PROVIDER === 'openai'
+            ? (process.env.OPENAI_FAST_MODEL || 'gpt-4o-mini')
+            : (process.env.DEEPSEEK_FAST_MODEL || 'deepseek-chat')));
 
 if (!AI_API_KEY) {
     throw new Error(`Falta API key para AI_PROVIDER="${AI_PROVIDER}"`);
