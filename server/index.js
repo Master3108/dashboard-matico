@@ -322,7 +322,7 @@ const AI_PROVIDERS_AVAILABLE = (() => {
     if (geminiKey) list.push({
         name: 'gemini',
         client: new OpenAI({ apiKey: geminiKey, baseURL: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/' }),
-        models: { fast: process.env.GEMINI_FAST_MODEL || 'models/gemini-3.5-flash', thinking: process.env.GEMINI_THINKING_MODEL || 'models/gemini-3.7-flash' }
+        models: { fast: process.env.GEMINI_FAST_MODEL || 'models/gemini-3.1-flash-lite', thinking: process.env.GEMINI_THINKING_MODEL || 'models/gemini-3.5-flash-lite' }
     });
     if (process.env.OPENAI_API_KEY) list.push({
         name: 'openai',
