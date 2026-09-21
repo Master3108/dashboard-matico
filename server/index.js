@@ -322,7 +322,7 @@ const AI_PROVIDERS_AVAILABLE = (() => {
     if (geminiKey) list.push({
         name: 'gemini',
         client: new OpenAI({ apiKey: geminiKey, baseURL: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/' }),
-        models: { fast: process.env.GEMINI_FAST_MODEL || 'gemini-3.5-flash', thinking: process.env.GEMINI_THINKING_MODEL || 'gemini-3.6-flash' }
+        models: { fast: process.env.GEMINI_FAST_MODEL || 'models/gemini-3.5-flash', thinking: process.env.GEMINI_THINKING_MODEL || 'models/gemini-3.7-flash' }
     });
     if (process.env.OPENAI_API_KEY) list.push({
         name: 'openai',
@@ -6676,10 +6676,13 @@ ${batchInstructions}
 
                 normalizedQuestions = rawQuestions.map((question, index) => {
                     const assigned = batchAssignments[index] || batchAssignments[0];
+                    const options = normalizeOptionsObject(question.options || question.opciones || {});
+                    const rawCorrect = question.correct_answer || question.respuesta_correcta || question.correctAnswer || 'A';
+                    const correct_answer = inferCorrectLetter(rawCorrect, options) || String(rawCorrect).trim().toUpperCase() || 'A';
                     return {
                         question: question.question || question.pregunta || '',
-                        options: question.options || question.opciones || {},
-                        correct_answer: String(question.correct_answer || question.respuesta_correcta || 'A').trim().toUpperCase(),
+                        options,
+                        correct_answer,
                         explanation: question.explanation || question.explicacion || 'Explicación no disponible.',
                         source_session: Number(question.source_session) || assigned.session,
                         source_topic: question.source_topic || assigned.topic
