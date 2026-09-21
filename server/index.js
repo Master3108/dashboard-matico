@@ -6946,7 +6946,7 @@ Estructura JSON:
                     .filter(Boolean)
             );
 
-            const useSpreadsheetQuestionBank = isMathSubject(subject) || isPhysicsSubject(subject) || isReadingSubject(subject);
+            const useSpreadsheetQuestionBank = true;
             const bankSeed = useSpreadsheetQuestionBank
                 ? await sampleQuestionBankQuestions(sheets, {
                     subject,
